@@ -3,6 +3,13 @@ from direct.showbase.DirectObject import DirectObject
 
 from panda3d.core import *
 
+cl_crosshairscale = ConfigVariableDouble("cl-crosshair-scale", 32)
+cl_crosshairfile = ConfigVariableString("cl-crosshair-file", "crosshair5")
+cl_crosshairr = ConfigVariableDouble("cl-crosshair-r", 200)
+cl_crosshairg = ConfigVariableDouble("cl-crosshair-g", 200)
+cl_crosshairb = ConfigVariableDouble("cl-crosshair-b", 200)
+cl_crosshaira = ConfigVariableDouble("cl-crosshair-a", 255)
+
 class TFHud(DirectObject):
 
     LowHealthPerct = 0.33
@@ -29,6 +36,43 @@ class TFHud(DirectObject):
                                       scale = self.ClipScale, pos = self.ClipPos, align = self.ClipAlign)
         self.ammoLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
                                       scale = self.AmmoScale, pos = self.AmmoPos, align = self.AmmoAlign)
+
+        self.crosshairTex = None
+        self.crosshair = OnscreenImage()
+        self.updateCrosshair()
+
+        self.lastWinSize = LPoint2i(base.win.getXSize(), base.win.getYSize())
+        # Accept a window event to adjust crosshair on window resize.
+        self.accept('window-event', self.handleWindowEvent)
+
+    def handleWindowEvent(self, win):
+        if win != base.win:
+            return
+
+        size = LPoint2i(base.win.getXSize(), base.win.getYSize())
+        if size != self.lastWinSize:
+            self.adjustCrosshairSize()
+            self.lastWinSize = size
+
+    def adjustCrosshairSize(self):
+        factor = 32 * (base.win.getYSize() / cl_crosshairscale.getValue())
+        tex = self.crosshairTex
+        self.crosshair.setScale((tex.getXSize() / factor, tex.getYSize() / factor, tex.getYSize() / factor))
+
+    def adjustCrosshairColor(self):
+        self.crosshair.setTransparency(True)
+        self.crosshair.setColorScale(cl_crosshairr.getValue() / 255, cl_crosshairg.getValue() / 255,
+                                     cl_crosshairb.getValue() / 255, cl_crosshaira.getValue() / 255)
+
+    def updateCrosshair(self):
+        xhair_type = cl_crosshairfile.getValue()
+        tex = base.loader.loadTexture(f"maps/{xhair_type}.txo")
+        self.crosshairTex = tex
+        self.crosshair.setImage(tex)
+        self.crosshair.reparentTo(base.aspect2d)
+
+        self.adjustCrosshairSize()
+        self.adjustCrosshairColor()
 
     def updateHealthLabel(self):
         self.healthLabel.setText(str(base.localAvatar.health))
