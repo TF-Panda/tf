@@ -125,7 +125,7 @@ class DistributedEntity(BaseClass, NodePath):
             self.setPos((x, y, z))
 
         def RecvProxy_hpr(self, h, p, r):
-            self.setHpr((h % 360, p % 360, r % 360))
+            self.setHpr((h, p, r))
 
         def RecvProxy_scale(self, x, y, z):
             self.setScale((x, y, z))

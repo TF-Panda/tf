@@ -4,6 +4,8 @@ from panda3d.pphysics import *
 from .MovementVars import *
 from .MoveType import MoveType
 
+from tf.player.InputButtons import InputFlag
+
 import math
 
 def simpleSpline(self, val):
@@ -21,13 +23,21 @@ class GameMovement:
         self.up = Vec3(0)
         self.right = Vec3(0)
 
+    def isControllerOnGround(self):
+        """
+        Returns true if the player is on the ground as of the last move.
+        """
+        return (self.player.controller.getCollisionFlags() & PhysController.CFDown) != 0
+
     def processMovement(self, player, moveData):
         storeDeltaTime = globalClock.getDt()
         self.speedCropped = False
         self.player = player
         self.mv = moveData
-        #print("Start move, vel is", self.mv.velocity)
         self.mv.maxSpeed = sv_maxspeed.getValue()
+        self.mv.onGround = self.isControllerOnGround()
+
+        print("Start move, on ground?", self.mv.onGround)
 
         self.playerMove()
         self.finishMove()
@@ -196,8 +206,11 @@ class GameMovement:
 
         self.checkVelocity()
 
+    def canAccelerate(self):
+        return True
+
     def accelerate(self, wishdir, wishspeed, accel):
-        if False: # not self.canAccelerate()
+        if not self.canAccelerate():
             return
 
         # See if we are changing direction a bit.
@@ -250,13 +263,9 @@ class GameMovement:
             wishvel *= self.mv.maxSpeed / wishspeed
             wishspeed = self.mv.maxSpeed
 
-        #self.mv.velocity[2] = 0
-        self.accelerate(wishdir, wishspeed, sv_accelerate.getValue())
-        #self.mv.velocity[0] = wishvel[0]
-        #self.mv.velocity[1] = wishvel[1]
         self.mv.velocity[2] = 0
-
-        #print(wishdir, wishspeed)
+        self.accelerate(wishdir, wishspeed, sv_accelerate.getValue())
+        self.mv.velocity[2] = 0
 
         # Add in any base velocity to the current velocity
         self.mv.velocity += self.player.baseVelocity
@@ -268,14 +277,95 @@ class GameMovement:
             self.mv.velocity -= self.player.baseVelocity
             return
 
-        #print(self.mv.velocity)
-
         self.mv.oldOrigin = self.mv.origin
-        flags = self.player.controller.move(globalClock.getDt(), Vec3(self.mv.velocity[0], self.mv.velocity[1], 0) * globalClock.getDt(), 0.1)
+        flags = self.player.controller.move(globalClock.getDt(), self.mv.velocity * globalClock.getDt(), 0.1)
         self.mv.origin = self.player.controller.getFootPosition()
 
         self.mv.outWishVel += wishdir * wishspeed
+
+        # This is the new, clipped velocity.
         self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / globalClock.getDt()
+
+        # Pull the base velocity back out
+        self.mv.velocity -= self.player.baseVelocity
+
+    def airAccelerate(self, wishdir, wishspeed, accel):
+        wishspd = wishspeed
+
+        if self.player.isDead:
+            # ???
+            return
+
+        # TODO: water jump time
+
+        # Cap speed
+        if wishspd > 30:
+            wishspd = 30
+
+        # Determine veer amount
+        currentspeed = self.mv.velocity.dot(wishdir)
+        # See how much to add
+        addspeed = wishspd - currentspeed
+
+        # If not adding any, done.
+        if addspeed <= 0:
+            return
+
+        # Determine acceleration speed after acceleration
+        accelspeed = accel * wishspeed * globalClock.getDt() * self.player.surfaceFriction
+
+        # Cap it
+        if (accelspeed > addspeed):
+            accelspeed = addspeed
+
+        # Adjust move vel
+        self.mv.velocity += wishdir * accelspeed
+        self.mv.outWishVel += wishdir * accelspeed
+
+    def airMove(self):
+        q = Quat()
+        q.setHpr(self.mv.viewAngles)
+        forward = q.getForward()
+        up = q.getUp()
+        right = q.getRight()
+
+        fmove = self.mv.forwardMove
+        smove = self.mv.sideMove
+
+        # Zero out z components of movement vectors
+        forward[2] = 0
+        right[2] = 0
+        forward.normalize()
+        right.normalize()
+
+        wishvel = (forward * fmove) + (right * smove)
+        wishvel[2] = 0
+
+        wishdir = Vec3(wishvel)
+        wishspeed = wishdir.length()
+        wishdir.normalize()
+
+        # Clamp to server defined max speed
+        if wishspeed != 0 and (wishspeed > self.mv.maxSpeed):
+            wishvel *= self.mv.maxSpeed / wishspeed
+            wishspeed = self.mv.maxSpeed
+
+        self.airAccelerate(wishdir, wishspeed, sv_airaccelerate.getValue())
+
+        # Add in any base velocity to the current velo.
+        self.mv.velocity += self.player.baseVelocity
+
+        self.mv.oldOrigin = self.mv.origin
+        flags = self.player.controller.move(globalClock.getDt(), self.mv.velocity * globalClock.getDt(), 0.1)
+        self.mv.origin = self.player.controller.getFootPosition()
+
+        self.mv.outWishVel += wishdir * wishspeed
+
+        # This is the new, clipped velocity.
+        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / globalClock.getDt()
+
+        # Pull the base velocity back out
+        self.mv.velocity -= self.player.baseVelocity
 
     def friction(self):
         # Calculate speed
@@ -288,12 +378,14 @@ class GameMovement:
         drop = 0
 
         # Apply ground friction
-        if True: # on ground
+        if self.mv.onGround:
             friction = sv_friction.getValue() * self.player.surfaceFriction
             control = sv_stopspeed.getValue() if (speed < sv_stopspeed.getValue()) else speed
 
             # Add the amount to the drop amount
             drop += control * friction * globalClock.getDt()
+
+            print("Drop is", drop)
 
         # SCale the velocity
         newspeed = speed - drop
@@ -316,15 +408,89 @@ class GameMovement:
 
         self.checkVelocity()
 
-    def fullWalkMove(self):
-        if True: # (not self.checkWater())
-            self.startGravity()
+    def checkWater(self):
+        return False
 
-        self.friction()
-        self.checkVelocity()
-        self.walkMove()
-        self.checkVelocity()
+    def checkJumpButton(self):
+        """
+        Performs a jump.
+        """
+
+        if self.player.isDead:
+            # ???
+            self.mv.oldButtons &= ~InputFlag.Jump
+            return False
+
+        # TODO: See if we are water jumping.
+
+        if not self.mv.onGround:
+            self.mv.oldButtons &= ~InputFlag.Jump
+            return False # in air, so no effect
+
+        if self.mv.oldButtons & InputFlag.Jump:
+            # Don't pogo stick!
+            return False
+
+        # TODO: Cannot jump while in the unduck transition.
+        # TODO: Still updating eye position.
+
+        # In the air now.
+        self.mv.onGround = False
+
+        groundFactor = 1.0
+
+        #mul = math.sqrt(2 * sv_gravity.getValue() * GAMEMOVEMENT_JUMP_HEIGHT)
+        assert (sv_gravity.getValue() == 800)
+        mul = 268.3281572999747 * groundFactor
+
+        # Accelerate upward
+        # TODO: IF we are ducking
+        startZ = self.mv.velocity[2]
+        self.mv.velocity[2] += groundFactor * mul
 
         self.finishGravity()
+
+        self.mv.outJumpVel[2] += self.mv.velocity[2] - startZ
+        self.mv.outStepHeight += 0.15
+
+        # Flag that we jumped
+        self.mv.oldButtons &= ~InputFlag.Jump
+
+        return True
+
+    def fullWalkMove(self):
+        if (not self.checkWater()):
+            self.startGravity()
+
+        # Was jump button pressed?
+        if (self.mv.buttons & InputFlag.Jump):
+            self.checkJumpButton()
+        else:
+            self.mv.oldButtons &= ~InputFlag.Jump
+
+        if self.mv.onGround:
+            # Apply friction if on ground.
+            self.mv.velocity[2] = 0.0
+            self.friction()
+
+        # Make sure velocity is valid.
+        self.checkVelocity()
+
+        # Do the move.  This will clip our velocity and tell us if we are on
+        # the ground.
+        if self.mv.onGround:
+            self.walkMove()
+        else:
+            self.airMove()
+
+        self.mv.onGround = self.isControllerOnGround()
+
+        self.checkVelocity()
+
+        if not self.checkWater():
+            self.finishGravity()
+
+        if self.mv.onGround:
+            self.mv.velocity[2] = 0.0
 
 g_game_movement = GameMovement()

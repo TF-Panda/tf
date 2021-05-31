@@ -19,3 +19,5 @@ class MoveData:
         self.velocity = Vec3(0)
         self.outWishVel = Vec3(0)
         self.outJumpVel = Vec3(0)
+        self.outStepHeight = 0.0
+        self.onGround = True
