@@ -1,0 +1,22 @@
+*.pyc
+/__init__.py
+# These are files that are generated within the source tree by the
+# ppremake system.
+Makefile
+pp.dep
+/built/
+Opt?-*
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+.vs
+*.log
+x64
+Win32
+src/configfiles/50_tf.dc
+devprogress/
+*.png
+
+# Python 3
+**/__pycache__

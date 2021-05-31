@@ -1,0 +1,21 @@
+
+from tf.character.DistributedCharAI import DistributedCharAI
+from tf.character.Activity import Activity
+
+from panda3d.core import *
+
+class DTestCharAI(DistributedCharAI):
+
+    def generate(self):
+        DistributedCharAI.generate(self)
+        self.setModel("tfmodels/src/char/engineer/engineer.pmdl")
+        self.tauntSeqs = self.getSequencesForActivity(Activity.Taunt)
+        self.tauntSeq = 0
+        self.resetSequence(self.tauntSeqs[self.tauntSeq])
+
+    def simulate(self):
+        if self.isCurrentSequenceFinished():
+            self.tauntSeq += 1
+            self.tauntSeq %= len(self.tauntSeqs)
+            self.resetSequence(self.tauntSeqs[self.tauntSeq])
+        DistributedCharAI.simulate(self)

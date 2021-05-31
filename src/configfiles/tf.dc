@@ -1,0 +1,172 @@
+//
+// tf.dc
+// TF distributed networking schema.
+//
+
+// There are method-like declarations in the DC syntax.  These are used for
+// non-stateful messages corresponding to Python methods.  There are two
+// flavors of messages in the system: event and plain message.  The difference
+// is that events are tied to the world state and get sent with a snapshot,
+// while plain messages are sent independently of snapshots and are not tied
+// to a world state.  Events would be used for things like explosions, voice
+// lines, sound emitting, etc, while plain messages would be used for things
+// like RPC and communication with the server.
+
+keyword unreliable;
+keyword event;
+
+from direct.distributed2.DistributedObject/AI import DistributedObject/AI
+
+from tf.entity.DistributedEntity import DistributedEntity/AI
+from tf.distributed.DistributedGame/AI import DistributedGame/AI
+from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
+from tf.character.DistributedChar/AI import DistributedChar/AI
+from tf.distributed.DTestChar/AI import DTestChar/AI
+from tf.player.DViewModel/AI import DViewModel/AI
+from tf.weapon.DistributedWeapon/AI import DistributedWeapon/AI
+from tf.weapon.TFWeapon/AI import TFWeapon/AI
+from tf.weapon.DShotgun/AI import DShotgun/AI
+from tf.weapon.DWrench/AI import DWrench/AI
+
+// Coordinate range (per axis): -21474836.47 to 21474836.47
+// Two decimals of precision.
+struct Position {
+  int32 x / 100;
+  int32 y / 100;
+  int32 z / 100;
+};
+
+// Use this for sending unit vectors on the wire.
+struct UnitVector {
+  int16 x / 1000;
+  int16 y / 1000;
+  int16 z / 1000;
+};
+
+// Non-unit vector, 4 bytes per axis.  You may prefer sending a UnitVector
+// along with a separate magnitude scalar instead of this, as it would use
+// fewer bytes.
+struct Vector {
+  int32 x / 1000;
+  int32 y / 1000;
+  int32 z / 1000;
+};
+
+// Specialization for sending euler angles on the wire.
+struct Angles {
+  int16 h % 360 / 10;
+  int16 p % 360 / 10;
+  int16 r % 360 / 10;
+};
+
+// Scale range (per axis): -32.767 to 32.767
+// Three decimals of precision.
+struct Scale {
+  int16 sx / 1000;
+  int16 sy / 1000;
+  int16 sz / 1000;
+};
+
+// Networked data for a single animation layer.
+struct AnimLayer {
+  int32 sequence;
+  uint16 cycle / 1000;
+  uint16 prevCycle / 1000;
+  uint8 weight / 100;
+  int32 order;
+  uint8 sequenceParity;
+};
+
+dclass DistributedObject {
+  int32 simulationTime;
+};
+
+dclass DistributedEntity : DistributedObject {
+  int32 parentEntityId;
+  Position pos;
+  Angles hpr;
+  Scale scale;
+  int8 team;
+  uint16 health;
+  uint16 maxHealth;
+};
+
+dclass DistributedGame : DistributedObject {
+  joinGame(string name) clsend airecv;
+
+  emitSound(uint32 soundIndex, uint8 waveIndex, int16 volume / 100, int16 pitch / 100, Position position) broadcast;
+};
+
+dclass DistributedChar : DistributedEntity {
+  // Filename of the model.
+  string model;
+
+  int32 sequence;
+  int32 animTime;
+  uint16 cycle / 1000;
+  uint8 playRate / 100;
+
+  uint8 newSequenceParity;
+
+  AnimLayer animLayers[];
+
+  // Creates a client-side ragdoll of the character.
+  becomeRagdoll(int16 forceJoint, Position forcePosition, Vector forceVector) broadcast ownrecv;
+};
+
+dclass DistributedTFPlayer : DistributedChar {
+  string playerName;
+  int16 lookPitch / 1000;
+  int16 lookYaw / 1000;
+  int16 moveX / 1000;
+  int16 moveY / 1000;
+  uint8 tfClass;
+
+  // The weapons we are carrying.
+  int32 weapons[];
+  // The weapon currently deployed.  It's an index into the weapons list.
+  int8 activeWeapon;
+
+  swing() broadcast ownrecv;
+  speak() broadcast ownrecv;
+
+  respawn() broadcast ownrecv;
+
+  playerCommand(blob) ownsend airecv unreliable;
+};
+
+dclass DistributedWeapon : DistributedChar {
+  int32 playerId;
+  int32 activity;
+
+  uint16 maxAmmo;
+  uint16 maxAmmo2;
+  uint8 maxClip;
+  uint8 maxClip2;
+  uint16 ammo;
+  uint16 ammo2;
+  uint8 clip;
+  uint8 clip2;
+
+  float64 nextPrimaryAttack;
+  float64 nextSecondaryAttack;
+  float64 timeWeaponIdle;
+};
+
+dclass TFWeapon : DistributedWeapon {
+};
+
+dclass DTestChar : DistributedChar {
+};
+
+dclass DViewModel : DistributedChar {
+  // Player the viewmodel belongs to.
+  int32 playerId;
+};
+
+dclass DShotgun : DistributedWeapon {
+  flash();
+};
+
+dclass DWrench : DistributedWeapon {
+};
