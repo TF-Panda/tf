@@ -32,6 +32,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.lastActiveWeapon = -1
 
+        self.lastPainTime = 0.0
+
         self.lastAngryTime = 0.0
 
         self.lastSwingTime = 0.0
@@ -59,13 +61,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def respawn(self):
         self.modelNp.show()
 
+    def becomeRagdoll(self, *args, **kwargs):
+        self.lastPainTime = 0.0
+        return DistributedChar.becomeRagdoll(self, *args, **kwargs)
+
     def RecvProxy_activeWeapon(self, index):
         self.setActiveWeapon(index)
 
     def setActiveWeapon(self, index):
-        if index == self.activeWeapon:
-            return
-
         if self.activeWeapon >= 0 and self.activeWeapon < len(self.weapons):
             # Deactive the old weapon.
             wpnId = self.weapons[self.activeWeapon]
@@ -148,6 +151,24 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             return
         self.talker.speak(Filename("vo/engineer_cloakedspyidentify08.mp3"))
 
+    def pain(self):
+        now = globalClock.getFrameTime()
+        if now - self.lastPainTime < 1.0:
+            return
+
+        painFilenames = [
+            Filename("vo/engineer_painsevere01.mp3"),
+            Filename("vo/engineer_painsevere02.mp3"),
+            Filename("vo/engineer_painsevere03.mp3"),
+            Filename("vo/engineer_painsevere04.mp3"),
+            Filename("vo/engineer_painsevere05.mp3"),
+            Filename("vo/engineer_painsevere06.mp3"),
+            Filename("vo/engineer_painsevere07.mp3")
+        ]
+
+        self.talker.speak(random.choice(painFilenames))
+        self.lastPainTime = now
+
     def swing(self):
         bamFilenames = [
             Filename("vo/engineer_gunslingerpunch01.mp3"),
@@ -195,6 +216,10 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.item2Swing.play()
 
     def makeAngry(self):
+        now = globalClock.getFrameTime()
+        if now - self.lastAngryTime < 2:
+            return
+
         def angryFade(val):
             mad = self.character.findSlider("mad")
             self.character.setSliderValue(mad, val)
@@ -206,6 +231,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         seq.append(Wait(1.0))
         seq.append(LerpFunc(angryFade, fromData=0.65, toData=0, duration=0.5, blendType='easeOut'))
         seq.start()
+
+        self.lastAngryTime = now
 
     def announceGenerate(self):
         DistributedChar.announceGenerate(self)

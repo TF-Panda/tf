@@ -86,6 +86,12 @@ class DistributedGame(DistributedObject):
         planeNp = render.attachNewNode(planeActor)
         planeNp.setPos(0, 0, 0)
 
+        base.game = self
+
+    def delete(self):
+        del base.game
+        DistributedObject.delete(self)
+
     def emitSound(self, soundIndex, waveIndex, volume, pitch, origin):
         sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch, origin)
         if sound:

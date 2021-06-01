@@ -37,13 +37,15 @@ class GameMovement:
         self.mv.maxSpeed = sv_maxspeed.getValue()
         self.mv.onGround = self.isControllerOnGround()
 
-        print("Start move, on ground?", self.mv.onGround)
+        #print("Start move, on ground?", self.mv.onGround)
 
         self.playerMove()
         self.finishMove()
 
         globalClock.setDt(storeDeltaTime)
         base.deltaTime = storeDeltaTime
+
+        self.player.velocity = self.mv.velocity
 
         self.player = None
 
@@ -69,6 +71,24 @@ class GameMovement:
 
         return side * side
 
+    def decayPunchAngle(self):
+        if self.player.punchAngle.lengthSquared() > 0.001 or self.player.punchAngleVel.lengthSquared() > 0.001:
+            self.player.punchAngle += self.player.punchAngleVel * globalClock.getFrameTime()
+            damping = 1 - (PUNCH_DAMPING * globalClock.getFrameTime())
+            if damping < 0:
+                damping = 0
+            self.player.punchAngleVel *= damping
+            springForceMagnitude = PUNCH_SPRING_CONSTANT * globalClock.getFrameTime()
+            springForceMagnitude = max(0, min(2, springForceMagnitude))
+            self.player.punchAngleVel -= self.player.punchAngle * springForceMagnitude
+            # Don't wrap around.
+            self.player.punchAngle[0] = max(-179, min(179, self.player.punchAngle[0]))
+            self.player.punchAngle[1] = max(-89, min(89, self.player.punchAngle[1]))
+            self.player.punchAngle[2] = max(-89, min(89, self.player.punchAngle[2]))
+        else:
+            self.player.punchAngle.set(0, 0, 0)
+            self.player.punchAngleVel.set(0, 0, 0)
+
     def checkParameters(self):
         if self.player.moveType not in [MoveType.Isometric, MoveType.NoClip, MoveType.Observer]:
             spd = (self.mv.forwardMove * self.mv.forwardMove) + \
@@ -89,8 +109,10 @@ class GameMovement:
                 self.mv.sideMove *= ratio
                 self.mv.upMove *= ratio
 
+        self.decayPunchAngle()
+
         if not self.player.isDead:
-            angle = self.mv.angles
+            angle = Vec3(self.mv.angles)
             angle += self.player.punchAngle
 
             # Now adjust roll angle
@@ -277,8 +299,11 @@ class GameMovement:
             self.mv.velocity -= self.player.baseVelocity
             return
 
+        vel = self.mv.velocity * globalClock.getDt()
+        vel[2] = -2 # To detect if we're on the ground.
+
         self.mv.oldOrigin = self.mv.origin
-        flags = self.player.controller.move(globalClock.getDt(), self.mv.velocity * globalClock.getDt(), 0.1)
+        flags = self.player.controller.move(globalClock.getDt(), vel, 0.1)
         self.mv.origin = self.player.controller.getFootPosition()
 
         self.mv.outWishVel += wishdir * wishspeed
@@ -385,7 +410,7 @@ class GameMovement:
             # Add the amount to the drop amount
             drop += control * friction * globalClock.getDt()
 
-            print("Drop is", drop)
+            #print("Drop is", drop)
 
         # SCale the velocity
         newspeed = speed - drop

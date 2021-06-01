@@ -9,13 +9,19 @@ else:
 from panda3d.core import NodePath, Point3, Vec3
 from panda3d.direct import InterpolatedVec3
 
-from tf.tfbase.TFGlobals import WorldParent, getWorldParent
+from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage
+from tf.weapon.TakeDamageInfo import addMultiDamage
 
 class DistributedEntity(BaseClass, NodePath):
 
     def __init__(self):
         BaseClass.__init__(self)
         NodePath.__init__(self, "entity")
+
+        # Are we allowed to take damage?
+        self.takeDamageMode = TakeDamage.Yes
+
+        self.velocity = Vec3(0)
 
         # The team affiliation of the entity.  This is where a pluggable
         # component system would come in handy.  We could allow entities/DOs
@@ -57,6 +63,9 @@ class DistributedEntity(BaseClass, NodePath):
         self.setPythonTag("entity", self)
 
         self.reparentTo(self.parentEntity)
+
+    def getVelocity(self):
+        return self.velocity
 
     def getPhysicsRoot(self):
         """
@@ -149,6 +158,29 @@ class DistributedEntity(BaseClass, NodePath):
 
         def SendProxy_scale(self):
             return self.getScale()
+
+    if not IS_CLIENT:
+        def takeDamage(self, info):
+
+            # TODO: Damage filter
+
+            #if not base.game.allowDamage(self, info):
+            #    return
+
+            self.onTakeDamage(info)
+
+        def onTakeDamage(self, info):
+            pass
+
+    def dispatchTraceAttack(self, info, dir, hit):
+        # TODO: Damage filter?
+        self.traceAttack(info, dir, hit)
+
+    def traceAttack(self, info, dir, hit):
+        if self.takeDamageMode:
+            addMultiDamage(info, self)
+
+            # TODO: Blood?
 
     def delete(self):
         if IS_CLIENT:

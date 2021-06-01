@@ -51,6 +51,7 @@ class DistributedTFPlayerShared:
         self.jumpTime = 0
         self.swimSoundTime = 0
         self.punchAngle = Vec3(0)
+        self.punchAngleVel = Vec3(0)
         self.waterLevel = 0
         self.gravity = 1.0
         self.baseVelocity = Vec3(0)
@@ -102,6 +103,7 @@ class DistributedTFPlayerShared:
         self.moveData.oldButtons = self.moveData.buttons
         self.moveData.buttons = command.buttons
         self.moveData.clientMaxSpeed = 320
+        self.moveData.velocity = self.velocity
 
         self.moveData.forwardMove = 0
         self.moveData.sideMove = 0

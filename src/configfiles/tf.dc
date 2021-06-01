@@ -47,9 +47,12 @@ struct UnitVector {
 // along with a separate magnitude scalar instead of this, as it would use
 // fewer bytes.
 struct Vector {
-  int32 x / 1000;
-  int32 y / 1000;
-  int32 z / 1000;
+  //int32 x / 1000;
+  //int32 y / 1000;
+  //int32 z / 1000;
+  float64 x;
+  float64 y;
+  float64 z;
 };
 
 // Specialization for sending euler angles on the wire.
@@ -89,6 +92,7 @@ dclass DistributedEntity : DistributedObject {
   int8 team;
   uint16 health;
   uint16 maxHealth;
+  uint8 takeDamageMode;
 };
 
 dclass DistributedGame : DistributedObject {
@@ -105,6 +109,7 @@ dclass DistributedChar : DistributedEntity {
   int32 animTime;
   uint16 cycle / 1000;
   uint8 playRate / 100;
+  uint8 skin;
 
   uint8 newSequenceParity;
 
@@ -130,7 +135,11 @@ dclass DistributedTFPlayer : DistributedChar {
   swing() broadcast ownrecv;
   speak() broadcast ownrecv;
 
+  makeAngry() broadcast;
+
   respawn() broadcast ownrecv;
+
+  pain() broadcast;
 
   playerCommand(blob) ownsend airecv unreliable;
 };

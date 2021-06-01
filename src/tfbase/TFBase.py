@@ -65,8 +65,8 @@ class TFBase(ShowBase, FSM):
         self.physicsWorld.setGravity((0, 0, -800))
         self.physicsWorld.setFixedTimestep(0.015)
 
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
+        #self.physicsWorld.setGroupCollisionFlag(
+        #    TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
 
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
 

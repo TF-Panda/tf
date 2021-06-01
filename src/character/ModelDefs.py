@@ -214,6 +214,17 @@ class EngineerModel:
         taunt03Seq.addLayer(layerTaunt03Seq, 0, 5, 133, 138, False, False)
         char.addSequence(taunt03Seq)
 
+        # Flinches
+        flinch01Seq = createSequence(char, "flinch01", AnimSequence.FDelta | AnimSequence.FPost,
+                                     Activity.Gesture_Flinch, 2)
+        flinch02Seq = createSequence(char, "flinch02", AnimSequence.FDelta | AnimSequence.FPost,
+                                     Activity.Gesture_Flinch, 10)
+        flinch04Seq = createSequence(char, "flinch04", AnimSequence.FDelta | AnimSequence.FPost,
+                                     Activity.Gesture_Flinch, 5)
+        char.addSequence(flinch01Seq)
+        char.addSequence(flinch02Seq)
+        char.addSequence(flinch04Seq)
+
     @staticmethod
     def createPoseParameters(char):
         char.addPoseParameter("look_pitch", -1, 1)

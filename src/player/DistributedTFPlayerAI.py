@@ -8,15 +8,22 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from .PlayerCommand import PlayerCommand
 from .InputButtons import InputFlag
 from .TFPlayerAnimStateAI import TFPlayerAnimStateAI
+from .PlayerAnimEvent import PlayerAnimEvent
 from .TFClass import *
 from .DViewModelAI import DViewModelAI
+from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce, addMultiDamage
 
 from tf.tfbase import TFGlobals
+from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
 
-from panda3d.core import Datagram, DatagramIterator, Vec3, Point3
+from panda3d.core import Datagram, DatagramIterator, Vec3, Point3, NodePath
+from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
 
 import copy
 import random
+
+tf_damage_range = 0.5
+tf_damageforcescale_other = 3.0
 
 class CommandContext:
     def __init__(self):
@@ -51,9 +58,145 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.viewAngles = Vec3(0, 0, 0)
         self.isDead = False
         self.nextAttack = 0.0
+        self.forceJoint = -1
+        self.bulletForce = Vec3(0)
 
         # Also give them a view model
         self.viewModel = DViewModelAI()
+
+    def getWorldSpaceCenter(self):
+        return self.getPos(NodePath()) + (0, 0, self.classInfo.ViewHeight / 2)
+
+    def getClassSize(self):
+        mins = self.classInfo.BBox[0]
+        maxs = self.classInfo.BBox[1]
+        return Vec3(maxs[0] - mins[0], maxs[1] - mins[1], maxs[2] - mins[2])
+
+    def onTakeDamage_alive(self, info):
+        vecDir = Vec3(0)
+        if info.inflictor:
+            vecDir = info.inflictor.getWorldSpaceCenter() - Vec3(0, 0, 10) - self.getWorldSpaceCenter()
+            vecDir.normalize()
+
+        force = vecDir * -self.damageForce(self.getClassSize(), info.damage, tf_damageforcescale_other)
+        self.velocity += force
+
+        self.health -= int(info.damage + 0.5)
+        self.health = max(0, self.health)
+        if self.health <= 0:
+            # Died.
+            self.die(info.attacker, info)
+
+    def damageForce(self, size, damage, scale):
+        force = damage * ((48 * 48 * 82.0) / (size[0] * size[1] * size[2])) * scale
+        if force > 1000:
+            force = 1000
+        return force
+
+    def onTakeDamage(self, inputInfo):
+        info = inputInfo#copy.deepcopy(inputInfo)
+
+        if not info.damage:
+            return
+
+        if self.isDead:
+            return
+
+        healthBefore = self.health
+        if not base.game.playerCanTakeDamage(self, info.attacker):
+            return
+
+        # Save damage force for ragdolls.
+        self.bulletForce = Vec3(info.damageForce)
+        #self.bulletForce[0] = max(-15000, min(15000, self.bulletForce[0]))
+        #self.bulletForce[1] = max(-15000, min(15000, self.bulletForce[1]))
+        #self.bulletForce[2] = max(-15000, min(15000, self.bulletForce[2]))
+
+        # If we're not damaging ourselves, apply randomness
+        if info.attacker != self and not (info.damageType & (DamageType.Drown | DamageType.Fall)):
+            damage = 0
+            randomDamage = info.damage * tf_damage_range#.getValue()
+            minFactor = 0.25
+            maxFactor = 0.75
+            if info.damageType & DamageType.UseDistanceMod:
+                distance = max(1.0, (self.getWorldSpaceCenter() - info.attacker.getWorldSpaceCenter()).length())
+                optimalDistance = 512.0
+
+                center = TFGlobals.remapValClamped(distance / optimalDistance, 0.0, 2.0, 1.0, 0.0)
+                if info.damageType & DamageType.NoCloseDistanceMod:
+                    if center > 0.5:
+                        # Reduce the damage bonus at close rangae
+                        center = TFGlobals.remapVal(center, 0.5, 1.0, 0.5, 0.65)
+                minFactor = max(0.0, center - 0.25)
+                maxFactor = min(1.0, center + 0.25)
+
+            randomVal = random.uniform(minFactor, maxFactor)
+
+            #if (randomVal > 0.5):
+
+            out = TFGlobals.simpleSplineRemapValClamped(randomVal, 0, 1, -randomDamage, randomDamage)
+            damage = info.damage + out
+            info.damage = damage
+
+        self.onTakeDamage_alive(info)
+
+        if self.health > 0:
+            # If still alive, flinch
+            self.doAnimationEvent(PlayerAnimEvent.Flinch)
+
+        self.sendUpdate('pain')
+
+    def traceAttack(self, info, dir, hit):
+        if self.takeDamageMode != TakeDamage.Yes:
+            return
+
+        actor = hit.getActor()
+        data = actor.getPythonTag("hitbox")
+        if data:
+            # Save this joint for the ragdoll.
+            self.forceJoint = data[1].joint
+        else:
+            self.forceJoint = -1
+
+        attacker = info.attacker
+        if attacker:
+            # Prevent team damage so blood doesn't appear.
+            if not base.game.playerCanTakeDamage(self, attacker):
+                return
+
+        addMultiDamage(info, self)
+
+    def fireBullet(self, info, doEffects, damageType, customDamageType):
+        # Fire a bullet (ignoring the shooter).
+        start = info['src']
+        #end = start + info['dirShooting'] * info['distance']
+        result = PhysRayCastResult()
+        filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
+        base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
+                                  BitMask32(Contents.HitBox | Contents.Solid), BitMask32.allOff(),
+                                  CollisionGroup.Empty, filter)
+        print("Fire bullet", start, "to", info['dirShooting'] * info['distance'])
+        if result.hasBlock():
+            # Bullet hit something!
+            print("\tHit something")
+            block = result.getBlock()
+            actor = block.getActor()
+            entity = actor.getPythonTag("entity")
+            if not entity:
+                # Didn't hit an entity.  Hmm.
+                return
+
+            if doEffects:
+                # TODO
+                pass
+
+            if not IS_CLIENT:
+                print("\t\tHit entity", NodePath(actor))
+                # Server-specific.
+                dmgInfo = TakeDamageInfo(self, self, info['damage'], damageType)
+                dmgInfo.customDamage = customDamageType
+                calculateBulletDamageForce(dmgInfo, block.getPosition() - info['src'], block.getPosition(), 1.0)
+                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], block)
 
     def doAnimationEvent(self, event, data = 0):
         self.animState.doAnimationEvent(event, data)
@@ -61,15 +204,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def doClassSpecialSkill(self):
         pass
 
-    def die(self, killer, hitPosition, origin, joint):
+    def die(self, killer, info):
         self.isDead = True
         # Become a ragdoll.
-        forceVector = (hitPosition - origin)
-        distance = max(1, forceVector.length())
-        factor = (1 / distance) * 120
-        forceVector.normalize()
-        forcePosition = origin
-        self.sendUpdate('becomeRagdoll', [self.character.findJoint("bip_pelvis"), hitPosition, forceVector * (10000000*factor)])
+        self.sendUpdate('becomeRagdoll', [self.character.findJoint("bip_pelvis"), info.sourcePosition, self.bulletForce])
         # Respawn after 5 seconds.
         self.addTask(self.respawnTask, 'respawn', appendTask = True)
 
@@ -288,6 +426,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.simulate()
 
     def simulate(self):
+        self.bulletForce = Vec3(0)
+
         DistributedCharAI.simulate(self)
 
         # Make sure to not simulate this guy twice per frame.

@@ -34,6 +34,24 @@ class Char:
 
         self.seqPlayer = None
 
+        self.skin = 0
+
+    def setSkin(self, skin):
+        self.skin = skin
+        self.updateModelSkin()
+
+    def updateModelSkin(self):
+        if not self.modelNp:
+            return
+
+        modelNode = self.modelNp.node()
+        if isinstance(modelNode, ModelRoot):
+            if self.skin >= 0 and self.skin < modelNode.getNumMaterialGroups():
+                modelNode.setActiveMaterialGroup(self.skin)
+
+    def getSkin(self):
+        return self.skin
+
     def getModelNode(self):
         return self.modelNp
 
@@ -41,6 +59,9 @@ class Char:
         return self.characterNp
 
     def becomeRagdoll(self, forceJoint, forcePosition, forceVector):
+        forceVector = Vec3(forceVector[0], forceVector[1], forceVector[2])
+        forcePosition = Point3(forcePosition[0], forcePosition[1], forcePosition[2])
+
         modelDef = ModelDefs[self.model]
         if not hasattr(modelDef, 'createRagdoll'):
             # Model doesn't have a ragdoll.
@@ -50,6 +71,7 @@ class Char:
         self.modelNp.hide()
 
         cCopy = Char()
+        cCopy.setSkin(self.skin)
         cCopy.loadModel(self.model)
         cCopy.modelNp.node().setBounds(OmniBoundingVolume())
         # Copy the current joint positions of our character to the ragdoll
@@ -63,7 +85,22 @@ class Char:
         if forceJoint == -1:
             rd.setEnabled(True)
         else:
-            rd.setEnabled(True, cCopy.character.getJointName(forceJoint), forceVector, forcePosition)
+            # Find the closest joint to apply the force to.
+            joint = forceJoint
+            jointName = ""
+            foundJoint = False
+            while not foundJoint and joint != -1:
+                jointName = cCopy.character.getJointName(joint)
+                if jointName in rd.NodePhy:
+                    foundJoint = True
+                    break
+                else:
+                    joint = cCopy.character.getJointParent(joint)
+            if foundJoint:
+                print("Applying force", forceVector.normalized(), "to joint", jointName, "at pos", forcePosition)
+                rd.setEnabled(True, jointName, forceVector * 1000, forcePosition)
+            else:
+                rd.setEnabled(True)
         Ragdolls.append((cCopy, rd))
 
         return (cCopy, rd)
@@ -104,6 +141,7 @@ class Char:
         hbox = HitBox(group, body, joint)
         # Add a link to ourself so traces know who they hit.
         body.setPythonTag("hitbox", (self, hbox))
+        body.setPythonTag("entity", self)
         self.characterNp.attachNewNode(body)
         self.hitBoxes.append(hbox)
 
@@ -449,6 +487,8 @@ class Char:
 
         #if self.sequence != -1:
         #    self.setSequence(self.sequence)
+
+        self.updateModelSkin()
 
         self.onModelChanged()
 

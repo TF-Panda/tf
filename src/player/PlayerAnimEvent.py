@@ -8,3 +8,4 @@ class PlayerAnimEvent(IntEnum):
     AttackSecondary = 4
     AttackGrenade = 5
     Jump = 6
+    Flinch = 7

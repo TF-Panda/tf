@@ -330,26 +330,26 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
             if isinstance(do, Char):
                 do.syncHitBoxes()
 
-        origin = self.player.getPos() + (0, 0, self.player.classInfo.ViewHeight)
-        quat = Quat()
-        quat.setHpr(self.player.viewAngles)
-        direction = quat.getForward()
+        #origin = self.player.getPos() + (0, 0, self.player.classInfo.ViewHeight)
+        #quat = Quat()
+        #quat.setHpr(self.player.viewAngles)
+        #direction = quat.getForward()
 
-        result = PhysRayCastResult()
+        #result = PhysRayCastResult()
         # Ignore the player who fired the weapon.
-        filter = PhysQueryNodeFilter(self.player, PhysQueryNodeFilter.FTExclude)
-        base.physicsWorld.raycast(result, origin, direction, 1000000,
-                                  Contents.HitBox, BitMask32.allOff(), CollisionGroup.Empty, filter)
-        if result.hasBlock():
-            hit = result.getBlock()
-            actor = hit.getActor()
-            data = actor.getPythonTag("hitbox")
-            print("Hit", NodePath(actor))
-            if data and isinstance(data[0], DistributedTFPlayerAI) and (not data[0].isDead):
-                do = data[0]
-                hbox = data[1]
-                do.die(self.player, hit.getPosition(), origin, hbox.joint)
-                print(f"Bullet hit {actor.getName()}, doId {do.doId}, hbox {hbox.joint}")
+        #filter = PhysQueryNodeFilter(self.player, PhysQueryNodeFilter.FTExclude)
+        #base.physicsWorld.raycast(result, origin, direction, 1000000,
+        #                          Contents.HitBox, BitMask32.allOff(), CollisionGroup.Empty, filter)
+        #if result.hasBlock():
+        #    hit = result.getBlock()
+        #    actor = hit.getActor()
+        #    data = actor.getPythonTag("hitbox")
+        #    print("Hit", NodePath(actor))
+        #    if data and isinstance(data[0], DistributedTFPlayerAI) and (not data[0].isDead):
+        #        do = data[0]
+        #        hbox = data[1]
+        #        do.die(self.player, hit.getPosition(), origin, hbox.joint)
+        #        print(f"Bullet hit {actor.getName()}, doId {do.doId}, hbox {hbox.joint}")
 
     def delete(self):
         DistributedCharAI.delete(self)

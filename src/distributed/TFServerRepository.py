@@ -16,4 +16,5 @@ class TFServerRepository(ServerRepository):
         base.sv = self
 
         self.game = DistributedGameAI()
+        base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)

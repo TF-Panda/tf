@@ -2,6 +2,8 @@
 from .TFWeaponAI import TFWeaponAI
 
 from .DShotgunShared import DShotgunShared
+from .WeaponMode import TFWeaponMode
+from tf.tfbase.TFGlobals import DamageType
 
 class DShotgunAI(TFWeaponAI, DShotgunShared):
 
@@ -16,6 +18,15 @@ class DShotgunAI(TFWeaponAI, DShotgunShared):
         self.ammo = self.maxAmmo
         self.clip = self.maxClip
         self.primaryAttackInterval = 0.625
+        self.weaponData = {
+            TFWeaponMode.Primary: {
+                'bulletsPerShot': 10,
+                #'range': 1000000,
+                'spread': 0.1,
+                'damage': 5
+            }
+        }
+        self.damageType = DamageType.Buckshot | DamageType.UseDistanceMod
 
     def getSingleSound(self):
         return DShotgunShared.getSingleSound(self)

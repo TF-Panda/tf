@@ -4,6 +4,7 @@ from .WeaponMode import TFWeaponMode, TFReloadMode, TFWeaponType
 
 from tf.character.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
+from .FireBullets import fireBullets
 
 class TFWeaponAI(DistributedWeaponAI):
 
@@ -80,8 +81,7 @@ class TFWeaponAI(DistributedWeaponAI):
                 Activity.Reload_Swim_End: Activity.Primary_Reload_Swim_End,
                 Activity.Reload_Air_Walk: Activity.Primary_Reload_Air_Walk,
                 Activity.Reload_Air_Walk_Loop: Activity.Primary_Reload_Air_Walk_Loop,
-                Activity.Reload_Air_Walk_End: Activity.Primary_Reload_Air_Walk_End,
-                Activity.Gesture_Flinch: Activity.Primary_Gesture_Flinch
+                Activity.Reload_Air_Walk_End: Activity.Primary_Reload_Air_Walk_End
             },
 
             TFWeaponType.Secondary: {
@@ -111,8 +111,7 @@ class TFWeaponAI(DistributedWeaponAI):
                 Activity.Reload_Swim_End: Activity.Secondary_Reload_Swim_End,
                 Activity.Reload_Air_Walk: Activity.Secondary_Reload_Air_Walk,
                 Activity.Reload_Air_Walk_Loop: Activity.Secondary_Reload_Air_Walk_Loop,
-                Activity.Reload_Air_Walk_End: Activity.Secondary_Reload_Air_Walk_End,
-                Activity.Gesture_Flinch: Activity.Secondary_Gesture_Flinch
+                Activity.Reload_Air_Walk_End: Activity.Secondary_Reload_Air_Walk_End
             },
 
             TFWeaponType.Melee: {
@@ -130,8 +129,7 @@ class TFWeaponAI(DistributedWeaponAI):
                 Activity.Attack_Stand: Activity.Melee_Attack_Stand,
                 Activity.Attack_Crouch: Activity.Melee_Attack_Crouch,
                 Activity.Attack_Swim: Activity.Melee_Attack_Swim,
-                Activity.Attack_Air_Walk: Activity.Melee_Attack_Air_Walk,
-                Activity.Gesture_Flinch: Activity.Melee_Gesture_Flinch
+                Activity.Attack_Air_Walk: Activity.Melee_Attack_Air_Walk
             }
         }
 
@@ -165,6 +163,13 @@ class TFWeaponAI(DistributedWeaponAI):
         DistributedWeaponAI.primaryAttack(self)
 
         self.player.doAnimationEvent(PlayerAnimEvent.AttackPrimary)
+
+        weaponData = self.weaponData.get(self.weaponMode, {})
+        origin = self.player.getPos() + (0, 0, self.player.classInfo.ViewHeight)
+        angles = self.player.viewAngles
+        fireBullets(self.player, origin, angles, self, self.weaponMode, 0, weaponData.get('spread', 0.0), weaponData.get('damage', 1.0))
+
+        self.player.sendUpdate('makeAngry')
 
         if self.reloadsSingly:
             self.reloadMode = TFReloadMode.Start

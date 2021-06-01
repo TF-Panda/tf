@@ -135,6 +135,9 @@ class TFPlayerAnimState:
         elif event == PlayerAnimEvent.ReloadEnd:
             # TODO: crouching, swimming
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_End)
+        elif event == PlayerAnimEvent.Flinch:
+            if not self.isGestureSlotActive(GestureSlot.Flinch):
+                self.restartGesture(GestureSlot.Flinch, Activity.Gesture_Flinch)
 
     def angleNormalize(self, ang):
         ang = ang % 360

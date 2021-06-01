@@ -12,6 +12,9 @@ class DistributedCharAI(DistributedEntityAI, Char):
 
         self.lastEventCheck = 0.0
 
+    def SendProxy_skin(self):
+        return self.getSkin()
+
     def dispatchAnimEvents(self, handler):
         if not self.seqPlayer:
             return

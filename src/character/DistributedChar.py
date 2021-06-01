@@ -18,6 +18,9 @@ class DistributedChar(DistributedEntity, Char):
 
         self.animLayerIvs = []
 
+    def RecvProxy_skin(self, skin):
+        self.setSkin(skin)
+
     def getLayerIV(self, layer):
         """
         Returns a representation of the indicated anim layer for use with
