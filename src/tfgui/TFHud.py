@@ -29,6 +29,8 @@ class TFHud(DirectObject):
     AmmoAlignNoClip = TextNode.ACenter
 
     def __init__(self):
+        self.hidden = True
+
         self.healthLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomLeft,
                                         scale = 0.1, pos = (0.15, 0.1))
 
@@ -44,6 +46,21 @@ class TFHud(DirectObject):
         self.lastWinSize = LPoint2i(base.win.getXSize(), base.win.getYSize())
         # Accept a window event to adjust crosshair on window resize.
         self.accept('window-event', self.handleWindowEvent)
+
+        self.hideHud()
+
+    def hideHud(self):
+        self.crosshair.hide()
+        self.healthLabel.hide()
+        self.clipLabel.hide()
+        self.ammoLabel.hide()
+        self.hidden = True
+
+    def showHud(self):
+        self.hidden = False
+        self.crosshair.show()
+        self.healthLabel.show()
+        self.updateAmmoLabel()
 
     def handleWindowEvent(self, win):
         if win != base.win:
@@ -83,6 +100,9 @@ class TFHud(DirectObject):
             self.healthLabel['fg'] = self.GoodHealthColor
 
     def updateAmmoLabel(self):
+        if self.hidden:
+            return
+
         if base.localAvatar.activeWeapon != -1:
             wpnId = base.localAvatar.weapons[base.localAvatar.activeWeapon]
             wpn = base.cr.doId2do.get(wpnId)

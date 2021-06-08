@@ -24,7 +24,7 @@ from tf.character.DistributedChar/AI import DistributedChar/AI
 from tf.distributed.DTestChar/AI import DTestChar/AI
 from tf.player.DViewModel/AI import DViewModel/AI
 from tf.weapon.DistributedWeapon/AI import DistributedWeapon/AI
-from tf.weapon.TFWeapon/AI import TFWeapon/AI
+from tf.weapon.TFWeapon import TFWeapon/AI
 from tf.weapon.DShotgun/AI import DShotgun/AI
 from tf.weapon.DWrench/AI import DWrench/AI
 
@@ -89,6 +89,7 @@ dclass DistributedEntity : DistributedObject {
   Position pos;
   Angles hpr;
   Scale scale;
+  Vector velocity;
   int8 team;
   uint16 health;
   uint16 maxHealth;
@@ -111,6 +112,9 @@ dclass DistributedChar : DistributedEntity {
   uint8 playRate / 100;
   uint8 skin;
 
+  // Should client drive cycle/anim time?
+  uint8 clientSideAnimation;
+
   uint8 newSequenceParity;
 
   AnimLayer animLayers[];
@@ -120,12 +124,22 @@ dclass DistributedChar : DistributedEntity {
 };
 
 dclass DistributedTFPlayer : DistributedChar {
+  uint32 tickBase;
+
   string playerName;
   int16 lookPitch / 1000;
   int16 lookYaw / 1000;
   int16 moveX / 1000;
   int16 moveY / 1000;
   uint8 tfClass;
+
+  uint8 onGround;
+  uint8 isDead;
+  float64 deathTime;
+
+  uint8 observerMode;
+  // DoId of entity we are observing.
+  uint32 observerTarget;
 
   // The weapons we are carrying.
   int32 weapons[];
@@ -146,7 +160,6 @@ dclass DistributedTFPlayer : DistributedChar {
 
 dclass DistributedWeapon : DistributedChar {
   int32 playerId;
-  int32 activity;
 
   uint16 maxAmmo;
   uint16 maxAmmo2;
@@ -163,6 +176,10 @@ dclass DistributedWeapon : DistributedChar {
 };
 
 dclass TFWeapon : DistributedWeapon {
+  uint8 reloadMode;
+  uint8 lowered;
+  uint8 resetParity;
+  uint8 reloadedThroughAnimEvent;
 };
 
 dclass DTestChar : DistributedChar {
@@ -173,9 +190,9 @@ dclass DViewModel : DistributedChar {
   int32 playerId;
 };
 
-dclass DShotgun : DistributedWeapon {
+dclass DShotgun : TFWeapon {
   flash();
 };
 
-dclass DWrench : DistributedWeapon {
+dclass DWrench : TFWeapon {
 };

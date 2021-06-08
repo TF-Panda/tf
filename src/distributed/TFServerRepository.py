@@ -18,3 +18,10 @@ class TFServerRepository(ServerRepository):
         self.game = DistributedGameAI()
         base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)
+
+    def addSnapshotHeaderData(self, dg, client):
+        if not hasattr(client, 'player') or not client.player:
+            dg.addUint32(0)
+        else:
+            # Acknowledge the most recently executed client command.
+            dg.addUint32(client.player.lastRunCommandNumber)

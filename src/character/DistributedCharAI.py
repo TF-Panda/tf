@@ -10,6 +10,8 @@ class DistributedCharAI(DistributedEntityAI, Char):
         DistributedEntityAI.__init__(self)
         Char.__init__(self)
 
+        self.clientSideAnimation = False
+
         self.lastEventCheck = 0.0
 
     def SendProxy_skin(self):
@@ -104,8 +106,6 @@ class DistributedCharAI(DistributedEntityAI, Char):
         if self.seqPlayer:
             # The server doesn't blend sequence transitions.
             self.seqPlayer.setTransitionsEnabled(False)
-
-        self.ls()
 
     def simulate(self):
         DistributedEntityAI.simulate(self)

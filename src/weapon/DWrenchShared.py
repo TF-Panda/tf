@@ -10,7 +10,7 @@ class DWrenchShared:
         self.usesClip = False
         self.meleeWeapon = True
         self.reloadsSingly = False
-
+        self.primaryAttackInterval = 1.0
         self.weaponType = TFWeaponType.Melee
 
     def getName(self):

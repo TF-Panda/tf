@@ -7,10 +7,13 @@ else:
     BaseClass = DistributedObjectAI
 
 from panda3d.core import NodePath, Point3, Vec3
-from panda3d.direct import InterpolatedVec3
 
 from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage
 from tf.weapon.TakeDamageInfo import addMultiDamage
+
+if IS_CLIENT:
+    from tf.player.Prediction import *
+    from panda3d.direct import InterpolatedVec3
 
 class DistributedEntity(BaseClass, NodePath):
 
@@ -22,6 +25,9 @@ class DistributedEntity(BaseClass, NodePath):
         self.takeDamageMode = TakeDamage.Yes
 
         self.velocity = Vec3(0)
+        self.gravity = 1.0
+        self.waterLevel = 0
+        self.baseVelocity = Vec3(0)
 
         # The team affiliation of the entity.  This is where a pluggable
         # component system would come in handy.  We could allow entities/DOs
@@ -35,6 +41,8 @@ class DistributedEntity(BaseClass, NodePath):
         self.health = 0
         self.maxHealth = 0
 
+        self.playerSimulated = False
+
         # DoId of our parent entity, or world parent code.  >= 0 is a parent
         # entity doId, < 0 is a world parent code.  A world parent is a scene
         # node instead of an entity (like render or camera).
@@ -43,6 +51,24 @@ class DistributedEntity(BaseClass, NodePath):
         self.parentEntity = base.hidden
 
         if IS_CLIENT:
+            # Prediction-related variables.
+            self.intermediateData = []
+            for i in range(PREDICTION_DATA_SLOTS):
+                self.intermediateData.append({})
+            self.originalData = {}
+            self.predictionFields = {}
+            self.intermediateDataCount = 0
+            self.predictable = False
+            self.predictionInitialized = False
+            self.simulationTick = -1
+
+            self.addPredictionField("velocity", Vec3, tolerance=0.5)
+            self.addPredictionField("team", int)
+            self.addPredictionField("pos", Point3, getter=self.getPos, setter=self.setPos, tolerance=0.02)
+            self.addPredictionField("hpr", Vec3, getter=self.getHpr, setter=self.setHpr, noErrorCheck=True)
+            self.addPredictionField("baseVelocity", Vec3, networked=False)
+            self.addPredictionField("gravity", float, networked=False)
+
             # Add interpolators for transform state of the entity/node.
             self.ivPos = InterpolatedVec3()
             self.addInterpolatedVar(self.ivPos, self.getPos, self.setPos)
@@ -63,6 +89,163 @@ class DistributedEntity(BaseClass, NodePath):
         self.setPythonTag("entity", self)
 
         self.reparentTo(self.parentEntity)
+
+    if IS_CLIENT:
+        #
+        # Prediction-related methods.
+        #
+
+        def shouldPredict(self):
+            return False
+
+        def initPredictable(self):
+            if self.predictionInitialized:
+                return
+
+            # Mark as predictable.
+            self.setPredictable(True)
+            base.net.prediction.addPredictable(self)
+
+            # Initialize all the prediction data slots to default values.
+            for fieldName, data in self.predictionFields.items():
+                self.originalData[fieldName] = data.type()
+                for i in range(PREDICTION_DATA_SLOTS):
+                    self.intermediateData[i][fieldName] = data.type()
+
+            self.postNetworkDataReceived(0)
+
+            for i in range(PREDICTION_DATA_SLOTS):
+                # Now fill everything
+                self.saveData("InitPredictable", i, PREDICTION_COPY_EVERYTHING)
+
+            self.predictionInitialized = True
+
+        def shutdownPredictable(self):
+            if not self.predictionInitialized:
+                return
+            base.net.prediction.removePredictable(self)
+            self.setPredictable(False)
+            self.predictionInitialized = False
+
+        def setPredictable(self, flag):
+            self.predictable = flag
+            self.updateInterpolationAmount()
+
+        def getPredictable(self):
+            return self.predictable
+
+        def addPredictionField(self, name, *args, **kwargs):
+            self.predictionFields[name] = PredictionField(name, *args, **kwargs)
+
+        def saveData(self, context, slot, type):
+            """
+            Saves the current values of prediction fields for this entity into
+            the indicated slot.
+            """
+
+            dest = self.originalData if slot == -1 else self.getPredictedFrame(slot)
+            if slot != -1:
+                self.intermediateDataCount = slot
+
+            copyHelper = PredictionCopy(type, dest, self)
+            return copyHelper.transferData(context, self.predictionFields)
+
+        def restoreData(self, context, slot, type):
+            """
+            Restores the data from the indicated prediction slot onto the
+            entity.
+            """
+
+            src = self.originalData if slot == -1 else self.getPredictedFrame(slot)
+            #if slot != -1:
+            #    print("assert slot is", slot, "count is", self.intermediateDataCount)
+            #    assert slot <= self.intermediateDataCount
+            copyHelper = PredictionCopy(type, self, src)
+            errorCount = copyHelper.transferData(context, self.predictionFields)
+            self.onPostRestoreData()
+            return errorCount
+
+        def onPostRestoreData(self):
+            pass
+
+        def shiftIntermediateDataForward(self, slotsToRemove, numberOfCommandsRun):
+            assert numberOfCommandsRun >= slotsToRemove
+
+            saved = []
+            # Remember first slots.
+            i = 0
+            while i < slotsToRemove:
+                saved.append(self.intermediateData[i])
+                i += 1
+            # Move rest of slots forward up to last slot
+            while i < numberOfCommandsRun:
+                self.intermediateData[i - slotsToRemove] = self.intermediateData[i]
+                i += 1
+
+            # Put remembered slots onto end.
+            for i in range(slotsToRemove):
+                slot = numberOfCommandsRun - slotsToRemove + i
+                self.intermediateData[slot] = saved[i]
+
+        def preEntityPacketReceived(self, commandsAcked):
+            copyIntermediate = (commandsAcked > 0)
+
+            # First copy in any intermediate predicted data for non-networked
+            # fields.
+            if copyIntermediate:
+                self.restoreData("PreEntityPacketReceived", commandsAcked - 1, PREDICTION_COPY_NON_NETWORKED_ONLY)
+                self.restoreData("PreEntityPacketReceived", -1, PREDICTION_COPY_NETWORKED_ONLY)
+            else:
+                self.restoreData("PreEntityPacketReceived(no commands ack)", -1, PREDICTION_COPY_EVERYTHING)
+
+            # At this point the entity has original network data restored as of
+            # the last time the networking was updated, and it has any intermediate
+            # predicted values properly copied over.
+
+        def postEntityPacketReceived(self):
+            # Save networked fields into "original data" store.
+            self.saveData("PostEntityPacketReceived", -1, PREDICTION_COPY_NETWORKED_ONLY)
+
+        def postNetworkDataReceived(self, commandsAcked):
+            """
+            Copies the current values of the entity's prediction fields into
+            latest networked data slot and checks for prediction errors if the
+            server acknowledged any commands.
+            """
+
+            hadErrors = False
+            errorCheck = (commandsAcked > 0)
+
+            # Store network data into post networking pristine state slot
+            self.saveData("PostNetworkDataReceived", -1, PREDICTION_COPY_EVERYTHING)
+
+            if errorCheck:
+                # Check for prediction errors.
+                predictedStateData = self.getPredictedFrame(commandsAcked - 1)
+                originalStateData = self.originalData
+                countErrors = True
+                copyData = False
+                errorCheckHelper = PredictionCopy(PREDICTION_COPY_NETWORKED_ONLY,
+                    predictedStateData, originalStateData, countErrors, True,
+                    copyData)
+                eCount = errorCheckHelper.transferData("", self.predictionFields, commandsAcked)
+                if eCount > 0:
+                    hadErrors = True
+            return hadErrors
+
+        def getPredictedFrame(self, frame):
+            return self.intermediateData[frame % PREDICTION_DATA_SLOTS]
+
+        def postDataUpdate(self):
+            DistributedObject.postDataUpdate(self)
+
+            predict = self.shouldPredict()
+            if predict and not self.predictionInitialized:
+                # Entity should be predicted and we haven't initialized yet.
+                self.initPredictable()
+            elif not predict and self.predictionInitialized:
+                # Entity is no longer being predicted.
+                self.shutdownPredictable()
 
     def getVelocity(self):
         return self.velocity
@@ -187,6 +370,7 @@ class DistributedEntity(BaseClass, NodePath):
             self.ivPos = None
             self.ivHpr = None
             self.ivScale = None
+            self.shutdownPredictable()
         self.parentEntity = None
         self.physicsRoot = None
         # Release the root node of the entity.

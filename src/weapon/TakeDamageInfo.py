@@ -10,28 +10,27 @@ class TakeDamageInfo:
     Information about inflicting damage on an entity.
     """
 
-    def __init__(self, *args, **kwargs):
-        TakeDamageInfo.init(self, *args, **kwargs)
+    def __init__(self):
+        self.clear()
 
-    def init(self, inflictor = None, attacker = None, damage = 0,
-             damageType = DamageType.Generic, killType = 0,
-             damageForce = Vec3(0), damagePosition = Point3(0),
-             reportedPosition = Point3(0)):
+    def setDamage(self, dmg):
+        self.maxDamage = max(self.damage, dmg)
+        self.damage = dmg
 
-        self.inflictor = inflictor
-        self.attacker = attacker
-        self.damage = damage
-        self.maxDamage = damage
-        self.damageType = damageType
-        self.killType = killType
-        self.damageForce = damageForce
-        self.damagePosition = damagePosition
-        # Source location of damage.
-        self.sourcePosition = reportedPosition
+    def clear(self):
+        self.inflictor = None
+        self.attacker = None
+        self.damage = 0
+        self.damageType = DamageType.Generic
+        self.killType = 0
+        self.damageForce = Vec3(0)
+        self.damagePosition = Point3(0)
+        self.sourcePosition = Point3(0)
         self.ammoType = -1
         self.baseDamage = -1
         self.customDamage = -1
         self.damageStats = -1
+        self.maxDamage = 0
 
     def getAmmoName(self):
         if self.inflictor is not None:
@@ -45,13 +44,9 @@ class MultiDamage(TakeDamageInfo):
     shotgun pellets).
     """
 
-    def __init__(self):
-        TakeDamageInfo.__init__(self)
-        self.init(None)
-
-    def init(self, target, *args, **kwargs):
-        self.target = target
-        TakeDamageInfo.init(self, *args, **kwargs)
+    def clear(self):
+        TakeDamageInfo.clear(self)
+        self.target = None
 
     def isClear(self):
         return self.target is None
@@ -62,7 +57,8 @@ def clearMultiDamage():
     """
     Resets the global multi-damage accumulator.
     """
-    g_multiDamage.init(None)
+    print("Clear multi damage")
+    g_multiDamage.clear()
 
 def applyMultiDamage():
     """
@@ -70,6 +66,8 @@ def applyMultiDamage():
     """
     if not g_multiDamage.target:
         return
+
+    print("Apply multi damage")
 
     g_multiDamage.target.takeDamage(g_multiDamage)
 
@@ -84,25 +82,30 @@ def addMultiDamage(info, entity):
 
     if entity != g_multiDamage.target:
         applyMultiDamage()
-        g_multiDamage.init(entity, inflictor = info.inflictor, attacker = info.attacker,
-                           damageType = info.damageType)
+        g_multiDamage.clear()
+        g_multiDamage.target = entity
+        g_multiDamage.inflictor = info.inflictor
+        g_multiDamage.attacker = info.attacker
+        g_multiDamage.damageType = info.damageType
         g_multiDamage.customDamage = info.customDamage
 
+    print("Add multi damage")
+    print("\tForce before", g_multiDamage.damageForce)
+
     g_multiDamage.damageType |= info.damageType
-    g_multiDamage.damage += info.damage
+    g_multiDamage.setDamage(g_multiDamage.damage + info.damage)
     g_multiDamage.damageForce += info.damageForce
-    g_multiDamage.damagePosition = info.damagePosition
+    g_multiDamage.damagePositsion = info.damagePosition
     g_multiDamage.sourcePosition = info.sourcePosition
-    g_multiDamage.maxDamage = max(g_multiDamage.maxDamage, info.damage)
     g_multiDamage.ammoType = info.ammoType
 
 def calculateBulletDamageForce(info, forceDir, forceOrigin, scale):
     info.damagePosition = forceOrigin
     force = forceDir.normalized()
-    force *= 300 # ??? ammo type damage force?
+    force *= 1500 # ??? ammo type damage force?
     force *= 1 # phys_pushscale?
     force *= scale
-    info.damageForce = force
+    info.damageForce = Vec3(force)
 
 def impulseScale(targetMass, desiredSpeed):
     """

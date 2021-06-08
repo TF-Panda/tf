@@ -36,6 +36,15 @@ class Char:
 
         self.skin = 0
 
+    def setCycle(self, cycle):
+        self.seqPlayer.setCycle(cycle)
+
+    def getPlayRate(self):
+        return self.seqPlayer.getPlayRate()
+
+    def setPlayRate(self, rate):
+        self.seqPlayer.setPlayRate(rate)
+
     def setSkin(self, skin):
         self.skin = skin
         self.updateModelSkin()
@@ -65,7 +74,7 @@ class Char:
         modelDef = ModelDefs[self.model]
         if not hasattr(modelDef, 'createRagdoll'):
             # Model doesn't have a ragdoll.
-            return
+            return None
 
         # Hide ourselves.
         self.modelNp.hide()
@@ -97,7 +106,7 @@ class Char:
                 else:
                     joint = cCopy.character.getJointParent(joint)
             if foundJoint:
-                print("Applying force", forceVector.normalized(), "to joint", jointName, "at pos", forcePosition)
+                #print("Applying force", forceVector.normalized(), "to joint", jointName, "at pos", forcePosition)
                 rd.setEnabled(True, jointName, forceVector * 1000, forcePosition)
             else:
                 rd.setEnabled(True)
@@ -255,6 +264,9 @@ class Char:
     def getCycle(self):
         return self.seqPlayer.getCycle()
 
+    def setAnimTime(self, time):
+        self.seqPlayer.setAnimTime(time)
+
     def getAnimTime(self):
         return self.seqPlayer.getAnimTime()
 
@@ -293,7 +305,12 @@ class Char:
         return self.getSequence(sequence).getActivity()
 
     def getSequenceForActivity(self, activity):
-        return self.character.getSequenceForActivity(activity, self.getCurrSequence())
+        if hasattr(base, 'net') and hasattr(base.net, 'prediction') and base.net.prediction.inPrediction:
+            return self.character.getSequenceForActivity(
+                activity, self.getCurrSequence(),
+                base.net.predictionRandomSeed)
+        else:
+            return self.character.getSequenceForActivity(activity, self.getCurrSequence())
 
     def getSequencesForActivity(self, activity):
         seqs = []

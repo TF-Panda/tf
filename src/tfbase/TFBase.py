@@ -1,4 +1,4 @@
-from panda3d.core import TextNode, AntialiasAttrib, LightRampAttrib, Vec4, NodePath, PerspectiveLens
+from panda3d.core import TextNode, AntialiasAttrib, LightRampAttrib, Vec4, NodePath, PerspectiveLens, TextPropertiesManager, TextProperties
 from panda3d.pphysics import PhysScene, PhysSystem
 
 from direct.showbase.ShowBase import ShowBase
@@ -11,6 +11,7 @@ from direct.fsm.FSM import FSM
 from tf.distributed.TFClientRepository import TFClientRepository
 from tf.tfbase import TFGlobals
 from tf.tfgui.TFMainMenu import TFMainMenu
+from tf.tfgui.NotifyView import NotifyView
 from .TFPostProcess import TFPostProcess
 from . import Sounds
 
@@ -23,6 +24,20 @@ class TFBase(ShowBase, FSM):
     def __init__(self):
         ShowBase.__init__(self)
         FSM.__init__(self, 'TFBase')
+
+        #self.win.disableClears()
+
+        # Add text properties for the different notify levels.
+        tpm = TextPropertiesManager.getGlobalPtr()
+        warning = TextProperties()
+        warning.setTextColor(1, 1, 0, 1)
+        tpm.setProperties("warning", warning)
+        error = TextProperties()
+        error.setTextColor(1, 0, 0, 1)
+        tpm.setProperties("error", error)
+        tpm.setProperties("fatal", error)
+
+        #self.notifyView = NotifyView()
 
         Sounds.loadSounds()
 
@@ -65,8 +80,10 @@ class TFBase(ShowBase, FSM):
         self.physicsWorld.setGravity((0, 0, -800))
         self.physicsWorld.setFixedTimestep(0.015)
 
-        #self.physicsWorld.setGroupCollisionFlag(
-        #    TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
+        self.physicsWorld.setGroupCollisionFlag(
+            TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
+        self.physicsWorld.setGroupCollisionFlag(
+            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
 
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
 
@@ -110,8 +127,6 @@ class TFBase(ShowBase, FSM):
         if win != self.win:
             # Not about our window.
             return
-
-        print("hi window event")
 
         # Pass it along to the postprocessing system.
         self.postProcess.windowEvent()

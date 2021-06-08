@@ -5,6 +5,8 @@ from tf.player.InputButtons import InputFlag
 class MoveData:
 
     def __init__(self):
+        self.firstRunOfFunctions = False
+        self.player = None
         self.buttons = InputFlag.Empty
         self.oldButtons = InputFlag.Empty
         self.viewAngles = Vec3(0)

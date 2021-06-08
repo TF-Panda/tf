@@ -9,6 +9,7 @@ class DViewModelAI(DistributedCharAI):
     def __init__(self):
         DistributedCharAI.__init__(self)
         DViewModelShared.__init__(self)
+        self.clientSideAnimation = True
 
     def delete(self):
         if self.player:

@@ -2,6 +2,7 @@
 
 from direct.distributed2.DistributedObject import DistributedObject
 
+from direct.directbase import DirectRender
 from panda3d.core import *
 from panda3d.pphysics import *
 
@@ -30,7 +31,7 @@ class DistributedGame(DistributedObject):
         skynpRoot.setScale(500 * 16)
         skynpRoot.setLightOff(1)
         skynpRoot.setColorScale((4000, 4000, 4000, 1))
-        skynpRoot.hide(BitMask32.bit(1))
+        skynpRoot.hide(DirectRender.ShadowCameraBitmask)
 
         skynpFront = skynp.copyTo(skynpRoot)
         skynpFront.setY(0.5)
@@ -57,14 +58,12 @@ class DistributedGame(DistributedObject):
 
         dl = CascadeLight('cl')
         base.lightColor(dl, 5000, 15000)
-        dl.setCameraMask(BitMask32.bit(1))
+        dl.setCameraMask(DirectRender.ShadowCameraBitmask)
         dl.setSceneCamera(base.cam)
         dl.setShadowCaster(True, 4096, 4096)
         dlnp = render.attachNewNode(dl)
         dlnp.setHpr(45, -65, 0)
         render.setLight(dlnp)
-
-        render.show(BitMask32.bit(1))
 
         render.setAttrib(LightRampAttrib.makeHdr0())
 

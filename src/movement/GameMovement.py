@@ -5,6 +5,7 @@ from .MovementVars import *
 from .MoveType import MoveType
 
 from tf.player.InputButtons import InputFlag
+from tf.player.PlayerAnimEvent import PlayerAnimEvent
 
 import math
 
@@ -36,8 +37,10 @@ class GameMovement:
         self.mv = moveData
         self.mv.maxSpeed = sv_maxspeed.getValue()
         self.mv.onGround = self.isControllerOnGround()
-
-        #print("Start move, on ground?", self.mv.onGround)
+        #if IS_CLIENT:
+        #    print("Start move, on ground?", self.mv.onGround)
+        ##    print("buttons", self.mv.buttons)
+        #    print("old buttons", self.mv.oldButtons)
 
         self.playerMove()
         self.finishMove()
@@ -45,7 +48,7 @@ class GameMovement:
         globalClock.setDt(storeDeltaTime)
         base.deltaTime = storeDeltaTime
 
-        self.player.velocity = self.mv.velocity
+        #self.player.velocity = self.mv.velocity
 
         self.player = None
 
@@ -458,6 +461,12 @@ class GameMovement:
 
         # TODO: Cannot jump while in the unduck transition.
         # TODO: Still updating eye position.
+
+        #if IS_CLIENT:
+        #    print("Jumping")
+
+        # Start jump animation.
+        self.player.doAnimationEvent(PlayerAnimEvent.Jump)
 
         # In the air now.
         self.mv.onGround = False

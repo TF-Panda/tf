@@ -6,13 +6,15 @@ TF player code shared between AI (server) and client.
 
 
 from panda3d.core import *
-
-from panda3d.pphysics import PhysBoxController, PhysMaterial
+from panda3d.pphysics import *
 
 from .TFClass import *
 from .InputButtons import *
+from .ObserverMode import ObserverMode
 from tf.tfbase import TFGlobals
 
+from tf.tfbase.TFGlobals import Contents, CollisionGroup
+from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce, addMultiDamage
 from tf.movement.MoveType import MoveType
 from tf.movement.GameMovement import g_game_movement
 from tf.movement.MoveData import MoveData
@@ -39,7 +41,13 @@ class DistributedTFPlayerShared:
         self.vel = Vec3()
         self.controller = None
 
+        self.observerMode = ObserverMode.Off
+        self.observerTarget = 0
+
         self.buttons = InputFlag.Empty
+        self.lastButtons = InputFlag.Empty
+        self.buttonsPressed = InputFlag.Empty
+        self.buttonsReleased = InputFlag.Empty
 
         self.weapons = []
         self.activeWeapon = -1
@@ -52,12 +60,67 @@ class DistributedTFPlayerShared:
         self.swimSoundTime = 0
         self.punchAngle = Vec3(0)
         self.punchAngleVel = Vec3(0)
-        self.waterLevel = 0
-        self.gravity = 1.0
-        self.baseVelocity = Vec3(0)
         self.surfaceFriction = 1
+        self.maxSpeed = 320
+        self.onGround = False
 
         self.moveData = MoveData()
+
+        self.tickBase = 0
+        self.isDead = False
+        self.deathTime = 0.0
+
+    def isObserver(self):
+        return self.observerMode != ObserverMode.Off
+
+    def doClassSpecialSkill(self):
+        pass
+
+    def doAnimationEvent(self, event, data = 0):
+        pass
+
+    def fireBullet(self, info, doEffects, damageType, customDamageType):
+        # Fire a bullet (ignoring the shooter).
+        start = info['src']
+        #end = start + info['dirShooting'] * info['distance']
+        result = PhysRayCastResult()
+        filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
+        base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
+                                  BitMask32(Contents.HitBox | Contents.Solid), BitMask32.allOff(),
+                                  CollisionGroup.Empty, filter)
+        if result.hasBlock():
+            # Bullet hit something!
+            block = result.getBlock()
+            actor = block.getActor()
+            entity = actor.getPythonTag("entity")
+            if not entity:
+                # Didn't hit an entity.  Hmm.
+                return
+
+            if doEffects:
+                # TODO
+                pass
+
+            if not IS_CLIENT:
+                # Server-specific.
+                dmgInfo = TakeDamageInfo()
+                dmgInfo.inflictor = self
+                dmgInfo.attacker = self
+                dmgInfo.setDamage(info['damage'])
+                dmgInfo.damageType = damageType
+                dmgInfo.customDamage = customDamageType
+                calculateBulletDamageForce(dmgInfo, Vec3(info['dirShooting']), block.getPosition(), 1.0)
+                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], block)
+
+    def updateButtonsState(self, buttons):
+        self.lastButtons = self.buttons
+        self.buttons = buttons
+
+        buttonsChanged = self.lastButtons ^ self.buttons
+
+        # Debounced button codes for pressed/release
+        self.buttonsPressed = buttonsChanged & self.buttons
+        self.buttonsReleased = buttonsChanged & (~self.buttons)
 
     def getWeapons(self):
         return self.weapons
@@ -74,11 +137,18 @@ class DistributedTFPlayerShared:
             base.physicsWorld, self,
             halfExts, mat
         )
-        self.controller.setCollisionGroup(TFGlobals.CollisionGroup.Empty)
-        # We are red team.
-        self.controller.setContentsMask(TFGlobals.Contents.RedTeam)
-        # Blue team is solid to us.
-        self.controller.setSolidMask(TFGlobals.Contents.RedTeam)
+        self.controller.setCollisionGroup(TFGlobals.CollisionGroup.PlayerMovement)
+        if self.team == 0:
+            # We are red team.
+            self.controller.setContentsMask(TFGlobals.Contents.RedTeam)
+            # Blue team is solid to us.
+            self.controller.setSolidMask(TFGlobals.Contents.BlueTeam)
+        elif self.team == 1:
+            # We are blue team.
+            self.controller.setContentsMask(TFGlobals.Contents.BlueTeam)
+            # Red team is solid to us.
+            self.controller.setSolidMask(TFGlobals.Contents.RedTeam)
+
         self.controller.setUpDirection(Vec3.up())
         self.controller.setFootPosition(self.getPos())
 
@@ -97,30 +167,29 @@ class DistributedTFPlayerShared:
         left = command.buttons & InputFlag.MoveLeft
         right = command.buttons & InputFlag.MoveRight
 
+        self.moveData.player = self
         self.moveData.origin = self.getPos()
-        self.moveData.angles = self.getHpr()
+        self.moveData.oldAngles = Vec3(self.moveData.angles)
+        self.moveData.angles = command.viewAngles
         self.moveData.viewAngles = command.viewAngles
-        self.moveData.oldButtons = self.moveData.buttons
-        self.moveData.buttons = command.buttons
-        self.moveData.clientMaxSpeed = 320
-        self.moveData.velocity = self.velocity
+        self.moveData.oldButtons = self.lastButtons
+        self.moveData.buttons = self.buttons
+        self.moveData.clientMaxSpeed = self.maxSpeed
+        self.moveData.velocity = Vec3(self.velocity)
+        self.moveData.onGround = self.onGround
 
-        self.moveData.forwardMove = 0
-        self.moveData.sideMove = 0
-
-        if forward:
-            self.moveData.forwardMove += BaseSpeed * self.classInfo.ForwardFactor
-        if reverse:
-            self.moveData.forwardMove -= BaseSpeed * self.classInfo.BackwardFactor
-        if right:
-            self.moveData.sideMove += BaseSpeed * self.classInfo.ForwardFactor
-        if left:
-            self.moveData.sideMove -= BaseSpeed * self.classInfo.ForwardFactor
+        self.moveData.forwardMove = command.move[1]
+        self.moveData.sideMove = command.move[0]
+        self.moveData.upMove = command.move[2]
 
         # Run the movement.
         g_game_movement.processMovement(self, self.moveData)
 
         # Extract the new position.
+        self.velocity = Vec3(self.moveData.velocity)
+        self.oldButtons = self.moveData.buttons
+        self.onGround = self.moveData.onGround
+        self.maxSpeed = self.moveData.maxSpeed
         self.setPos(self.moveData.origin)
         self.lastPos = self.getPos()
         self.vel = -self.moveData.velocity

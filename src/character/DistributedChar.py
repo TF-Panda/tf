@@ -13,10 +13,58 @@ class DistributedChar(DistributedEntity, Char):
         self.lastSequence = -1
         self.oldAnimTime = 0.0
 
+        # Client-side ragdoll associated with this entity.
+        self.ragdoll = None
+
+        self.clientSideAnimation = False
+
+        self.addPredictionField("skin", int, setter=self.setSkin)
+        self.addPredictionField("sequence", int, setter=self.setSequence,
+                                getter=self.getCurrSequence, noErrorCheck=True)
+        self.addPredictionField("playRate", float, setter=self.setPlayRate,
+                                getter=self.getPlayRate, noErrorCheck=True)
+        #self.addPredictionField("cycle", float, setter=self.setCycle,
+        #                        getter=self.getCycle, noErrorCheck=True)
+        #self.addPredictionField("animTime", float, getter=self.getAnimTime, setter=self.setAnimTime,
+        #                        tolerance=0.001, noErrorCheck=True)
+        self.addPredictionField("newSequenceParity", int, getter=self.getNewSequenceParity,
+                                setter=self.setNewSequenceParity, noErrorCheck=True)
+        #self.addPredictionField("prevAnimTime", float, networked=False)
+
         self.ivCycle = InterpolatedFloat()
         self.addInterpolatedVar(self.ivCycle, self.getCycle, self.setCycle, self.AnimationVar)
+        self.ivCycleAdded = True
 
         self.animLayerIvs = []
+
+    def becomeRagdoll(self, forceJoint, forcePosition, forceVector):
+        self.ragdoll = Char.becomeRagdoll(self, forceJoint, forcePosition, forceVector)
+        return self.ragdoll
+
+    def RecvProxy_clientSideAnimation(self, flag):
+        self.setClientSideAnimation(flag)
+
+    def setClientSideAnimation(self, flag):
+        if flag == self.clientSideAnimation:
+            return
+        self.clientSideAnimation = flag
+        self.updateClientSideAnimation()
+
+    def updateClientSideAnimation(self):
+        if self.seqPlayer:
+            if self.clientSideAnimation:
+                # Client should drive the animation.
+                self.seqPlayer.setAdvanceMode(AnimSequencePlayer.AMAuto)
+            else:
+                self.seqPlayer.setAdvanceMode(AnimSequencePlayer.AMManual)
+
+        if self.clientSideAnimation and self.ivCycleAdded:
+            # Don't interpolate cycle.
+            self.removeInterpolatedVar(self.ivCycle)
+            self.ivCycleAdded = False
+        elif not self.clientSideAnimation and self.ivCycleAdded:
+            self.addInterpolatedVar(self.ivCycle, self.getCycle, self.setCycle, self.AnimationVar)
+            self.ivCycleAdded = True
 
     def RecvProxy_skin(self, skin):
         self.setSkin(skin)
@@ -135,6 +183,12 @@ class DistributedChar(DistributedEntity, Char):
         self.checkForLayerChanges(globalClock.getFrameTime())
         return task.cont
 
+    def setNewSequenceParity(self, par):
+        self.seqPlayer.setNewSequenceParity(par)
+
+    def getNewSequenceParity(self):
+        return self.seqPlayer.getNewSequenceParity()
+
     def RecvProxy_newSequenceParity(self, parity):
         self.seqPlayer.setNewSequenceParity(parity)
 
@@ -154,7 +208,7 @@ class DistributedChar(DistributedEntity, Char):
 
         # Check for anim time change to latch animation vars.
         animTimeChanged = self.getAnimTime() != self.oldAnimTime
-        if (not self.isPredictable()) and animTimeChanged:
+        if (not self.getPredictable()) and animTimeChanged:
             self.onLatchInterpolatedVars(
                 self.getLastChangedTime(self.AnimationVar),
                 self.AnimationVar)
@@ -162,9 +216,16 @@ class DistributedChar(DistributedEntity, Char):
 
         # Reset the cycle interpolation if we have a new sequence.
         if self.seqPlayer.getNewSequenceParity() != self.seqPlayer.getPrevSequenceParity():
+
+            # Manually reset for client-side animation.
+            #if self.clientSideAnimation:
+            #    self.setCycle(0.0)
+
             self.ivCycle.reset(self.getCycle())
             if self.getCurrSequence() != -1:
                 self.ivCycle.setLooping(self.getSequence(self.getCurrSequence()).hasFlags(AnimSequence.FLooping))
+
+        self.updateClientSideAnimation()
 
     def setCycle(self, cycle):
         self.seqPlayer.setCycle(cycle)
@@ -173,7 +234,9 @@ class DistributedChar(DistributedEntity, Char):
         return self.seqPlayer.getCycle()
 
     def RecvProxy_cycle(self, cycle):
-        self.seqPlayer.setCycle(cycle)
+        # Ignore this for client-side animation.
+        if not self.clientSideAnimation:
+            self.seqPlayer.setCycle(cycle)
 
     def RecvProxy_playRate(self, rate):
         self.seqPlayer.setPlayRate(rate)
@@ -187,14 +250,18 @@ class DistributedChar(DistributedEntity, Char):
     def loadModel(self, model):
         Char.loadModel(self, model)
         self.modelNp.reparentTo(self)
-        if self.seqPlayer:
-            # The client receives anim time and cycle from the server, so
-            # the player should not advance for him.
-            self.seqPlayer.setAdvanceMode(AnimSequencePlayer.AMManual)
+        self.updateClientSideAnimation()
 
     def RecvProxy_sequence(self, seq):
         # Start the sequence playing.
         self.setSequence(seq)
+
+    def simulate(self):
+        DistributedEntity.simulate(self)
+        # If we're predicting and not using client-side animation, predict the
+        # animation time and cycle.
+        if self.predictable and self.seqPlayer and not self.clientSideAnimation:
+            self.seqPlayer.advance()
 
     def generate(self):
         DistributedEntity.generate(self)
@@ -207,6 +274,10 @@ class DistributedChar(DistributedEntity, Char):
         DistributedEntity.disable(self)
 
     def RecvProxy_animTime(self, addT):
+        # Ignore for client-side animation.
+        if self.clientSideAnimation:
+            return
+
         tickBase = base.getNetworkBase(base.tickCount, self.doId)
         t = tickBase
         t += addT

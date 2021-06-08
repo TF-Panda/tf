@@ -4,6 +4,8 @@ from direct.gui.DirectGui import DirectDialog, RetryCancelDialog, OkCancelDialog
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
+from tf.player.Prediction import Prediction
+
 from tf.tfbase import TFLocalizer
 from tf.tfbase import TFGlobals
 
@@ -15,11 +17,39 @@ class TFClientRepository(ClientRepository, FSM):
         FSM.__init__(self, "TFClientRepository")
         self.readDCFiles()
 
+        self.prediction = Prediction()
+
         self.connectInfo = None
 
         self.accept('connectionLost', self.handleConnectionLost)
 
         self.request("Connect", info)
+
+    def runPrediction(self):
+        if not self.connected or not hasattr(base, 'localAvatar'):
+            return
+
+        if self.deltaTick < 0:
+            # No valid snapshot received yet.
+            return
+
+        valid = self.deltaTick > 0
+        # Predict the player's actions.
+        self.prediction.update(self.deltaTick, valid, base.localAvatar.lastCommandAck,
+                               base.localAvatar.lastOutgoingCommand + base.localAvatar.chokedCommands)
+
+    def readSnapshotHeaderData(self, dgi):
+        # What's the latest command number that the server ran?
+        commandAck = dgi.getUint32()
+        if hasattr(base, 'localAvatar') and base.localAvatar is not None:
+            base.localAvatar.commandAck = commandAck
+
+    def postSnapshot(self):
+        if not hasattr(base, 'localAvatar'):
+            return
+        commandsAcked = base.localAvatar.commandAck - base.localAvatar.lastCommandAck
+        base.localAvatar.lastCommandAck = base.localAvatar.commandAck
+        self.prediction.postNetworkDataReceived(commandsAcked)
 
     def shutdown(self):
         self.disconnect()
@@ -103,10 +133,15 @@ class TFClientRepository(ClientRepository, FSM):
         del self.dialog
 
     def enterInGame(self):
-        pass
+        # Interpolation is sort 30, so make sure prediction happens before interpolation.
+        base.taskMgr.add(self.runPredictionTask, 'runPredictionTask', sort = 29)
+
+    def runPredictionTask(self, task):
+        self.runPrediction()
+        return task.cont
 
     def exitInGame(self):
-        pass
+        base.taskMgr.remove('runPredictionTask')
 
     def enterConnectionLost(self):
         self.dialog = OkCancelDialog(text = TFLocalizer.LostConnection,

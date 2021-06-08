@@ -2,7 +2,7 @@
 PlayerCommand module: contains the PlayerCommand class
 
 This class contains the inputs of a player for a particular server tick.  The
-server runs the command.
+server runs the commands and the client predicts his own commands.
 """
 
 from panda3d.core import Vec3, Vec2
@@ -10,6 +10,7 @@ from panda3d.core import Vec3, Vec2
 from .InputButtons import InputFlag
 
 import copy
+import random
 
 class PlayerCommand:
 
@@ -33,6 +34,7 @@ class PlayerCommand:
 
         self.tickCount = 0
         self.commandNumber = 0
+        self.randomSeed = 0
 
     @staticmethod
     def readDatagram(dgi, prev):
@@ -44,6 +46,9 @@ class PlayerCommand:
         else:
             # Assume steady increment.
             cmd.commandNumber = prev.commandNumber + 1
+
+        rand = random.Random(cmd.commandNumber)
+        cmd.randomSeed = rand.randint(0, 0xFFFFFFFF)
 
         if dgi.getUint8():
             cmd.tickCount = dgi.getUint32()
@@ -71,7 +76,7 @@ class PlayerCommand:
     def writeDatagram(self, dg, prev):
         if self.commandNumber != (prev.commandNumber + 1):
             dg.addUint8(1)
-            dg.addUint32(self.tickCount)
+            dg.addUint32(self.commandNumber)
         else:
             dg.addUint8(0)
 

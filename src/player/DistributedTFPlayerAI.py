@@ -11,12 +11,13 @@ from .TFPlayerAnimStateAI import TFPlayerAnimStateAI
 from .PlayerAnimEvent import PlayerAnimEvent
 from .TFClass import *
 from .DViewModelAI import DViewModelAI
-from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce, addMultiDamage
+from .ObserverMode import ObserverMode
+from tf.weapon.TakeDamageInfo import addMultiDamage
 
 from tf.tfbase import TFGlobals
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
 
-from panda3d.core import Datagram, DatagramIterator, Vec3, Point3, NodePath
+from panda3d.core import *
 from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
 
 import copy
@@ -25,10 +26,15 @@ import random
 tf_damage_range = 0.5
 tf_damageforcescale_other = 3.0
 
+TF_DEATH_ANIMATION_TIME = 2.0
+spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
+spec_freeze_traveltime = ConfigVariableDouble("spec-freeze-travel-time", 0.4)
+
 class CommandContext:
     def __init__(self):
+        self.backupCmds = []
+        self.newCmds = []
         self.cmds = []
-        self.numCmds = 0
         self.totalCmds = 0
         self.droppedPackets = 0
         self.paused = False
@@ -51,12 +57,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.animState = TFPlayerAnimStateAI(self)
         self.commandContexts = []
         self.lastMovementTick = -1
-        self.tickBase = 0
         self.simulationTick = 0
         self.paused = False
         self.lastCmd = PlayerCommand()
+        self.currentCommand = None
+        self.lastRunCommandNumber = 0
         self.viewAngles = Vec3(0, 0, 0)
-        self.isDead = False
         self.nextAttack = 0.0
         self.forceJoint = -1
         self.bulletForce = Vec3(0)
@@ -166,55 +172,49 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         addMultiDamage(info, self)
 
-    def fireBullet(self, info, doEffects, damageType, customDamageType):
-        # Fire a bullet (ignoring the shooter).
-        start = info['src']
-        #end = start + info['dirShooting'] * info['distance']
-        result = PhysRayCastResult()
-        filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
-        base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
-                                  BitMask32(Contents.HitBox | Contents.Solid), BitMask32.allOff(),
-                                  CollisionGroup.Empty, filter)
-        print("Fire bullet", start, "to", info['dirShooting'] * info['distance'])
-        if result.hasBlock():
-            # Bullet hit something!
-            print("\tHit something")
-            block = result.getBlock()
-            actor = block.getActor()
-            entity = actor.getPythonTag("entity")
-            if not entity:
-                # Didn't hit an entity.  Hmm.
-                return
-
-            if doEffects:
-                # TODO
-                pass
-
-            if not IS_CLIENT:
-                print("\t\tHit entity", NodePath(actor))
-                # Server-specific.
-                dmgInfo = TakeDamageInfo(self, self, info['damage'], damageType)
-                dmgInfo.customDamage = customDamageType
-                calculateBulletDamageForce(dmgInfo, block.getPosition() - info['src'], block.getPosition(), 1.0)
-                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], block)
-
     def doAnimationEvent(self, event, data = 0):
         self.animState.doAnimationEvent(event, data)
-
-    def doClassSpecialSkill(self):
-        pass
 
     def die(self, killer, info):
         self.isDead = True
         # Become a ragdoll.
-        self.sendUpdate('becomeRagdoll', [self.character.findJoint("bip_pelvis"), info.sourcePosition, self.bulletForce])
+        self.sendUpdate('becomeRagdoll', [self.forceJoint, info.damagePosition, info.damageForce])
         # Respawn after 5 seconds.
         self.addTask(self.respawnTask, 'respawn', appendTask = True)
+        self.observerTarget = killer.doId
+        self.observerMode = ObserverMode.DeathCam
+        self.deathTime = globalClock.getFrameTime()
+        self.playedFreezeSound = False
+        self.abortFreezeCam = False
 
     def respawnTask(self, task):
-        if task.time < 5.0:
-            # Not ready to respawn yet.
+
+        now = globalClock.getFrameTime()
+
+        timeInFreeze = spec_freeze_traveltime.getValue() + spec_freeze_time.getValue()
+        freezeEnd = (self.deathTime + TF_DEATH_ANIMATION_TIME + timeInFreeze)
+        if not self.playedFreezeSound and self.observerTarget != self.doId:
+            # Start the sound so that it ends at the freezecam lock on time
+            freezeSoundLength = 0.3
+            freezeSoundTime = (self.deathTime + TF_DEATH_ANIMATION_TIME) + spec_freeze_traveltime.getValue() - freezeSoundLength
+            if now >= freezeSoundTime:
+                base.net.game.d_emitSound("TFPlayer.FreezeCam", Point3(), self.owner)
+                self.playedFreezeSound = True
+
+        if now >= (self.deathTime + TF_DEATH_ANIMATION_TIME): # allow x seconds death animation/death cam
+            if self.observerTarget != self.doId:
+                if not self.abortFreezeCam and now < freezeEnd:
+                    # Start zooming in on the killer and do the freeze cam.
+                    self.observerMode = ObserverMode.FreezeCam
+                    return task.cont
+
+        if now < freezeEnd:
             return task.cont
+
+        self.observerTarget = 0
+        self.observerMode = ObserverMode.Off
+
+        # Respawn now.
 
         # Refill health
         self.health = self.maxHealth
@@ -250,6 +250,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.activeWeapon = -1
 
     def setActiveWeapon(self, index):
+        if self.activeWeapon == index:
+            # Already the active weapon.
+            return
+
         if self.activeWeapon > 0 and self.activeWeapon < len(self.weapons):
             # Deactive the old weapon.
             wpnId = self.weapons[self.activeWeapon]
@@ -303,6 +307,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def generate(self):
         # Generate our view model as well.
         self.viewModel.setPlayerId(self.doId)
+        self.viewModel.team = self.team
+        self.viewModel.skin = self.skin
         base.sv.generateObject(self.viewModel, self.zoneId)
 
     def delete(self):
@@ -343,13 +349,13 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         return self.commandContexts[0]
 
     def replaceContextCommands(self, ctx, commands, count):
-        ctx.numCmds = count
         ctx.totalCmds = count
         ctx.droppedPackets = 0
-        # Add them in so the most recent is at slot 0.
-        ctx.cmds = []
-        for i in reversed(range(count)):
-            ctx.cmds.append(copy.deepcopy(commands[i]))
+        ctx.newCmds = []
+        for i in range(count):
+            ctx.newCmds.append(copy.deepcopy(commands[i]))
+        ctx.cmds = ctx.newCmds
+        ctx.backupCmds = []
 
     def determineSimulationTicks(self):
         ctxCount = len(self.commandContexts)
@@ -361,11 +367,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         for i in range(ctxCount):
             ctx = self.getCommandContext(i)
             assert ctx
-            assert ctx.numCmds > 0
+            assert len(ctx.newCmds) > 0
             assert ctx.droppedPackets >= 0
 
             # Determine how long it will take to run those packets.
-            simulationTicks += ctx.numCmds + ctx.droppedPackets
+            simulationTicks += len(ctx.newCmds) + ctx.droppedPackets
 
         return simulationTicks
 
@@ -402,12 +408,13 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 correctedTick = idealFinalTick - simulationTicks + base.currentTicksThisFrame
                 self.tickBase = correctedTick
 
-    def processPlayerCommands(self, cmds, newCommands, totalCommands, paused):
+    def processPlayerCommands(self, backupCmds, newCmds, totalCommands, paused):
         ctx = self.allocCommandContext()
         assert ctx
 
-        ctx.cmds = list(reversed(cmds))
-        ctx.numCmds = newCommands
+        ctx.backupCmds = backupCmds
+        ctx.newCmds = newCmds
+        ctx.cmds = backupCmds + newCmds
         ctx.totalCmds = totalCommands
         ctx.paused = paused
 
@@ -461,7 +468,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             if len(ctx.cmds) == 0:
                 continue
 
-            numBackup = ctx.totalCmds - ctx.numCmds
+            numBackup = len(ctx.backupCmds)
 
             # If we haven't dropped too many packets, then run some commands
             if ctx.droppedPackets < 24:
@@ -476,19 +483,18 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
                 # Now run the "history" commands if we still have dropped packets.
                 while droppedCmds > 0:
-                    cmdNum = ctx.numCmds + droppedCmds - 1
-                    availableCommands.append(copy.deepcopy(ctx.cmds[cmdNum]))
+                    cmdNum = numBackup - droppedCmds
+                    availableCommands.append(copy.deepcopy(ctx.backupCmds[cmdNum]))
                     droppedCmds -= 1
 
-            # Now run any new commands.  Go backward because the most recent
-            # command is at index 0.
-            for i in reversed(range(ctx.numCmds)):
-                availableCommands.append(copy.deepcopy(ctx.cmds[i]))
+            # Now run any new commands.  Most recent command is at the tail.
+            for i in range(len(ctx.newCmds)):
+                availableCommands.append(copy.deepcopy(ctx.newCmds[i]))
 
             # Save off the last good command in case we drop > numBackup
             # packets and need to rerun them.  We'll use this to "guess" at
             # what was in the missing packets.
-            self.lastCmd = copy.deepcopy(ctx.cmds[0])
+            self.lastCmd = copy.deepcopy(ctx.cmds[len(ctx.cmds) - 1])
 
         # base.currentTicksThisFrame == number of ticks remaining to be run, so
         # we should take the last N PlayerCommands and postpone them until the
@@ -502,7 +508,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         cmdLimit = 2 if False else 1
         cmdsToRun = len(availableCommands)
         if base.currentTicksThisFrame >= cmdLimit and len(availableCommands) > cmdLimit:
-            cmdsToRollOver = min(len(availableCommands), base.currentTicksThisFrame - 1)
+            cmdsToRollOver = min(len(availableCommands), base.currentTicksThisFrame - 1)#
 
             cmdsToRun = len(availableCommands) - cmdsToRollOver
             assert cmdsToRun >= 0
@@ -524,18 +530,27 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 self.runPlayerCommand(availableCommands[i], base.deltaTime)
 
         # Restore the true server clock.
-        globalClock.setFrameTime(saveFrameTime)
-        globalClock.setDt(saveDt)
-        base.frameTime = saveFrameTime
-        base.deltaTime = saveDt
+        base.setFrameTime(saveFrameTime)
+        base.setDeltaTime(saveDt)
 
     def runPlayerCommand(self, cmd, deltaTime):
         if self.isDead:
             return
 
+        self.currentCommand = cmd
+
+        base.setFrameTime(self.tickBase * base.intervalPerTick)
+        base.setDeltaTime(base.intervalPerTick)
+
+        base.net.predictionRandomSeed = cmd.randomSeed
+
+        # Do weapon selection.
         if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(self.weapons) and cmd.weaponSelect != self.activeWeapon:
-            print("Change active weapon to", cmd.weaponSelect)
             self.setActiveWeapon(cmd.weaponSelect)
+
+        self.updateButtonsState(cmd.buttons)
+
+        self.viewAngles = cmd.viewAngles
 
         # Get the active weapon
         wpn = None
@@ -549,16 +564,24 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Run the movement.
         DistributedTFPlayerShared.runPlayerCommand(self, cmd, deltaTime)
 
-        self.buttons = cmd.buttons
-
         self.notify.debug("Running command %s" % str(cmd))
-
-        self.viewAngles = cmd.viewAngles
 
         if wpn:
             wpn.itemPostFrame()
 
         self.animState.update()
+
+        # Let time pass.
+        self.tickBase += 1
+
+        # Store off the command number of this command so we can inform the
+        # client that we ran it.
+        self.lastRunCommandNumber = max(self.lastRunCommandNumber, cmd.commandNumber)
+
+        #print("Server ran command", cmd.commandNumber, "at pos", self.getPos())
+
+        base.net.predictionRandomSeed = 0
+        self.currentCommand = None
 
     def playerCommand(self, data):
         """ Player command sent to us by the client. """
@@ -578,7 +601,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.notify.debug("Got %i new cmds and %i backup cmds" % (newCommands, backupCommands))
 
-        cmds = []
+        backupCmds = []
+        newCmds = []
 
         assert newCommands >= 0
         assert (totalCommands - newCommands) >= 0
@@ -589,10 +613,17 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         nullCmd = PlayerCommand()
         prev = nullCmd
-        for i in range(totalCommands - 1, -1, -1):
-            self.notify.debug("Reading cmd %i" % i)
+        # Backups come first
+        for i in range(backupCommands):
+            self.notify.debug("Reading backup cmd %i" % i)
             to = PlayerCommand.readDatagram(dgi, prev)
-            cmds.insert(i, to)
+            backupCmds.append(to)
+            prev = to
+        # Now the new commands
+        for i in range(newCommands):
+            self.notify.debug("Reading new cmd %i" % i)
+            to = PlayerCommand.readDatagram(dgi, prev)
+            newCmds.append(to)
             prev = to
 
-        self.processPlayerCommands(cmds, newCommands, totalCommands, False)
+        self.processPlayerCommands(backupCmds, newCmds, totalCommands, False)

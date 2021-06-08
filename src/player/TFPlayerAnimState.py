@@ -40,7 +40,11 @@ class TFPlayerAnimState:
         self.currentMainSequenceActivity = Activity.Invalid
         self.specificMainSequence = -1
         self.inSwim = False
+        self.jumping = False
+        self.firstJumpFrame = False
+        self.jumpStartTime = 0.0
         self.gestureSlots = []
+        self.idealActivity = Activity.Invalid
 
     def initGestureSlots(self):
         self.gestureSlots = []
@@ -138,6 +142,12 @@ class TFPlayerAnimState:
         elif event == PlayerAnimEvent.Flinch:
             if not self.isGestureSlotActive(GestureSlot.Flinch):
                 self.restartGesture(GestureSlot.Flinch, Activity.Gesture_Flinch)
+        elif event == PlayerAnimEvent.Jump:
+            print("Jump anim event")
+            self.jumping = True
+            self.firstJumpFrame = True
+            self.jumpStartTime = globalClock.getFrameTime()
+            #self.restartMainSequence()
 
     def angleNormalize(self, ang):
         ang = ang % 360
@@ -233,12 +243,66 @@ class TFPlayerAnimState:
         return translateActivity
 
     def calcMainActivity(self):
-        ideal = Activity.Stand
+        self.idealActivity = Activity.Stand
 
-        if abs(self.vel[0]) >= 0.1 or abs(self.vel[1]) >= 0.1:
-            ideal = Activity.Run
+        if self.handleJumping() or self.handleDucking() or self.handleSwimming():
+            pass
+        else:
+            self.handleMoving()
 
-        return ideal
+        return self.idealActivity
+
+    def restartMainSequence(self):
+        if self.player:
+            self.player.setAnimTime(globalClock.getFrameTime())
+            self.player.setCycle(0.0)
+
+    def handleJumping(self):
+        # TODO: airwalk
+        if False: # airwalk
+            pass
+        else:
+            if self.jumping:
+                if self.firstJumpFrame:
+                    self.firstJumpFrame = False
+                    #self.restartMainSequence()
+
+                # TODO: reset after we hit water and start swimming.
+
+                # Don't check if he's on the ground for a sec.. sometimes the
+                # client still has the on-ground flag set right when the
+                # message comes in.
+                if globalClock.getFrameTime() - self.jumpStartTime > 0.2:
+                    if self.player.onGround:
+                        self.jumping = False
+                        #self.restartMainSequence()
+
+                        print("Jump land")
+
+                        self.restartGesture(GestureSlot.Jump, Activity.Jump_Land)
+
+                # If we're still jumping
+                if self.jumping:
+                    if globalClock.getFrameTime() - self.jumpStartTime > 0.5:
+                        print("Jump float")
+                        self.idealActivity = Activity.Jump_Float
+                    else:
+                        print("jump start")
+                        self.idealActivity = Activity.Jump_Start
+
+        return self.jumping # or self.inAirWalk
+
+    def handleDucking(self):
+        return False
+
+    def handleSwimming(self):
+        return False
+
+    def handleMoving(self):
+        if self.vel.length() > 0.5:
+            self.idealActivity = Activity.Run
+            return True
+        return False
 
     def computeMainSequence(self):
         idealActivity = self.calcMainActivity()

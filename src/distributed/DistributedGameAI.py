@@ -21,17 +21,16 @@ class DistributedGameAI(DistributedObjectAI):
         self.numBlue = 0
         self.numRed = 0
 
-    def d_emitSound(self, soundName, origin):
+    def d_emitSound(self, soundName, origin, client = None):
         #print("d_emitSound", soundName, origin)
         soundInfo = Sounds.createSoundServer(soundName, origin)
         #print(soundInfo)
         if soundInfo == None:
             return
 
-        self.sendUpdate('emitSound', soundInfo)
+        self.sendUpdate('emitSound', soundInfo, client = client)
 
     def playerCanTakeDamage(self, player, inflictor):
-        print(player.__class__, inflictor.__class__, player, inflictor)
         return player.getTeam() != inflictor.getTeam()
 
     def allowDamage(self, player, inflictor):
@@ -42,7 +41,8 @@ class DistributedGameAI(DistributedObjectAI):
 
         client = base.sv.clientSender
         player = DistributedTFPlayerAI()
-        player.name = name
+        client.player = player
+        player.playerName = name
         if self.numRed > self.numBlue:
             # Blue team
             player.team = 1
@@ -62,9 +62,9 @@ class DistributedGameAI(DistributedObjectAI):
         shotgun.setPlayerId(player.doId)
         base.sv.generateObject(shotgun, player.zoneId)
 
-        #wrench = DWrenchAI()
-        #wrench.setPlayerId(player.doId)
-        #base.sv.generateObject(wrench, player.zoneId)
+        wrench = DWrenchAI()
+        wrench.setPlayerId(player.doId)
+        base.sv.generateObject(wrench, player.zoneId)
 
         player.giveWeapon(shotgun.doId)
-        #player.giveWeapon(wrench.doId)
+        player.giveWeapon(wrench.doId)

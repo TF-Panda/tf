@@ -127,3 +127,31 @@ def simpleSplineRemapValClamped(val, A, B, C, D):
     cVal = (val - A) / (B - A)
     cVal = max(0.0, min(1.0, cVal))
     return C + (D - C) * simpleSpline(cVal)
+
+TF2Font = None
+def getTF2Font():
+    global TF2Font
+    if not TF2Font:
+        TF2Font = base.loader.loadFont("models/fonts/TF2.ttf")
+    return TF2Font
+
+TF2BuildFont = None
+def getTF2BuildFont():
+    global TF2BuildFont
+    if not TF2BuildFont:
+        TF2BuildFont = base.loader.loadFont("models/fonts/tf2build.ttf")
+    return TF2BuildFont
+
+TF2SecondaryFont = None
+def getTF2SecondaryFont():
+    global TF2SecondaryFont
+    if not TF2SecondaryFont:
+        TF2SecondaryFont = base.loader.loadFont("models/fonts/TF2secondary.ttf")
+    return TF2SecondaryFont
+
+TF2ProfessorFont = None
+def getTF2ProfessorFont():
+    global TF2ProfessorFont
+    if not TF2ProfessorFont:
+        TF2ProfessorFont = base.loader.loadFont("models/fonts/tf2professor.ttf")
+    return TF2ProfessorFont

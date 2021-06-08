@@ -225,6 +225,30 @@ class EngineerModel:
         char.addSequence(flinch02Seq)
         char.addSequence(flinch04Seq)
 
+        #
+        # Jumping
+        #
+        jumpFloatPrimary = createSequence(char, "a_jumpfloat_PRIMARY", AnimSequence.FLooping | AnimSequence.FZeroRootX | AnimSequence.FZeroRootY,
+                                          Activity.Primary_Jump_Float)
+        jumpStartPrimary = createSequence(char, "a_jumpstart_PRIMARY", AnimSequence.FZeroRootX | AnimSequence.FZeroRootY,
+                                          Activity.Primary_Jump_Start)
+        jumpLandPrimary = createSequence(char, "jumpland_PRIMARY", AnimSequence.FDelta | AnimSequence.FPost,
+                                         Activity.Primary_Jump_Land)
+        char.addSequence(jumpStartPrimary)
+        char.addSequence(jumpFloatPrimary)
+        char.addSequence(jumpLandPrimary)
+
+        jumpFloatMelee = createSequence(char, "a_jumpfloat_MELEE", AnimSequence.FLooping | AnimSequence.FZeroRootX | AnimSequence.FZeroRootY,
+                                          Activity.Melee_Jump_Float)
+        jumpStartMelee = createSequence(char, "a_jumpstart_MELEE", AnimSequence.FZeroRootX | AnimSequence.FZeroRootY,
+                                          Activity.Melee_Jump_Start)
+        jumpLandMelee = createSequence(char, "jumpland_MELEE", AnimSequence.FDelta | AnimSequence.FPost,
+                                         Activity.Melee_Jump_Land)
+        char.addSequence(jumpStartMelee)
+        char.addSequence(jumpFloatMelee)
+        char.addSequence(jumpLandMelee)
+
+
     @staticmethod
     def createPoseParameters(char):
         char.addPoseParameter("look_pitch", -1, 1)

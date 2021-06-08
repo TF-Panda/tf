@@ -1,6 +1,7 @@
 from panda3d.core import Shader, PTA_LVecBase3f, Vec3, loadPrcFileData, TextNode
 from panda3d.core import PostProcess, PostProcessPass, PostProcessEffect, HDREffect, \
-    BloomEffect, FXAA_Effect, SSAO_Effect, MotionBlur, PTA_LVecBase2f, AUXTEXTUREBITS_NORMAL, AUXTEXTURE_NORMAL, ToneMappingEffect
+    BloomEffect, FXAA_Effect, SSAO_Effect, MotionBlur, PTA_LVecBase2f, AUXTEXTUREBITS_NORMAL, AUXTEXTURE_NORMAL, ToneMappingEffect, \
+    PostProcessFinalOutput, FreezeFrameEffect
 
 from direct.gui.DirectGui import *
 
@@ -15,12 +16,15 @@ class TFPostProcess(PostProcess):
     def __init__(self):
         PostProcess.__init__(self)
 
+        # Stages
         self.hdr = None
         self.bloom = None
         self.toneMapping = None
         self.fxaa = None
         self.ssao = None
         self.mb = None
+        self.finalOutput = None
+        self.freezeFrame = None
 
         self.hbaoControls = []
         self.hbaoControlZ = -0.2
@@ -189,6 +193,14 @@ class TFPostProcess(PostProcess):
             self.mb.shutdown()
         self.mb = None
 
+        if self.finalOutput:
+            self.finalOutput.shutdown()
+        self.finalOutput = None
+
+        if self.freezeFrame:
+            self.freezeFrame.shutdown()
+        self.freezeFrame = None
+
     def setup(self):
         self.cleanup()
 
@@ -224,39 +236,10 @@ class TFPostProcess(PostProcess):
             # which is sort 1
         #    self.addCamera(self.mb.getCamera(), 0, 1)
 
-        finalQuad = self.getScenePass().getQuad()
+        # Then finally, present it.
+        self.finalOutput = PostProcessFinalOutput(self)
+        self.addEffect(self.finalOutput)
 
-        vtext = "#version 330\n"
-        vtext += "uniform mat4 p3d_ModelViewProjectionMatrix;\n"
-        vtext += "in vec4 p3d_Vertex;\n"
-        vtext += "in vec4 texcoord;\n"
-        vtext += "out vec2 l_texcoord;\n"
-        vtext += "void main()\n"
-        vtext += "{\n"
-        vtext += "  gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;\n"
-        vtext += "  l_texcoord = texcoord.xy;\n"
-        vtext += "}\n"
-
-        ptext = "#version 330\n"
-        ptext += "out vec4 outputColor;\n"
-        ptext += "in vec2 l_texcoord;\n"
-
-        ptext += "uniform sampler2D sceneColorSampler;\n"
-
-        ptext += "void main()\n"
-        ptext += "{\n"
-        ptext += "  outputColor = texture(sceneColorSampler, l_texcoord);\n"
-        if self.enableVignette:
-            ptext += "  vec2 uv = l_texcoord.xy;\n"
-            ptext += "  uv *= 1.0 - uv.yx;\n"
-            ptext += "  float vig = uv.x * uv.y * 15.0;\n"
-            ptext += "  vig = pow(vig, 0.25);\n"
-            ptext += "  outputColor.rgb *= vig;\n"
-        ptext += "}\n"
-
-        shader = Shader.make(Shader.SL_GLSL, vtext, ptext)
-        if not shader:
-            return
-
-        finalQuad.setShader(shader)
-        finalQuad.setShaderInput("sceneColorSampler", self.getOutputPipe("scene_color"))
+        # Freeze frame over the final output, when needed.
+        self.freezeFrame = FreezeFrameEffect(self)
+        self.addEffect(self.freezeFrame)

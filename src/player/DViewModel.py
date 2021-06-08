@@ -11,6 +11,19 @@ class DViewModel(DistributedChar, DViewModelShared):
         DistributedChar.__init__(self)
         DViewModelShared.__init__(self)
 
+    #def update(self):
+    #    DistributedChar.update(self)
+
+    #    if self.character:
+    #        self.character.update()
+    #        print("VM anim time", self.seqPlayer.getAnimTime())
+    #        print("VM cycle:", self.seqPlayer.getCycle())
+
+    def shouldPredict(self):
+        if self.playerId == base.localAvatarId:
+            return True
+        return DistributedChar.shouldPredict(self)
+
     def disable(self):
         if self.player:
             self.player.viewModel = None

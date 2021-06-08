@@ -58,7 +58,18 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.ivMoveY = InterpolatedFloat()
         self.addInterpolatedVar(self.ivMoveY, self.getMoveY, self.setMoveY, DistributedObject.AnimationVar)
 
+    def setPos(self, pos):
+        DistributedChar.setPos(self, pos)
+        # Keep controller in sync.
+        self.controller.setFootPosition(pos)
+
     def respawn(self):
+        # Release reference to the ragdoll.
+        if self.ragdoll:
+            self.ragdoll[1].setEnabled(False)
+            #self.ragdoll[1].updateTask.remove()
+            self.ragdoll[0].modelNp.hide()
+        self.ragdoll = None
         self.modelNp.show()
 
     def becomeRagdoll(self, *args, **kwargs):
@@ -69,6 +80,10 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.setActiveWeapon(index)
 
     def setActiveWeapon(self, index):
+        if self.activeWeapon == index:
+            # Already the active one.
+            return
+
         if self.activeWeapon >= 0 and self.activeWeapon < len(self.weapons):
             # Deactive the old weapon.
             wpnId = self.weapons[self.activeWeapon]

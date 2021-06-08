@@ -41,13 +41,15 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     # Reset multi-damage structures.
     clearMultiDamage()
 
+    rand = random.Random()
+
     bulletsPerShot = weaponData.get('bulletsPerShot', 1)
     for i in range(bulletsPerShot):
-        random.seed(seed)
+        rand.seed(seed)
 
         # Get circular gaussian spread.
-        x = random.uniform(-0.5, 0.5) + random.uniform(-0.5, 0.5)
-        y = random.uniform(-0.5, 0.5) + random.uniform(-0.5, 0.5)
+        x = rand.uniform(-0.5, 0.5) + rand.uniform(-0.5, 0.5)
+        y = rand.uniform(-0.5, 0.5) + rand.uniform(-0.5, 0.5)
 
         # Initialize the variable firing information
         fireInfo['dirShooting'] = forward + (right * x * spread) + (up * y * spread)
@@ -58,9 +60,6 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
 
         # Use new seed for next bullet.
         seed += 1
-
-    # Reset random seed.
-    random.seed(None)
 
     # Apply damage if any.
     applyMultiDamage()
