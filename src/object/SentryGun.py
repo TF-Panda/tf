@@ -501,11 +501,6 @@ class SentryGun(BaseObject):
             self.findAllMatches("**/*light*").hide()
             #self.findAllMatches("**/*")
 
-        def update(self):
-            BaseObject.update(self)
-            if self.objectState == ObjectState.Upgrading:
-                print("Upgrading cycle", self.getCycle())
-
         def RecvProxy_objectState(self, state):
             if state == ObjectState.Constructing:
                 self.findAllMatches("**/*toolbox*").show()
