@@ -261,6 +261,7 @@ class Char(Actor):
         if chan < 0:
             # Invalid channel, stop the layer we wanted to play it on.
             self.stop(layer=layer)
+            return
 
         char = self.getPartBundle()
         if char.getNumAnimLayers() > layer:
@@ -419,6 +420,9 @@ class Char(Actor):
             return
         layer = self.character.getAnimLayer(0)
         layer._sequence = seq
+        layer._order = 0
+        layer._weight = 1.0
+        layer._flags |= layer.FActive
 
     def getCurrSequence(self):
         return self.getCurrentChannel()
@@ -427,9 +431,6 @@ class Char(Actor):
         if not self.character:
             return
         layer = self.character.getAnimLayer(0)
-        layer._order = 0
-        layer._weight = 1.0
-        layer._flags |= layer.FActive
         layer._cycle = cycle
 
     def getCycle(self):

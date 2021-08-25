@@ -354,7 +354,6 @@ class DistributedChar(Char, DistributedEntity):
 
         # Reset the cycle interpolation if we have a new sequence.
         if self.getNewSequenceParity() != self.getPrevSequenceParity() and not self.clientSideAnimation:
-
             # Manually reset for client-side animation.
             #if self.clientSideAnimation:
             #    self.setCycle(0.0)
