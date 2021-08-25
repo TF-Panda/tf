@@ -278,6 +278,11 @@ class Char(Actor):
             self.play(channel=chan, layer=layer, blendIn=blendIn,
                       blendOut=blendOut, autoKill=autoKill)
 
+        if act is not None:
+            # Store the activity we got the channel from on the layer.
+            animLayer = char.getAnimLayer(layer)
+            animLayer._activity = act
+
     def addPoseParameter(self, name, minVal, maxVal, looping = False):
         return self.character.addPoseParameter(name, minVal, maxVal, looping)
 
