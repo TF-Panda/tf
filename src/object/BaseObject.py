@@ -228,8 +228,6 @@ class BaseObject(BaseClass):
 
             self.objectState = ObjectState.Upgrading
 
-            # Stop all currently playing channels.
-            #self.stop()
             # Start the upgrade anim channel.
             self.startChannel(act = Activity.Object_Upgrade)
 
