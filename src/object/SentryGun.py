@@ -69,11 +69,11 @@ class SentryGun(BaseObject):
         self.numKills = 0
         self.numAssists = 0
         if IS_CLIENT:
-            ivPitch = InterpolatedFloat()
-            self.addInterpolatedVar(ivPitch, self.getLookPitch, self.setLookPitch)
-            ivYaw = InterpolatedFloat()
-            ivYaw.setLooping(True)
-            self.addInterpolatedVar(ivYaw, self.getLookYaw, self.setLookYaw)
+            self.ivPitch = InterpolatedFloat()
+            self.addInterpolatedVar(self.ivPitch, self.getLookPitch, self.setLookPitch)
+            self.ivYaw = InterpolatedFloat()
+            self.ivYaw.setLooping(True)
+            self.addInterpolatedVar(self.ivYaw, self.getLookYaw, self.setLookYaw)
         self.enemy = None
 
         self.maxLevel = 2
@@ -139,6 +139,11 @@ class SentryGun(BaseObject):
             self.emitSound("Building_Sentrygun.Built")
 
         def onBecomeActive(self):
+            if self.level > 1:
+                # Only do this when the sentry just finished initial
+                # construction.
+                return
+
             # Orient it
             angles = self.getHpr()
             self.currAngles.x = TFGlobals.angleMod(angles.x)
@@ -490,11 +495,16 @@ class SentryGun(BaseObject):
                     if random.uniform(0, 1) < 0.3:
                         self.goalAngles.y = -random.randint(-10, 10)
     else:
+        def delete(self):
+            self.ivYaw = None
+            self.ivPitch = None
+            BaseObject.delete(self)
+
         def onModelChanged(self):
             BaseObject.onModelChanged(self)
             # Make sure pose parameters carry over to new model.
-            self.setLookPitch(self.lookPitch)
-            self.setLookYaw(self.lookYaw)
+            self.setLookPitch(self.ivPitch.getInterpolatedValue())
+            self.setLookYaw(self.ivYaw.getInterpolatedValue())
 
         def announceGenerate(self):
             BaseObject.announceGenerate(self)
