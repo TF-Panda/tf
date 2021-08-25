@@ -6,6 +6,8 @@ from .DistributedTFPlayerShared import DistributedTFPlayerShared
 from .TFClass import *
 from .TFPlayerAnimState import TFPlayerAnimState
 
+from tf.tfbase import Sounds
+
 from test_talker import Talker
 
 from panda3d.core import *
@@ -21,6 +23,12 @@ phonemes = {}
 phonemes['engineer'] = Talker.Phonemes("expressions/player/engineer/phonemes/phonemes.txt",
                                "expressions/player/engineer/phonemes/phonemes_weak.txt",
                                "expressions/player/engineer/phonemes/phonemes_strong.txt")
+phonemes['soldier'] = Talker.Phonemes("expressions/player/soldier/phonemes/phonemes.txt",
+                               "expressions/player/soldier/phonemes/phonemes_weak.txt",
+                               "expressions/player/soldier/phonemes/phonemes_strong.txt")
+phonemes['demo'] = Talker.Phonemes("expressions/player/demo/phonemes/phonemes.txt",
+                               "expressions/player/demo/phonemes/phonemes_weak.txt",
+                               "expressions/player/demo/phonemes/phonemes_strong.txt")
 
 class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
@@ -32,36 +40,63 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.lastActiveWeapon = -1
 
-        self.lastPainTime = 0.0
-
         self.lastAngryTime = 0.0
-
-        self.lastSwingTime = 0.0
-
-        self.lastBapTime = 0.0
 
         self.talker = None
 
         self.classInfo = None
 
-        self.ivLookPitch = InterpolatedFloat()
+        # Remove rotation interpolation as we do client-side rotation in
+        # TFPlayerAnimState.
+        self.removeInterpolatedVar(self.ivRot)
+
+        self.ivEyeH = InterpolatedFloat()
+        self.ivEyeH.setLooping(True)
+        self.addInterpolatedVar(self.ivEyeH, self.getEyeH, self.setEyeH, DistributedObject.SimulationVar)
+        self.ivEyeP = InterpolatedFloat()
+        self.ivEyeP.setLooping(True)
+        self.addInterpolatedVar(self.ivEyeP, self.getEyeP, self.setEyeP, DistributedObject.SimulationVar)
+
+        #self.ivLookPitch = InterpolatedFloat()
         #self.ivLookPitch.setLooping(True)
-        self.addInterpolatedVar(self.ivLookPitch, self.getLookPitch, self.setLookPitch, DistributedObject.AnimationVar)
+        #self.addInterpolatedVar(self.ivLookPitch, self.getLookPitch, self.setLookPitch, DistributedObject.AnimationVar)
 
-        self.ivLookYaw = InterpolatedFloat()
+        #self.ivLookYaw = InterpolatedFloat()
         #self.ivLookYaw.setLooping(True)
-        self.addInterpolatedVar(self.ivLookYaw, self.getLookYaw, self.setLookYaw, DistributedObject.AnimationVar)
+        #self.addInterpolatedVar(self.ivLookYaw, self.getLookYaw, self.setLookYaw, DistributedObject.AnimationVar)
 
-        self.ivMoveX = InterpolatedFloat()
-        self.addInterpolatedVar(self.ivMoveX, self.getMoveX, self.setMoveX, DistributedObject.AnimationVar)
+        #self.ivMoveX = InterpolatedFloat()
+        #self.addInterpolatedVar(self.ivMoveX, self.getMoveX, self.setMoveX, DistributedObject.AnimationVar)
 
-        self.ivMoveY = InterpolatedFloat()
-        self.addInterpolatedVar(self.ivMoveY, self.getMoveY, self.setMoveY, DistributedObject.AnimationVar)
+        #self.ivMoveY = InterpolatedFloat()
+        #self.addInterpolatedVar(self.ivMoveY, self.getMoveY, self.setMoveY, DistributedObject.AnimationVar)
 
-    def setPos(self, pos):
-        DistributedChar.setPos(self, pos)
+    def RecvProxy_rot(self, r, i, j, k):
+        # Ignoring this because the player angles are set in TFPlayerAnimState.
+        pass
+
+    def setEyeH(self, h):
+        self.eyeH = h
+
+    def getEyeH(self):
+        return self.eyeH
+
+    def setEyeP(self, p):
+        self.eyeP = p
+
+    def getEyeP(self):
+        return self.eyeP
+
+    def playerAnimEvent(self, event):
+        """
+        Animation event sent by the AI.
+        """
+        self.animState.doAnimationEvent(event, 0)
+
+    def setPos(self, *args, **kwargs):
+        DistributedChar.setPos(self, *args, **kwargs)
         # Keep controller in sync.
-        self.controller.setFootPosition(pos)
+        self.controller.setFootPosition(self.getPos(base.render))
 
     def respawn(self):
         # Release reference to the ragdoll.
@@ -70,11 +105,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             #self.ragdoll[1].updateTask.remove()
             self.ragdoll[0].modelNp.hide()
         self.ragdoll = None
-        self.modelNp.show()
-
-    def becomeRagdoll(self, *args, **kwargs):
-        self.lastPainTime = 0.0
-        return DistributedChar.becomeRagdoll(self, *args, **kwargs)
+        self.show()
 
     def RecvProxy_activeWeapon(self, index):
         self.setActiveWeapon(index)
@@ -114,32 +145,32 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         q = self.getQuat(NodePath())
         q.invertInPlace()
         vel = q.xform(vel)
-        return vel
+        return -vel
 
     def setLookPitch(self, pitch):
         self.lookPitch = pitch
-        self.getPoseParameter("look_pitch").setValue(pitch)
+        self.getPoseParameter("body_pitch").setNormValue(pitch)
 
     def getLookPitch(self):
         return self.lookPitch
 
     def setLookYaw(self, yaw):
         self.lookYaw = yaw
-        self.getPoseParameter("look_yaw").setValue(yaw)
+        self.getPoseParameter("body_yaw").setNormValue(yaw)
 
     def getLookYaw(self):
         return self.lookYaw
 
     def setMoveX(self, moveX):
         self.moveX = moveX
-        self.getPoseParameter("move_x").setValue(moveX)
+        self.getPoseParameter("move_x").setNormValue(moveX)
 
     def getMoveX(self):
         return self.moveX
 
     def setMoveY(self, moveY):
         self.moveY = moveY
-        self.getPoseParameter("move_y").setValue(moveY)
+        self.getPoseParameter("move_y").setNormValue(moveY)
 
     def getMoveY(self):
         return self.moveY
@@ -153,6 +184,10 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         #print(self.position, self.lookPitch, self.lookYaw)
 
+    def update(self):
+        DistributedChar.update(self)
+        self.animState.update()
+
     #def update(self):
     #    DistributedObject.update(self)
 
@@ -161,74 +196,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         #self.prevPos = Point3(self.position)
 
-    def speak(self):
-        if self.talker.currSentence:
-            return
-        self.talker.speak(Filename("vo/engineer_cloakedspyidentify08.mp3"))
-
-    def pain(self):
-        now = globalClock.getFrameTime()
-        if now - self.lastPainTime < 1.0:
-            return
-
-        painFilenames = [
-            Filename("vo/engineer_painsevere01.mp3"),
-            Filename("vo/engineer_painsevere02.mp3"),
-            Filename("vo/engineer_painsevere03.mp3"),
-            Filename("vo/engineer_painsevere04.mp3"),
-            Filename("vo/engineer_painsevere05.mp3"),
-            Filename("vo/engineer_painsevere06.mp3"),
-            Filename("vo/engineer_painsevere07.mp3")
-        ]
-
-        self.talker.speak(random.choice(painFilenames))
-        self.lastPainTime = now
-
-    def swing(self):
-        bamFilenames = [
-            Filename("vo/engineer_gunslingerpunch01.mp3"),
-            Filename("vo/engineer_gunslingerpunch02.mp3"),
-            Filename("vo/engineer_gunslingerpunch03.mp3")
-        ]
-
-        now = globalClock.getFrameTime()
-        if now - self.lastSwingTime < 1.0:
-            return
-
-        self.lastSwingTime = now
-
-        if now - self.lastBapTime >= 5.0:
-            self.talker.speak(random.choice(bamFilenames))
-            self.lastBapTime = now
-
-        woosh = base.sfxManagerList[0].getSound("weapons/machete_swing.wav", True)
-        gunslinger_swing = base.sfxManagerList[0].getSound("weapons/gunslinger_swing.wav", True)
-        draw = base.sfxManagerList[0].getSound("weapons/draw_wrench_engineer.wav", True)
-        hits = [
-            "weapons/cbar_hitbod1.wav",
-            "weapons/cbar_hitbod2.wav",
-            "weapons/cbar_hitbod3.wav"
-        ]
-        hit = base.sfxManagerList[0].getSound(random.choice(hits), True)
-
-        woosh.set3dAttributes(self.np.getX(), self.np.getY(), self.np.getZ() + 32, 0, 0, 0)
-        gunslinger_swing.set3dAttributes(self.np.getX(), self.np.getY(), self.np.getZ() + 32, 0, 0, 0)
-        draw.set3dAttributes(self.np.getX(), self.np.getY(), self.np.getZ() + 32, 0, 0, 0)
-        hit.set3dAttributes(self.np.getX(), self.np.getY(), self.np.getZ() + 32, 0, 0, 0)
-
-        seq = Sequence()
-        seq.append(Func(draw.play))
-        seq.append(Func(woosh.play))
-        seq.append(Wait(0.2))
-        seq.append(Func(gunslinger_swing.play))
-        seq.append(Func(hit.play))
-        seq.start()
-
-        if now - self.lastAngryTime >= 2:
-            self.makeAngry()
-            self.lastAngryTime = now
-
-        self.item2Swing.play()
+    def speak(self, soundIndex):
+        self.talker.speak(soundIndex)
 
     def makeAngry(self):
         now = globalClock.getFrameTime()
@@ -252,9 +221,11 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def announceGenerate(self):
         DistributedChar.announceGenerate(self)
         DistributedTFPlayerShared.announceGenerate(self)
-        self.modelNp.findAllMatches("**/*robotarm_bodygroup*").hide()
-        self.talker = Talker.Talker(self.modelNp, Point3(0, 0, 64), self.character, phonemes['engineer'], sentences)
-        self.modelNp.setH(180)
+        #for hide in self.classInfo.Hide:
+        #    self.modelNp.findAllMatches("**/*" + hide + "*").hide()
+        self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
+        self.talker = Talker.Talker(self.modelNp, Point3(0, 0, self.classInfo.ViewHeight), self.character, phonemes[self.classInfo.Phonemes], sentences)
+        #self.modelNp.setH(180)
         self.reparentTo(render)
 
     def disable(self):

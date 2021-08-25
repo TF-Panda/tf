@@ -25,4 +25,4 @@ class DViewModelAI(DistributedCharAI):
     def generate(self):
         DistributedCharAI.generate(self)
         # Set to the idle sequence by default.
-        self.setSequence(self.getSequenceForActivity(Activity.Primary_VM_Idle))
+        self.startChannel(act=Activity.Primary_VM_Idle)

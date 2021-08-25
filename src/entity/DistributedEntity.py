@@ -6,20 +6,26 @@ else:
     from direct.distributed2.DistributedObjectAI import DistributedObjectAI
     BaseClass = DistributedObjectAI
 
-from panda3d.core import NodePath, Point3, Vec3
+from panda3d.core import *
+from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage
-from tf.weapon.TakeDamageInfo import addMultiDamage
+from tf.character.Char import Char
+from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, Contents, CollisionGroup, SolidShape, SolidFlag, angleMod
+from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
+from tf.tfbase import TFFilters
 
 if IS_CLIENT:
     from tf.player.Prediction import *
-    from panda3d.direct import InterpolatedVec3
+    from panda3d.direct import InterpolatedVec3, InterpolatedQuat
 
 class DistributedEntity(BaseClass, NodePath):
 
     def __init__(self):
         BaseClass.__init__(self)
-        NodePath.__init__(self, "entity")
+        if not self.this:
+            NodePath.__init__(self, "entity")
+
+        self.hitBoxes = []
 
         # Are we allowed to take damage?
         self.takeDamageMode = TakeDamage.Yes
@@ -50,6 +56,24 @@ class DistributedEntity(BaseClass, NodePath):
         # Handle to the actual parent entity or node.
         self.parentEntity = base.hidden
 
+        self.viewOffset = Vec3()
+
+        self.collisionGroup = CollisionGroup.Empty
+        self.contentsMask = Contents.Solid
+        self.solidMask = Contents.Solid
+        self.solidShape = SolidShape.Empty
+        self.solidFlags = SolidFlag.Intangible
+        self.mass = -1
+        self.damping = 0.0
+        self.rotDamping = 0.0
+        self.kinematic = True
+        self.hasCollisions = False
+        self.triggerCallback = False
+        self.contactCallback = False
+        self.sleepCallback = False
+        self.hullMins = Point3()
+        self.hullMaxs = Point3()
+
         if IS_CLIENT:
             # Prediction-related variables.
             self.intermediateData = []
@@ -72,8 +96,8 @@ class DistributedEntity(BaseClass, NodePath):
             # Add interpolators for transform state of the entity/node.
             self.ivPos = InterpolatedVec3()
             self.addInterpolatedVar(self.ivPos, self.getPos, self.setPos)
-            self.ivHpr = InterpolatedVec3()
-            self.addInterpolatedVar(self.ivHpr, self.getHpr, self.setHpr)
+            self.ivRot = InterpolatedQuat()
+            self.addInterpolatedVar(self.ivRot, self.getQuat, self.setQuat)
             self.ivScale = InterpolatedVec3()
             #self.addInterpolatedVar(self.ivScale, self.getScale, self.setScale)
 
@@ -89,6 +113,245 @@ class DistributedEntity(BaseClass, NodePath):
         self.setPythonTag("entity", self)
 
         self.reparentTo(self.parentEntity)
+
+    def isDead(self):
+        """
+        Returns true if the entity's health is depleted, which would mean it
+        is dead.
+        """
+        # We can't be dead if we don't have any health to begin with.
+        return self.maxHealth > 0 and self.health <= 0
+
+    def shouldCollide(self, collisionGroup, contentsMask):
+        return True
+
+    def onTriggerEnter(self, entity):
+        pass
+
+    def onTriggerExit(self, entity):
+        pass
+
+    def __triggerCallback(self, cbdata):
+        np = NodePath(cbdata.getOtherNode())
+        entity = np.getPythonTag("entity")
+        if not entity:
+            return
+        if not entity.shouldCollide(self.collisionGroup, self.solidMask):
+            return
+        #print(entity.__class__.__name__, "enters trigger")
+        if cbdata.getTouchType() == PhysTriggerCallbackData.TEnter:
+            self.onTriggerEnter(entity)
+        else:
+            self.onTriggerExit(entity)
+
+    def onContactStart(self, entity, pair, shape):
+        pass
+
+    def onContactEnd(self, entity, pair, shape):
+        pass
+
+    def __contactCallback(self, cbdata):
+        other = cbdata.getActorA()
+        otherIsB = False
+        if other == self.node():
+            other = cbdata.getActorB()
+            otherIsB = True
+
+        np = NodePath(other)
+        entity = np.getNetPythonTag("entity")
+        if not entity:
+            return
+
+        for i in range(cbdata.getNumContactPairs()):
+            pair = cbdata.getContactPair(i)
+            shape = pair.getShapeB() if otherIsB else pair.getShapeA()
+            if pair.isContactType(PhysEnums.CTFound):
+                self.onContactStart(entity, pair, shape)
+            elif pair.isContactType(PhysEnums.CTLost):
+                self.onContactEnd(entity, pair, shape)
+
+    def onWake(self):
+        pass
+
+    def onSleep(self):
+        pass
+
+    def __sleepCallback(self, cbdata):
+        if cbdata.isAwake():
+            self.onWake()
+        else:
+            self.onSleep()
+
+    def destroyCollisions(self):
+        if not self.hasCollisions or not isinstance(self.node(), PhysRigidActorNode):
+            # There's no collisions.
+            return
+
+        # Ensure it's not in any PhysScene.
+        self.node().removeFromScene(base.physicsWorld)
+
+        # Replace the physics node with a regular PandaNode.
+        entNode = PandaNode("entity")
+        entNode.replaceNode(self.node())
+        self.hasCollisions = False
+
+    def makeModelCollisionShape(self):
+        return None
+
+    def makeCollisionShape(self):
+        if self.solidShape == SolidShape.Model:
+            return self.makeModelCollisionShape()
+        elif self.solidShape == SolidShape.Box:
+            hx = (self.hullMaxs[0] - self.hullMins[0]) / 2
+            hy = (self.hullMaxs[1] - self.hullMins[1]) / 2
+            hz = (self.hullMaxs[2] - self.hullMins[2]) / 2
+            cx = (self.hullMins[0] + self.hullMaxs[0]) / 2
+            cy = (self.hullMins[1] + self.hullMaxs[1]) / 2
+            cz = (self.hullMins[2] + self.hullMaxs[2]) / 2
+            box = PhysBox(hx, hy, hz)
+            mat = PhysMaterial(0.5, 0.5, 0.5)
+            shape = PhysShape(box, mat)
+            shape.setLocalPos((cx, cy, cz))
+            return shape
+        else:
+            return None
+
+    def setSolidMask(self, mask):
+        self.solidMask = mask
+        if self.hasCollisions:
+            self.node().setSolidMask(mask)
+
+    def setCollisionGroup(self, group):
+        self.collisionGroup = group
+        if self.hasCollisions:
+            self.node().setCollisionGroup(group)
+
+    def setContentsMask(self, mask):
+        self.contentsMask = mask
+        if self.hasCollisions:
+            self.node().setContentsMask(mask)
+
+    def setKinematic(self, flag):
+        self.kinematic = flag
+        if self.hasCollisions:
+            self.node().setKinematic(flag)
+            self.node().wakeUp()
+
+    def setMass(self, mass):
+        self.mass = mass
+        if self.hasCollisions:
+            self.node().setMass(mass)
+
+    def initializeCollisions(self):
+        if self.hasCollisions:
+            self.destroyCollisions()
+
+        if self.solidShape == SolidShape.Empty:
+            return
+
+        body = PhysRigidDynamicNode("coll")
+        body.setCollisionGroup(self.collisionGroup)
+        body.setContentsMask(self.contentsMask)
+        body.setSolidMask(self.solidMask)
+
+        shape = self.makeCollisionShape()
+        if not shape:
+            return
+        shape.setSceneQueryShape(True)
+        if self.solidFlags & SolidFlag.Tangible:
+            shape.setSimulationShape(True)
+            shape.setTriggerShape(False)
+        elif self.solidFlags & SolidFlag.Trigger:
+            shape.setSimulationShape(False)
+            shape.setSceneQueryShape(False)
+            shape.setTriggerShape(True)
+        else:
+            shape.setSimulationShape(False)
+            shape.setTriggerShape(False)
+        body.addShape(shape)
+
+        #body.computeMassProperties()
+
+        if self.mass != -1:
+            body.setMass(self.mass)
+        body.setLinearDamping(self.damping)
+        body.setAngularDamping(self.rotDamping)
+
+        if (self.solidFlags & SolidFlag.Tangible) and \
+            (self.solidFlags & SolidFlag.Trigger):
+            # Add an identical shape for trigger usage only.
+            tshape = self.makeCollisionShape()
+            tshape.setSceneQueryShape(False)
+            tshape.setSimulationShape(False)
+            tshape.setTriggerShape(True)
+            body.addShape(tshape)
+
+        if (self.solidFlags & SolidFlag.Trigger) and self.triggerCallback:
+            body.setTriggerCallback(CallbackObject.make(self.__triggerCallback))
+
+        if (self.solidFlags & SolidFlag.Tangible) and self.contactCallback:
+            body.setContactCallback(CallbackObject.make(self.__contactCallback))
+
+        if not self.kinematic and self.sleepCallback:
+            clbk = CallbackObject.make(self.__sleepCallback)
+            body.setWakeCallback(clbk)
+            body.setSleepCallback(clbk)
+
+        body.setKinematic(self.kinematic)
+        body.addToScene(base.physicsWorld)
+        # Make this the node that represents the entity.
+        body.replaceNode(self.node())
+
+        self.hasCollisions = True
+
+    def getEyePosition(self):
+        return self.getPos() + self.viewOffset
+
+    def getWorldSpaceCenter(self):
+        return self.getPos(NodePath()) + (self.viewOffset * 0.5)
+
+    def fireBullets(self, info):
+        clearMultiDamage()
+
+        for do in base.net.doId2do.values():
+            if isinstance(do, Char):
+                do.syncHitBoxes()
+
+        # Fire a bullet (ignoring the shooter).
+        start = info['src']
+        #end = start + info['dirShooting'] * info['distance']
+        result = PhysRayCastResult()
+        filter = TFFilters.TFQueryFilter(self)
+        base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
+                                  BitMask32(Contents.HitBox | Contents.Solid | Contents.AnyTeam), BitMask32.allOff(),
+                                  CollisionGroup.Empty, filter)
+        if result.hasBlock():
+            # Bullet hit something!
+            block = result.getBlock()
+            actor = block.getActor()
+            entity = actor.getPythonTag("entity")
+            if not entity:
+                # Didn't hit an entity.  Hmm.
+                return
+
+            #if doEffects:
+                # TODO
+            #    pass
+
+            if not IS_CLIENT:
+                # Server-specific.
+                dmgInfo = TakeDamageInfo()
+                dmgInfo.inflictor = self
+                dmgInfo.attacker = info.get('attacker', self)
+                dmgInfo.setDamage(info['damage'])
+                dmgInfo.damageType = info['damageType']
+                dmgInfo.customDamage = info.get('customDamageType', -1)
+                calculateBulletDamageForce(dmgInfo, Vec3(info['dirShooting']), block.getPosition(), 1.0)
+                wasAlive = entity.health > 0
+                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], block)
+                applyMultiDamage()
+                if wasAlive and entity.health <= 0:
+                    self.onKillEntity(entity)
 
     if IS_CLIENT:
         #
@@ -316,8 +579,8 @@ class DistributedEntity(BaseClass, NodePath):
         def RecvProxy_pos(self, x, y, z):
             self.setPos((x, y, z))
 
-        def RecvProxy_hpr(self, h, p, r):
-            self.setHpr((h, p, r))
+        def RecvProxy_rot(self, r, i, j, k):
+            self.setQuat((r, i, j, k))
 
         def RecvProxy_scale(self, x, y, z):
             self.setScale((x, y, z))
@@ -330,14 +593,17 @@ class DistributedEntity(BaseClass, NodePath):
                 self.ivScale.reset(self.getScale())
                 self.setParentEntity(parentId)
 
+        def RecvProxy_velocity(self, x, y, z):
+            self.velocity = Vec3(x, y, z)
+
         ###########################################################################
     else: # SERVER
 
         def SendProxy_pos(self):
             return self.getPos()
 
-        def SendProxy_hpr(self):
-            return self.getHpr()
+        def SendProxy_rot(self):
+            return self.getQuat()
 
         def SendProxy_scale(self):
             return self.getScale()
@@ -353,6 +619,72 @@ class DistributedEntity(BaseClass, NodePath):
             self.onTakeDamage(info)
 
         def onTakeDamage(self, info):
+            if self.hasCollisions and not self.kinematic:
+                # Apply the damage force to the physics-simulated body.
+                self.node().addForceAtPos(info.damageForce, info.damagePosition, self.node().FTImpulse)
+
+        def emitSound(self, soundName, client = None, excludeClients = []):
+            base.game.d_emitSound(soundName, self.getPos(), client=client, excludeClients=excludeClients)
+
+        def isEntityVisible(self, entity, traceMask):
+            """
+            Traces a line from this entity's position to the indicated
+            coordinate or entity.  If the input is a coordinate, returns True
+            if the line traced to the coordinate without being blocked.  If the
+            input is an entity, returns True if the line traced to the entity
+            without being blocked.  If there was a block, the blocking entity
+            is returned as the second return value in a tuple.
+            """
+
+            lookerOrigin = self.getEyePosition()
+            targetOrigin = entity.getEyePosition()
+            dir = targetOrigin - lookerOrigin
+            dist = dir.length()
+            dir.normalize()
+            filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
+            result = PhysRayCastResult()
+            base.physicsWorld.raycast(result, lookerOrigin, dir, dist,
+                                      traceMask, 0, 0, filter)
+            if result.hasBlock():
+                block = result.getBlock()
+                node = block.getActor()
+                np = NodePath(node)
+                ent = np.getNetPythonTag("entity")
+                if ent == entity:
+                    # LOS is valid.
+                    return (True, ent)
+                else:
+                    # LOS not established.  Blocked by another entity.
+                    return (False, ent)
+
+            # LOS is valid.
+            return (True, None)
+
+        def isPointVisible(self, point, traceMask):
+            """
+            Returns true if the indicated point if visible from the entity's
+            eye position, or false if there is something in the way.
+            """
+
+            lookerOrigin = self.getEyePosition()
+            dir = point - lookerOrigin
+            dist = dir.length()
+            dir.normalize()
+            filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
+            result = PhysRayCastResult()
+            base.physicsWorld.raycast(result, lookerOrigin, dir, dist, traceMask, 0, 0, filter)
+            if result.hasBlock():
+                block = result.getBlock()
+                node = block.getActor()
+                np = NodePath(node)
+                ent = np.getNetPythonTag("entity")
+                # LOS to point is blocked by this entity.
+                return (False, ent)
+
+            # LOS is valid.
+            return (True, None)
+
+        def onKillEntity(self, ent):
             pass
 
     def dispatchTraceAttack(self, info, dir, hit):
@@ -371,11 +703,13 @@ class DistributedEntity(BaseClass, NodePath):
             self.ivHpr = None
             self.ivScale = None
             self.shutdownPredictable()
+        self.destroyCollisions()
         self.parentEntity = None
         self.physicsRoot = None
-        # Release the root node of the entity.
-        self.removeNode()
+        if not self.isEmpty():
+            self.removeNode()
         BaseClass.delete(self)
 
 if not IS_CLIENT:
     DistributedEntityAI = DistributedEntity
+    DistributedEntityAI.__name__ = 'DistributedEntityAI'

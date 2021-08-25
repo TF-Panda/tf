@@ -73,6 +73,15 @@ class DistributedWeaponShared:
         self.actTable = {}
         self.vmActTable = {}
 
+    def syncAllHitBoxes(self):
+        # Make sure all characters have their hit boxes synchronized.
+        for do in base.net.doId2do.values():
+            if isinstance(do, Char):
+                do.syncHitBoxes()
+
+    def getVMSequenceLength(self):
+        return self.viewModel.getDuration()
+
     def playSound(self, name):
         # Only the server (AI) implements this currently.
         pass
@@ -80,7 +89,7 @@ class DistributedWeaponShared:
     def activate(self):
         assert self.player
         self.sendWeaponAnim(Activity.VM_Draw)
-        self.nextPrimaryAttack = globalClock.getFrameTime() + self.viewModel.getSequenceLength(self.viewModel.getCurrSequence())
+        self.nextPrimaryAttack = globalClock.getFrameTime() + self.viewModel.getDuration()
         self.nextSecondaryAttack = self.nextPrimaryAttack
 
     def deactivate(self):
@@ -94,6 +103,12 @@ class DistributedWeaponShared:
 
     def getEmptySound(self):
         return ""
+
+    def getHitPlayerSound(self):
+        return "Weapon_Crowbar.HitFlesh"
+
+    def getHitWorldSound(self):
+        return "Weapon_Crowbar.HitWorld"
 
     def isWeaponVisible(self):
         return True
@@ -116,14 +131,14 @@ class DistributedWeaponShared:
         if self.activity == self.idealActivity and self.sequence == self.idealSequence:
             return
 
-        if (not self.viewModel.isCurrentSequenceFinished()):
+        if (not self.viewModel.isCurrentChannelFinished()):
             return
 
         # Move to the next animation towards our ideal.
         self.sendWeaponAnim(self.idealActivity)
 
     def setIdealActivity(self, act):
-        idealSequence = self.viewModel.getSequenceForActivity(act)
+        idealSequence = self.viewModel.getChannelForActivity(act)
         if idealSequence == -1:
             return False
 
@@ -141,7 +156,7 @@ class DistributedWeaponShared:
             self.sequence = self.idealSequence
             self.sendViewModelAnim(self.idealSequence)
 
-        self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getSequenceLength(self.viewModel.getCurrSequence())
+        self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getDuration()
         return True
 
     def sendViewModelAnim(self, seq):
@@ -151,13 +166,12 @@ class DistributedWeaponShared:
         if not self.viewModel:
             return
 
-        self.viewModel.resetSequence(seq)
-        self.viewModel.seqPlayer.setCycle(0.0)
+        self.viewModel.startChannel(seq)
 
     def weaponIdle(self):
         if self.hasWeaponIdleTimeElapsed():
             self.sendWeaponAnim(Activity.VM_Idle)
-            self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getSequenceLength(self.viewModel.getCurrSequence())
+            self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getDuration()
 
     def hasWeaponIdleTimeElapsed(self):
         if globalClock.getFrameTime() > self.timeWeaponIdle:
@@ -311,7 +325,7 @@ class DistributedWeaponShared:
         self.sendWeaponAnim(activity)
         #self.setPlayerGesture(playerActivity)
 
-        sequenceEndTime = globalClock.getFrameTime() + self.viewModel.getSequenceLength(self.viewModel.getCurrSequence())
+        sequenceEndTime = globalClock.getFrameTime() + self.viewModel.getDuration()
         self.nextPrimaryAttack = self.nextSecondaryAttack = sequenceEndTime
 
         self.inReload = True
@@ -337,15 +351,15 @@ class DistributedWeaponShared:
 
         self.playSound(self.getSingleSound())
 
-        # Make sure all characters have their hit boxes synchronized.
-        for do in base.net.doId2do.values():
-            if isinstance(do, Char):
-                do.syncHitBoxes()
+        self.syncAllHitBoxes()
 
     def itemPreFrame(self):
         #if self.viewModel.isCurrentSequenceFinished():
         #    self.selectNextActivity(self.activity)
         self.maintainIdealActivity()
+
+    def itemBusyFrame(self):
+        pass
 
     def itemPostFrame(self):
         if not self.player:
@@ -398,9 +412,15 @@ class DistributedWeaponShared:
 
     def setPlayerId(self, playerId):
         self.playerId = playerId
-        if playerId != -1:
-            self.player = base.net.doId2do.get(playerId)
-            self.viewModel = self.player.viewModel
+        self.updatePlayer()
+
+    def updatePlayer(self):
+        if self.playerId != -1:
+            self.player = base.net.doId2do.get(self.playerId)
+            if self.player:
+                self.viewModel = self.player.viewModel
+            else:
+                self.viewModel = None
         else:
             self.player = None
             self.viewModel = None
@@ -410,7 +430,7 @@ class DistributedWeaponShared:
         self.viewModelChar.loadModel(self.WeaponViewModel)
 
     def delete(self):
-        self.viewModelChar.cleanup()
+        self.viewModelChar.clearModel()
         self.viewModelChar = None
         self.player = None
         self.viewModel = None

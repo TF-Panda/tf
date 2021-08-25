@@ -98,6 +98,37 @@ class PredictionCopy:
         else:
             return PREDICTION_DIFF_DIFFERS
 
+    def getDiffType(self, destValue, srcValue, data):
+        if not self.errorCheck:
+            return PREDICTION_DIFF_DIFFERS
+
+        difftype = PREDICTION_DIFF_IDENTICAL
+
+        if not data.noErrorCheck:
+            if data.type == float:
+                difftype = self.compareFloat(destValue, srcValue, data)
+
+            elif data.type in (str, bool, int):
+                if destValue != srcValue:
+                    difftype = PREDICTION_DIFF_DIFFERS
+
+            elif data.type in (Vec3, Point3, Quat, Vec4):
+                tolerance = data.tolerance
+                differs = destValue != srcValue
+                if differs and tolerance > 0.0:
+                    delta = destValue - srcValue
+                    difftype = PREDICTION_DIFF_WITHIN_TOLERANCE
+                    for i in range(len(delta)):
+                        if abs(delta[i]) > tolerance:
+                            difftype = PREDICTION_DIFF_DIFFERS
+                            break
+                elif differs:
+                    difftype = PREDICTION_DIFF_DIFFERS
+            else:
+                self.notify.error("Unknown field type " + repr(data.type))
+
+        return difftype
+
     def transferData(self, operation, dataDesc, destSlot = -1):
         """
         Copies differing prediction fields from src to dest and counts the
@@ -115,30 +146,7 @@ class PredictionCopy:
             srcValue = self.getValue(fieldName, self.src, self.srcType, data)
             destValue = self.getValue(fieldName, self.dest, self.destType, data)
 
-            difftype = PREDICTION_DIFF_IDENTICAL
-            if self.errorCheck and not data.noErrorCheck:
-                if data.type == float:
-                    difftype = self.compareFloat(destValue, srcValue, data)
-
-                elif data.type in (str, bool, int):
-                    if destValue != srcValue:
-                        difftype = PREDICTION_DIFF_DIFFERS
-
-                elif data.type in (Vec3, Point3, Quat, Vec4):
-                    tolerance = data.tolerance
-                    differs = destValue != srcValue
-                    if differs and tolerance > 0.0:
-                        delta = destValue - srcValue
-                        difftype = PREDICTION_DIFF_WITHIN_TOLERANCE
-                        for i in range(len(delta)):
-                            if abs(delta[i]) > tolerance:
-                                difftype = PREDICTION_DIFF_DIFFERS
-                                break
-                    elif differs:
-                        difftype = PREDICTION_DIFF_DIFFERS
-
-            elif not self.errorCheck:
-                difftype = PREDICTION_DIFF_DIFFERS
+            difftype = self.getDiffType(destValue, srcValue, data)
 
             if self.performCopy and difftype != PREDICTION_DIFF_IDENTICAL:
                 self.setValue(fieldName, self.dest, self.destType, data, srcValue)
@@ -510,7 +518,7 @@ class Prediction(DirectObject):
         avatar.setPos(move.origin)
 
     def runCommand(self, avatar, cmd):
-        if avatar.isDead:
+        if avatar.isDead():
             return
 
         self.startCommand(avatar, cmd)
@@ -524,6 +532,8 @@ class Prediction(DirectObject):
             avatar.setActiveWeapon(cmd.weaponSelect)
 
         avatar.updateButtonsState(cmd.buttons)
+
+        oldAngles = Vec3(avatar.viewAngles)
 
         avatar.viewAngles = cmd.viewAngles
 
@@ -546,6 +556,9 @@ class Prediction(DirectObject):
 
         g_game_movement.processMovement(avatar, avatar.moveData)
 
+        if wpn:
+            wpn.itemBusyFrame()
+
         self.finishMove(avatar, cmd)
 
         #self.runPostThink(avatar)
@@ -553,6 +566,9 @@ class Prediction(DirectObject):
             wpn.itemPostFrame()
 
         self.finishCommand(avatar)
+
+        # Restore smooth view angles.
+        avatar.viewAngles = oldAngles
 
         avatar.tickBase += 1
 

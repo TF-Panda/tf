@@ -1,0 +1,190 @@
+//
+// tf_anim_activities.pdx
+//
+// This file defines all of the TF animation activity types.
+//
+// The value IDs can be accessed in Python code via:
+//    from tf.character.Activity import Activity
+//    Activity.Name
+//
+// or in C++ code via:
+//    AnimActivity::ptr()->get_value_id("Name");
+//
+
+[
+  Transition
+
+  Stand
+  Run
+  Crouch
+  Crouch_Walk
+  Swim
+  Air_Walk
+  Jump
+  Jump_Start
+  Jump_Float
+  Jump_Land
+  Double_Jump_Crouch
+
+  Attack_Stand
+  Attack_Crouch
+  Attack_Swim
+  Attack_Air_Walk
+
+  Reload_Stand
+  Reload_Stand_Loop
+  Reload_Stand_End
+  Reload_Crouch
+  Reload_Crouch_Loop
+  Reload_Crouch_End
+  Reload_Swim
+  Reload_Swim_Loop
+  Reload_Swim_End
+  Reload_Air_Walk
+  Reload_Air_Walk_Loop
+  Reload_Air_Walk_End
+
+  Gesture_Flinch
+  Gesture_VC_Hand_Mouth
+  Gesture_VC_Finger_Point
+  Gesture_VC_Fist_Pump
+  Gesture_VC_Thumbs_Up
+  Gesture_VC_Nod_Yes
+  Gesture_VC_Nod_No
+
+  Primary_Stand
+  Primary_Run
+  Primary_Crouch
+  Primary_Crouch_Walk
+  Primary_Swim
+  Primary_Air_Walk
+  Primary_Jump
+  Primary_Jump_Start
+  Primary_Jump_Float
+  Primary_Jump_Land
+  Primary_Double_Jump_Crouch
+
+  Primary_Attack_Stand
+  Primary_Attack_Crouch
+  Primary_Attack_Swim
+  Primary_Attack_Air_Walk
+
+  Primary_Reload_Stand
+  Primary_Reload_Stand_Loop
+  Primary_Reload_Stand_End
+  Primary_Reload_Crouch
+  Primary_Reload_Crouch_Loop
+  Primary_Reload_Crouch_End
+  Primary_Reload_Swim
+  Primary_Reload_Swim_Loop
+  Primary_Reload_Swim_End
+  Primary_Reload_Air_Walk
+  Primary_Reload_Air_Walk_Loop
+  Primary_Reload_Air_Walk_End
+
+  Primary_Gesture_Flinch
+  Primary_Gesture_VC_Hand_Mouth
+  Primary_Gesture_VC_Finger_Point
+  Primary_Gesture_VC_Fist_Pump
+  Primary_Gesture_VC_Thumbs_Up
+  Primary_Gesture_VC_Nod_Yes
+  Primary_Gesture_VC_Nod_No
+
+  Secondary_Stand
+  Secondary_Run
+  Secondary_Crouch
+  Secondary_Crouch_Walk
+  Secondary_Swim
+  Secondary_Air_Walk
+  Secondary_Jump
+  Secondary_Jump_Start
+  Secondary_Jump_Float
+  Secondary_Jump_Land
+  Secondary_Double_Jump_Crouch
+
+  Secondary_Attack_Stand
+  Secondary_Attack_Crouch
+  Secondary_Attack_Swim
+  Secondary_Attack_Air_Walk
+
+  Secondary_Reload_Stand
+  Secondary_Reload_Stand_Loop
+  Secondary_Reload_Stand_End
+  Secondary_Reload_Crouch
+  Secondary_Reload_Crouch_Loop
+  Secondary_Reload_Crouch_End
+  Secondary_Reload_Swim
+  Secondary_Reload_Swim_Loop
+  Secondary_Reload_Swim_End
+  Secondary_Reload_Air_Walk
+  Secondary_Reload_Air_Walk_Loop
+  Secondary_Reload_Air_Walk_End
+
+  Secondary_Gesture_Flinch
+  Secondary_Gesture_VC_Hand_Mouth
+  Secondary_Gesture_VC_Finger_Point
+  Secondary_Gesture_VC_Fist_Pump
+  Secondary_Gesture_VC_Thumbs_Up
+  Secondary_Gesture_VC_Nod_Yes
+  Secondary_Gesture_VC_Nod_No
+
+  Melee_Stand
+  Melee_Run
+  Melee_Crouch
+  Melee_Crouch_Walk
+  Melee_Swim
+  Melee_Air_Walk
+  Melee_Jump
+  Melee_Jump_Start
+  Melee_Jump_Float
+  Melee_Jump_Land
+  Melee_Double_Jump_Crouch
+
+  Melee_Attack_Stand
+  Melee_Attack_Crouch
+  Melee_Attack_Swim
+  Melee_Attack_Air_Walk
+
+  Melee_Gesture_Flinch
+  Melee_Gesture_VC_Hand_Mouth
+  Melee_Gesture_VC_Finger_Point
+  Melee_Gesture_VC_Fist_Pump
+  Melee_Gesture_VC_Thumbs_Up
+  Melee_Gesture_VC_Nod_Yes
+  Melee_Gesture_VC_Nod_No
+
+  VM_Draw
+  VM_Idle
+  VM_Fire
+  VM_Reload
+  VM_Reload_Start
+  VM_Reload_Finish
+
+  Primary_VM_Idle
+  Primary_VM_Draw
+  Primary_VM_Fire
+  Primary_VM_Reload_Start
+  Primary_VM_Reload
+  Primary_VM_Reload_End
+
+  Secondary_VM_Idle
+  Secondary_VM_Draw
+  Secondary_VM_Fire
+  Secondary_VM_Reload_Start
+  Secondary_VM_Reload
+  Secondary_VM_Reload_End
+
+  Melee_VM_Idle
+  Melee_VM_Draw
+  Melee_VM_Swing
+  Melee_VM_Swing_Hard
+
+  Taunt
+
+  Object_Build
+  Object_Idle
+  Object_Fire
+  Object_Disabled
+  Object_Upgrade
+  Object_Fire_Empty
+]

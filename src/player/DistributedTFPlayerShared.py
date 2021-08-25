@@ -11,7 +11,7 @@ from panda3d.pphysics import *
 from .TFClass import *
 from .InputButtons import *
 from .ObserverMode import ObserverMode
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, TFFilters
 
 from tf.tfbase.TFGlobals import Contents, CollisionGroup
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce, addMultiDamage
@@ -25,13 +25,20 @@ class DistributedTFPlayerShared:
 
     DiagonalFactor = math.sqrt(2.) / 2.
 
+    StateNone = 0
+    StateDead = 1
+    StateAlive = 2
+
     def __init__(self):
         self.playerName = ""
-        self.tfClass = 0
-        self.lookPitch = 0.0
-        self.lookYaw = 0.0
-        self.moveX = 0.0
-        self.moveY = 0.0
+        self.tfClass = Class.Engineer
+        self.classInfo = ClassInfos[self.tfClass]
+        self.eyeH = 0.0
+        self.eyeP = 0.0
+
+        self.viewModel = None
+
+        self.playerState = self.StateNone
 
         self.viewAngles = Vec3(0)
 
@@ -42,7 +49,7 @@ class DistributedTFPlayerShared:
         self.controller = None
 
         self.observerMode = ObserverMode.Off
-        self.observerTarget = 0
+        self.observerTarget = -1
 
         self.buttons = InputFlag.Empty
         self.lastButtons = InputFlag.Empty
@@ -67,7 +74,6 @@ class DistributedTFPlayerShared:
         self.moveData = MoveData()
 
         self.tickBase = 0
-        self.isDead = False
         self.deathTime = 0.0
 
     def isObserver(self):
@@ -84,9 +90,9 @@ class DistributedTFPlayerShared:
         start = info['src']
         #end = start + info['dirShooting'] * info['distance']
         result = PhysRayCastResult()
-        filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
+        filter = TFFilters.TFQueryFilter(self)
         base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
-                                  BitMask32(Contents.HitBox | Contents.Solid), BitMask32.allOff(),
+                                  BitMask32(Contents.HitBox | Contents.AnyTeam | Contents.Solid), BitMask32.allOff(),
                                   CollisionGroup.Empty, filter)
         if result.hasBlock():
             # Bullet hit something!
@@ -128,9 +134,21 @@ class DistributedTFPlayerShared:
     def getActiveWeapon(self):
         return self.activeWeapon
 
+    def hasActiveWeapon(self):
+        return self.activeWeapon >= 0 and self.activeWeapon < len(self.weapons)
+
+    def getActiveWeaponObj(self):
+        """
+        Returns the DistributedObject of the player's currently active weapon,
+        or None if he has no active weapon, or the DO doesn't exist.
+        """
+        if not self.hasActiveWeapon():
+            return None
+        return base.net.doId2do.get(self.weapons[self.activeWeapon])
+
     def setupController(self):
-        mins = self.classInfo.BBox[0]
-        maxs = self.classInfo.BBox[1]
+        mins = TFGlobals.VEC_HULL_MIN
+        maxs = TFGlobals.VEC_HULL_MAX
         halfExts = Vec3((maxs[0] - mins[0]) / 2, (maxs[1] - mins[1]) / 2, (maxs[2] - mins[2]) / 2)
         mat = PhysMaterial(0.3, 0.3, 0.0)
         self.controller = PhysBoxController(
@@ -142,15 +160,18 @@ class DistributedTFPlayerShared:
             # We are red team.
             self.controller.setContentsMask(TFGlobals.Contents.RedTeam)
             # Blue team is solid to us.
-            self.controller.setSolidMask(TFGlobals.Contents.BlueTeam)
+            self.controller.setSolidMask(TFGlobals.Contents.BlueTeam | TFGlobals.Contents.Solid)
         elif self.team == 1:
             # We are blue team.
             self.controller.setContentsMask(TFGlobals.Contents.BlueTeam)
             # Red team is solid to us.
-            self.controller.setSolidMask(TFGlobals.Contents.RedTeam)
+            self.controller.setSolidMask(TFGlobals.Contents.RedTeam | TFGlobals.Contents.Solid)
 
         self.controller.setUpDirection(Vec3.up())
         self.controller.setFootPosition(self.getPos())
+        #self.controller.setContactOffset(0.00001)
+        self.controller.getActorNode().setPythonTag("entity", self)
+        self.attachNewNode(self.controller.getActorNode())
 
     def announceGenerate(self):
         self.classInfo = ClassInfos[self.tfClass]
@@ -196,3 +217,4 @@ class DistributedTFPlayerShared:
 
     def disable(self):
         self.controller = None
+        self.viewModel = None

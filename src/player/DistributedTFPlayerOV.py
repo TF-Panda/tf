@@ -8,6 +8,7 @@ from .PlayerCommand import PlayerCommand
 from .InputButtons import InputFlag
 from .TFClass import *
 from .ObserverMode import ObserverMode
+from tf.object.ObjectType import ObjectType
 
 from tf.character.Char import Char
 from tf.tfgui.TFHud import TFHud
@@ -19,6 +20,8 @@ from direct.showbase.InputStateGlobal import inputState
 from direct.directbase import DirectRender
 from direct.gui.DirectGui import OnscreenText
 
+from tf.tfgui.TFClassMenu import TFClassMenu
+
 import copy
 import random
 
@@ -26,6 +29,12 @@ spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
 spec_freeze_traveltime = ConfigVariableDouble("spec-freeze-travel-time", 0.4)
 spec_freeze_distance_min = ConfigVariableDouble("spec-freeze-distance-min", 96)
 spec_freeze_distance_max = ConfigVariableDouble("spec-freeze-distance-max", 200)
+
+mouse_sensitivity = ConfigVariableDouble("mouse-sensitivity", 3.0)
+mouse_raw_input = ConfigVariableBool("mouse-raw-input", True)
+
+WALL_MINS = Vec3(-6)
+WALL_MAXS = Vec3(6)
 
 class CommandContext:
     """
@@ -75,6 +84,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.hud = TFHud()
         self.wpnSelect = TFWeaponSelection()
         self.controlsEnabled = False
+        self.mouseDelta = Vec2()
+        self.classMenu = None
+
+        self.lastMouseSample = Vec2()
 
         # Entities that the player predicts/simulates along with itself.  For
         # instance, weapons.
@@ -94,6 +107,13 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.wasFreezeFraming = False
 
         self.killedByLabel = None
+
+        self.objectPanels = {}
+
+    def d_changeClass(self, clsId):
+        self.sendUpdate('changeClass', [clsId])
+        self.enableControls()
+        self.classMenu = None
 
     def addPlayerSimulatedEntity(self, ent):
         """
@@ -147,8 +167,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             elif self.observerMode == ObserverMode.FreezeCam:
                 self.calcFreezeCamView()
         else:
-            base.camera.setPos(self.getPos() + (0, 0, self.classInfo.ViewHeight))
+            base.camera.setPos(self.getEyePosition())
             base.camera.setHpr(self.viewAngles)
+            if self.viewModel:
+                # Also calculate the viewmodel position/rotation.
+                self.viewModel.calcView(self, base.camera)
 
     def calcDeathCamView(self):
         killer = base.net.doId2do.get(self.observerTarget)
@@ -164,14 +187,14 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         aForward = self.viewAngles
         qForward = Quat()
         qForward.setHpr(aForward)
-        origin = self.getPos() + (0, 0, self.classInfo.ViewHeight)
+        origin = self.getEyePosition()
         if self.ragdoll:
             origin = Point3(self.ragdoll[1].getRagdollPosition())
             origin.z += 40
 
         if killer and killer != self:
             # Compute angles to look at killer.
-            vKiller = (killer.getPos() + (0, 0, killer.classInfo.ViewHeight)) - origin
+            vKiller = killer.getEyePosition() - origin
             qKiller = Quat()
             lookAt(qKiller, vKiller)
             Quat.slerp(qForward, qKiller, interpolation, qForward)
@@ -203,7 +226,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         else:
             camDesired = target.getPos()
         if target.health > 0:
-            camDesired[2] += target.classInfo.ViewHeight
+            camDesired[2] += target.viewOffset[2]
         #else:
         #    camDesired[2] += 40
         camTarget = Vec3(camDesired)
@@ -227,10 +250,13 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         # Stop a few units away from the target, and shift up to be at the same height
         targetPos = camTarget - (toTarget * self.freezeFrameDistance)
-        eyePosZ = target.getZ() + target.classInfo.ViewHeight
+        eyePosZ = target.getZ() + target.viewOffset[2]
         targetPos[2] = eyePosZ + self.freezeZOffset
 
-        # TODO: trace so that we're put in front of any walls.
+        # trace so that we're put in front of any walls.
+        #result = PhysSweepResult()
+        #base.physicsWorld.boxcast(result, WALL_MINS + camTarget, WALL_MAXS + camTarget,
+        #                          )
 
         # Look directly at the target.
         toTarget = camTarget - targetPos
@@ -246,16 +272,41 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             base.postProcess.freezeFrame.freezeFrame(spec_freeze_time.getValue())
             if self.killedByLabel:
                 self.killedByLabel.destroy()
-            self.killedByLabel = OnscreenText(text = "You were killed by %s!" % target.playerName, scale = 0.1,
-                                              pos = (0, 0.89), fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1),
+            if target.__class__.__name__ == 'SentryGun':
+                text = "You were killed by the "
+                if target.health <= 0:
+                    text += "late "
+                text += "Sentry Gun of "
+                builder = target.getBuilder()
+                if builder:
+                    if builder.health <= 0:
+                        text += "the late "
+                    text += builder.playerName
+            else:
+                text = "You were killed by "
+                if target.health <= 0:
+                    text += "the late "
+                text += target.playerName
+            text += "!"
+
+            self.killedByLabel = OnscreenText(text = text, scale = 0.09,
+                                              pos = (0, 0.9), fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1),
                                               font = TFGlobals.getTF2SecondaryFont())
             self.sentFreezeFrame = True
 
     def respawn(self):
         DistributedTFPlayer.respawn(self)
-        self.modelNp.hide()
+        if self.modelNp:
+            self.modelNp.hide()
         self.viewModel.show()
         self.hud.showHud()
+
+    def RecvProxy_tfClass(self, tfclass):
+        self.tfClass = tfclass
+        if self.tfClass == Class.Engineer and not self.objectPanels:
+            self.createObjectPanels()
+        elif self.tfClass != Class.Engineer:
+            self.destroyObjectPanels()
 
     def becomeRagdoll(self, forceJoint, forcePosition, forceVector):
         DistributedTFPlayer.becomeRagdoll(self, forceJoint, forcePosition, forceVector)
@@ -372,6 +423,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
     def delete(self):
         base.simTaskMgr.remove('runControls')
         base.taskMgr.remove('calcView')
+        base.taskMgr.remove('mouseMovement')
 
         del base.localAvatar
         del base.localAvatarId
@@ -399,8 +451,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.accept('wheel_up', self.wpnSelect.hoverPrevWeapon)
         self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
+        self.accept(',', self.doChangeClass)
 
         base.simTaskMgr.add(self.runControls, 'runControls')
+        base.taskMgr.add(self.mouseMovement, 'mouseMovement')
         base.taskMgr.add(self.calcViewTask, 'calcView', sort = 38)
 
         props = WindowProperties()
@@ -408,6 +462,28 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.win.requestProperties(props)
 
         self.accept('escape', self.enableControls)
+
+    def doChangeClass(self):
+        if self.classMenu:
+            return
+        self.classMenu = TFClassMenu()
+        self.disableControls()
+
+    def createObjectPanels(self):
+        from tf.tfgui.ObjectPanel import SentryPanel, DispenserPanel, EntrancePanel, ExitPanel
+        self.objectPanels[ObjectType.SentryGun] = SentryPanel()
+        self.objectPanels[ObjectType.SentryGun].updateState()
+        self.objectPanels[ObjectType.Dispenser] = DispenserPanel()
+        self.objectPanels[ObjectType.Dispenser].updateState()
+        self.objectPanels[ObjectType.TeleporterEntrance] = EntrancePanel()
+        self.objectPanels[ObjectType.TeleporterEntrance].updateState()
+        self.objectPanels[ObjectType.TeleporterExit] = ExitPanel()
+        self.objectPanels[ObjectType.TeleporterExit].updateState()
+
+    def destroyObjectPanels(self):
+        for panel in self.objectPanels.values():
+            panel.destroy()
+        self.objectPanels = {}
 
     def calcViewTask(self, task):
         self.calcView()
@@ -421,11 +497,19 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         props = WindowProperties()
         props.setCursorHidden(True)
-        props.setMouseMode(WindowProperties.MConfined)
+        props.setMouseMode(WindowProperties.MRelative)
 
         base.win.requestProperties(props)
 
-        base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
+        #base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
+        if base.mouseWatcherNode.hasMouse():
+            md = base.mouseWatcherNode.getMouse()
+            sizeX = base.win.getXSize()
+            sizeY = base.win.getYSize()
+            self.lastMouseSample = Vec2((md.getX() * 0.5 + 0.5) * sizeX, (md.getY() * 0.5 + 0.5) * sizeY)
+        else:
+            self.lastMouseSample = Vec2()
+        self.mouseDelta = Vec2()
 
         self.accept('escape', self.disableControls)
 
@@ -433,21 +517,32 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.controlsEnabled = True
 
+    def mouseMovement(self, task):
+        """
+        Runs every frame to get smooth mouse movement.  Delta is accumulated
+        over multiple frames for player command tick.
+        """
+
+        mw = base.mouseWatcherNode
+        if self.controlsEnabled and mw.hasMouse() and not self.isDead():
+            md = mw.getMouse()
+            sens = mouse_sensitivity.getValue()
+            sizeX = base.win.getXSize()
+            sizeY = base.win.getYSize()
+            #center = Point2(base.win.getXSize() // 2, base.win.getYSize() // 2)
+            sample = Vec2((md.getX() * 0.5 + 0.5) * sizeX, (md.getY() * 0.5 + 0.5) * sizeY)
+            delta = (sample - self.lastMouseSample) * sens
+            #base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
+
+            base.camera.setH(base.camera.getH() - (delta.x * 0.022))
+            base.camera.setP(max(-90, min(90, base.camera.getP() + (delta.y * 0.022))))
+            base.camera.setR(0.0)
+            self.viewAngles = base.camera.getHpr()
+            self.mouseDelta += delta
+            self.lastMouseSample = sample
+        return task.cont
+
     def runControls(self, task):
-        if self.controlsEnabled and not self.isDead:
-            sens = base.config.GetFloat("mouse-sensitivity", 0.1)
-            center = Point2(base.win.getXSize() // 2, base.win.getYSize() // 2)
-            md = base.win.getPointer(0)
-            mouseDx = (md.getX() - center.getX()) * sens
-            mouseDy = (md.getY() - center.getY()) * sens
-            base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
-
-            base.camera.setH(base.camera.getH() - mouseDx)
-            base.camera.setP(max(-90, min(90, base.camera.getP() - mouseDy)))
-        else:
-            mouseDx = 0
-            mouseDy = 0
-
         cmd = self.getNextCommand()
         cmd.clear()
         cmd.commandNumber = self.getNextCommandNumber()
@@ -456,9 +551,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         cmd.tickCount = base.tickCount
 
         cmd.buttons = InputFlag.Empty
-        if not self.isDead:
-            cmd.viewAngles = base.camera.getHpr()
-            cmd.mouseDelta = Vec2(mouseDx, mouseDy)
+        if not self.isDead():
+            cmd.viewAngles = Vec3(self.viewAngles)
+            cmd.mouseDelta = Vec2(self.mouseDelta)
             if inputState.isSet("forward"):
                 cmd.buttons |= InputFlag.MoveForward
             if inputState.isSet("backward"):
@@ -474,7 +569,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             if inputState.isSet("attack1"):
                 if self.wpnSelect.isActive:
                     cmd.weaponSelect = self.wpnSelect.index
-                    #print("Setting weaponSelect to", cmd.weaponSelect)
                     self.wpnSelect.hide()
                 else:
                     cmd.buttons |= InputFlag.Attack1
@@ -493,7 +587,12 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         elif cmd.buttons & InputFlag.MoveLeft:
             cmd.move[0] = -BaseSpeed * self.classInfo.ForwardFactor
 
+        if cmd.move[0] and cmd.move[1]:
+            cmd.move *= self.DiagonalFactor
+
         self.considerSendCommand()
+
+        self.mouseDelta = Vec2()
 
         return task.cont
 

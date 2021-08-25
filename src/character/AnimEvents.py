@@ -1,4 +1,4 @@
-from enum import IntEnum, auto, IntFlag
+from enum import auto, IntFlag
 
 class AnimEventType(IntFlag):
 
@@ -8,8 +8,5 @@ class AnimEventType(IntFlag):
     Client = 1 << 1
     Client_Server = (Server | Client)
 
-class AnimEvent(IntEnum):
-
-    Invalid = -1
-
-    Client_Play_Sound = auto()
+from panda3d.core import AnimEvent as AE
+AnimEvent = AE.ptr()

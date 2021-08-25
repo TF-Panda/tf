@@ -57,7 +57,6 @@ def clearMultiDamage():
     """
     Resets the global multi-damage accumulator.
     """
-    print("Clear multi damage")
     g_multiDamage.clear()
 
 def applyMultiDamage():
@@ -66,8 +65,6 @@ def applyMultiDamage():
     """
     if not g_multiDamage.target:
         return
-
-    print("Apply multi damage")
 
     g_multiDamage.target.takeDamage(g_multiDamage)
 
@@ -89,9 +86,6 @@ def addMultiDamage(info, entity):
         g_multiDamage.damageType = info.damageType
         g_multiDamage.customDamage = info.customDamage
 
-    print("Add multi damage")
-    print("\tForce before", g_multiDamage.damageForce)
-
     g_multiDamage.damageType |= info.damageType
     g_multiDamage.setDamage(g_multiDamage.damage + info.damage)
     g_multiDamage.damageForce += info.damageForce
@@ -102,8 +96,11 @@ def addMultiDamage(info, entity):
 def calculateBulletDamageForce(info, forceDir, forceOrigin, scale):
     info.damagePosition = forceOrigin
     force = forceDir.normalized()
-    force *= 1500 # ??? ammo type damage force?
-    force *= 1 # phys_pushscale?
+
+    # It looks like all TF ammo types use the same bullet force, which is 2400.
+    force *= 2400
+
+    #force *= 1 # phys_pushscale?
     force *= scale
     info.damageForce = Vec3(force)
 
@@ -120,7 +117,7 @@ def calculateExplosiveDamageForce(info, forceDir, forceOrigin, scale):
 
     # Calculate an impulse large enough to push a 75kg man 4 in/sec per point
     # of damage.
-    forceScale = info.baseDamage * impulseScale(75, 4)
+    forceScale = info.damage * impulseScale(75, 4)
 
     if forceScale > clampForce:
         forceScale = clampForce
@@ -134,7 +131,7 @@ def calculateExplosiveDamageForce(info, forceDir, forceOrigin, scale):
     # Calculate the vector and stuff it into the TakeDamageInfo
     force = forceDir.normalized()
     force *= forceScale
-    force *= 1 # phys_pushscale?
+    #force *= 1 # phys_pushscale?
     force *= scale
     info.damageForce = force
 
@@ -143,10 +140,10 @@ def calculateMeleeDamageForce(info, forceDir, forceOrigin, scale):
 
     # Calculate an impulse large enough to push a 75kg man 4 in/sec per point
     # of damage.
-    forceScale = info.baseDamage * impulseScale(75, 4)
+    forceScale = info.damage * impulseScale(75, 4)
     force = forceDir.normalized()
     force *= forceScale
-    force *= 1 # phys_pushscale?
+    #force *= 1 # phys_pushscale?
     force *= scale
     info.damageForce = force
 

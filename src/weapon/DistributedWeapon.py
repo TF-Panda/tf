@@ -24,10 +24,14 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         self.addPredictionField("fireDuration", float, networked=False)
         self.addPredictionField("reloadsSingly", bool, networked=False)
 
+    def addViewModelBob(self, viewModel, info):
+        pass
+
     def shouldPredict(self):
         if self.isOwnedByLocalPlayer():
             return True
         return DistributedChar.shouldPredict(self)
+        #return False
 
     def delete(self):
         DistributedChar.delete(self)
@@ -65,6 +69,32 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
     def RecvProxy_playerId(self, playerId):
         self.setPlayerId(playerId)
 
+    def update(self):
+        DistributedChar.update(self)
+
+        # Poll for the player.
+        if self.playerId != -1 and (self.player is None or self.viewModel is None):
+            self.updatePlayer()
+
+    def updatePlayer(self):
+        DistributedWeaponShared.updatePlayer(self)
+
+        if self.player and self.player.hasActiveWeapon() and \
+            self.player.weapons[self.player.activeWeapon] == self.doId:
+            self.active = True
+        else:
+            self.active = False
+
+        if self.active and self.modelNp and self.player and self.player.modelNp:
+            # Make sure the world model is parented to the player.
+            self.modelNp.reparentTo(self.player.modelNp)
+            self.setJointMergeCharacter(self.player.character)
+
+            if self.isActiveLocalPlayerWeapon() and self.player.viewModel:
+                # Parent the view model to the player's view model.
+                self.viewModelChar.modelNp.reparentTo(self.player.viewModel.modelNp)
+                self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
+
     def activate(self):
         """
         Called when the weapon becomes the active weapon.
@@ -72,7 +102,10 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
         assert self.player
 
-        DistributedWeaponShared.activate(self)
+        self.active = True
+
+        if self.isActiveLocalPlayerWeapon():
+            DistributedWeaponShared.activate(self)
 
         # Parent the world model to the player.
         self.modelNp.reparentTo(self.player.modelNp)
@@ -91,7 +124,10 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         """
         assert self.player
 
+        self.active = False
+
         self.modelNp.reparentTo(hidden)
         self.viewModelChar.modelNp.reparentTo(hidden)
 
-        DistributedWeaponShared.deactivate(self)
+        if self.isActiveLocalPlayerWeapon():
+            DistributedWeaponShared.deactivate(self)

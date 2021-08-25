@@ -24,12 +24,16 @@ class TFMainMenu(StateData):
       #"audio/bgm/gamestartup14.mp3",
     ]
 
+    BgsWidescreen = ["maps/background01_widescreen.txo", "maps/background02_widescreen.txo"]
+    Bgs = ["maps/background01.txo", "maps/background02.txo"]
+
     def __init__(self):
         StateData.__init__(self, 'MainMenuDone')
         self.buttons = []
         self.songs = []
         self.availableSongs = []
         self.logo = None
+        self.bg = None
         self.playingSong = None
 
     def __playGame(self):
@@ -48,12 +52,17 @@ class TFMainMenu(StateData):
             self.songs.append(base.loader.loadMusic(filename))
         self.availableSongs = list(self.songs)
         self.addMenuButton(TFLocalizer.MainMenuStartPlaying, (0.3, 0, 0), self.__playGame)
+        self.bg = OnscreenImage(image = random.choice(self.BgsWidescreen), parent = hidden)
+        #self.bg.setSx(1.77777)
+        self.bg.setBin('background', 0)
+        #self.bg = loader.loadModel("models/gui/title_team_widescreen.bam")
         self.logo = OnscreenImage(image = base.loader.loadModel("models/gui/tf2_logo_2.bam"), parent = hidden,
                                   pos = (0.57, 0, 0.2), scale = 0.04)
         self.logo.setTransparency(True)
 
     def enter(self):
         StateData.enter(self)
+        self.bg.reparentTo(base.render2d)
         self.logo.reparentTo(base.a2dLeftCenter)
         for btn in self.buttons:
             btn.reparentTo(base.a2dLeftCenter)
@@ -84,6 +93,7 @@ class TFMainMenu(StateData):
     def exit(self):
         for btn in self.buttons:
             btn.reparentTo(hidden)
+        self.bg.reparentTo(hidden)
         self.logo.reparentTo(hidden)
         self.ignore("menuSongFinished")
         if self.playingSong:
@@ -95,6 +105,8 @@ class TFMainMenu(StateData):
         for btn in self.buttons:
             btn.destroy()
         self.buttons = None
+        self.bg.destroy()
+        self.bg = None
         self.logo.destroy()
         self.logo = None
         self.playingSong = None

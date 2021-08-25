@@ -4,8 +4,11 @@ Builds the sound list from the script file.
 
 import math
 from enum import IntEnum, auto
-from panda3d.core import ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager, PitchShiftDSP
+from panda3d.core import ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager, PitchShiftDSP, PStatCollector
 import random
+
+csc_coll = PStatCollector("App:Sounds:CreateSoundClient")
+get_sound_coll = PStatCollector("App:Sounds:CreateSoundClient:GetSound")
 
 snd_refdb = ConfigVariableDouble("snd-refdb", 60.0)
 snd_refdist = ConfigVariableDouble("snd-refdist", 36)
@@ -63,11 +66,21 @@ class Wave:
 
     def __init__(self):
         self.filename = ""
+        # Cached AudioSound data, None until first time wave is needed.
+        self.sound = None
         self.spatialized = False
+
+    def getSound(self, mgr):
+        if self.sound:
+            return mgr.getSound(self.sound)
+        else:
+            self.sound = mgr.getSound(self.filename, self.spatialized)
+            return self.sound
 
     def __repr__(self):
         return f"""
         Wave {self.filename}
+          sound: {self.sound}
           spatialized: {self.spatialized}
         """
 
@@ -91,6 +104,7 @@ class SoundInfo:
         self.wave = None
         # If there are multiple, we will randomly choose one.
         self.waves = []
+        self.index = 0
 
     def __repr__(self):
         return f"""
@@ -106,8 +120,7 @@ class SoundInfo:
 Sounds = {}
 AllSounds = []
 
-def createSound(name):
-    info = Sounds.get(name, None)
+def createSound(info):
     if not info:
         return None
 
@@ -119,7 +132,8 @@ def createSound(name):
     if not wave:
         return None
 
-    sound = base.sfxManagerList[info.channel].getSound(wave.filename, wave.spatialized)
+    mgr = base.sfxManagerList[info.channel]
+    sound = wave.getSound(mgr)
     if wave.spatialized:
         sound.set3dMinDistance(info.minDistance)
     sound.setPlayRate(random.uniform(info.pitch[0], info.pitch[1]))
@@ -127,8 +141,19 @@ def createSound(name):
 
     return sound
 
+def createSoundByName(name):
+    info = Sounds.get(name, None)
+    return createSound(info)
+
+def createSoundByIndex(index):
+    info = AllSounds[index]
+    return createSound(info)
+
 def createSoundClient(index, waveIndex, volume, pitch, pos):
+    csc_coll.start()
+
     if index >= len(AllSounds):
+        csc_coll.stop()
         return None
 
     info = AllSounds[index]
@@ -138,15 +163,20 @@ def createSoundClient(index, waveIndex, volume, pitch, pos):
         wave = info.waves[waveIndex]
 
     if not wave:
+        csc_coll.stop()
         return None
 
-    sound = base.sfxManagerList[info.channel].getSound(wave.filename, wave.spatialized)
+    get_sound_coll.start()
+    mgr = base.sfxManagerList[info.channel]
+    sound = wave.getSound(mgr)
+    get_sound_coll.stop()
     if wave.spatialized:
         sound.set3dMinDistance(info.minDistance)
     sound.setPlayRate(pitch)
     sound.setVolume(volume)
     sound.set3dAttributes(pos[0], pos[1], pos[2], 0, 0, 0)
 
+    csc_coll.stop()
     return sound
 
 def createSoundServer(name, pos):
@@ -162,7 +192,7 @@ def createSoundServer(name, pos):
     if waveIdx == -1:
         return None
 
-    return [AllSounds.index(info), waveIdx, random.uniform(info.volume[0], info.volume[1]), random.uniform(info.pitch[0], info.pitch[1]), pos]
+    return [info.index, waveIdx, random.uniform(info.volume[0], info.volume[1]), random.uniform(info.pitch[0], info.pitch[1]), pos]
 
 def processSound(kv):
     global Sounds
@@ -203,7 +233,7 @@ def processSound(kv):
             if value.startswith(")"):
                 info.wave.spatialized = True
                 value = value[1:]
-            info.wave.filename = Filename.fromOsSpecific(value)
+            info.wave.filename = Filename.fromOsSpecific(value.lower())
         elif key == "pitch":
             if value.upper() in Pitch.__members__:
                 info.pitch = [Pitch[value.upper()], Pitch[value.upper()]]
@@ -237,9 +267,10 @@ def processSound(kv):
                 if value.startswith(")"):
                     wave.spatialized = True
                     value = value[1:]
-                wave.filename = Filename.fromOsSpecific(value)
+                wave.filename = Filename.fromOsSpecific(value.lower())
                 info.waves.append(wave)
 
+    info.index = len(AllSounds)
     Sounds[info.name] = info
     AllSounds.append(info)
 
@@ -250,8 +281,10 @@ def loadSounds(server = False):
             # (which ShowBase creates automatically).
             if chan > 1:
                 mgr = AudioManager.createAudioManager()
-                mgr.setVolume(base.config.GetFloat("sfx-volume", 0.1))
                 base.addSfxManager(mgr)
+
+        #for mgr in base.sfxManagerList:
+
 
     for i in range(load_sounds.getNumUniqueValues()):
         filename = Filename.fromOsSpecific(load_sounds.getUniqueValue(i))

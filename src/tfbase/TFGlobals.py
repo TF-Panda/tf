@@ -13,7 +13,7 @@ GameZone = 2
 ###############################################################################
 
 from enum import IntEnum, IntFlag
-from panda3d.core import BitMask32
+from panda3d.core import BitMask32, Vec3
 
 class CollisionGroup(IntEnum):
     Empty = 0
@@ -22,6 +22,8 @@ class CollisionGroup(IntEnum):
     Interactive = 3
     Player = 4
     PlayerMovement = 5
+    Projectile = 6
+    Rockets = 7
 
 class Contents(IntFlag):
     Empty = 0
@@ -29,6 +31,18 @@ class Contents(IntFlag):
     RedTeam = 1 << 1
     BlueTeam = 1 << 2
     HitBox = 1 << 3
+    AnyTeam = (RedTeam | BlueTeam)
+
+class SolidShape(IntEnum):
+    Empty = 0 # Nothing.
+    Box = 1 # Bounding box.
+    Sphere = 2 # Bounding sphere.
+    Model = 3 # Use model collision mesh data.
+
+class SolidFlag(IntFlag):
+    Intangible = 0
+    Tangible = 1 << 0
+    Trigger = 1 << 1
 
 # Non-entity parent codes
 class WorldParent(IntEnum):
@@ -112,6 +126,13 @@ def simpleSpline(value):
     valueSquared = value * value
     return (3 * valueSquared - 2 * valueSquared * value)
 
+def remapVal(val, A, B, C, D):
+    if A == B:
+        return D if val >= B else C
+
+    cVal = (val - A) / (B - A)
+    return C + (D - C) * cVal
+
 def remapValClamped(val, A, B, C, D):
     if A == B:
         return D if val >= B else C
@@ -127,6 +148,10 @@ def simpleSplineRemapValClamped(val, A, B, C, D):
     cVal = (val - A) / (B - A)
     cVal = max(0.0, min(1.0, cVal))
     return C + (D - C) * simpleSpline(cVal)
+
+def angleMod(a):
+    a = (360.0/65536) * (int(a*(65536.0/360.0)) & 65535)
+    return a
 
 TF2Font = None
 def getTF2Font():
@@ -155,3 +180,14 @@ def getTF2ProfessorFont():
     if not TF2ProfessorFont:
         TF2ProfessorFont = base.loader.loadFont("models/fonts/tf2professor.ttf")
     return TF2ProfessorFont
+
+# All classes use the same standing/ducking collision hulls.
+VEC_VIEW = Vec3(0, 0, 72)
+VEC_HULL_MIN = Vec3(-24, -24, 0)
+VEC_HULL_MAX = Vec3(24, 24, 82)
+VEC_DUCK_HULL_MIN = Vec3(-24, -24, 0)
+VEC_DUCK_HULL_MAX = Vec3(24, 24, 55)
+VEC_DUCK_VIEW = Vec3(0, 0, 45)
+VEC_OBS_HULL_MIN = Vec3(-10, -10, -10)
+VEC_OBS_HULL_MAX = Vec3(10, 10, 10)
+VEC_DEAD_VIEWHEIGHT = Vec3(0, 0, 14)

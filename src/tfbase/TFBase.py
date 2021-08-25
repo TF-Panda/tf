@@ -1,9 +1,9 @@
-from panda3d.core import TextNode, AntialiasAttrib, LightRampAttrib, Vec4, NodePath, PerspectiveLens, TextPropertiesManager, TextProperties
+from panda3d.core import *
 from panda3d.pphysics import PhysScene, PhysSystem
 
 from direct.showbase.ShowBase import ShowBase
 from direct.directnotify.DirectNotifyGlobal import directNotify
-from direct.gui.DirectGui import DGG
+from direct.gui.DirectGui import DGG, OnscreenText
 from direct.directbase import DirectRender
 
 from direct.fsm.FSM import FSM
@@ -17,6 +17,8 @@ from . import Sounds
 
 from direct.showbase.Audio3DManager import Audio3DManager
 
+import random
+
 class TFBase(ShowBase, FSM):
 
     notify = directNotify.newCategory("TFBase")
@@ -24,6 +26,27 @@ class TFBase(ShowBase, FSM):
     def __init__(self):
         ShowBase.__init__(self)
         FSM.__init__(self, 'TFBase')
+
+        TextNode.setDefaultFont(self.loader.loadFont("models/fonts/TF2.ttf"))
+
+        # SHow a loading thing.
+        cm = CardMaker('cm')
+        cm.setFrameFullscreenQuad()
+        cm.setHasUvs(True)
+        bg = self.render2d.attachNewNode(cm.generate())
+        bg.setColorScale((0.5, 0.5, 0.5, 1))
+        tex = random.choice(
+            ["maps/background01_widescreen.txo", "maps/background02_widescreen.txo"])
+        bg.setTexture(loader.loadTexture(tex))
+        bg.setBin('background', 0)
+
+        loadingText = OnscreenText("Loading...", fg = (1, 1, 1, 1), parent = self.aspect2d)
+
+        base.graphicsEngine.renderFrame()
+        base.graphicsEngine.flipFrame()
+
+        if base.config.GetBool("want-pstats-hotkey", False):
+            self.accept('shift-s', self.togglePStats)
 
         #self.win.disableClears()
 
@@ -62,14 +85,16 @@ class TFBase(ShowBase, FSM):
 
         self.audio3ds = []
         for mgr in base.sfxManagerList:
+            mgr.setVolume(base.config.GetFloat("sfx-volume", 0.1))
             audio3d = Audio3DManager(mgr, self.cam, self.render)
             audio3d.setDistanceFactor(1/0.02032)
             self.audio3ds.append(audio3d)
 
-        self.setBackgroundColor(0.3, 0.3, 0.3)
+        self.setBackgroundColor(0, 0, 0)
         #self.enableMouse()
 
-        TextNode.setDefaultFont(self.loader.loadFont("models/fonts/TF2.ttf"))
+        self.accept('f9', self.screenshot)
+
         DGG.setDefaultRolloverSound(self.loader.loadSfx("audio/sfx/buttonrollover.wav"))
         DGG.setDefaultClickSound(self.loader.loadSfx("audio/sfx/buttonclick.wav"))
         # TF2 also has a click release sound.
@@ -77,11 +102,11 @@ class TFBase(ShowBase, FSM):
 
         PhysSystem.ptr().initialize()
         self.physicsWorld = PhysScene()
-        self.physicsWorld.setGravity((0, 0, -800))
+        self.physicsWorld.setGravity((0, 0, -800)) # 9.81 m/s as inches
         self.physicsWorld.setFixedTimestep(0.015)
 
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
+        #self.physicsWorld.setGroupCollisionFlag(
+        #    TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
         self.physicsWorld.setGroupCollisionFlag(
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
 
@@ -92,16 +117,59 @@ class TFBase(ShowBase, FSM):
         self.vmLens = PerspectiveLens()
         self.vmLens.setMinFov(self.config.GetInt("viewmodel-fov", 54) / (4./3.))
         self.vmLens.setAspectRatio(self.camLens.getAspectRatio())
-        self.vmLens.setNear(0.01)
+        self.vmLens.setNear(1.0)
         self.vmCamera = self.makeCamera(
             self.win, lens = self.vmLens,
             clearDepth = True, clearColor = False)
         self.vmCamera.reparentTo(self.vmRender)
-        self.postProcess.addCamera(self.vmCamera, 0, 1)
+        self.postProcess.addCamera(self.vmCamera, 0, 2)
 
-        self.taskMgr.add(self.viewModelSceneUpdate, 'viewModelSceneUpdate', sort = -100)
+        self.taskMgr.add(self.viewModelSceneUpdate, 'viewModelSceneUpdate', sort = 39)
 
         self.playGame = None
+
+        precacheList = [
+            "tfmodels/src/buildables/sentry1.pmdl",
+            "tfmodels/src/char/engineer/engineer.pmdl",
+            "tfmodels/src/char/engineer/engineer_viewmodel/c_engineer_arms.pmdl",
+            "tfmodels/src/char/soldier/soldier.pmdl",
+            "tfmodels/src/char/soldier/soldier_viewmodel/c_soldier_arms.pmdl",
+            "tfmodels/src/weapons/rocketlauncher/c_rocketlauncher.pmdl",
+            "tfmodels/src/weapons/shotgun/c_shotgun.pmdl",
+            "tfmodels/src/weapons/pistol/c_pistol.pmdl",
+            "tfmodels/src/weapons/wrench/c_wrench.pmdl",
+            "tfmodels/src/buildables/sentry2_heavy.pmdl",
+            "tfmodels/src/buildables/sentry2.pmdl",
+            "tfmodels/src/buildables/sentry1_gib1.pmdl",
+            "tfmodels/src/buildables/sentry1_gib2.pmdl",
+            "tfmodels/src/buildables/sentry1_gib3.pmdl",
+            "tfmodels/src/buildables/sentry1_gib4.pmdl",
+            "tfmodels/src/weapons/rocketlauncher/w_rocket.pmdl",
+            "tfmodels/src/char/demo/demo.pmdl",
+            "tfmodels/src/char/demo/demo_viewmodel/c_demo_arms.pmdl",
+            "tfmodels/src/weapons/bottle/c_bottle.pmdl",
+            "tfmodels/src/weapons/shovel/c_shovel.pmdl"
+        ]
+        self.precache = []
+        for pc in precacheList:
+            self.precache.append(loader.loadModel(pc))
+            # Keep the window pumping.
+            base.graphicsEngine.renderFrame()
+
+        loadingText.destroy()
+        bg.removeNode()
+
+    def restart(self):
+        ShowBase.restart(self)
+        # This task is added by ShowBase automatically for the built-in
+        # collision system, which we do not use.  Remove it.
+        self.taskMgr.remove('resetPrevTransform')
+
+    def togglePStats(self):
+        if PStatClient.isConnected():
+            PStatClient.disconnect()
+        else:
+            PStatClient.connect()
 
     def physicsUpdate(self, task):
         self.physicsWorld.simulate(globalClock.getDt())

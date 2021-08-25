@@ -22,11 +22,24 @@ from tf.distributed.DistributedGame/AI import DistributedGame/AI
 from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
 from tf.character.DistributedChar/AI import DistributedChar/AI
 from tf.distributed.DTestChar/AI import DTestChar/AI
+from tf.distributed.World import World/AI
 from tf.player.DViewModel/AI import DViewModel/AI
 from tf.weapon.DistributedWeapon/AI import DistributedWeapon/AI
 from tf.weapon.TFWeapon import TFWeapon/AI
-from tf.weapon.DShotgun/AI import DShotgun/AI
-from tf.weapon.DWrench/AI import DWrench/AI
+from tf.weapon.DShotgun import DShotgun/AI
+from tf.weapon.DShotgunSecondary import DShotgunSecondary/AI
+from tf.weapon.DWrench import DWrench/AI
+from tf.weapon.DPistol import DPistol/AI
+from tf.weapon.DRocketLauncher import DRocketLauncher/AI
+from tf.weapon.TFWeaponGun import TFWeaponGun/AI
+from tf.weapon.TFWeaponMelee import TFWeaponMelee/AI
+from tf.weapon.DAmmoPack import DAmmoPack/AI
+from tf.object.BaseObject import BaseObject/AI
+from tf.object.SentryGun import SentryGun/AI
+from tf.weapon.BaseRocket import BaseRocket/AI
+from tf.weapon.RocketProjectile import RocketProjectile/AI
+from tf.weapon.DBottle import DBottle/AI
+from tf.weapon.DShovel import DShovel/AI
 
 // Coordinate range (per axis): -21474836.47 to 21474836.47
 // Two decimals of precision.
@@ -47,12 +60,9 @@ struct UnitVector {
 // along with a separate magnitude scalar instead of this, as it would use
 // fewer bytes.
 struct Vector {
-  //int32 x / 1000;
-  //int32 y / 1000;
-  //int32 z / 1000;
-  float64 x;
-  float64 y;
-  float64 z;
+  int32 x / 1000;
+  int32 y / 1000;
+  int32 z / 1000;
 };
 
 // Specialization for sending euler angles on the wire.
@@ -60,6 +70,13 @@ struct Angles {
   int16 h % 360 / 10;
   int16 p % 360 / 10;
   int16 r % 360 / 10;
+};
+
+struct Quat {
+  int16 r / 10000;
+  int16 i / 10000;
+  int16 j / 10000;
+  int16 k / 10000;
 };
 
 // Scale range (per axis): -32.767 to 32.767
@@ -72,82 +89,104 @@ struct Scale {
 
 // Networked data for a single animation layer.
 struct AnimLayer {
-  int32 sequence;
-  uint16 cycle / 1000;
-  uint16 prevCycle / 1000;
-  uint8 weight / 100;
-  int32 order;
-  uint8 sequenceParity;
+  uint8 playMode;
+  uint16 startCycle / 1000;
+  uint16 playCycles / 1000;
+  uint16 cycle / 1000; // 2 //
+  uint16 prevCycle / 1000; // 2 //
+
+  uint8 weight / 100; // 1
+
+  int32 order; // 4
+
+  int32 sequence; // 4
+  uint8 sequenceParity; // 1
 };
 
 dclass DistributedObject {
-  int32 simulationTime;
+  int32 simulationTime; // 4 //
 };
 
 dclass DistributedEntity : DistributedObject {
-  int32 parentEntityId;
-  Position pos;
-  Angles hpr;
-  Scale scale;
-  Vector velocity;
-  int8 team;
-  uint16 health;
-  uint16 maxHealth;
-  uint8 takeDamageMode;
+  int32 parentEntityId; // 4
+  Position pos; // 12 //
+  Quat rot; // 8 //
+  Scale scale; // 6
+  Vector velocity; // 24 //
+  int8 team; // 1
+  uint16 health; // 2
+  uint16 maxHealth; // 2
+  uint8 takeDamageMode; // 1
+
+  // 60 bytes
 };
 
 dclass DistributedGame : DistributedObject {
   joinGame(string name) clsend airecv;
 
   emitSound(uint32 soundIndex, uint8 waveIndex, int16 volume / 100, int16 pitch / 100, Position position) broadcast;
+  doExplosion(Position pos, Scale scale) broadcast;
 };
 
 dclass DistributedChar : DistributedEntity {
   // Filename of the model.
-  string model;
+  string model; // 4
 
+  uint8 skin; // 1
+
+  uint8 playMode;
+  uint16 startCycle / 1000;
+  uint16 playCycles / 1000;
   int32 sequence;
   int32 animTime;
   uint16 cycle / 1000;
   uint8 playRate / 100;
-  uint8 skin;
 
   // Should client drive cycle/anim time?
-  uint8 clientSideAnimation;
+  uint8 clientSideAnimation; // 1
 
-  uint8 newSequenceParity;
+  uint8 newSequenceParity; // 1
 
-  AnimLayer animLayers[];
+  AnimLayer animLayers[]; // 30
+
+  // 48 bytes
 
   // Creates a client-side ragdoll of the character.
   becomeRagdoll(int16 forceJoint, Position forcePosition, Vector forceVector) broadcast ownrecv;
 };
 
 dclass DistributedTFPlayer : DistributedChar {
-  uint32 tickBase;
+  uint32 tickBase; // 4 //
 
-  string playerName;
-  int16 lookPitch / 1000;
-  int16 lookYaw / 1000;
-  int16 moveX / 1000;
-  int16 moveY / 1000;
-  uint8 tfClass;
+  string playerName; // 5
+  uint8 tfClass; // 1
 
-  uint8 onGround;
-  uint8 isDead;
-  float64 deathTime;
+  // Eye yaw and pitch.
+  float64 eyeH;
+  float64 eyeP;
 
-  uint8 observerMode;
+  uint8 onGround; // 1
+  float64 deathTime; // 8
+
+  uint8 observerMode; // 1
   // DoId of entity we are observing.
-  uint32 observerTarget;
+  int32 observerTarget; // 4
 
   // The weapons we are carrying.
-  int32 weapons[];
+  int32 weapons[]; // 12
   // The weapon currently deployed.  It's an index into the weapons list.
-  int8 activeWeapon;
+  int8 activeWeapon; // 1
+
+  uint8 playerState; // 1
+
+  // 46 bytes
+
+  // Client request to change class.
+  changeClass(uint8 classId) ownsend airecv;
+  die() ownsend airecv;
 
   swing() broadcast ownrecv;
-  speak() broadcast ownrecv;
+  speak(uint32 soundIndex) broadcast ownrecv;
 
   makeAngry() broadcast;
 
@@ -156,6 +195,9 @@ dclass DistributedTFPlayer : DistributedChar {
   pain() broadcast;
 
   playerCommand(blob) ownsend airecv unreliable;
+
+  // Animation event for doing a gesture or something.
+  playerAnimEvent(uint8) broadcast ownrecv;
 };
 
 dclass DistributedWeapon : DistributedChar {
@@ -182,6 +224,12 @@ dclass TFWeapon : DistributedWeapon {
   uint8 reloadedThroughAnimEvent;
 };
 
+dclass TFWeaponGun : TFWeapon {
+};
+
+dclass TFWeaponMelee : TFWeapon {
+};
+
 dclass DTestChar : DistributedChar {
 };
 
@@ -190,9 +238,55 @@ dclass DViewModel : DistributedChar {
   int32 playerId;
 };
 
-dclass DShotgun : TFWeapon {
+dclass DShotgun : TFWeaponGun {
   flash();
 };
 
-dclass DWrench : TFWeapon {
+dclass DShotgunSecondary : DShotgun {
+};
+
+dclass DPistol : TFWeaponGun {
+};
+
+dclass DRocketLauncher : TFWeaponGun {
+};
+
+dclass DWrench : TFWeaponMelee {
+};
+
+dclass DAmmoPack : DistributedChar {
+};
+
+dclass BaseObject : DistributedChar {
+  uint8 objectState;
+  int32 builderDoId;
+  float64 lookPitch;
+  float64 lookYaw;
+  uint8 level;
+  uint8 upgradeMetal;
+};
+
+dclass SentryGun : BaseObject {
+  uint16 ammoShells;
+  uint16 maxAmmoShells;
+  uint16 numRockets;
+  uint16 maxRockets;
+  uint16 numKills;
+  uint16 numAssists;
+};
+
+dclass BaseRocket : DistributedChar {
+  Vector initialVel;
+};
+
+dclass RocketProjectile : BaseRocket {
+};
+
+dclass World : DistributedEntity {
+};
+
+dclass DBottle : TFWeaponMelee {
+};
+
+dclass DShovel : TFWeaponMelee {
 };

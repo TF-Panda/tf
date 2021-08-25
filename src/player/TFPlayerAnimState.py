@@ -8,24 +8,15 @@ from panda3d.core import *
 from enum import IntEnum, auto
 
 class GestureSlot(IntEnum):
-    AttackAndReload = 0
-    Grenade = 1
-    Jump = 2
-    Swim = 3
-    Flinch = 4
-    VCD = 5
-    Custom = 6
+    AttackAndReload = 1
+    Grenade = 2
+    Jump = 3
+    Swim = 4
+    Flinch = 5
+    VCD = 6
+    Custom = 7
 
     COUNT = auto()
-
-class GestureSlotData:
-
-    def __init__(self):
-        self.gestureSlot = -1
-        self.activity = Activity.Invalid
-        self.autoKill = False
-        self.active = False
-        self.layerIndex = -1
 
 class TFPlayerAnimState:
 
@@ -43,90 +34,20 @@ class TFPlayerAnimState:
         self.jumping = False
         self.firstJumpFrame = False
         self.jumpStartTime = 0.0
-        self.gestureSlots = []
         self.idealActivity = Activity.Invalid
 
-    def initGestureSlots(self):
-        self.gestureSlots = []
-
-        self.player.seqPlayer.setNumLayers(GestureSlot.COUNT)
-        for i in range(GestureSlot.COUNT):
-            data = GestureSlotData()
-            data.gestureSlot = i
-            data.layerIndex = i
-            self.gestureSlots.append(data)
-            self.resetGestureSlot(i)
-
-    def resetGestureSlots(self):
-        for i in range(len(self.gestureSlots)):
-            self.resetGestureSlot(i)
-
-    def isGestureSlotActive(self, i):
-        return self.gestureSlots[i].active
-
-    def isGestureSlotPlaying(self, slot, activity):
-        if not self.isGestureSlotActive(slot):
-            return False
-
-        return (self.gestureSlots[slot].activity == activity)
-
-    def restartGesture(self, slot, activity, autoKill = True):
-        if not self.isGestureSlotPlaying(slot, activity):
-            act = self.translateActivity(activity)
-            self.addGestureToSlot(slot, act, autoKill)
-            return
-
-        # Reset the cycle
-        self.player.seqPlayer.resetLayer(slot, activity,
-            self.player.seqPlayer.getLayerSequence(slot), autoKill)
-
-    def addGestureToSlot(self, slot, activity, autoKill = True):
-        if not self.player:
-            return
-
-        if self.gestureSlots[slot].layerIndex == -1:
-            return
-
-        sequence = self.player.getSequenceForActivity(activity)
-
-        self.gestureSlots[slot].gestureSlot = slot
-        self.gestureSlots[slot].activity = activity
-        self.gestureSlots[slot].autoKill = autoKill
-        self.gestureSlots[slot].active = True
-        self.player.seqPlayer.resetLayer(slot, activity, sequence, autoKill)
-
-    def resetGestureSlot(self, i):
-        assert i >= 0 and i < len(self.gestureSlots)
-        gestureSlot = self.gestureSlots[i]
-        gestureSlot.gestureSlot = -1
-        gestureSlot.activity = Activity.Invalid
-        gestureSlot.autoKill = False
-        gestureSlot.active = False
-        self.player.seqPlayer.setLayerOrder(i, 15)
-
-    def computeGestureSequence(self):
-        for i in range(len(self.gestureSlots)):
-            if not self.gestureSlots[i].active:
-                continue
-            self.updateGestureLayer(i)
-
-    def updateGestureLayer(self, slot):
-        if not self.player:
-            return
-
-        # TODO: Client-side
-
-        gesture = self.gestureSlots[slot]
-        if gesture.activity != Activity.Invalid and self.player.seqPlayer.getLayerActivity(slot) == Activity.Invalid:
-            self.resetGestureSlot(slot)
+    def restartGesture(self, slot, activity, autoKill = True, blendIn = 0.1, blendOut = 0.1):
+        self.player.startChannel(act = self.translateActivity(activity),
+                                 autoKill = autoKill, blendIn = blendIn, blendOut = blendOut,
+                                 layer = slot)
 
     def doAnimationEvent(self, event, data):
         if event == PlayerAnimEvent.AttackPrimary:
             # Weapon primary fire.
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand, blendIn=0.0)
         elif event == PlayerAnimEvent.AttackSecondary:
             # Weapon secondary fire.
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand, blendIn=0.0)
         elif event == PlayerAnimEvent.AttackGrenade:
             # Grenade throw.
             pass
@@ -135,15 +56,14 @@ class TFPlayerAnimState:
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand)
         elif event == PlayerAnimEvent.ReloadLoop:
             # TODO: crouching, swimming
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_Loop)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_Loop, blendIn=0.0, blendOut=0.0)
         elif event == PlayerAnimEvent.ReloadEnd:
             # TODO: crouching, swimming
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_End)
         elif event == PlayerAnimEvent.Flinch:
-            if not self.isGestureSlotActive(GestureSlot.Flinch):
-                self.restartGesture(GestureSlot.Flinch, Activity.Gesture_Flinch)
+            if not self.player.isChannelPlaying(layer=GestureSlot.Flinch):
+                self.restartGesture(GestureSlot.Flinch, Activity.Gesture_Flinch, blendIn=0.0)
         elif event == PlayerAnimEvent.Jump:
-            print("Jump anim event")
             self.jumping = True
             self.firstJumpFrame = True
             self.jumpStartTime = globalClock.getFrameTime()
@@ -195,9 +115,9 @@ class TFPlayerAnimState:
         aimYaw = self.angleNormalize(aimYaw)
 
         # Set the aim yaw and save.
-        yawParam = self.player.getPoseParameter("look_yaw")
-        yawParam.setValue(-aimYaw / 45)
-        self.player.lookYaw = yawParam.getValue()
+        yawParam = self.player.getPoseParameter("body_yaw")
+        yawParam.setValue(-aimYaw)
+        #self.player.lookYaw = yawParam.getNormValue()
         #print(-aimYaw)
 
         # Turn off a force aim yaw - either we have already updated or we don't need to.
@@ -235,10 +155,9 @@ class TFPlayerAnimState:
             elif actDesired == Activity.Reload_Stand:
                 translateActivity = Activity.Reload_Swim
 
-        if self.player.activeWeapon != -1:
-            wpn = base.net.doId2do.get(self.player.weapons[self.player.activeWeapon])
-            if wpn:
-                translateActivity = wpn.translateActivity(translateActivity)
+        wpn = self.player.getActiveWeaponObj()
+        if wpn:
+            translateActivity = wpn.translateActivity(translateActivity)
 
         return translateActivity
 
@@ -277,17 +196,13 @@ class TFPlayerAnimState:
                         self.jumping = False
                         #self.restartMainSequence()
 
-                        print("Jump land")
-
                         self.restartGesture(GestureSlot.Jump, Activity.Jump_Land)
 
                 # If we're still jumping
                 if self.jumping:
                     if globalClock.getFrameTime() - self.jumpStartTime > 0.5:
-                        print("Jump float")
                         self.idealActivity = Activity.Jump_Float
                     else:
-                        print("jump start")
                         self.idealActivity = Activity.Jump_Start
 
         return self.jumping # or self.inAirWalk
@@ -311,27 +226,30 @@ class TFPlayerAnimState:
         self.currentMainSequenceActivity = idealActivity
 
         if self.specificMainSequence >= 0:
-            if self.player.getCurrSequence() != self.specificMainSequence:
-                self.player.resetSequence(self.specificMainSequence)
+            if self.player.getCurrentChannel() != self.specificMainSequence:
+                self.player.startChannel(self.specificMainSequence)
                 return
 
-            if not self.player.isCurrentSequenceFinished():
+            if not self.player.isChannelFinished():
                 return
 
             self.specificMainSequence = -1
             self.restartMainSequence()
 
-        animDesired = self.player.getSequenceForActivity(self.translateActivity(idealActivity))
-        if self.player.getSequenceActivity(self.player.getCurrSequence()) == self.player.getSequenceActivity(animDesired):
+        animDesired = self.player.getChannelForActivity(self.translateActivity(idealActivity))
+        if self.player.getChannelActivity(self.player.getCurrentChannel()) == self.player.getChannelActivity(animDesired):
             return
 
         if animDesired < 0:
             animDesired = 0
 
-        self.player.resetSequence(animDesired)
+        self.player.startChannel(animDesired)
 
     def update(self):
-        pitchParam = self.player.getPoseParameter("look_pitch")
+        if self.player.isDead():
+            return
+
+        pitchParam = self.player.getPoseParameter("body_pitch")
         #yawParam = self.player.getPoseParameter("look_yaw")
         moveXParam = self.player.getPoseParameter("move_x")
         moveYParam = self.player.getPoseParameter("move_y")
@@ -339,22 +257,24 @@ class TFPlayerAnimState:
         self.vel = -self.player.getVelocity()
         vel = self.vel
 
-        self.eyeYaw = self.angleNormalize(self.player.viewAngles[0])
-        self.eyePitch = self.angleNormalize(self.player.viewAngles[1])
+        self.eyeYaw = self.angleNormalize(self.player.eyeH * 360)
+        self.eyePitch = self.angleNormalize(self.player.eyeP * 360)
 
         self.computeMainSequence()
-        self.computeGestureSequence()
+        #self.computeGestureSequence()
 
         self.computeAimPoseParam()
 
-        pitchParam.setValue(self.eyePitch / 90)
-        self.player.lookPitch = pitchParam.getValue()
+        pitchParam.setValue(self.eyePitch)
+        #self.player.lookPitch = pitchParam.getNormValue()
 
         forwardSpeed = BaseSpeed * self.player.classInfo.ForwardFactor
         backwardSpeed = BaseSpeed * self.player.classInfo.BackwardFactor
-        moveXParam.setValue(vel[0] / forwardSpeed)
-        moveYParam.setValue(vel[1] / forwardSpeed if vel[1] > 0 else vel[1] / backwardSpeed)
+        moveX = vel[0] / forwardSpeed
+        moveY = vel[1] / forwardSpeed if vel[1] > 0 else vel[1] / backwardSpeed
+        moveXParam.setValue(moveX)
+        moveYParam.setValue(moveY)
 
-        self.player.moveX = moveXParam.getValue()
-        self.player.moveY = moveYParam.getValue()
+        #self.player.moveX = moveXParam.getNormValue()
+        #self.player.moveY = moveYParam.getNormValue()
 

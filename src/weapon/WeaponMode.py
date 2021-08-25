@@ -20,3 +20,11 @@ class TFWeaponType(IntEnum):
     PDA = 6
     Item1 = 7
     Item2 = 8
+
+class TFProjectileType(IntEnum):
+    Invalid = -1
+    Bullet = 0
+    Rocket = 1
+    Pipebomb = 2
+    PipebombRemote = 3
+    Syringe = 4

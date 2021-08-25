@@ -52,8 +52,8 @@ class TFPostProcess(PostProcess):
 
         #self.setupHBAOControls()
         #if self.enableHDR:
-        #    self.setupCamDebugs()
-        #    taskMgr.add(self.updateCamDebugs, "updateCamDebugs")
+            #self.setupCamDebugs()
+            #taskMgr.add(self.updateCamDebugs, "updateCamDebugs")
 
     def addCamDebug(self):
         self.camDebugs.append(OnscreenText("", align = TextNode.ALeft, scale = 0.1, pos = (0.05, self.camDebugZ), parent=base.a2dTopLeft, fg = (1, 1, 1, 1), shadow=(0, 0, 0, 1)))
@@ -147,11 +147,6 @@ class TFPostProcess(PostProcess):
         self.exposureBias[0] -= 0.05
         print(self.exposureBias[0])
 
-    def update(self):
-        PostProcess.update(self)
-        if self.mb:
-            self.mb.update()
-
     def enableFlash(self, color = Vec3(0)):
         self.flashEnabled = True
         self.setFlashColor(color)
@@ -204,6 +199,12 @@ class TFPostProcess(PostProcess):
     def setup(self):
         self.cleanup()
 
+        # Motion blur on top of the scene render in the same FBO.
+        if self.enableMB:
+            self.mb = MotionBlur(self)
+            self.mb.setSceneCamera(base.cam)
+            self.addEffect(self.mb)
+
         # First expose the image.
         if self.enableHDR:
             self.hdr = HDREffect(self)
@@ -227,14 +228,6 @@ class TFPostProcess(PostProcess):
         #if self.enableSSAO:
         #    self.ssao = SSAO_Effect(self, SSAO_Effect.M_HBAO)
         #    self.addEffect(self.ssao)
-
-        #if self.enableMB:
-        #    self.mb = MotionBlur(self.getOutput())
-        #    self.mb.setSceneCamera(base.cam)
-        #    self.mb.setup()
-            # sort value of 2 to do motion blur *after* the main scene,
-            # which is sort 1
-        #    self.addCamera(self.mb.getCamera(), 0, 1)
 
         # Then finally, present it.
         self.finalOutput = PostProcessFinalOutput(self)

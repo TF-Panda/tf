@@ -114,7 +114,7 @@ class GameMovement:
 
         self.decayPunchAngle()
 
-        if not self.player.isDead:
+        if not self.player.isDead():
             angle = Vec3(self.mv.angles)
             angle += self.player.punchAngle
 
@@ -128,7 +128,7 @@ class GameMovement:
         else:
             self.mv.angles = self.mv.oldAngles
 
-        if self.player.isDead:
+        if self.player.isDead():
             pass
 
         # Adjust client view angles to match values used on server
@@ -258,7 +258,8 @@ class GameMovement:
 
     def walkMove(self):
         q = Quat()
-        q.setHpr(self.mv.viewAngles)
+        # Determine forward vector from yaw only.
+        q.setHpr((self.mv.viewAngles[0], 0, 0))
         forward = q.getForward()
         up = q.getUp()
         right = q.getRight()
@@ -320,7 +321,7 @@ class GameMovement:
     def airAccelerate(self, wishdir, wishspeed, accel):
         wishspd = wishspeed
 
-        if self.player.isDead:
+        if self.player.isDead():
             # ???
             return
 
@@ -444,7 +445,7 @@ class GameMovement:
         Performs a jump.
         """
 
-        if self.player.isDead:
+        if self.player.isDead():
             # ???
             self.mv.oldButtons &= ~InputFlag.Jump
             return False
@@ -492,6 +493,9 @@ class GameMovement:
 
         return True
 
+    #def checkFalling(self):
+
+
     def fullWalkMove(self):
         if (not self.checkWater()):
             self.startGravity()
@@ -526,5 +530,7 @@ class GameMovement:
 
         if self.mv.onGround:
             self.mv.velocity[2] = 0.0
+
+        #self.checkFalling()
 
 g_game_movement = GameMovement()

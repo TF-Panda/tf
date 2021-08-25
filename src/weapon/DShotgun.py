@@ -1,15 +1,40 @@
 
-from .TFWeapon import TFWeapon
+from .TFWeaponGun import TFWeaponGun
 
-from .DShotgunShared import DShotgunShared
+from tf.tfbase import TFLocalizer
 
-class DShotgun(TFWeapon, DShotgunShared):
+from .WeaponMode import TFWeaponMode
+from tf.tfbase.TFGlobals import DamageType
 
+class DShotgun(TFWeaponGun):
+
+    WeaponModel = "tfmodels/src/weapons/shotgun/c_shotgun.pmdl"
     WeaponViewModel = "tfmodels/src/weapons/shotgun/c_shotgun.pmdl"
 
     def __init__(self):
-        TFWeapon.__init__(self)
-        DShotgunShared.__init__(self)
+        TFWeaponGun.__init__(self)
+        self.usesAmmo = True
+        self.usesClip = True
+        self.reloadsSingly = True
+        self.maxAmmo = 32
+        self.maxClip = 6
+        self.ammo = self.maxAmmo
+        self.clip = self.maxClip
+        self.primaryAttackInterval = 0.625
+        self.weaponData[TFWeaponMode.Primary]['bulletsPerShot'] = 10
+        self.weaponData[TFWeaponMode.Primary]['spread'] = 0.1
+        self.weaponData[TFWeaponMode.Primary]['damage'] = 5
+        self.damageType = DamageType.Buckshot | DamageType.UseDistanceMod
 
     def getName(self):
-        return DShotgunShared.getName(self)
+        return TFLocalizer.Shotgun
+
+    def getSingleSound(self):
+        return "Weapon_Shotgun.Single"
+
+    def getEmptySound(self):
+        return "Weapon_Shotgun.Empty"
+
+if not IS_CLIENT:
+    DShotgunAI = DShotgun
+    DShotgunAI.__name__ = 'DShotgunAI'

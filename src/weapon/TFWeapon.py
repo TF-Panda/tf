@@ -5,11 +5,18 @@ else:
     from .DistributedWeaponAI import DistributedWeaponAI
     BaseClass = DistributedWeaponAI
 
-from .WeaponMode import TFWeaponMode, TFReloadMode, TFWeaponType
+from panda3d.core import Quat, Vec3
+
+from .WeaponMode import TFWeaponMode, TFReloadMode, TFWeaponType, TFProjectileType
 
 from tf.character.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
-from .FireBullets import fireBullets
+from tf.player.InputButtons import InputFlag
+
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape, remapVal
+
+import math
+import random
 
 class TFWeapon(BaseClass):
 
@@ -28,7 +35,20 @@ class TFWeapon(BaseClass):
         self.currentSeed = -1
         self.resetParity = False
         self.reloadedThroughAnimEvent = False
-        self.weaponData = {}
+        self.weaponData = {
+            TFWeaponMode.Primary: {
+                'bulletsPerShot': 1,
+                'ammoPerShot': 1,
+                'spread': 0.0,
+                'damage': 1,
+                'range': 8192,
+                'projectile': TFProjectileType.Bullet,
+                'timeIdle': 1.0,
+                'timeFireDelay': 1.0,
+                'timeIdleEmpty': 0.0,
+                'smackDelay': 0.5
+            }
+        }
 
         self.weaponType = TFWeaponType.Primary
 
@@ -144,6 +164,102 @@ class TFWeapon(BaseClass):
             self.addPredictionField("reloadMode", int)
             self.addPredictionField("reloadedThroughAnimEvent", bool)
 
+    if IS_CLIENT:
+
+        def getBobState(self):
+            if not self.player:
+                return None
+            if self.player.isDead():
+                return None
+            vm = self.player.viewModel
+            if not vm:
+                return None
+            return vm.bobState
+
+        def calcViewModelBobHelper(self, player, bobState):
+            if not bobState:
+                return 0
+
+            if globalClock.getDt() == 0.0 or not player:
+                return 0
+
+            cl_bobcycle = 0.8
+            cl_bobup = 0.5
+
+            speed = player.velocity.length()
+            maxSpeedDelta = max(0, (globalClock.getFrameTime() - bobState.lastBobTime) * 320.0)
+
+            # Don't allow too big speed changes
+            speed = max(bobState.lastSpeed - maxSpeedDelta, min(bobState.lastSpeed + maxSpeedDelta, speed))
+            speed = max(-320, min(320, speed))
+
+            bobState.lastSpeed = speed
+
+            bobOffset = remapVal(speed, 0, 320, 0.0, 1.0)
+
+            bobState.bobTime += (globalClock.getFrameTime() - bobState.lastBobTime) * bobOffset
+            bobState.lastBobTime = globalClock.getFrameTime()
+
+            # Calculate the vertical bob
+            cycle = bobState.bobTime - int(bobState.bobTime / cl_bobcycle) * cl_bobcycle
+            cycle /= cl_bobcycle
+
+            if cycle < cl_bobup:
+                cycle = math.pi * cycle / cl_bobup
+            else:
+                cycle = math.pi + math.pi * (cycle - cl_bobup) / (1.0 - cl_bobup)
+
+            bobState.verticalBob = speed * 0.005
+            bobState.verticalBob = bobState.verticalBob * 0.3 + bobState.verticalBob * 0.7 * math.sin(cycle)
+            bobState.verticalBob = max(-7.0, min(4.0, bobState.verticalBob))
+
+            # Calculate the lateral bob
+            cycle = bobState.bobTime - int(bobState.bobTime / cl_bobcycle * 2) * cl_bobcycle * 2
+            cycle /= cl_bobcycle * 2
+
+            if cycle < cl_bobup:
+                cycle = math.pi * cycle / cl_bobup
+            else:
+                cycle = math.pi + math.pi * (cycle - cl_bobup) / (1.0 - cl_bobup)
+
+            bobState.lateralBob = speed * 0.005
+            bobState.lateralBob = bobState.lateralBob * 0.3 + bobState.lateralBob * 0.7 * math.sin(cycle)
+            bobState.lateralBob = max(-7.0, min(4.0, bobState.lateralBob))
+
+            return 0
+
+        def addViewModelBobHelper(self, info, bobState):
+            forward = info.angles.getForward()
+            right = info.angles.getRight()
+
+            # Apply bob, but scaled down to 40%
+            info.origin += forward * (bobState.verticalBob * 0.4)
+
+            # Z bob a bit more
+            info.origin[2] += bobState.verticalBob * 0.1
+
+            # Bob the angles
+            hpr = info.angles.getHpr()
+            hpr[2] += bobState.verticalBob * 0.5
+            hpr[1] += bobState.verticalBob * 0.4
+            hpr[0] -= bobState.lateralBob * 0.3
+            info.angles.setHpr(hpr)
+
+            info.origin += right * (bobState.lateralBob * 0.2)
+
+        def calcViewModelBob(self):
+            bobState = self.getBobState()
+            if bobState:
+                return self.calcViewModelBobHelper(self.player, bobState)
+            else:
+                return 0
+
+        def addViewModelBob(self, viewModel, info):
+            bobState = self.getBobState()
+            if bobState:
+                self.calcViewModelBob()
+                self.addViewModelBobHelper(info, bobState)
+
     def translateViewModelActivity(self, activity):
         return self.vmActTable[self.weaponType].get(activity, activity)
 
@@ -172,18 +288,6 @@ class TFWeapon(BaseClass):
         #    return
 
         BaseClass.primaryAttack(self)
-
-        self.player.doAnimationEvent(PlayerAnimEvent.AttackPrimary)
-
-        if not self.meleeWeapon:
-            weaponData = self.weaponData.get(self.weaponMode, {})
-            origin = self.player.getPos() + (0, 0, self.player.classInfo.ViewHeight)
-            angles = self.player.viewAngles
-            fireBullets(self.player, origin, angles, self,
-                        self.weaponMode,
-                        base.net.predictionRandomSeed & 255,
-                        weaponData.get('spread', 0.0),
-                        weaponData.get('damage', 1.0))
 
         if not IS_CLIENT:
             self.player.sendUpdate('makeAngry')
@@ -226,7 +330,7 @@ class TFWeapon(BaseClass):
 
         if self.reloadMode == TFReloadMode.Start:
             if self.sendWeaponAnim(Activity.VM_Reload_Start):
-                self.setReloadTimer(self.viewModel.getSequenceLength(self.viewModel.getCurrSequence()))
+                self.setReloadTimer(self.viewModel.getChannelLength(self.viewModel.getCurrentChannel()))
             else:
                 self.updateReloadTimers(True)
 
@@ -248,7 +352,7 @@ class TFWeapon(BaseClass):
             self.reloadedThroughAnimEvent = False
 
             if self.sendWeaponAnim(Activity.VM_Reload):
-                self.setReloadTimer(self.viewModel.getSequenceLength(self.viewModel.getCurrSequence()))
+                self.setReloadTimer(self.viewModel.getDuration())
             else:
                 self.updateReloadTimers(False)
 
@@ -321,7 +425,7 @@ class TFWeapon(BaseClass):
 
         reloadTime = 0.0
         if self.sendWeaponAnim(activity):
-            reloadTime = self.viewModel.getSequenceLength(self.viewModel.getCurrSequence())
+            reloadTime = self.viewModel.getDuration()
         else:
             # No reload animation. Use the script time.
             if reloadPrimary:
@@ -414,8 +518,57 @@ class TFWeapon(BaseClass):
         if self.hasWeaponIdleTimeElapsed():
             if not (self.reloadsSingly and self.reloadMode != TFReloadMode.Start):
                 self.sendWeaponAnim(Activity.VM_Idle)
-                self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getSequenceLength(self.viewModel.getCurrSequence())
+                self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getDuration()
+
+    if not IS_CLIENT:
+        def dropAsAmmoPack(self):
+            """
+            Creates a medium ammo pack using the weapon's model from the
+            current position.
+            """
+            from .DAmmoPack import DAmmoPackAI
+            p = DAmmoPackAI()
+            #p.skin = self.team
+            p.solidShape = SolidShape.Model
+            p.solidFlags |= SolidFlag.Tangible
+            p.kinematic = False
+            p.setModel(self.WeaponModel)
+            # Make sure the weapon goes to sleep and doesn't jitter, because
+            # the pickup only becomes active when it's asleep.
+            p.node().setSleepThreshold(0.25)
+            p.singleUse = True
+            p.packType = "med"
+            p.metalAmount = 100
+
+            # Match current weapon position/rotation in animation.
+            p.setMat(self.character.getJointNetTransform(0) * self.characterNp.getMat(base.render))
+
+            # Calculate initial impulse.
+            q = Quat()
+            q.setHpr(self.player.viewAngles)
+            right = q.getRight()
+            up = q.getUp()
+            impulse = Vec3()
+            impulse += up * random.uniform(-0.25, 0.25)
+            impulse += right * random.uniform(-0.25, 0.25)
+            impulse.normalize()
+            impulse *= random.uniform(100, 150)
+            impulse += self.player.velocity
+
+            # Cap the impulse.
+            speed = impulse.length()
+            if speed > 300:
+                impulse *= 300 / speed
+
+            p.setMass(25.0)
+            angImpulse = Vec3(random.uniform(0, 100), 0, 0)
+            p.node().addForce(impulse, p.node().FTImpulse)
+            p.node().addTorque(angImpulse, p.node().FTImpulse)
+
+            base.net.generateObject(p, self.zoneId)
+            #p.ls()
 
 if not IS_CLIENT:
     # Server alias.
     TFWeaponAI = TFWeapon
+    TFWeaponAI.__name__ = 'TFWeaponAI'

@@ -3,6 +3,7 @@ from direct.distributed2.ServerRepository import ServerRepository
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from tf.distributed.DistributedGameAI import DistributedGameAI
+from tf.distributed.World import WorldAI
 from tf.tfbase import TFGlobals
 
 class TFServerRepository(ServerRepository):
@@ -18,6 +19,9 @@ class TFServerRepository(ServerRepository):
         self.game = DistributedGameAI()
         base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)
+
+        self.world = WorldAI()
+        self.generateObject(self.world, TFGlobals.GameZone)
 
     def addSnapshotHeaderData(self, dg, client):
         if not hasattr(client, 'player') or not client.player:

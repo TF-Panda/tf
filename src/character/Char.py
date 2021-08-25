@@ -3,25 +3,32 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.actor.Actor import Actor
 from .Activity import Activity
 from .AnimEvents import AnimEvent, AnimEventType
 from .HitBox import HitBox
-from tf.tfbase.Sounds import createSound
+from tf.tfbase.Sounds import Sounds, createSoundByName
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
 
 from .ModelDefs import ModelDefs
 
 Ragdolls = []
 
-class Char:
+class Char(Actor):
     notify = directNotify.newCategory("Char")
 
     def __init__(self):
-        self.modelNp = None
-        self.characterNp = None
+        Actor.__init__(self, flattenable=1, setFinal=1)
+
         self.character = None
+        self.characterNp = None
+        self.modelNp = None
+        self.hullNp = None
+        self.collAttached = False
         self.anims = {}
         self.hitBoxes = []
+        self.soundsByChannel = {}
+        self.bodygroups = {}
         # Filename of the model.
         self.model = ""
 
@@ -32,28 +39,28 @@ class Char:
 
         self.lastHitBoxSyncTime = 0.0
 
-        self.seqPlayer = None
-
         self.skin = 0
 
-    def setCycle(self, cycle):
-        self.seqPlayer.setCycle(cycle)
-
-    def getPlayRate(self):
-        return self.seqPlayer.getPlayRate()
-
-    def setPlayRate(self, rate):
-        self.seqPlayer.setPlayRate(rate)
+    def setBodygroupValue(self, group, value):
+        bg = self.bodygroups[group]
+        for i in range(len(bg)):
+            body = bg[i]
+            if i == value:
+                body.show()
+            else:
+                body.hide()
 
     def setSkin(self, skin):
         self.skin = skin
         self.updateModelSkin()
 
     def updateModelSkin(self):
-        if not self.modelNp:
+        modelNp = self.getPartModel()
+
+        if not modelNp:
             return
 
-        modelNode = self.modelNp.node()
+        modelNode = modelNp.node()
         if isinstance(modelNode, ModelRoot):
             if self.skin >= 0 and self.skin < modelNode.getNumMaterialGroups():
                 modelNode.setActiveMaterialGroup(self.skin)
@@ -71,28 +78,37 @@ class Char:
         forceVector = Vec3(forceVector[0], forceVector[1], forceVector[2])
         forcePosition = Point3(forcePosition[0], forcePosition[1], forcePosition[2])
 
+        if not self.model in ModelDefs:
+            return None
+
         modelDef = ModelDefs[self.model]
         if not hasattr(modelDef, 'createRagdoll'):
             # Model doesn't have a ragdoll.
             return None
 
         # Hide ourselves.
-        self.modelNp.hide()
+        self.hide()
+
+        # Make sure the joints reflect the current animation in case we were
+        # hidden or off-screen.
+        Actor.update(self)
 
         cCopy = Char()
         cCopy.setSkin(self.skin)
         cCopy.loadModel(self.model)
-        cCopy.modelNp.node().setBounds(OmniBoundingVolume())
+        cCopy.node().setBounds(OmniBoundingVolume())
         # Copy the current joint positions of our character to the ragdoll
         # version.
-        for i in range(self.character.getNumJoints()):
-            cCopy.character.setJointForcedValue(i, self.character.getJointValue(i))
-        cCopy.modelNp.reparentTo(render)
-        cCopy.modelNp.setTransform(self.modelNp.getNetTransform())
+        character = self.getPartBundle("modelRoot")
+        cCharacter = cCopy.getPartBundle("modelRoot")
+        for i in range(character.getNumJoints()):
+            cCharacter.setJointForcedValue(i, character.getJointValue(i))
+        cCopy.reparentTo(render)
+        cCopy.setTransform(self.getNetTransform())
         rd = modelDef.createRagdoll(cCopy)
         rd.setup()
         if forceJoint == -1:
-            rd.setEnabled(True)
+            rd.setEnabled(True, "bip_pelvis", forceVector, forcePosition)
         else:
             # Find the closest joint to apply the force to.
             joint = forceJoint
@@ -106,10 +122,10 @@ class Char:
                 else:
                     joint = cCopy.character.getJointParent(joint)
             if foundJoint:
-                #print("Applying force", forceVector.normalized(), "to joint", jointName, "at pos", forcePosition)
-                rd.setEnabled(True, jointName, forceVector * 1000, forcePosition)
+                #print("Applying force", forceVector, "to joint", jointName, "at pos", forcePosition)
+                rd.setEnabled(True, jointName, forceVector, forcePosition)
             else:
-                rd.setEnabled(True)
+                rd.setEnabled(True, "bip_pelvis", forceVector, forcePosition)
         Ragdolls.append((cCopy, rd))
 
         return (cCopy, rd)
@@ -117,6 +133,9 @@ class Char:
         #self.resetSequence(-1)
 
     def setupHitBoxes(self):
+        if self.model not in ModelDefs:
+            return
+
         modelDef = ModelDefs[self.model]
         if hasattr(modelDef, 'createHitBoxes'):
             modelDef.createHitBoxes(self)
@@ -147,6 +166,7 @@ class Char:
         body.addShape(shape)
         body.setKinematic(True)
         body.addToScene(base.physicsWorld)
+        body.setOverallHidden(True)
         hbox = HitBox(group, body, joint)
         # Add a link to ourself so traces know who they hit.
         body.setPythonTag("hitbox", (self, hbox))
@@ -179,206 +199,83 @@ class Char:
             body.setTransform(TransformState.makeMat(self.character.getJointNetTransform(joint)))
 
     def doAnimationEvents(self):
-        if self.getCurrSequence() == -1:
-            return
-
-        watch = False
-
-        eventCycle = self.getCycle()
-
         # Assume we're visible if render or viewmodel render is the top of our
         # hierarchy.  FIXME: better solution for this
-        top = self.modelNp.getTop()
-        visible = (top in [render, base.vmRender])
+        top = self.getTop()
+        visible = (top in [render, base.vmRender]) and not self.isHidden()
         if not visible:
             return
 
-        seqIdx = self.getCurrSequence()
-        seq = self.getSequence(seqIdx)
+        queue = AnimEventQueue()
+        self.character.getEvents(queue, AnimEventType.Client)
 
-        resetEvents = seqIdx != self.lastEventSequence#self.resetEventsParity != self.prevResetEventsParity
-        self.lastEventSequence = seqIdx
-        self.prevResetEventsParity = self.resetEventsParity
-
-        if resetEvents:
-            if watch:
-                print(f"new seq: {seqIdx} - old seq: {self.lastEventSequence} - reset: {resetEvents} - cycle: {self.getCycle()} - (time {globalClock.getFrameTime()})")
-            eventCycle = 0.0
-            self.prevEventCycle = -0.01
-            self.lastEventSequence = seqIdx
-
-        if eventCycle == self.prevEventCycle:
+        if not queue.hasEvent():
             return
 
-        if watch:
-            print(f"{base.tickCount} (seq {seqIdx} cycle {self.getCycle()}) evcycle {eventCycle} prevevcycle {self.prevEventCycle} (time {globalClock.getFrameTime()})")
+        pos = self.getPos(render)
+        hpr = self.getHpr(render)
 
-        looped = False
-        if eventCycle <= self.prevEventCycle:
-            if self.prevEventCycle - eventCycle > 0.5:
-                looped = True
-            else:
-                return
-
-        if looped:
-            for i in range(seq.getNumEvents()):
-                event = seq.getEvent(i)
-
-                if (event.getType() & AnimEventType.Client) == 0:
-                    # Not a client event.
-                    continue
-
-                if event.getCycle() <= self.prevEventCycle:
-                    continue
-
-                if watch:
-                    print(f"{base.tickCount} FE {event.getEvent()} Looped cycle {event.getCycle()}, prev {self.prevEventCycle} ev {eventCycle} (time {globalClock.getFrameTime()})")
-
-                self.fireEvent(self.modelNp.getPos(render), self.modelNp.getHpr(render), event.getEvent(), event.getOptions())
-
-            self.prevEventCycle = -0.01
-
-        for i in range(seq.getNumEvents()):
-            event = seq.getEvent(i)
-
-            if (event.getType() & AnimEventType.Client) == 0:
-                # Not a client event.
-                continue
-
-            if event.getCycle() > self.prevEventCycle and event.getCycle() <= eventCycle:
-                if watch:
-                    print(f"{base.tickCount} (seq: {seqIdx}) FE {event.getEvent()} Normal cycle {event.getCycle()}, prev {self.prevEventCycle} ev {eventCycle} (time {globalClock.getFrameTime()})")
-                self.fireEvent(self.modelNp.getPos(render), self.modelNp.getHpr(render), event.getEvent(), event.getOptions())
-
-        self.prevEventCycle = eventCycle
+        while queue.hasEvent():
+            info = queue.popEvent()
+            channel = self.character.getChannel(info.channel)
+            event = channel.getEvent(info.event)
+            self.fireEvent(pos, hpr, event.getEvent(), event.getOptions())
 
     def fireEvent(self, pos, angles, event, options):
         if event == AnimEvent.Client_Play_Sound:
             soundName = options
-            sound = createSound(soundName)
+            sound = createSoundByName(soundName)
             if not sound:
                 return
+            info = Sounds[soundName]
+            if info.channel in self.soundsByChannel:
+                currSound = self.soundsByChannel[info.channel]
+                if currSound:
+                    currSound.stop()
+            self.soundsByChannel[info.channel] = sound
             sound.set3dAttributes(pos[0], pos[1], pos[2], 0, 0, 0)
             sound.play()
 
-    def getCycle(self):
-        return self.seqPlayer.getCycle()
+        elif event == AnimEvent.Client_Bodygroup_Set_Value:
+            name, value = options.split()
+            self.setBodygroupValue(name, int(value))
 
-    def setAnimTime(self, time):
-        self.seqPlayer.setAnimTime(time)
-
-    def getAnimTime(self):
-        return self.seqPlayer.getAnimTime()
-
-    def getCurrSequence(self):
-        return self.seqPlayer.getCurrSequence()
-
-    def addSequence(self, seq):
-        return self.character.addSequence(seq)
-
-    def getNumSequences(self):
-        return self.character.getNumSequences()
-
-    def getSequence(self, n):
-        return self.character.getSequence(n)
-
-    def getNumAnims(self):
-        return self.character.getNumAnims()
-
-    def getAnim(self, n):
-        return self.character.getAnim(n)
-
-    def createSimpleSequence(self, animName, activity, looping, snap = False):
-        seq = AnimSequence(animName, self.anims[animName])
-        seq.setActivity(activity)
-        if looping:
-            seq.setFlags(AnimSequence.FLooping)
-        if snap:
-            seq.setFlags(AnimSequence.FSnap)
-        return seq
-
-    def getSequenceActivity(self, sequence):
-        if isinstance(sequence, str):
-            sequence = self.findSequence(name)
-        if sequence == -1:
-            return Activity.Invalid
-        return self.getSequence(sequence).getActivity()
-
-    def getSequenceForActivity(self, activity):
+    def getChannelForActivity(self, activity, layer=0):
         if hasattr(base, 'net') and hasattr(base.net, 'prediction') and base.net.prediction.inPrediction:
-            return self.character.getSequenceForActivity(
-                activity, self.getCurrSequence(),
-                base.net.predictionRandomSeed)
+            return Actor.getChannelForActivity(
+                self,
+                activity, "modelRoot",
+                base.net.predictionRandomSeed, layer)
         else:
-            return self.character.getSequenceForActivity(activity, self.getCurrSequence())
+            return Actor.getChannelForActivity(self, activity, layer=layer)
 
-    def getSequencesForActivity(self, activity):
-        seqs = []
-        for i in range(self.getNumSequences()):
-            seq = self.getSequence(i)
-            if seq.getActivity() == activity:
-                seqs.append(i)
+    def startChannel(self, chan = None, act = None, layer = 0,
+                     blendIn = 0.0, blendOut = 0.0, autoKill = False,
+                     restart = True):
+        if chan is None and act is None:
+            return
 
-        return seqs
+        if act is not None:
+            chan = self.getChannelForActivity(act, layer=layer)
 
-    def findSequence(self, name):
-        for i in range(self.getNumSequences()):
-            if self.getSequence(i).getName() == name:
-                return i
+        if chan < 0:
+            # Invalid channel, stop the layer we wanted to play it on.
+            self.stop(layer=layer)
 
-        return -1
+        char = self.getPartBundle()
+        if char.getNumAnimLayers() > layer:
+            animLayer = char.getAnimLayer(layer)
+            if animLayer._sequence == chan and not restart:
+                # The layer is already playing this channel and we don't want
+                # to restart, so do nothing.
+                return
 
-    def getSequenceLength(self, seq):
-        if isinstance(seq, str):
-            seqIdx = self.findSequence(seq)
+        channel = char.getChannel(chan)
+        if channel.hasFlags(channel.FLooping):
+            self.loop(channel=chan, layer=layer, blendIn=blendIn)
         else:
-            seqIdx = seq
-        if seqIdx == -1:
-            return 0.0
-
-        return self.getSequence(seqIdx).getLength()
-
-    def setSequence(self, seq):
-        if isinstance(seq, str):
-            self.sequence = self.findSequence(seq)
-        else:
-            self.sequence = seq
-        if self.seqPlayer:
-            self.seqPlayer.setSequence(self.sequence)
-            #self.seqPlayer.setCycle(0.0)
-
-    def resetSequence(self, seq):
-        if isinstance(seq, str):
-            self.sequence = self.findSequence(seq)
-        else:
-            self.sequence = seq
-        if self.seqPlayer:
-            self.seqPlayer.resetSequence(self.sequence)
-
-    def restartGesture(self, act):
-        if self.seqPlayer:
-            self.seqPlayer.restartGesture(act)
-
-    def isCurrentSequenceFinished(self):
-        return self.seqPlayer.isSequenceFinished()
-
-    def isCurrentSequenceLooping(self):
-        return self.seqPlayer.isSequenceLooping()
-
-    def setupSequences(self):
-        # Terrible temporary kludge to set up sequences from the model
-        # filename.
-        modelDef = ModelDefs[self.model]
-        if hasattr(modelDef, 'createSequences'):
-            modelDef.createSequences(self)
-
-    def setupGestures(self):
-        pass
-
-    def setupPoseParameters(self):
-        modelDef = ModelDefs[self.model]
-        if hasattr(modelDef, 'createPoseParameters'):
-            modelDef.createPoseParameters(self)
+            self.play(channel=chan, layer=layer, blendIn=blendIn,
+                      blendOut=blendOut, autoKill=autoKill)
 
     def addPoseParameter(self, name, minVal, maxVal, looping = False):
         return self.character.addPoseParameter(name, minVal, maxVal, looping)
@@ -395,69 +292,87 @@ class Char:
         else:
             return self.character.getPoseParameter(name)
 
-    def setAnimGraph(self, graph):
-        self.character.setAnimGraph(graph)
-
-    def getAnimGraph(self):
-        return self.character.getAnimGraph()
-
     def getCharacter(self):
         return self.character
 
-    def getAnim(self, name):
-        return self.anims.get(name, None)
-
     def setJointMergeCharacter(self, char):
+        if not self.character:
+            return
         self.character.setJointMergeCharacter(char)
 
     def getJointMergeCharacter(self):
+        if not self.character:
+            return None
         return self.character.getJointMergeCharacter()
 
     def setJointMerge(self, jointName, enable = True):
+        if not self.character:
+            return
         jointIdx = self.character.findJoint(jointName)
         if jointIdx == -1:
             return
         self.character.setJointMerge(jointIdx, enable)
 
     def getJointMerge(self, jointName):
+        if not self.character:
+            return
         jointIdx = self.character.findJoint(jointName)
         if jointIdx == -1:
             return
         self.character.getJointMerge(jointIdx)
 
     def clearModel(self):
+        self.removePart("modelRoot")
+        self.characterNp = None
+        self.character = None
+        self.modelNp = None
+        self.bodygroups = {}
         self.model = ""
         # Just dropping the references to the hit boxes is good enough to free
         # them from both the physics world and memory.
+        for hbox in self.hitBoxes:
+            hbox.body.removeFromScene(base.physicsWorld)
         self.hitBoxes = []
         self.lastHitBoxSyncTime = 0.0
-        self.gestures = []
-        self.anims = {}
-        if self.modelNp:
-            self.modelNp.removeNode()
-            self.modelNp = None
-        self.characterNp = None
-        self.character = None
-        self.animFSM = None
-        self.animOverlay = None
-
-    def loadAnims(self, anims):
-        if not self.character:
-            return
-
-        for name, filename in anims.items():
-            animModelNp = base.loader.loadModel(filename)
-            animBundleNp = animModelNp.find("**/+AnimBundleNode")
-            if animBundleNp.isEmpty():
-                continue
-            animBundle = animBundleNp.node().getBundle()
-            index = self.character.bindAnim(
-              animBundle)
-            if index != -1:
-                self.anims[name] = control
 
     def onModelChanged(self):
         pass
+
+    def loadBodygroups(self):
+        data = self.getPartModel().node().getCustomData()
+        if not data:
+            return
+        if not data.hasAttribute("bodygroups"):
+            return
+        bgs = data.getAttributeValue("bodygroups").getList()
+        for i in range(len(bgs)):
+            bgdata = bgs.get(i).getElement()
+            name = bgdata.getAttributeValue("name").getString()
+            self.bodygroups[name] = []
+            nodes = bgdata.getAttributeValue("nodes").getList()
+            for j in range(len(nodes)):
+                pattern = nodes.get(j).getString()
+                if pattern == "blank":
+                    self.bodygroups[name].append(NodePathCollection())
+                else:
+                    self.bodygroups[name].append(
+                        self.findAllMatches("**/" + pattern))
+
+        for name in self.bodygroups.keys():
+            self.setBodygroupValue(name, 0)
+
+    def makeModelCollisionShape(self):
+        cinfo = self.getPartModel().node().getCollisionInfo()
+        if not cinfo:
+            return None
+
+        mdata = PhysConvexMeshData(cinfo.getMeshData())
+        if not mdata.generateMesh():
+            return None
+        mesh = PhysConvexMesh(mdata)
+        mat = PhysMaterial(0.5, 0.5, 0.5)
+        shape = PhysShape(mesh, mat)
+        return shape
 
     def loadModel(self, model):
         if self.model == model:
@@ -470,42 +385,73 @@ class Char:
         if len(model) == 0:
             return
 
-        self.modelNp = base.loader.loadModel(model)
-        if self.modelNp.isEmpty():
-            self.notify.error("Failed to load model", model)
-            return
+        Actor.loadModel(self, model, keepModel=True)
+
+        self.modelNp = self.getPartModel()
+
+        modelNode = self.modelNp.node()
+
+        cdata = modelNode.getCustomData()
+        if cdata:
+            if cdata.hasAttribute("omni") and cdata.getAttributeValue("omni").getBool():
+                modelNode.setBounds(OmniBoundingVolume())
+
         # We don't need to consider culling past the root of the model.
-        self.modelNp.node().setFinal(True)
+        modelNode.setFinal(True)
 
-        self.characterNp = self.modelNp.find("**/+CharacterNode")
-        if self.characterNp.isEmpty():
-            self.notify.error("Model", model, "does not contain a CharacterNode!")
-            return
-
-        self.character = self.characterNp.node().getCharacter()
-        self.character.setFrameBlendFlag(True)
-
-        # Now go through each AnimBundle that was embedded in the model and
-        # bind 'em.
-        animBundleNodes = self.modelNp.findAllMatches("**/+AnimBundleNode")
-        for animBundleNode in animBundleNodes:
-            animBundle = animBundleNode.node().getBundle()
-            index = self.character.bindAnim(animBundle)
-            if index != -1:
-                self.anims[animBundleNode.getName()] = self.character.getAnim(index)
-
-        self.seqPlayer = AnimSequencePlayer("player", self.character)
-        self.character.setAnimGraph(self.seqPlayer)
+        self.characterNp = self.getPart()
+        self.character = self.getPartBundle()
 
         self.setupHitBoxes()
-        self.setupPoseParameters()
-        self.setupSequences()
-        #self.setupGestures()
 
-        #if self.sequence != -1:
-        #    self.setSequence(self.sequence)
+        if hasattr(base, 'camera'):
+            for eyeNp in self.findAllMatches("**/+EyeballNode"):
+                eyeNp.node().setViewTarget(base.camera, Point3())
+
+        self.loadBodygroups()
 
         self.updateModelSkin()
 
         self.onModelChanged()
+
+    def setSequence(self, seq):
+        if not self.character:
+            return
+        layer = self.character.getAnimLayer(0)
+        layer._sequence = seq
+
+    def getCurrSequence(self):
+        return self.getCurrentChannel()
+
+    def setCycle(self, cycle):
+        if not self.character:
+            return
+        layer = self.character.getAnimLayer(0)
+        layer._order = 0
+        layer._weight = 1.0
+        layer._flags |= layer.FActive
+        layer._cycle = cycle
+
+    def getCycle(self):
+        if not self.character:
+            return 0.0
+        layer = self.character.getAnimLayer(0)
+        return float(layer._cycle)
+
+    def setNewSequenceParity(self, parity):
+        if not self.character:
+            return
+        layer = self.character.getAnimLayer(0)
+        layer._sequence_parity = parity
+
+    def getNewSequenceParity(self):
+        if not self.character:
+            return 0
+        layer = self.character.getAnimLayer(0)
+        return int(layer._sequence_parity)
+
+    def getPrevSequenceParity(self):
+        if not self.character:
+            return 0
+        return int(self.character.getAnimLayer(0)._prev_sequence_parity)
 

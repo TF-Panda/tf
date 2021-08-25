@@ -14,8 +14,9 @@ from .DViewModelAI import DViewModelAI
 from .ObserverMode import ObserverMode
 from tf.weapon.TakeDamageInfo import addMultiDamage
 
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, Sounds
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
+from tf.object.BaseObject import BaseObject
 
 from panda3d.core import *
 from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
@@ -24,7 +25,10 @@ import copy
 import random
 
 tf_damage_range = 0.5
-tf_damageforcescale_other = 3.0
+tf_damageforcescale_other = 6.0
+tf_damageforcescale_self_soldier = 10.0
+tf_damagescale_self_soldier = 0.6
+damage_force_self_scale = 9.0
 
 TF_DEATH_ANIMATION_TIME = 2.0
 spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
@@ -67,15 +71,69 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.forceJoint = -1
         self.bulletForce = Vec3(0)
 
+        self.pendingChangeClass = Class.Invalid
+
         # Also give them a view model
         self.viewModel = DViewModelAI()
+        self.viewModel.player = self
 
-    def getWorldSpaceCenter(self):
-        return self.getPos(NodePath()) + (0, 0, self.classInfo.ViewHeight / 2)
+        self.sentry = None
+        self.lastBuildTime = 0.0
+
+        self.lastPainTime = 0.0
+
+        self.clientSideAnimation = True
+
+    def shouldCollide(self, collisionGroup, contentsMask):
+        #print("Should collide?", collisionGroup, contentsMask)
+        if collisionGroup == CollisionGroup.PlayerMovement or collisionGroup == CollisionGroup.Rockets:
+            if self.team == 0:
+                if (contentsMask & Contents.RedTeam) == 0:
+                    #print("\tno")
+                    return False
+            elif self.team == 1:
+                if (contentsMask & Contents.BlueTeam) == 0:
+                    #print("\tno")
+                    return False
+        #print("\tyes")
+        return DistributedCharAI.shouldCollide(self, collisionGroup, contentsMask)
+
+    def d_speak(self, soundName, client = None, excludeClients = []):
+        info = Sounds.Sounds.get(soundName, None)
+        if not info:
+            return
+        self.sendUpdate('speak', [info.index], client = client, excludeClients = excludeClients)
+
+    def doClassSpecialSkill(self):
+        if self.tfClass == Class.Engineer:
+            now = globalClock.getFrameTime()
+            if now - self.lastBuildTime < 5.0:
+                return
+            self.lastBuildTime = now
+            #if self.sentry:
+            #    base.net.deleteObject(self.sentry)
+            # Place a sentry in front of him.
+            from tf.object.SentryGun import SentryGunAI
+            sg = SentryGunAI()
+            sg.setBuilderDoId(self.doId)
+            q = Quat()
+            q.setHpr(Vec3(self.viewAngles[0], 0, 0))
+            fwd = q.getForward()
+            sg.setPos(self.getPos() + (fwd * 64))
+            sg.setZ(0.0)
+            sg.setH(self.viewAngles[0])
+            base.net.generateObject(sg, self.zoneId)
+            self.sentry = sg
+            self.d_speak(
+                random.choice(
+                    ["Engineer.AutoBuildingSentry01",
+                     "Engineer.AutoBuildingSentry02"]
+                )
+            )
 
     def getClassSize(self):
-        mins = self.classInfo.BBox[0]
-        maxs = self.classInfo.BBox[1]
+        mins = TFGlobals.VEC_HULL_MIN
+        maxs = TFGlobals.VEC_HULL_MAX
         return Vec3(maxs[0] - mins[0], maxs[1] - mins[1], maxs[2] - mins[2])
 
     def onTakeDamage_alive(self, info):
@@ -84,14 +142,29 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             vecDir = info.inflictor.getWorldSpaceCenter() - Vec3(0, 0, 10) - self.getWorldSpaceCenter()
             vecDir.normalize()
 
-        force = vecDir * -self.damageForce(self.getClassSize(), info.damage, tf_damageforcescale_other)
+        if info.attacker == self:
+            # We damaged ourselves.
+            if self.tfClass == Class.Soldier:
+                force = vecDir * -self.damageForce(self.getClassSize(), info.damage, tf_damageforcescale_self_soldier)
+            else:
+                force = vecDir * -self.damageForce(self.getClassSize(), info.damage, damage_force_self_scale)
+        else:
+            if info.inflictor.__class__.__name__ == 'SentryGunAI':
+                # Sentries push a lot harder
+                force = vecDir * -self.damageForce(self.getClassSize(), info.damage, 16)
+            else:
+                force = vecDir * -self.damageForce(self.getClassSize(), info.damage, tf_damageforcescale_other)
+                if self.tfClass == Class.HWGuy:
+                    # Heavies take less push from non sentry guns.
+                    force *= 0.5
+
         self.velocity += force
 
         self.health -= int(info.damage + 0.5)
         self.health = max(0, self.health)
         if self.health <= 0:
             # Died.
-            self.die(info.attacker, info)
+            self.die(info)
 
     def damageForce(self, size, damage, scale):
         force = damage * ((48 * 48 * 82.0) / (size[0] * size[1] * size[2])) * scale
@@ -105,18 +178,23 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if not info.damage:
             return
 
-        if self.isDead:
+        if self.isDead():
             return
 
         healthBefore = self.health
         if not base.game.playerCanTakeDamage(self, info.attacker):
             return
 
+        # If this is our own rocket, scale down the damage
+        if self.tfClass == Class.Soldier and info.attacker == self:
+            damage = info.damage * tf_damagescale_self_soldier
+            info.setDamage(damage)
+
         # Save damage force for ragdolls.
         self.bulletForce = Vec3(info.damageForce)
-        #self.bulletForce[0] = max(-15000, min(15000, self.bulletForce[0]))
-        #self.bulletForce[1] = max(-15000, min(15000, self.bulletForce[1]))
-        #self.bulletForce[2] = max(-15000, min(15000, self.bulletForce[2]))
+        self.bulletForce[0] = max(-15000, min(15000, self.bulletForce[0]))
+        self.bulletForce[1] = max(-15000, min(15000, self.bulletForce[1]))
+        self.bulletForce[2] = max(-15000, min(15000, self.bulletForce[2]))
 
         # If we're not damaging ourselves, apply randomness
         if info.attacker != self and not (info.damageType & (DamageType.Drown | DamageType.Fall)):
@@ -125,7 +203,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             minFactor = 0.25
             maxFactor = 0.75
             if info.damageType & DamageType.UseDistanceMod:
-                distance = max(1.0, (self.getWorldSpaceCenter() - info.attacker.getWorldSpaceCenter()).length())
+                distance = max(1.0, (self.getWorldSpaceCenter() - info.inflictor.getWorldSpaceCenter()).length())
                 optimalDistance = 512.0
 
                 center = TFGlobals.remapValClamped(distance / optimalDistance, 0.0, 2.0, 1.0, 0.0)
@@ -150,7 +228,17 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             # If still alive, flinch
             self.doAnimationEvent(PlayerAnimEvent.Flinch)
 
-        self.sendUpdate('pain')
+            now = globalClock.getFrameTime()
+            # Do sharp pain for local avatar and other players, severe for
+            # player that did the damage.
+            if (now - self.lastPainTime) >= 1.0:
+                sharpFname = random.choice(self.classInfo.SharpPainFilenames)
+                self.d_speak(sharpFname, excludeClients=[info.attacker.owner])
+                severeFname = random.choice(self.classInfo.PainFilenames)
+                self.d_speak(severeFname, client=info.attacker.owner)
+                self.lastPainTime = now
+
+        #self.bulletForce = Vec3()
 
     def traceAttack(self, info, dir, hit):
         if self.takeDamageMode != TakeDamage.Yes:
@@ -164,7 +252,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         else:
             self.forceJoint = -1
 
-        attacker = info.attacker
+        attacker = info.inflictor
         if attacker:
             # Prevent team damage so blood doesn't appear.
             if not base.game.playerCanTakeDamage(self, attacker):
@@ -174,18 +262,57 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
     def doAnimationEvent(self, event, data = 0):
         self.animState.doAnimationEvent(event, data)
+        # Broadcast event to clients.
+        self.sendUpdate('playerAnimEvent', [event])
 
-    def die(self, killer, info):
-        self.isDead = True
+    def die(self, info = None):
+        if self.playerState == self.StateDead:
+            return
+
+        if info:
+            dmgPos = info.damagePosition
+            dmgType = info.damageType
+        else:
+            dmgPos = Point3()
+            dmgType = DamageType.Generic
+
         # Become a ragdoll.
-        self.sendUpdate('becomeRagdoll', [self.forceJoint, info.damagePosition, info.damageForce])
+        #print("Die at forcejoit", self.forceJoint, "force", self.bulletForce + self.velocity)
+        self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce + self.velocity])
+
         # Respawn after 5 seconds.
         self.addTask(self.respawnTask, 'respawn', appendTask = True)
-        self.observerTarget = killer.doId
+
+        if info:
+            if info.inflictor and isinstance(info.inflictor, BaseObject):
+                self.observerTarget = info.inflictor.doId
+            else:
+                self.observerTarget = info.attacker.doId
+        else:
+            self.observerTarget = self.doId
+
         self.observerMode = ObserverMode.DeathCam
         self.deathTime = globalClock.getFrameTime()
         self.playedFreezeSound = False
         self.abortFreezeCam = False
+        self.velocity = Vec3(0)
+        if self.activeWeapon != -1:
+            wpn = base.net.doId2do.get(self.weapons[self.activeWeapon])
+            if wpn:
+                wpn.dropAsAmmoPack()
+
+        # Player died.
+        if dmgType & DamageType.Club:
+            pain = random.choice(self.classInfo.CritPainFilenames)
+        elif dmgType & DamageType.Blast:
+            pain = random.choice(self.classInfo.SharpPainFilenames)
+        elif dmgType & DamageType.Critical:
+            pain = random.choice(self.classInfo.CritPainFilenames)
+        else:
+            pain = random.choice(self.classInfo.PainFilenames)
+        self.d_speak(pain)
+
+        self.playerState = self.StateDead
 
     def respawnTask(self, task):
 
@@ -211,11 +338,20 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if now < freezeEnd:
             return task.cont
 
-        self.observerTarget = 0
+        self.observerTarget = -1
         self.observerMode = ObserverMode.Off
 
         # Respawn now.
 
+        if self.pendingChangeClass != self.tfClass and self.pendingChangeClass != Class.Invalid:
+            self.changeClass(self.pendingChangeClass)
+            self.pendingChangeClass = Class.Invalid
+        else:
+            self.respawn()
+
+        return task.done
+
+    def respawn(self, sendRespawn = True):
         # Refill health
         self.health = self.maxHealth
         # Refill ammo
@@ -227,18 +363,46 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.setActiveWeapon(0)
         self.setPos(Point3(random.uniform(-128, 128), random.uniform(-128, 128), 0))
         self.setHpr(Vec3(random.uniform(-180, 180), 0, 0))
-        self.isDead = False
-        self.sendUpdate('respawn')
-        return task.done
+        if sendRespawn:
+            self.sendUpdate('respawn')
+        self.playerState = self.StateAlive
 
-    def changeClass(self, cls):
+    def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
+        if (cls == self.tfClass) and not force:
+            return
+
+        if (cls < Class.Scout) or (cls > Class.Spy):
+            return
+
+        if self.playerState == self.StateAlive:
+            self.die()
+            self.pendingChangeClass = cls
+            return
+
         self.stripWeapons()
         self.tfClass = cls
         self.classInfo = ClassInfos[self.tfClass]
+        self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
         self.maxHealth = self.classInfo.MaxHealth
         self.health = self.maxHealth
         self.setModel(self.classInfo.PlayerModel)
-        self.animState.initGestureSlots()
+        self.viewModel.setModel(self.classInfo.ViewModel)
+        #self.animState.initGestureSlots()
+
+        if giveWeapons:
+            self.giveClassWeapons()
+
+        if respawn:
+            self.respawn(sendRespawn)
+
+    def giveClassWeapons(self):
+        from tf.weapon import WeaponRegistry
+        for wpnId in self.classInfo.Weapons:
+            wpnCls = WeaponRegistry.Weapons[wpnId]
+            wpn = wpnCls()
+            wpn.setPlayerId(self.doId)
+            base.net.generateObject(wpn, self.zoneId)
+            self.giveWeapon(wpn.doId, False)
 
     def stripWeapons(self):
         for wpnId in self.weapons:
@@ -285,6 +449,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             # weapon.
             self.setActiveWeapon(self.weapons.index(wpnId))
 
+        self.emitSound("BaseCombatCharacter.AmmoPickup", client=self.owner)
+
     def getActiveWeapon(self):
         return self.activeWeapon
 
@@ -314,6 +480,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def delete(self):
         # Get rid of the view model along with us.
         base.sv.deleteObject(self.viewModel)
+
+        base.game.playersByTeam[self.team].remove(self)
 
         DistributedCharAI.delete(self)
         DistributedTFPlayerShared.disable(self)
@@ -433,7 +601,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.simulate()
 
     def simulate(self):
-        self.bulletForce = Vec3(0)
+        self.bulletForce = Vec3()
 
         DistributedCharAI.simulate(self)
 
@@ -534,7 +702,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         base.setDeltaTime(saveDt)
 
     def runPlayerCommand(self, cmd, deltaTime):
-        if self.isDead:
+        if self.isDead():
             return
 
         self.currentCommand = cmd
@@ -551,6 +719,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.updateButtonsState(cmd.buttons)
 
         self.viewAngles = cmd.viewAngles
+        self.eyeH = self.viewAngles[0] % 360 / 360
+        self.eyeP = self.viewAngles[1] % 360 / 360
 
         # Get the active weapon
         wpn = None
@@ -563,6 +733,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Run the movement.
         DistributedTFPlayerShared.runPlayerCommand(self, cmd, deltaTime)
+
+        if wpn:
+            wpn.itemBusyFrame()
 
         self.notify.debug("Running command %s" % str(cmd))
 

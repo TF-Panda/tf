@@ -2,99 +2,116 @@
 from tf.entity.DistributedEntity import DistributedEntityAI
 from .Char import Char
 
+from tf.tfbase.TFGlobals import SolidShape
+
 from .AnimEvents import AnimEventType
 
-class DistributedCharAI(DistributedEntityAI, Char):
+class DistributedCharAI(Char, DistributedEntityAI):
 
     def __init__(self):
-        DistributedEntityAI.__init__(self)
         Char.__init__(self)
+        DistributedEntityAI.__init__(self)
+        self.animTime = 0.0
 
         self.clientSideAnimation = False
 
         self.lastEventCheck = 0.0
 
+    def onModelChanged(self):
+        self.initializeCollisions()
+        Char.onModelChanged(self)
+
+    def loadModelBBoxIntoHull(self):
+        if not self.modelNp:
+            return
+        data = self.modelNp.node().getCustomData()
+        if not data:
+            return
+        if not data.hasAttribute("bbox"):
+            return
+        bbox = data.getAttributeValue("bbox").getElement()
+        if not bbox:
+            return
+        assert bbox.hasAttribute("mins") and bbox.hasAttribute("maxs")
+        bbox.getAttributeValue("mins").toVec3(self.hullMins)
+        bbox.getAttributeValue("maxs").toVec3(self.hullMaxs)
+
+    def initializeCollisions(self):
+        if self.solidShape == SolidShape.Model:
+            assert self.modelNp
+            cinfo = self.modelNp.node().getCollisionInfo()
+            assert cinfo
+            self.mass = cinfo.getMass()
+            self.damping = cinfo.getDamping()
+            self.rotDamping = cinfo.getRotDamping()
+
+        elif self.solidShape == SolidShape.Box:
+            self.loadModelBBoxIntoHull()
+
+        DistributedEntityAI.initializeCollisions(self)
+
+    def makeModelCollisionShape(self):
+        return Char.makeModelCollisionShape(self)
+
     def SendProxy_skin(self):
         return self.getSkin()
 
-    def dispatchAnimEvents(self, handler):
-        if not self.seqPlayer:
-            return
-
-        if self.seqPlayer.getPlayRate() == 0.0:
-            return
-
-        seqIdx = self.getCurrSequence()
-        if seqIdx == -1:
-            return
-
-        seq = self.getSequence(seqIdx)
-        if seq.getNumEvents() == 0:
-            return
-
-        # Look from when it last checked to some short time in the future.
-        cycleRate = self.seqPlayer.getSequenceCycleRate(seqIdx) * self.seqPlayer.getPlayRate()
-        start = self.lastEventCheck
-        end = self.seqPlayer.getCycle()
-
-        if not self.seqPlayer.isSequenceLooping() and self.seqPlayer.isSequenceFinished():
-            end = 1.0
-
-        self.lastEventCheck = end
-
-        for i in range(seq.getNumEvents()):
-            event = seq.getEvent(i)
-
-            if (event.getType() & AnimEventType.Server) == 0:
-                # Not a server event.
-                continue
-
-            overlap = False
-            if event.getCycle() >= start and event.getCycle() < end:
-                overlap = True
-            elif seq.hasFlags(AnimSequence.FLooping) and end < start:
-                if event.getCycle() >= start and event.getCycle() < end:
-                    overlap = True
-
-            if overlap:
-                eventInfo = {
-                    "eventTime": globalClock.getFrameTime(),
-                    "source": self,
-                    "sequence": seqIdx,
-                    "cycle": event.getCycle(),
-                    "event": event.getEvent(),
-                    "options": event.getOptions(),
-                    "type": event.getType()}
-
-                # Calculate when this event should happen.
-                if cycleRate > 0.0:
-                    cycle = event.getCycle()
-                    if cycle > self.getCycle():
-                        cycle = cycle - 1.0
-                    eventInfo["eventTime"] = self.getAnimTime() + (cycle - self.getCycle()) / cycleRate + self.seqPlayer.getAnimTimeInterval()
-
-                handler.handleAnimEvent(eventInfo)
-
     def SendProxy_newSequenceParity(self):
-        return self.seqPlayer.getNewSequenceParity()
+        return self.getNewSequenceParity()
+
+    def SendProxy_playMode(self):
+        return self.character.getAnimLayer(0)._play_mode
+
+    def SendProxy_startCycle(self):
+        return self.character.getAnimLayer(0)._start_cycle
+
+    def SendProxy_playCycles(self):
+        return self.character.getAnimLayer(0)._play_cycles
 
     def SendProxy_sequence(self):
-        curr = self.seqPlayer.getCurrSequence()
+        curr = self.getCurrSequence()
         return curr
 
     def SendProxy_cycle(self):
-        cycle =  self.seqPlayer.getCycle()
+        cycle =  self.getCycle()
         return cycle
 
     def SendProxy_playRate(self):
-        pr =  self.seqPlayer.getPlayRate()
+        pr =  self.getPlayRate()
         return pr
+
+    def dispatchAnimEvents(self, handler):
+        queue = AnimEventQueue()
+        self.character.getEvents(queue, AnimEventType.Server)
+
+        while queue.hasEvent():
+            info = queue.popEvent()
+            channel = self.character.getChannel(info.channel)
+            event = channel.getEvent(info.event)
+            eventInfo = {
+                "eventTime": globalClock.getFrameTime(),
+                "source": self,
+                "sequence": info.channel,
+                "cycle": event.getCycle(),
+                "event": event.getEvent(),
+                "options": event.getOptions(),
+                "type": event.getType()}
+            handler.handleAnimEvent(eventInfo)
 
     def SendProxy_animLayers(self):
         layers = []
-        for i in range(self.seqPlayer.getNumLayers()):
-            layer = self.seqPlayer.getLayer(i)
-            layers.append((layer._sequence, layer._cycle, layer._prev_cycle, layer._weight, layer._order, layer._sequence_parity))
+        for i in range(self.character.getNumAnimLayers() - 1):
+            layer = self.character.getAnimLayer(i + 1)
+            layers.append(
+                (layer._play_mode,
+                 layer._start_cycle,
+                 layer._play_cycles,
+                 layer._cycle,
+                 layer._prev_cycle,
+                 layer._weight,
+                 layer._order,
+                 layer._sequence,
+                 layer._sequence_parity))
         return layers
 
     def setModel(self, filename):
@@ -102,10 +119,8 @@ class DistributedCharAI(DistributedEntityAI, Char):
 
     def loadModel(self, model):
         Char.loadModel(self, model)
-        self.modelNp.reparentTo(self)
-        if self.seqPlayer:
-            # The server doesn't blend sequence transitions.
-            self.seqPlayer.setTransitionsEnabled(False)
+        # The server doesn't blend sequence transitions.
+        self.setBlend(transitionBlend=False)
 
     def simulate(self):
         DistributedEntityAI.simulate(self)
@@ -115,8 +130,20 @@ class DistributedCharAI(DistributedEntityAI, Char):
             # cycle on the sequence player, which will be sent to clients.
             self.character.update()
 
+            #print("layers", self.character.getNumAnimLayers())
+            #print("seq", self.getCurrSequence())
+            #print("pr", self.getPlayRate())
+
+        self.animTime = globalClock.getFrameTime()
+
+    def getAnimTime(self):
+        return self.animTime
+
+    def setAnimTime(self, time):
+        self.animTime = time
+
     def SendProxy_animTime(self):
-        tickNumber = base.timeToTicks(self.seqPlayer.getAnimTime())
+        tickNumber = base.timeToTicks(self.getAnimTime())
         tickBase = base.getNetworkBase(base.tickCount, self.doId)
         addT = 0
         if tickNumber >= (tickBase - 100):
