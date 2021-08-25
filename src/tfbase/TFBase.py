@@ -27,6 +27,18 @@ class TFBase(ShowBase, FSM):
         ShowBase.__init__(self)
         FSM.__init__(self, 'TFBase')
 
+        if self.config.GetBool('want-notify-view', 0):
+            # Add text properties for the different notify levels.
+            tpm = TextPropertiesManager.getGlobalPtr()
+            warning = TextProperties()
+            warning.setTextColor(1, 1, 0, 1)
+            tpm.setProperties("warning", warning)
+            error = TextProperties()
+            error.setTextColor(1, 0, 0, 1)
+            tpm.setProperties("error", error)
+            tpm.setProperties("fatal", error)
+            self.notifyView = NotifyView()
+
         TextNode.setDefaultFont(self.loader.loadFont("models/fonts/TF2.ttf"))
 
         # SHow a loading thing.
@@ -49,18 +61,6 @@ class TFBase(ShowBase, FSM):
             self.accept('shift-s', self.togglePStats)
 
         #self.win.disableClears()
-
-        # Add text properties for the different notify levels.
-        tpm = TextPropertiesManager.getGlobalPtr()
-        warning = TextProperties()
-        warning.setTextColor(1, 1, 0, 1)
-        tpm.setProperties("warning", warning)
-        error = TextProperties()
-        error.setTextColor(1, 0, 0, 1)
-        tpm.setProperties("error", error)
-        tpm.setProperties("fatal", error)
-
-        #self.notifyView = NotifyView()
 
         Sounds.loadSounds()
 

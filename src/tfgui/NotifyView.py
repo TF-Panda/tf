@@ -14,6 +14,7 @@ class NotifyView:
         # Labels will be parented here.
         self.node = base.a2dTopLeft.attachNewNode("notifyview")
         self.node.setPos(0.05, 0, -0.05)
+        self.node.setBin('gui-popup', 1000)
 
         # Create a label to display the output.
         self.label = DirectLabel(
@@ -68,7 +69,7 @@ class NotifyView:
         # needed.
         if "(warning)" in line:
             line = "\1warning\1" + line + "\2"
-        elif "(error)" in line or "(fatal)" in line:
+        elif "(error)" in line or "(fatal)" in line or "Assertion failed" in line:
             line = "\1error\1" + line + "\2"
 
         # We handle wordwrap explicitly, so that we can keep an
