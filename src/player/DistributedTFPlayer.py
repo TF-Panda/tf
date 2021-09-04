@@ -98,6 +98,10 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         # Keep controller in sync.
         self.controller.setFootPosition(self.getPos(base.render))
 
+    #def becomeRagdoll(self, *args, **kwargs):
+    #    #self.disableController()
+    #    DistributedChar.becomeRagdoll(self, *args, **kwargs)
+
     def respawn(self):
         # Release reference to the ragdoll.
         if self.ragdoll:
@@ -106,6 +110,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.ragdoll[0].modelNp.hide()
         self.ragdoll = None
         self.show()
+        #self.enableController()
 
     def RecvProxy_activeWeapon(self, index):
         self.setActiveWeapon(index)
@@ -138,7 +143,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         """
 
         ctx = InterpolationContext()
-        ctx.enableExtrapolation(True)
+        ctx.enableExtrapolation(False)
         ctx.setLastTimestamp(base.cr.lastServerTickTime)
         vel = Vec3()
         self.ivPos.getDerivativeSmoothVelocity(vel, globalClock.getFrameTime())

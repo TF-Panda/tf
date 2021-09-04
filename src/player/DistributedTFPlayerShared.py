@@ -173,6 +173,14 @@ class DistributedTFPlayerShared:
         self.controller.getActorNode().setPythonTag("entity", self)
         self.attachNewNode(self.controller.getActorNode())
 
+    def disableController(self):
+        if self.controller:
+            self.controller.getActorNode().removeFromScene(base.physicsWorld)
+
+    def enableController(self):
+        if self.controller:
+            self.controller.getActorNode().addToScene(base.physicsWorld)
+
     def announceGenerate(self):
         self.classInfo = ClassInfos[self.tfClass]
         self.setupController()

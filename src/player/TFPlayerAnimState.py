@@ -44,25 +44,25 @@ class TFPlayerAnimState:
     def doAnimationEvent(self, event, data):
         if event == PlayerAnimEvent.AttackPrimary:
             # Weapon primary fire.
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand, blendIn=0.0)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
         elif event == PlayerAnimEvent.AttackSecondary:
             # Weapon secondary fire.
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand, blendIn=0.0)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
         elif event == PlayerAnimEvent.AttackGrenade:
             # Grenade throw.
             pass
         elif event == PlayerAnimEvent.Reload:
             # TODO: crouching, swimming
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand, blendOut=0.0)
         elif event == PlayerAnimEvent.ReloadLoop:
             # TODO: crouching, swimming
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_Loop, blendIn=0.0, blendOut=0.0)
         elif event == PlayerAnimEvent.ReloadEnd:
             # TODO: crouching, swimming
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_End)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_End, blendIn=0.0)
         elif event == PlayerAnimEvent.Flinch:
             if not self.player.isChannelPlaying(layer=GestureSlot.Flinch):
-                self.restartGesture(GestureSlot.Flinch, Activity.Gesture_Flinch, blendIn=0.0)
+                self.restartGesture(GestureSlot.Flinch, Activity.Gesture_Flinch)
         elif event == PlayerAnimEvent.Jump:
             self.jumping = True
             self.firstJumpFrame = True
