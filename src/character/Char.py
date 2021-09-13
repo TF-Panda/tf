@@ -106,6 +106,12 @@ class Char(Actor):
         cCopy.reparentTo(render)
         cCopy.setTransform(self.getNetTransform())
         rd = modelDef.createRagdoll(cCopy)
+        if not rd:
+            # No ragdoll.
+            cCopy.clearModel()
+            cCopy.cleanup()
+            return None
+
         rd.setup()
         if forceJoint == -1:
             rd.setEnabled(True, "bip_pelvis", forceVector, forcePosition)

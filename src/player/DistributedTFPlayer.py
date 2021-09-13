@@ -8,7 +8,7 @@ from .TFPlayerAnimState import TFPlayerAnimState
 
 from tf.tfbase import Sounds
 
-from test_talker import Talker
+#from test_talker import Talker
 
 from panda3d.core import *
 from panda3d.direct import *
@@ -17,18 +17,18 @@ from direct.interval.IntervalGlobal import *
 
 import random
 
-sentences = Talker.parseSentences("scripts/game_sounds_vo_phonemes.txt")
+#sentences = Talker.parseSentences("scripts/game_sounds_vo_phonemes.txt")
 
-phonemes = {}
-phonemes['engineer'] = Talker.Phonemes("expressions/player/engineer/phonemes/phonemes.txt",
-                               "expressions/player/engineer/phonemes/phonemes_weak.txt",
-                               "expressions/player/engineer/phonemes/phonemes_strong.txt")
-phonemes['soldier'] = Talker.Phonemes("expressions/player/soldier/phonemes/phonemes.txt",
-                               "expressions/player/soldier/phonemes/phonemes_weak.txt",
-                               "expressions/player/soldier/phonemes/phonemes_strong.txt")
-phonemes['demo'] = Talker.Phonemes("expressions/player/demo/phonemes/phonemes.txt",
-                               "expressions/player/demo/phonemes/phonemes_weak.txt",
-                               "expressions/player/demo/phonemes/phonemes_strong.txt")
+#phonemes = {}
+#phonemes['engineer'] = Talker.Phonemes("expressions/player/engineer/phonemes/phonemes.txt",
+#                               "expressions/player/engineer/phonemes/phonemes_weak.txt",
+#                               "expressions/player/engineer/phonemes/phonemes_strong.txt")
+#phonemes['soldier'] = Talker.Phonemes("expressions/player/soldier/phonemes/phonemes.txt",
+#                               "expressions/player/soldier/phonemes/phonemes_weak.txt",
+#                               "expressions/player/soldier/phonemes/phonemes_strong.txt")
+#phonemes['demo'] = Talker.Phonemes("expressions/player/demo/phonemes/phonemes.txt",
+#                               "expressions/player/demo/phonemes/phonemes_weak.txt",
+#                               "expressions/player/demo/phonemes/phonemes_strong.txt")
 
 class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
@@ -202,7 +202,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         #self.prevPos = Point3(self.position)
 
     def speak(self, soundIndex):
-        self.talker.speak(soundIndex)
+        pass
+        #self.talker.speak(soundIndex)
 
     def makeAngry(self):
         now = globalClock.getFrameTime()
@@ -229,7 +230,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         #for hide in self.classInfo.Hide:
         #    self.modelNp.findAllMatches("**/*" + hide + "*").hide()
         self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
-        self.talker = Talker.Talker(self.modelNp, Point3(0, 0, self.classInfo.ViewHeight), self.character, phonemes[self.classInfo.Phonemes], sentences)
+        #self.talker = Talker.Talker(self.modelNp, Point3(0, 0, self.classInfo.ViewHeight), self.character, phonemes[self.classInfo.Phonemes], sentences)
         #self.modelNp.setH(180)
         self.reparentTo(render)
 

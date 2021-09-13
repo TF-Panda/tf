@@ -7,14 +7,15 @@ from .Activity import Activity
 from .HitBox import HitBoxGroup
 from .AnimEvents import AnimEvent, AnimEventType
 
-from test_talker.EngineerRagdoll import EngineerRagdoll
-from test_talker.SoldierRagdoll import SoldierRagdoll
-from test_talker.DemoRagdoll import DemoRagdoll
+#from test_talker.EngineerRagdoll import EngineerRagdoll
+#from test_talker.SoldierRagdoll import SoldierRagdoll
+#from test_talker.DemoRagdoll import DemoRagdoll
 
 class EngineerModel:
     @staticmethod
     def createRagdoll(char):
-        return EngineerRagdoll(char.modelNp)
+        #return EngineerRagdoll(char.modelNp)
+        return None
 
     @staticmethod
     def createHitBoxes(char):
@@ -41,7 +42,8 @@ class EngineerModel:
 class SoldierModel:
     @staticmethod
     def createRagdoll(char):
-        return SoldierRagdoll(char.modelNp)
+        #return SoldierRagdoll(char.modelNp)
+        return None
 
     @staticmethod
     def createHitBoxes(char):
@@ -68,7 +70,8 @@ class DemoModel:
 
     @staticmethod
     def createRagdoll(char):
-        return DemoRagdoll(char.modelNp)
+        #return DemoRagdoll(char.modelNp)
+        return None
 
     @staticmethod
     def createHitBoxes(char):
