@@ -14,7 +14,7 @@ Opt?-*
 *.log
 x64
 Win32
-src/configfiles/50_tf.dc
+src/configfiles/50_tf.prc
 devprogress/
 *.png
 
