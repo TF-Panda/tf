@@ -44,7 +44,7 @@ class World(DistributedEntity):
         skycard.setHasNormals(True)
         skynp = NodePath(skycard.generate())
         skynp.setShader(Shader.load(Shader.SL_GLSL, "shaders/skybox.vert.glsl", "shaders/skybox.frag.glsl"))
-        skynp.setShaderInput("skyboxSampler", loader.loadTexture("/c/Users/brian/ttsp/game/resources/materials/sky/sky.ptex"))
+        skynp.setShaderInput("skyboxSampler", loader.loadTexture("maps/sky.txo"))
 
         skynpRoot = render.attachNewNode("skyroot")
         skynpRoot.setScale(500 * 16)
