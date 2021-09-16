@@ -8,7 +8,7 @@ class DTestCharAI(DistributedCharAI):
 
     def generate(self):
         DistributedCharAI.generate(self)
-        self.setModel("tfmodels/src/char/engineer/engineer.pmdl")
+        self.setModel("models/char/engineer")
         self.tauntSeqs = self.getSequencesForActivity(Activity.Taunt)
         self.tauntSeq = 0
         self.resetSequence(self.tauntSeqs[self.tauntSeq])

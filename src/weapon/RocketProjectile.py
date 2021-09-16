@@ -7,7 +7,7 @@ class RocketProjectile(BaseRocket):
 
     if not IS_CLIENT:
         def generate(self):
-            self.setModel("tfmodels/src/weapons/rocketlauncher/w_rocket.pmdl")
+            self.setModel("models/weapons/w_rocket")
             BaseRocket.generate(self)
 
 if not IS_CLIENT:

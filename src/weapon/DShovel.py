@@ -6,8 +6,8 @@ from tf.tfbase import TFLocalizer
 
 class DShovel(TFWeaponMelee):
 
-    WeaponModel = "tfmodels/src/weapons/shovel/c_shovel.pmdl"
-    WeaponViewModel = "tfmodels/src/weapons/shovel/c_shovel.pmdl"
+    WeaponModel = "models/weapons/c_shovel"
+    WeaponViewModel = "models/weapons/c_shovel"
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

@@ -7,8 +7,8 @@ from .WeaponMode import TFWeaponMode, TFProjectileType
 
 class DRocketLauncher(TFWeaponGun):
 
-    WeaponModel = "tfmodels/src/weapons/rocketlauncher/c_rocketlauncher.pmdl"
-    WeaponViewModel = "tfmodels/src/weapons/rocketlauncher/c_rocketlauncher.pmdl"
+    WeaponModel = "models/weapons/c_rocketlauncher"
+    WeaponViewModel = "models/weapons/c_rocketlauncher"
 
     def __init__(self):
         TFWeaponGun.__init__(self)

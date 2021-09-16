@@ -124,4 +124,7 @@ interpolate-frames 1
 
 stencil-bits 0
 
+# Allow loading model files without an extension.
+default-model-extension .bam
+
 #end 50_tf.prc

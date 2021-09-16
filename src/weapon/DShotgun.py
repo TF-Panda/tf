@@ -8,8 +8,8 @@ from tf.tfbase.TFGlobals import DamageType
 
 class DShotgun(TFWeaponGun):
 
-    WeaponModel = "tfmodels/src/weapons/shotgun/c_shotgun.pmdl"
-    WeaponViewModel = "tfmodels/src/weapons/shotgun/c_shotgun.pmdl"
+    WeaponModel = "models/weapons/c_shotgun"
+    WeaponViewModel = "models/weapons/c_shotgun"
 
     def __init__(self):
         TFWeaponGun.__init__(self)

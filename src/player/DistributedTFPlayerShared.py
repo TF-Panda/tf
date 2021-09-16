@@ -156,6 +156,15 @@ class DistributedTFPlayerShared:
             halfExts, mat
         )
         self.controller.setCollisionGroup(TFGlobals.CollisionGroup.PlayerMovement)
+        self.applyControllerMasks()
+
+        self.controller.setUpDirection(Vec3.up())
+        self.controller.setFootPosition(self.getPos())
+        #self.controller.setContactOffset(0.00001)
+        self.controller.getActorNode().setPythonTag("entity", self)
+        self.attachNewNode(self.controller.getActorNode())
+
+    def applyControllerMasks(self):
         if self.team == 0:
             # We are red team.
             self.controller.setContentsMask(TFGlobals.Contents.RedTeam)
@@ -167,19 +176,24 @@ class DistributedTFPlayerShared:
             # Red team is solid to us.
             self.controller.setSolidMask(TFGlobals.Contents.RedTeam | TFGlobals.Contents.Solid)
 
-        self.controller.setUpDirection(Vec3.up())
-        self.controller.setFootPosition(self.getPos())
-        #self.controller.setContactOffset(0.00001)
-        self.controller.getActorNode().setPythonTag("entity", self)
-        self.attachNewNode(self.controller.getActorNode())
-
     def disableController(self):
+        """
+        Disables the controller.  Will not collide with anything until
+        enableController() is called.
+        """
+
         if self.controller:
-            self.controller.getActorNode().removeFromScene(base.physicsWorld)
+            # Hack: Set the contents+solid mask to all 0s.
+            self.controller.setContentsMask(0)
+            self.controller.setSolidMask(0)
 
     def enableController(self):
+        """
+        Re-enables the controller.  Collisions will occur with the controller
+        again.
+        """
         if self.controller:
-            self.controller.getActorNode().addToScene(base.physicsWorld)
+            self.applyControllerMasks()
 
     def announceGenerate(self):
         self.classInfo = ClassInfos[self.tfClass]

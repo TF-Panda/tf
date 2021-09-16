@@ -82,7 +82,7 @@ class World(DistributedEntity):
         groundCm.setHasUvs(True)
         groundCm.setHasNormals(True)
         ground = render.attachNewNode(groundCm.generate())
-        ground.setMaterial(MaterialPool.loadMaterial("tfmodels/src/maps/concretefloor01.pmat"))
+        ground.setMaterial(MaterialPool.loadMaterial("materials/concretefloor01.mto"))
         ground.setP(-90)
 
     def deleteWorld(self):
@@ -119,7 +119,7 @@ class World(DistributedEntity):
         planeNp.setPythonTag("entity", self)
 
         """
-        self.lvl = base.loader.loadModel("ctf_2fort.bam")
+        self.lvl = base.loader.loadModel("ctf_2fort")
         self.lvl.reparentTo(base.render)
         data = self.lvl.find("**/+MapRoot").node().getData()
         for i in range(data.getNumModelPhysDatas()):

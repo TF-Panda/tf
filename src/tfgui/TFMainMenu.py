@@ -55,8 +55,8 @@ class TFMainMenu(StateData):
         self.bg = OnscreenImage(image = random.choice(self.BgsWidescreen), parent = hidden)
         #self.bg.setSx(1.77777)
         self.bg.setBin('background', 0)
-        #self.bg = loader.loadModel("models/gui/title_team_widescreen.bam")
-        self.logo = OnscreenImage(image = base.loader.loadModel("models/gui/tf2_logo_2.bam"), parent = hidden,
+        #self.bg = loader.loadModel("models/gui/title_team_widescreen")
+        self.logo = OnscreenImage(image = base.loader.loadModel("models/gui/tf2_logo_2"), parent = hidden,
                                   pos = (0.57, 0, 0.2), scale = 0.04)
         self.logo.setTransparency(True)
 

@@ -35,7 +35,7 @@ class DistributedGame(DistributedObject):
         root = base.render.attachNewNode("expl")
         root.setPos(Vec3(*pos))
         root.setScale(Vec3(*scale))
-        expl = base.loader.loadModel("tfmodels/src/effects/explosion.egg")
+        expl = base.loader.loadModel("models/effects/explosion.egg")
         expl.setZ(8)
         expl.hide(DirectRender.ShadowCameraBitmask)
         seqn = expl.find("**/+SequenceNode").node()

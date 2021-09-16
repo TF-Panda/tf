@@ -111,11 +111,11 @@ class SentryGun(BaseObject):
 
         def onUpgrade(self):
             if self.level == 2:
-                self.setModel("tfmodels/src/buildables/sentry2_heavy.pmdl")
+                self.setModel("models/buildables/sentry2_heavy")
                 self.viewOffset = SENTRYGUN_EYE_OFFSET_LEVEL_2
                 self.maxAmmoShells = SENTRYGUN_MAX_SHELLS_2
             elif self.level == 3:
-                self.setModel("tfmodels/src/buildables/sentry3_heavy.pmdl")
+                self.setModel("models/buildables/sentry3_heavy")
                 self.viewOffset = SENTRYGUN_EYE_OFFSET_LEVEL_3
                 self.maxAmmoShells = SENTRYGUN_MAX_SHELLS_3
 
@@ -123,16 +123,16 @@ class SentryGun(BaseObject):
             self.ammoShells = self.maxAmmoShells
 
         def generate(self):
-            self.setModel("tfmodels/src/buildables/sentry1.pmdl")
+            self.setModel("models/buildables/sentry1")
             BaseObject.generate(self)
 
         def onFinishUpgrade(self):
             self.sentryState = SentryState.Searching
             self.enemy = None
             if self.level == 2:
-                self.setModel("tfmodels/src/buildables/sentry2.pmdl")
+                self.setModel("models/buildables/sentry2")
             elif self.level == 3:
-                self.setModel("tfmodels/src/buildables/sentry3.pmdl")
+                self.setModel("models/buildables/sentry3")
             self.emitSound("Building_Sentrygun.Built")
 
         def onFinishConstruction(self):

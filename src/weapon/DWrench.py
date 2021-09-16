@@ -18,8 +18,8 @@ SWING_MAXS = Vec3(18)
 
 class DWrench(TFWeaponMelee):
 
-    WeaponModel = "tfmodels/src/weapons/wrench/c_wrench.pmdl"
-    WeaponViewModel = "tfmodels/src/weapons/wrench/c_wrench.pmdl"
+    WeaponModel = "models/weapons/c_wrench"
+    WeaponViewModel = "models/weapons/c_wrench"
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

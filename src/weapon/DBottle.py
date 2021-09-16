@@ -6,8 +6,8 @@ from tf.tfbase import TFLocalizer
 
 class DBottle(TFWeaponMelee):
 
-    WeaponModel = "tfmodels/src/weapons/bottle/c_bottle.pmdl"
-    WeaponViewModel = "tfmodels/src/weapons/bottle/c_bottle.pmdl"
+    WeaponModel = "models/weapons/c_bottle"
+    WeaponViewModel = "models/weapons/c_bottle"
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

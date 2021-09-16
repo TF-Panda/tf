@@ -33,9 +33,9 @@ BaseSpeed = 300
 
 class EngineerInfo:
     Name = TFLocalizer.Engineer
-    MenuWeapon = "tfmodels/src/weapons/wrench/c_wrench.pmdl"
-    PlayerModel = "tfmodels/src/char/engineer/engineer.pmdl"
-    ViewModel = "tfmodels/src/char/engineer/engineer_viewmodel/c_engineer_arms.pmdl"
+    MenuWeapon = "models/weapons/c_wrench"
+    PlayerModel = "models/char/engineer"
+    ViewModel = "models/char/c_engineer_arms"
     ForwardFactor = 1.0
     BackwardFactor = 0.9
     CrouchFactor = 0.33
@@ -78,9 +78,9 @@ class EngineerInfo:
 
 class SoldierInfo:
     Name = TFLocalizer.Soldier
-    MenuWeapon = "tfmodels/src/weapons/rocketlauncher/c_rocketlauncher.pmdl"
-    PlayerModel = "tfmodels/src/char/soldier/soldier.pmdl"
-    ViewModel = "tfmodels/src/char/soldier/soldier_viewmodel/c_soldier_arms.pmdl"
+    MenuWeapon = "models/weapons/c_rocketlauncher"
+    PlayerModel = "models/char/soldier"
+    ViewModel = "models/char/c_soldier_arms"
     ForwardFactor = 0.8
     BackwardFactor = 0.72
     CrouchFactor = 0.27
@@ -122,9 +122,9 @@ class SoldierInfo:
 
 class DemoInfo:
     Name = TFLocalizer.Demoman
-    MenuWeapon = "tfmodels/src/weapons/grenadelauncher/c_grenadelauncher.pmdl"
-    PlayerModel = "tfmodels/src/char/demo/demo.pmdl"
-    ViewModel = "tfmodels/src/char/demo/demo_viewmodel/c_demo_arms.pmdl"
+    MenuWeapon = "models/weapons/c_grenadelauncher"
+    PlayerModel = "models/char/demo"
+    ViewModel = "models/char/c_demo_arms"
     ForwardFactor = 0.93
     BackwardFactor = 0.84
     CrouchFactor = 0.31

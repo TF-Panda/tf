@@ -47,26 +47,26 @@ class TFServerBase(HostBase):
         self.net = self.sv
 
         precacheList = [
-            "tfmodels/src/buildables/sentry1.pmdl",
-            "tfmodels/src/char/engineer/engineer.pmdl",
-            "tfmodels/src/char/engineer/engineer_viewmodel/c_engineer_arms.pmdl",
-            "tfmodels/src/char/soldier/soldier.pmdl",
-            "tfmodels/src/char/soldier/soldier_viewmodel/c_soldier_arms.pmdl",
-            "tfmodels/src/weapons/rocketlauncher/c_rocketlauncher.pmdl",
-            "tfmodels/src/weapons/shotgun/c_shotgun.pmdl",
-            "tfmodels/src/weapons/pistol/c_pistol.pmdl",
-            "tfmodels/src/weapons/wrench/c_wrench.pmdl",
-            "tfmodels/src/buildables/sentry2_heavy.pmdl",
-            "tfmodels/src/buildables/sentry2.pmdl",
-            "tfmodels/src/buildables/sentry1_gib1.pmdl",
-            "tfmodels/src/buildables/sentry1_gib2.pmdl",
-            "tfmodels/src/buildables/sentry1_gib3.pmdl",
-            "tfmodels/src/buildables/sentry1_gib4.pmdl",
-            "tfmodels/src/weapons/rocketlauncher/w_rocket.pmdl",
-            "tfmodels/src/char/demo/demo.pmdl",
-            "tfmodels/src/char/demo/demo_viewmodel/c_demo_arms.pmdl",
-            "tfmodels/src/weapons/bottle/c_bottle.pmdl",
-            "tfmodels/src/weapons/shovel/c_shovel.pmdl"
+            "models/buildables/sentry1",
+            "models/char/engineer",
+            "models/char/c_engineer_arms",
+            "models/char/soldier",
+            "models/char/c_soldier_arms",
+            "models/weapons/c_rocketlauncher",
+            "models/weapons/c_shotgun",
+            "models/weapons/c_pistol",
+            "models/weapons/c_wrench",
+            "models/buildables/sentry2_heavy",
+            "models/buildables/sentry2",
+            "models/buildables/sentry1_gib1",
+            "models/buildables/sentry1_gib2",
+            "models/buildables/sentry1_gib3",
+            "models/buildables/sentry1_gib4",
+            "models/weapons/w_rocket",
+            "models/char/demo",
+            "models/char/c_demo_arms",
+            "models/weapons/c_bottle",
+            "models/weapons/c_shovel"
         ]
         self.precache = []
         for pc in precacheList:

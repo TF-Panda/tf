@@ -95,7 +95,7 @@ class DemoModel:
         char.addHitBox(7, "bip_foot_R", (-3.05, -3.5, -2), (2.45, 11.5, 4))
 
 ModelDefs = {
-  "tfmodels/src/char/engineer/engineer.pmdl": EngineerModel,
-  "tfmodels/src/char/soldier/soldier.pmdl": SoldierModel,
-  "tfmodels/src/char/demo/demo.pmdl": DemoModel
+  "models/char/engineer": EngineerModel,
+  "models/char/soldier": SoldierModel,
+  "models/char/demo": DemoModel
 }

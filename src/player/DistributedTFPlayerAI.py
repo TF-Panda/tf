@@ -279,7 +279,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Become a ragdoll.
         #print("Die at forcejoit", self.forceJoint, "force", self.bulletForce + self.velocity)
         self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce + self.velocity])
-        #self.disableController()
+        self.disableController()
 
         # Respawn after 5 seconds.
         self.addTask(self.respawnTask, 'respawn', appendTask = True)
@@ -367,7 +367,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if sendRespawn:
             self.sendUpdate('respawn')
         self.playerState = self.StateAlive
-        #self.enableController()
+        self.enableController()
 
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
         if (cls == self.tfClass) and not force:
