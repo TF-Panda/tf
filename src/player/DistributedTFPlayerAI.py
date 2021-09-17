@@ -278,7 +278,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Become a ragdoll.
         #print("Die at forcejoit", self.forceJoint, "force", self.bulletForce + self.velocity)
-        self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce + self.velocity])
+        self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce + (self.velocity * 20)])
         self.disableController()
 
         # Respawn after 5 seconds.
