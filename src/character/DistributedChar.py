@@ -131,11 +131,11 @@ class DistributedChar(Char, DistributedEntity):
     def initializeCollisions(self):
         if self.solidShape == SolidShape.Model:
             assert self.modelNp
-            cinfo = self.modelNp.node().getCollisionInfo()
+            cinfo = self.modelNp.node().getCollisionInfo().getPart(0)
             assert cinfo
-            self.mass = cinfo.getMass()
-            self.damping = cinfo.getDamping()
-            self.rotDamping = cinfo.getRotDamping()
+            self.mass = cinfo.mass
+            self.damping = cinfo.damping
+            self.rotDamping = cinfo.rot_damping
 
         elif self.solidShape == SolidShape.Box:
             self.loadModelBBoxIntoHull()

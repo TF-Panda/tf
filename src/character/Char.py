@@ -12,7 +12,7 @@ from tf.tfbase.TFGlobals import CollisionGroup, Contents
 
 from .ModelDefs import ModelDefs
 
-Ragdolls = []
+from tf.character.Ragdoll import Ragdoll
 
 class Char(Actor):
     notify = directNotify.newCategory("Char")
@@ -75,19 +75,16 @@ class Char(Actor):
         return self.characterNp
 
     def becomeRagdoll(self, forceJoint, forcePosition, forceVector):
-        forceVector = Vec3(forceVector[0], forceVector[1], forceVector[2])
-        forcePosition = Point3(forcePosition[0], forcePosition[1], forcePosition[2])
-
-        if not self.model in ModelDefs:
-            return None
-
-        modelDef = ModelDefs[self.model]
-        if not hasattr(modelDef, 'createRagdoll'):
-            # Model doesn't have a ragdoll.
-            return None
-
         # Hide ourselves.
         self.hide()
+
+        collInfo = self.modelNp.node().getCollisionInfo()
+        if not collInfo or (collInfo.getNumParts() < 2):
+            # No ragdoll for this model.
+            return None
+
+        forceVector = Vec3(forceVector[0], forceVector[1], forceVector[2])
+        forcePosition = Point3(forcePosition[0], forcePosition[1], forcePosition[2])
 
         # Make sure the joints reflect the current animation in case we were
         # hidden or off-screen.
@@ -105,16 +102,12 @@ class Char(Actor):
             cCharacter.setJointForcedValue(i, character.getJointValue(i))
         cCopy.reparentTo(render)
         cCopy.setTransform(self.getNetTransform())
-        rd = modelDef.createRagdoll(cCopy)
-        if not rd:
-            # No ragdoll.
-            cCopy.clearModel()
-            cCopy.cleanup()
-            return None
 
+        # Create the ragdoll using the model's collision info.
+        rd = Ragdoll(cCopy, collInfo)
         rd.setup()
         if forceJoint == -1:
-            rd.setEnabled(True, "bip_pelvis", forceVector, forcePosition)
+            rd.setEnabled(True, None, forceVector, forcePosition)
         else:
             # Find the closest joint to apply the force to.
             joint = forceJoint
@@ -122,17 +115,18 @@ class Char(Actor):
             foundJoint = False
             while not foundJoint and joint != -1:
                 jointName = cCopy.character.getJointName(joint)
-                if jointName in rd.NodePhy:
+                if rd.getJointByName(jointName) is not None:
                     foundJoint = True
                     break
                 else:
                     joint = cCopy.character.getJointParent(joint)
+
             if foundJoint:
                 #print("Applying force", forceVector, "to joint", jointName, "at pos", forcePosition)
                 rd.setEnabled(True, jointName, forceVector, forcePosition)
             else:
-                rd.setEnabled(True, "bip_pelvis", forceVector, forcePosition)
-        Ragdolls.append((cCopy, rd))
+                rd.setEnabled(True, None, forceVector, forcePosition)
+        #Ragdolls.append((cCopy, rd))
 
         return (cCopy, rd)
 
@@ -377,8 +371,9 @@ class Char(Actor):
         cinfo = self.getPartModel().node().getCollisionInfo()
         if not cinfo:
             return None
+        part = cinfo.getPart(0)
 
-        mdata = PhysConvexMeshData(cinfo.getMeshData())
+        mdata = PhysConvexMeshData(part.mesh_data)
         if not mdata.generateMesh():
             return None
         mesh = PhysConvexMesh(mdata)

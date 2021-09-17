@@ -57,6 +57,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.ivEyeP.setLooping(True)
         self.addInterpolatedVar(self.ivEyeP, self.getEyeP, self.setEyeP, DistributedObject.SimulationVar)
 
+        self.currentSpeech = None
+        self.speechNode = None
+
         #self.ivLookPitch = InterpolatedFloat()
         #self.ivLookPitch.setLooping(True)
         #self.addInterpolatedVar(self.ivLookPitch, self.getLookPitch, self.setLookPitch, DistributedObject.AnimationVar)
@@ -105,9 +108,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def respawn(self):
         # Release reference to the ragdoll.
         if self.ragdoll:
-            self.ragdoll[1].setEnabled(False)
-            #self.ragdoll[1].updateTask.remove()
-            self.ragdoll[0].modelNp.hide()
+            self.ragdoll[1].destroy()
+            self.ragdoll[0].clearModel()
+            self.ragdoll[0].cleanup()
         self.ragdoll = None
         self.show()
         self.enableController()
@@ -201,8 +204,20 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         #self.prevPos = Point3(self.position)
 
+    def stopSpeech(self):
+        if self.currentSpeech:
+            self.currentSpeech[0].detachSound(self.currentSpeech[1])
+            self.currentSpeech[1].stop()
+            self.currentSpeech = None
+
     def speak(self, soundIndex):
-        pass
+        self.stopSpeech()
+        info = Sounds.AllSounds[soundIndex]
+        sound = Sounds.createSound(info)
+        audio3d = base.audio3ds[info.channel]
+        audio3d.attachSoundToObject(sound, self.speechNode)
+        sound.play()
+        self.currentSpeech = (audio3d, sound)
         #self.talker.speak(soundIndex)
 
     def makeAngry(self):
@@ -230,11 +245,16 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         #for hide in self.classInfo.Hide:
         #    self.modelNp.findAllMatches("**/*" + hide + "*").hide()
         self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
+        self.speechNode = self.attachNewNode("speechPoint")
+        self.speechNode.setZ(50)
         #self.talker = Talker.Talker(self.modelNp, Point3(0, 0, self.classInfo.ViewHeight), self.character, phonemes[self.classInfo.Phonemes], sentences)
         #self.modelNp.setH(180)
         self.reparentTo(render)
 
     def disable(self):
+        self.stopSpeech()
+        self.speechNode.removeNode()
+        self.speechNode = None
         self.ivPos = None
         self.ivLookPitch = None
         self.ivLookYaw = None
