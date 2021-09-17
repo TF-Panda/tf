@@ -10,8 +10,6 @@ from .HitBox import HitBox
 from tf.tfbase.Sounds import Sounds, createSoundByName
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
 
-from .ModelDefs import ModelDefs
-
 from tf.character.Ragdoll import Ragdoll
 
 class Char(Actor):
@@ -92,7 +90,7 @@ class Char(Actor):
 
         cCopy = Char()
         cCopy.setSkin(self.skin)
-        cCopy.loadModel(self.model)
+        cCopy.loadModel(self.model, loadHitBoxes=False)
         cCopy.node().setBounds(OmniBoundingVolume())
         # Copy the current joint positions of our character to the ragdoll
         # version.
@@ -133,12 +131,22 @@ class Char(Actor):
         #self.resetSequence(-1)
 
     def setupHitBoxes(self):
-        if self.model not in ModelDefs:
+        """
+        Creates hit-boxes for the model using the info from the model's custom
+        data structure.
+        """
+        data = self.modelNp.node().getCustomData()
+        if not data or not data.hasAttribute("hit_boxes"):
             return
-
-        modelDef = ModelDefs[self.model]
-        if hasattr(modelDef, 'createHitBoxes'):
-            modelDef.createHitBoxes(self)
+        hitBoxes = data.getAttributeValue("hit_boxes").getList()
+        for i in range(len(hitBoxes)):
+            hitBox = hitBoxes.get(i).getElement()
+            mins = hitBox.getAttributeValue("mins").getList()
+            maxs = hitBox.getAttributeValue("maxs").getList()
+            self.addHitBox(hitBox.getAttributeValue("group").getInt(),
+                           hitBox.getAttributeValue("joint").getString(),
+                           (mins.get(0).getFloat(), mins.get(1).getFloat(), mins.get(2).getFloat()),
+                           (maxs.get(0).getFloat(), maxs.get(1).getFloat(), maxs.get(2).getFloat()))
 
     def addHitBox(self, group, jointName, mins, maxs):
         joint = self.character.findJoint(jointName)
@@ -381,7 +389,7 @@ class Char(Actor):
         shape = PhysShape(mesh, mat)
         return shape
 
-    def loadModel(self, model):
+    def loadModel(self, model, loadHitBoxes=True):
         if self.model == model:
             return
 
@@ -409,7 +417,8 @@ class Char(Actor):
         self.characterNp = self.getPart()
         self.character = self.getPartBundle()
 
-        self.setupHitBoxes()
+        if loadHitBoxes:
+            self.setupHitBoxes()
 
         if hasattr(base, 'camera'):
             for eyeNp in self.findAllMatches("**/+EyeballNode"):
