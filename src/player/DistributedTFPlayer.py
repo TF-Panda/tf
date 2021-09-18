@@ -221,6 +221,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         #self.talker.speak(soundIndex)
 
     def makeAngry(self):
+        return
+
         now = globalClock.getFrameTime()
         if now - self.lastAngryTime < 2:
             return

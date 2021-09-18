@@ -97,6 +97,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.addPredictionField("tickBase", int)
         self.addPredictionField("activeWeapon", int, getter=self.getActiveWeapon, setter=self.setActiveWeapon)
         self.addPredictionField("onGround", bool, noErrorCheck=True)
+        self.addPredictionField("condition", int)
 
         self.observerChaseDistance = 0
         self.freezeFrameStart = Point3()

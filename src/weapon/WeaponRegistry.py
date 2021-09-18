@@ -7,6 +7,7 @@ from .DWrench import DWrench
 from .DRocketLauncher import DRocketLauncher
 from .DShovel import DShovel
 from .DBottle import DBottle
+from .DMinigun import DMinigun
 
 Weapons = {
   Weapon.Shotgun: DShotgun,
@@ -15,5 +16,6 @@ Weapons = {
   Weapon.Wrench: DWrench,
   Weapon.RocketLauncher: DRocketLauncher,
   Weapon.Shovel: DShovel,
-  Weapon.Bottle: DBottle
+  Weapon.Bottle: DBottle,
+  Weapon.Minigun: DMinigun
 }

@@ -141,13 +141,19 @@ def createSound(info):
 
     return sound
 
-def createSoundByName(name):
+def createSoundByName(name, getInfo=False):
     info = Sounds.get(name, None)
-    return createSound(info)
+    if not getInfo:
+        return createSound(info)
+    else:
+        return (createSound(info), info)
 
-def createSoundByIndex(index):
+def createSoundByIndex(index, getInfo=False):
     info = AllSounds[index]
-    return createSound(info)
+    if not getInfo:
+        return createSound(info)
+    else:
+        return (createSound(info), info)
 
 def createSoundClient(index, waveIndex, volume, pitch, pos):
     csc_coll.start()

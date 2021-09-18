@@ -25,6 +25,9 @@
   Jump_Float
   Jump_Land
   Double_Jump_Crouch
+  Deployed
+  Deployed_Idle
+  Deployed_Idle_Crouch
 
   Attack_Stand
   Attack_Crouch
@@ -63,11 +66,22 @@
   Primary_Jump_Float
   Primary_Jump_Land
   Primary_Double_Jump_Crouch
+  Primary_Deployed
+  Primary_Deployed_Idle
+  Primary_Deployed_Idle_Crouch
 
   Primary_Attack_Stand
+  Primary_Attack_Stand_Prefire
+  Primary_Attack_Stand_Postfire
   Primary_Attack_Crouch
+  Primary_Attack_Crouch_Prefire
+  Primary_Attack_Crouch_Postfire
   Primary_Attack_Swim
+  Primary_Attack_Swim_Prefire
+  Primary_Attack_Swim_Postfire
   Primary_Attack_Air_Walk
+  Primary_Attack_Air_Walk_Prefire
+  Primary_Attack_Air_Walk_Postfire
 
   Primary_Reload_Stand
   Primary_Reload_Stand_Loop
@@ -156,6 +170,7 @@
   VM_Draw
   VM_Idle
   VM_Fire
+  VM_SecondaryFire
   VM_Reload
   VM_Reload_Start
   VM_Reload_Finish
@@ -163,6 +178,7 @@
   Primary_VM_Idle
   Primary_VM_Draw
   Primary_VM_Fire
+  Primary_VM_SecondaryFire
   Primary_VM_Reload_Start
   Primary_VM_Reload
   Primary_VM_Reload_End
@@ -170,6 +186,7 @@
   Secondary_VM_Idle
   Secondary_VM_Draw
   Secondary_VM_Fire
+  Secondary_VM_SecondaryFire
   Secondary_VM_Reload_Start
   Secondary_VM_Reload
   Secondary_VM_Reload_End

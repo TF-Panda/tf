@@ -148,7 +148,8 @@ class TFBase(ShowBase, FSM):
             "models/char/demo",
             "models/char/c_demo_arms",
             "models/weapons/c_bottle",
-            "models/weapons/c_shovel"
+            "models/weapons/c_shovel",
+            "models/char/heavy"
         ]
         self.precache = []
         for pc in precacheList:

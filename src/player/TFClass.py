@@ -28,6 +28,7 @@ class Weapon(IntEnum):
     Shovel = auto()
     Bottle = auto()
     RocketLauncher = auto()
+    Minigun = auto()
 
 BaseSpeed = 300
 
@@ -160,8 +161,44 @@ class DemoInfo:
 
     Weapons = [Weapon.Bottle]
 
+class HeavyInfo:
+    Name = TFLocalizer.Heavy
+    MenuWeapon = "models/weapons/c_minigun"
+    PlayerModel = "models/char/heavy"
+    ViewModel = "models/char/c_heavy_arms"
+    ForwardFactor = 0.77
+    BackwardFactor = 0.69
+    CrouchFactor = 0.26
+    SwimmingFactor = 0.61
+    ViewHeight = 75
+    MaxHealth = 300
+    Phonemes = 'heavy'
+
+    PainFilenames = [
+        "Heavy.PainSevere01",
+        "Heavy.PainSevere02",
+        "Heavy.PainSevere03"
+    ]
+
+    CritPainFilenames = [
+        "Heavy.PainCrticialDeath01",
+        "Heavy.PainCrticialDeath02",
+        "Heavy.PainCrticialDeath03"
+    ]
+
+    SharpPainFilenames = [
+        "Heavy.PainSharp01",
+        "Heavy.PainSharp02",
+        "Heavy.PainSharp03",
+        "Heavy.PainSharp04",
+        "Heavy.PainSharp05"
+    ]
+
+    Weapons = [Weapon.Minigun, Weapon.ShotgunSecondary]
+
 ClassInfos = {
     Class.Soldier: SoldierInfo,
     Class.Demo: DemoInfo,
-    Class.Engineer: EngineerInfo
+    Class.Engineer: EngineerInfo,
+    Class.HWGuy: HeavyInfo
 }

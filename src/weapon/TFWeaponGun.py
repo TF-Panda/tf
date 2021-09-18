@@ -30,7 +30,7 @@ class TFWeaponGun(BaseClass):
     def primaryAttack(self):
 
         # Check for ammunition.
-        if self.clip <= 0 and self.clip != -1:
+        if self.clip <= 0 and self.usesClip:
             return
 
         # Are we capable of firing again.
@@ -89,7 +89,7 @@ class TFWeaponGun(BaseClass):
         else:
             assert False
 
-        if self.clip != -1:
+        if self.usesClip:
             self.clip -= self.weaponData[self.weaponMode]['ammoPerShot']
         else:
             self.ammo -= self.weaponData[self.weaponMode]['ammoPerShot']

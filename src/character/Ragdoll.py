@@ -1,10 +1,32 @@
 from panda3d.pphysics import *
 from panda3d.core import *
 
+HardSounds = [
+    "sound/physics/body/body_medium_impact_hard1.wav",
+    "sound/physics/body/body_medium_impact_hard2.wav",
+    "sound/physics/body/body_medium_impact_hard3.wav",
+    "sound/physics/body/body_medium_impact_hard4.wav",
+    "sound/physics/body/body_medium_impact_hard5.wav",
+    "sound/physics/body/body_medium_impact_hard6.wav"
+]
+SoftSounds = [
+    "sound/physics/body/body_medium_impact_soft1.wav",
+    "sound/physics/body/body_medium_impact_soft2.wav",
+    "sound/physics/body/body_medium_impact_soft3.wav",
+    "sound/physics/body/body_medium_impact_soft4.wav",
+    "sound/physics/body/body_medium_impact_soft5.wav",
+    "sound/physics/body/body_medium_impact_soft6.wav",
+    "sound/physics/body/body_medium_impact_soft7.wav"
+]
+
 class Ragdoll(PhysRagdoll):
 
     def __init__(self, characterNp, collInfo):
         PhysRagdoll.__init__(self, characterNp)
+        for hard in HardSounds:
+            self.addHardImpactSound(base.audio3ds[0].loadSfx(hard))
+        for soft in SoftSounds:
+            self.addSoftImpactSound(base.audio3ds[0].loadSfx(soft))
         #self.setDebug(True, 4.0)
         self.task = None
         self.collInfo = collInfo

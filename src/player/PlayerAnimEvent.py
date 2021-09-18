@@ -9,3 +9,5 @@ class PlayerAnimEvent(IntEnum):
     AttackGrenade = 5
     Jump = 6
     Flinch = 7
+    AttackPre = 8
+    AttackPost = 9

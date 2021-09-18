@@ -29,12 +29,18 @@ class DistributedTFPlayerShared:
     StateDead = 1
     StateAlive = 2
 
+    CondNone = 0
+    CondAiming = 1 << 0
+    CondTaunting = 1 << 1
+
     def __init__(self):
         self.playerName = ""
         self.tfClass = Class.Engineer
         self.classInfo = ClassInfos[self.tfClass]
         self.eyeH = 0.0
         self.eyeP = 0.0
+
+        self.condition = self.CondNone
 
         self.viewModel = None
 
@@ -75,6 +81,15 @@ class DistributedTFPlayerShared:
 
         self.tickBase = 0
         self.deathTime = 0.0
+
+    def removeCondition(self, cond):
+        self.condition &= ~cond
+
+    def setCondition(self, cond):
+        self.condition |= cond
+
+    def inCondition(self, cond):
+        return (self.condition & cond) != 0
 
     def isObserver(self):
         return self.observerMode != ObserverMode.Off

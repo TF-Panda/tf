@@ -68,6 +68,10 @@ class TFPlayerAnimState:
             self.firstJumpFrame = True
             self.jumpStartTime = globalClock.getFrameTime()
             #self.restartMainSequence()
+        elif event == PlayerAnimEvent.AttackPre:
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Primary_Attack_Stand_Prefire)
+        elif event == PlayerAnimEvent.AttackPost:
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Primary_Attack_Stand_Postfire)
 
     def angleNormalize(self, ang):
         ang = ang % 360
@@ -116,7 +120,8 @@ class TFPlayerAnimState:
 
         # Set the aim yaw and save.
         yawParam = self.player.getPoseParameter("body_yaw")
-        yawParam.setValue(-aimYaw)
+        if yawParam:
+            yawParam.setValue(-aimYaw)
         #self.player.lookYaw = yawParam.getNormValue()
         #print(-aimYaw)
 
@@ -214,7 +219,15 @@ class TFPlayerAnimState:
         return False
 
     def handleMoving(self):
-        if self.vel.length() > 0.5:
+        speed = self.vel.length()
+
+        if self.player.inCondition(self.player.CondAiming):
+            if speed > 0.5:
+                self.idealActivity = Activity.Deployed
+            else:
+                self.idealActivity = Activity.Deployed_Idle
+            return True
+        elif speed > 0.5:
             self.idealActivity = Activity.Run
             return True
         return False
@@ -265,15 +278,18 @@ class TFPlayerAnimState:
 
         self.computeAimPoseParam()
 
-        pitchParam.setValue(self.eyePitch)
+        if pitchParam:
+            pitchParam.setValue(self.eyePitch)
         #self.player.lookPitch = pitchParam.getNormValue()
 
         forwardSpeed = BaseSpeed * self.player.classInfo.ForwardFactor
         backwardSpeed = BaseSpeed * self.player.classInfo.BackwardFactor
         moveX = vel[0] / forwardSpeed
         moveY = vel[1] / forwardSpeed if vel[1] > 0 else vel[1] / backwardSpeed
-        moveXParam.setValue(moveX)
-        moveYParam.setValue(moveY)
+        if moveXParam:
+            moveXParam.setValue(moveX)
+        if moveYParam:
+            moveYParam.setValue(moveY)
 
         #self.player.moveX = moveXParam.getNormValue()
         #self.player.moveY = moveYParam.getNormValue()

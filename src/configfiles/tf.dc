@@ -40,6 +40,7 @@ from tf.weapon.BaseRocket import BaseRocket/AI
 from tf.weapon.RocketProjectile import RocketProjectile/AI
 from tf.weapon.DBottle import DBottle/AI
 from tf.weapon.DShovel import DShovel/AI
+from tf.weapon.DMinigun import DMinigun/AI
 
 // Coordinate range (per axis): -21474836.47 to 21474836.47
 // Two decimals of precision.
@@ -179,6 +180,8 @@ dclass DistributedTFPlayer : DistributedChar {
 
   uint8 playerState; // 1
 
+  uint16 condition; // 2
+
   // 46 bytes
 
   // Client request to change class.
@@ -289,4 +292,8 @@ dclass DBottle : TFWeaponMelee {
 };
 
 dclass DShovel : TFWeaponMelee {
+};
+
+dclass DMinigun : TFWeaponGun {
+  uint8 weaponState;
 };

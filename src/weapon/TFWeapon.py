@@ -59,7 +59,8 @@ class TFWeapon(BaseClass):
                 Activity.VM_Fire: Activity.Primary_VM_Fire,
                 Activity.VM_Reload: Activity.Primary_VM_Reload,
                 Activity.VM_Reload_Start: Activity.Primary_VM_Reload_Start,
-                Activity.VM_Reload_Finish: Activity.Primary_VM_Reload_End
+                Activity.VM_Reload_Finish: Activity.Primary_VM_Reload_End,
+                Activity.VM_SecondaryFire: Activity.Primary_VM_SecondaryFire
             },
 
             TFWeaponType.Secondary: {
@@ -106,7 +107,10 @@ class TFWeapon(BaseClass):
                 Activity.Reload_Swim_End: Activity.Primary_Reload_Swim_End,
                 Activity.Reload_Air_Walk: Activity.Primary_Reload_Air_Walk,
                 Activity.Reload_Air_Walk_Loop: Activity.Primary_Reload_Air_Walk_Loop,
-                Activity.Reload_Air_Walk_End: Activity.Primary_Reload_Air_Walk_End
+                Activity.Reload_Air_Walk_End: Activity.Primary_Reload_Air_Walk_End,
+                Activity.Deployed: Activity.Primary_Deployed,
+                Activity.Deployed_Idle: Activity.Primary_Deployed_Idle,
+                Activity.Deployed_Idle_Crouch: Activity.Primary_Deployed_Idle_Crouch
             },
 
             TFWeaponType.Secondary: {

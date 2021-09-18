@@ -153,6 +153,17 @@ def angleMod(a):
     a = (360.0/65536) * (int(a*(65536.0/360.0)) & 65535)
     return a
 
+def approach(target, value, speed):
+    delta = target - value
+    if delta > speed:
+        value += speed
+    elif delta < -speed:
+        value -= speed
+    else:
+        value = target
+
+    return value
+
 TF2Font = None
 def getTF2Font():
     global TF2Font
