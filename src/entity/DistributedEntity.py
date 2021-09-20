@@ -621,7 +621,7 @@ class DistributedEntity(BaseClass, NodePath):
         def onTakeDamage(self, info):
             if self.hasCollisions and not self.kinematic:
                 # Apply the damage force to the physics-simulated body.
-                self.node().addForceAtPos(info.damageForce, info.damagePosition, self.node().FTImpulse)
+                self.node().addForce(info.damageForce, self.node().FTImpulse)
 
         def emitSound(self, soundName, client = None, excludeClients = []):
             base.game.d_emitSound(soundName, self.getPos(), client=client, excludeClients=excludeClients)
