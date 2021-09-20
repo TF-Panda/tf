@@ -24,5 +24,5 @@ else:
     print('TFStart: Running client instance.')
     from tf.tfbase.TFBase import TFBase
     base = TFBase()
-    base.request("MainMenu")
+    base.request("Intro")
 base.run()

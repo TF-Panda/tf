@@ -9,7 +9,7 @@ from direct.directbase import DirectRender
 from direct.fsm.FSM import FSM
 
 from tf.distributed.TFClientRepository import TFClientRepository
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, TFLocalizer
 from tf.tfgui.TFMainMenu import TFMainMenu
 from tf.tfgui.NotifyView import NotifyView
 from .TFPostProcess import TFPostProcess
@@ -27,6 +27,13 @@ class TFBase(ShowBase, FSM):
         ShowBase.__init__(self)
         FSM.__init__(self, 'TFBase')
 
+        # For publishes, will be set to correct version of release in the
+        # publish config.
+        self.gameVersion = ConfigVariableString('tf-version', 'dev').value
+
+        self.music = None
+        self.musicFilename = None
+
         if self.config.GetBool('want-notify-view', 0):
             # Add text properties for the different notify levels.
             tpm = TextPropertiesManager.getGlobalPtr()
@@ -40,22 +47,6 @@ class TFBase(ShowBase, FSM):
             self.notifyView = NotifyView()
 
         TextNode.setDefaultFont(self.loader.loadFont("models/fonts/TF2.ttf"))
-
-        # SHow a loading thing.
-        cm = CardMaker('cm')
-        cm.setFrameFullscreenQuad()
-        cm.setHasUvs(True)
-        bg = self.render2d.attachNewNode(cm.generate())
-        bg.setColorScale((0.5, 0.5, 0.5, 1))
-        tex = random.choice(
-            ["maps/background01_widescreen.txo", "maps/background02_widescreen.txo"])
-        bg.setTexture(loader.loadTexture(tex))
-        bg.setBin('background', 0)
-
-        loadingText = OnscreenText("Loading...", fg = (1, 1, 1, 1), parent = self.aspect2d)
-
-        base.graphicsEngine.renderFrame()
-        base.graphicsEngine.flipFrame()
 
         if base.config.GetBool("want-pstats-hotkey", False):
             self.accept('shift-s', self.togglePStats)
@@ -128,37 +119,20 @@ class TFBase(ShowBase, FSM):
 
         self.playGame = None
 
-        precacheList = [
-            "models/buildables/sentry1",
-            "models/char/engineer",
-            "models/char/c_engineer_arms",
-            "models/char/soldier",
-            "models/char/c_soldier_arms",
-            "models/weapons/c_rocketlauncher",
-            "models/weapons/c_shotgun",
-            "models/weapons/c_pistol",
-            "models/weapons/c_wrench",
-            "models/buildables/sentry2_heavy",
-            "models/buildables/sentry2",
-            "models/buildables/sentry1_gib1",
-            "models/buildables/sentry1_gib2",
-            "models/buildables/sentry1_gib3",
-            "models/buildables/sentry1_gib4",
-            "models/weapons/w_rocket",
-            "models/char/demo",
-            "models/char/c_demo_arms",
-            "models/weapons/c_bottle",
-            "models/weapons/c_shovel",
-            "models/char/heavy"
-        ]
-        self.precache = []
-        for pc in precacheList:
-            self.precache.append(loader.loadModel(pc))
-            # Keep the window pumping.
-            base.graphicsEngine.renderFrame()
+    def playMusic(self, audio, loop=False):
+        if isinstance(audio, (str, Filename)):
+            self.musicFilename = audio
+            audio = self.loader.loadMusic(audio)
+        self.stopMusic()
+        self.music = audio
+        self.music.setLoop(loop)
+        self.music.play()
 
-        loadingText.destroy()
-        bg.removeNode()
+    def stopMusic(self):
+        if self.music:
+            self.music.stop()
+            self.music = None
+        self.musicFilename = None
 
     def restart(self):
         ShowBase.restart(self)
@@ -201,6 +175,105 @@ class TFBase(ShowBase, FSM):
         self.postProcess.windowEvent()
 
         ShowBase.windowEvent(self, win)
+
+    def enterIntro(self):
+        from direct.interval.IntervalGlobal import Sequence, Wait, LerpColorScaleInterval, Func
+        from direct.gui.DirectGui import OnscreenImage, OnscreenText
+        bgCard = CardMaker('bgCard')
+        bgCard.setFrameFullscreenQuad()
+        bgCardNp = self.render2d.attachNewNode(bgCard.generate())
+        bgCardNp.setColor(0, 0, 0, 1)
+        tfLogo = OnscreenImage(image = self.loader.loadModel("models/gui/tf2_logo_2"), scale = 0.05)
+        tfLogo.setTransparency(True)
+        tfLogo.setAlphaScale(0)
+        pandaLogo = OnscreenImage('maps/powered_by_panda3d.txo')
+        pandaLogo.setTransparency(True)
+        pandaLogo.setAlphaScale(0)
+        song = self.loader.loadMusic('audio/bgm/gamestartup1.mp3')
+        disclaimer = OnscreenText(TFLocalizer.TFDisclaimer, scale = 0.05, wordwrap = 40,
+                                  fg = (1, 1, 1, 1), pos = (0, 0.1), font = self.loader.loadFont('models/fonts/arial.ttf'))
+        disclaimer.setAlphaScale(0)
+        seq = Sequence()
+        seq.append(Wait(0.5))
+        seq.append(Func(self.playMusic, "audio/bgm/gamestartup1.mp3"))
+        seq.append(Wait(0.5))
+        seq.append(LerpColorScaleInterval(tfLogo, 0.75, (1, 1, 1, 1), (1, 1, 1, 0.0)))
+        seq.append(Wait(1.5))
+        seq.append(LerpColorScaleInterval(tfLogo, 0.5, (1, 1, 1, 0), (1, 1, 1, 1)))
+        seq.append(LerpColorScaleInterval(pandaLogo, 0.75, (1, 1, 1, 1), (1, 1, 1, 0)))
+        seq.append(Wait(1.5))
+        seq.append(LerpColorScaleInterval(pandaLogo, 0.5, (1, 1, 1, 0), (1, 1, 1, 1)))
+        seq.append(LerpColorScaleInterval(disclaimer, 0.75, (1, 1, 1, 1), (1, 1, 1, 0)))
+        seq.append(Wait(5))
+        seq.append(LerpColorScaleInterval(disclaimer, 0.5, (1, 1, 1, 0), (1, 1, 1, 1)))
+        seq.append(Func(bgCardNp.removeNode))
+        seq.append(Func(tfLogo.destroy))
+        seq.append(Func(pandaLogo.destroy))
+        seq.append(Func(disclaimer.destroy))
+        seq.append(Func(self.request, "Preload"))
+        seq.start()
+        self.introSeq = seq
+
+        self.acceptOnce('space', self.stopIntroSeq)
+
+    def stopIntroSeq(self):
+        if hasattr(self, 'introSeq'):
+            self.introSeq.finish()
+            del self.introSeq
+
+    def exitIntro(self):
+        self.stopIntroSeq()
+
+    def enterPreload(self):
+        # SHow a loading thing.
+        cm = CardMaker('cm')
+        cm.setFrameFullscreenQuad()
+        cm.setHasUvs(True)
+        bg = self.render2d.attachNewNode(cm.generate())
+        bg.setColorScale((0.5, 0.5, 0.5, 1))
+        tex = random.choice(
+            ["maps/background01_widescreen.txo", "maps/background02_widescreen.txo"])
+        bg.setTexture(loader.loadTexture(tex))
+        bg.setBin('background', 0)
+
+        loadingText = OnscreenText("Loading...", fg = (1, 1, 1, 1), parent = self.aspect2d)
+
+        base.graphicsEngine.renderFrame()
+        base.graphicsEngine.flipFrame()
+
+        precacheList = [
+            "models/buildables/sentry1",
+            "models/char/engineer",
+            "models/char/c_engineer_arms",
+            "models/char/soldier",
+            "models/char/c_soldier_arms",
+            "models/weapons/c_rocketlauncher",
+            "models/weapons/c_shotgun",
+            "models/weapons/c_pistol",
+            "models/weapons/c_wrench",
+            "models/buildables/sentry2_heavy",
+            "models/buildables/sentry2",
+            "models/buildables/sentry1_gib1",
+            "models/buildables/sentry1_gib2",
+            "models/buildables/sentry1_gib3",
+            "models/buildables/sentry1_gib4",
+            "models/weapons/w_rocket",
+            "models/char/demo",
+            "models/char/c_demo_arms",
+            "models/weapons/c_bottle",
+            "models/weapons/c_shovel",
+            "models/char/heavy"
+        ]
+        self.precache = []
+        for pc in precacheList:
+            self.precache.append(loader.loadModel(pc))
+            # Keep the window pumping.
+            base.graphicsEngine.renderFrame()
+
+        loadingText.destroy()
+        bg.removeNode()
+
+        self.demand('MainMenu')
 
     def enterMainMenu(self):
         self.mainMenu = TFMainMenu()

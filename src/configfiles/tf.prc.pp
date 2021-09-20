@@ -127,4 +127,7 @@ stencil-bits 0
 # Allow loading model files without an extension.
 default-model-extension .bam
 
+# This is set to the correct release version in the publish config file.
+tf-version dev
+
 #end 50_tf.prc

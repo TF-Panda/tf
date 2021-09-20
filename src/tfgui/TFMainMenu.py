@@ -1,9 +1,15 @@
-from direct.gui.DirectGui import DirectButton, OnscreenImage
+from direct.gui.DirectGui import DirectButton, OnscreenImage, OnscreenText
 from direct.fsm.StateData import StateData
+
+import platform
+import psutil
+
+from panda3d.core import TextNode, TextProperties, TextPropertiesManager
 
 from tf.tfbase import TFLocalizer
 
 import random
+import sys
 
 class TFMainMenu(StateData):
 
@@ -34,7 +40,7 @@ class TFMainMenu(StateData):
         self.availableSongs = []
         self.logo = None
         self.bg = None
-        self.playingSong = None
+        self.verLbl = None
 
     def __playGame(self):
         base.request("Game", {'addr': 'http://127.0.0.1:6667'})
@@ -43,6 +49,7 @@ class TFMainMenu(StateData):
         btn = DirectButton(text = text, pos = pos, command = callback, extraArgs = extraArgs,
                            relief = None, text0_fg = (1, 1, 1, 1), text1_fg = (0.85, 0.85, 0.85, 1),
                            text2_fg = (0.85, 0.85, 0.85, 1), pressEffect = False,
+                           text_align = TextNode.ALeft,
                            parent = hidden, text_scale = 0.04, text_font = base.loader.loadFont("models/fonts/tf2build.ttf"))
         self.buttons.append(btn)
 
@@ -51,7 +58,8 @@ class TFMainMenu(StateData):
         for filename in self.MenuSongs:
             self.songs.append(base.loader.loadMusic(filename))
         self.availableSongs = list(self.songs)
-        self.addMenuButton(TFLocalizer.MainMenuStartPlaying, (0.3, 0, 0), self.__playGame)
+        self.addMenuButton(TFLocalizer.MainMenuStartPlaying, (0.15, 0, 0), self.__playGame)
+        self.addMenuButton(TFLocalizer.Quit, (0.15, 0, -0.05), sys.exit)
         self.bg = OnscreenImage(image = random.choice(self.BgsWidescreen), parent = hidden)
         #self.bg.setSx(1.77777)
         self.bg.setBin('background', 0)
@@ -60,33 +68,73 @@ class TFMainMenu(StateData):
                                   pos = (0.57, 0, 0.2), scale = 0.04)
         self.logo.setTransparency(True)
 
+        # Version text label.
+        self.verLbl = OnscreenText(text = base.gameVersion, parent = hidden,
+                                   pos = (0.04, 0.04), scale = 0.05,
+                                   fg = (1, 1, 1, 1), align = TextNode.ALeft)
+
+        gsg = base.win.getGsg()
+        uname = platform.uname()
+        driverInfoStr = """
+        %s
+        %s
+        %s
+        %s
+        %s
+        %s
+        %i Ghz
+        %i Threads
+        %i GB Memory
+        %s
+        %s
+        OpenGL %s
+        GLSL %i.%i
+        """ % (uname[0], uname[1], uname[2], uname[3], uname[4], uname[5],
+             psutil.cpu_freq().max / 1000, psutil.cpu_count(logical=True), psutil.virtual_memory().total / 1e+9,
+             gsg.getDriverVendor(), gsg.getDriverRenderer(), gsg.getDriverVersion(),
+             gsg.getDriverShaderVersionMajor(), gsg.getDriverShaderVersionMinor())
+
+        self.driverInfoLbl = OnscreenText(
+            text = driverInfoStr,
+            parent = hidden, pos = (-0.04, 0.7), scale = 0.05, fg = (1, 1, 1, 1), align = TextNode.ARight)
+
     def enter(self):
         StateData.enter(self)
         self.bg.reparentTo(base.render2d)
         self.logo.reparentTo(base.a2dLeftCenter)
+        self.verLbl.reparentTo(base.a2dBottomLeft)
+        self.driverInfoLbl.reparentTo(base.a2dBottomRight)
         for btn in self.buttons:
             btn.reparentTo(base.a2dLeftCenter)
         self.accept("menuSongFinished", self.onMenuSongFinished)
-        self.startMenuSong()
+        if not base.music:
+            self.startMenuSong()
+        elif base.music:
+            # Carry over music from intro.
+            base.music.setFinishedEvent("menuSongFinished")
+            if base.music in self.availableSongs:
+                self.availableSongs.remove(base.music)
 
     def startMenuSong(self):
         song = random.choice(self.availableSongs)
-        if self.playingSong:
-            self.playingSong.stop()
-        self.playingSong = song
-        self.playingSong.play()
-        self.playingSong.setFinishedEvent("menuSongFinished")
+        base.playMusic(song)
+        song.setFinishedEvent("menuSongFinished")
 
     def onMenuSongFinished(self, song):
-        self.availableSongs.remove(song)
+        songWasIn = song in self.availableSongs
+        if songWasIn:
+            self.availableSongs.remove(song)
+
         if len(self.availableSongs) == 0:
             self.availableSongs = list(self.songs)
             # Remove the song that just finished from the available list just
             # this time so we don't accidentally play the same song twice in a
             # row.
-            self.availableSongs.remove(song)
+            if songWasIn:
+                self.availableSongs.remove(song)
             self.startMenuSong()
-            self.availableSongs.append(song)
+            if songWasIn:
+                self.availableSongs.append(song)
         else:
             self.startMenuSong()
 
@@ -95,10 +143,10 @@ class TFMainMenu(StateData):
             btn.reparentTo(hidden)
         self.bg.reparentTo(hidden)
         self.logo.reparentTo(hidden)
+        self.verLbl.reparentTo(hidden)
+        self.driverInfoLbl.reparentTo(hidden)
         self.ignore("menuSongFinished")
-        if self.playingSong:
-            self.playingSong.stop()
-            self.playingSong = None
+        base.stopMusic()
         StateData.exit(self)
 
     def unload(self):
@@ -109,7 +157,10 @@ class TFMainMenu(StateData):
         self.bg = None
         self.logo.destroy()
         self.logo = None
-        self.playingSong = None
+        self.verLbl.destroy()
+        self.verLbl = None
+        self.driverInfoLbl.destroy()
+        self.driverInfoLbl = None
         self.availableSongs = None
         self.songs = None
         StateData.unload(self)
