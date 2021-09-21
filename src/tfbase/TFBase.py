@@ -193,30 +193,38 @@ class TFBase(ShowBase, FSM):
         disclaimer = OnscreenText(TFLocalizer.TFDisclaimer, scale = 0.05, wordwrap = 40,
                                   fg = (1, 1, 1, 1), pos = (0, 0.1), font = self.loader.loadFont('models/fonts/arial.ttf'))
         disclaimer.setAlphaScale(0)
+        def cleanup():
+            bgCardNp.removeNode()
+            tfLogo.removeNode()
+            pandaLogo.removeNode()
+            disclaimer.removeNode()
         seq = Sequence()
         seq.append(Wait(0.5))
         seq.append(Func(self.playMusic, "audio/bgm/gamestartup1.mp3"))
         seq.append(Wait(0.5))
-        seq.append(LerpColorScaleInterval(tfLogo, 0.75, (1, 1, 1, 1), (1, 1, 1, 0.0)))
-        seq.append(Wait(1.5))
-        seq.append(LerpColorScaleInterval(tfLogo, 0.5, (1, 1, 1, 0), (1, 1, 1, 1)))
         seq.append(LerpColorScaleInterval(pandaLogo, 0.75, (1, 1, 1, 1), (1, 1, 1, 0)))
         seq.append(Wait(1.5))
-        seq.append(LerpColorScaleInterval(pandaLogo, 0.5, (1, 1, 1, 0), (1, 1, 1, 1)))
+        seq.append(LerpColorScaleInterval(pandaLogo, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
         seq.append(LerpColorScaleInterval(disclaimer, 0.75, (1, 1, 1, 1), (1, 1, 1, 0)))
-        seq.append(Wait(5))
-        seq.append(LerpColorScaleInterval(disclaimer, 0.5, (1, 1, 1, 0), (1, 1, 1, 1)))
-        seq.append(Func(bgCardNp.removeNode))
-        seq.append(Func(tfLogo.destroy))
-        seq.append(Func(pandaLogo.destroy))
-        seq.append(Func(disclaimer.destroy))
-        seq.append(Func(self.request, "Preload"))
+        seq.append(Wait(3.25))
+        seq.append(LerpColorScaleInterval(disclaimer, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
+        seq.append(LerpColorScaleInterval(tfLogo, 0.75, (1, 1, 1, 1), (1, 1, 1, 0.0)))
+        seq.append(Wait(3))
+        seq.append(LerpColorScaleInterval(tfLogo, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
+        seq.append(Func(cleanup))
+        seq.setDoneEvent("introSeqDone")
         seq.start()
         self.introSeq = seq
 
-        self.acceptOnce('space', self.stopIntroSeq)
+        self.acceptOnce('introSeqDone', self.__event_introSeqDone)
+        self.acceptOnce('space', self.__event_introSeqDone)
+
+    def __event_introSeqDone(self):
+        self.request('Preload')
 
     def stopIntroSeq(self):
+        self.ignore('introSeqDone')
+        self.ignore('space')
         if hasattr(self, 'introSeq'):
             self.introSeq.finish()
             del self.introSeq
