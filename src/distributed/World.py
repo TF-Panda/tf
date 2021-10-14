@@ -20,23 +20,24 @@ class World(DistributedEntity):
         return Vec4(v, 1.0)
 
     def createWorld(self):
-        al = AmbientLight('al')
-        al.setColor(self.rgb255Scalar(200, 202, 230, 150 * 5000))
-        alnp = render.attachNewNode(al)
-        self.alnp = alnp
-        render.setLight(alnp)
+        #al = AmbientLight('al')
+        #al.setColor(self.rgb255Scalar(200, 202, 230, 255))
+        #alnp = render.attachNewNode(al)
+        #self.alnp = alnp
+        #render.setLight(alnp)
 
-        dl = CascadeLight('cl')
-        dl.setColor(self.rgb255Scalar(216, 207, 194, 700 * 5000))
-        dl.setCameraMask(DirectRender.ShadowCameraBitmask)
-        dl.setSceneCamera(base.cam)
-        dl.setShadowCaster(True, 4096, 4096)
-        dlnp = render.attachNewNode(dl)
-        dlnp.setHpr(145 - 90, -45, 0)
-        self.dlnp = dlnp
-        render.setLight(dlnp)
+        #dl = CascadeLight('cl')
+        #dl.setColor(self.rgb255Scalar(216, 207, 194, 700 * 5000))
+        #dl.setCameraMask(DirectRender.ShadowCameraBitmask)
+        #dl.setSceneCamera(base.cam)
+        #dl.setShadowCaster(True, 4096, 4096)
+        #dlnp = render.attachNewNode(dl)
+        #dlnp.setHpr(145 - 90, -45, 0)
+        #self.dlnp = dlnp
+        #render.setLight(dlnp)
 
         render.setAttrib(LightRampAttrib.makeHdr0())
+        """
 
         skycard = CardMaker('sky')
         skycard.setFrame(-0.5, 0.5, -0.5, 0.5)
@@ -84,14 +85,16 @@ class World(DistributedEntity):
         ground = render.attachNewNode(groundCm.generate())
         ground.setMaterial(MaterialPool.loadMaterial("materials/concretefloor01.mto"))
         ground.setP(-90)
+        """
 
     def deleteWorld(self):
-        render.clearLight(self.alnp)
-        render.clearLight(self.dlnp)
-        self.alnp.removeNode()
-        del self.alnp
-        self.dlnp.removeNode()
-        del self.dlnp
+        pass
+        #render.clearLight(self.alnp)
+        #render.clearLight(self.dlnp)
+        #self.alnp.removeNode()
+        #del self.alnp
+        #self.dlnp.removeNode()
+        #del self.dlnp
 
     def delete(self):
         if IS_CLIENT:
@@ -99,8 +102,26 @@ class World(DistributedEntity):
 
         self.lvl.removeNode()
         del self.lvl
+        del self.lvlData
+        if not IS_CLIENT:
+            del self.teamSpawns
 
         DistributedEntity.delete(self)
+
+    def collectTeamSpawns(self):
+        self.teamSpawns = {0: [], 1: []}
+
+        for i in range(self.lvlData.getNumEntities()):
+            ent = self.lvlData.getEntity(i)
+            if ent.getClassName() != "info_player_teamspawn":
+                continue
+            props = ent.getProperties()
+            origin = Vec3()
+            angles = Vec3()
+            props.getAttributeValue("origin").toVec3(origin)
+            props.getAttributeValue("angles").toVec3(angles)
+            team = props.getAttributeValue("TeamNum").getInt() - 2
+            self.teamSpawns[team].append((origin, angles))
 
     def generate(self):
         DistributedEntity.generate(self)
@@ -108,20 +129,20 @@ class World(DistributedEntity):
         if IS_CLIENT:
             self.createWorld()
 
-        planeMat = PhysMaterial(0.4, 0.25, 0.2)
-        planeShape = PhysShape(PhysPlane(LPlane(0, 0, 1, 0)), planeMat)
-        planeActor = PhysRigidStaticNode("plane")
-        planeActor.addShape(planeShape)
-        planeActor.addToScene(base.physicsWorld)
-        planeActor.setContentsMask(Contents.Solid)
-        planeNp = base.render.attachNewNode(planeActor)
-        planeNp.setPos(0, 0, 0)
-        planeNp.setPythonTag("entity", self)
+        #planeMat = PhysMaterial(0.4, 0.25, 0.2)
+        #planeShape = PhysShape(PhysPlane(LPlane(0, 0, 1, 0)), planeMat)
+        #planeActor = PhysRigidStaticNode("plane")
+        #planeActor.addShape(planeShape)
+        #planeActor.addToScene(base.physicsWorld)
+        #planeActor.setContentsMask(Contents.Solid)
+        #planeNp = base.render.attachNewNode(planeActor)
+        #planeNp.setPos(0, 0, 0)
+        #planeNp.setPythonTag("entity", self)
 
-        """
-        self.lvl = base.loader.loadModel("ctf_2fort")
+        self.lvl = base.loader.loadModel("cp_junction")
         self.lvl.reparentTo(base.render)
         data = self.lvl.find("**/+MapRoot").node().getData()
+        self.lvlData = data
         for i in range(data.getNumModelPhysDatas()):
             meshBuffer = data.getModelPhysData(i)
             if len(meshBuffer) == 0:
@@ -135,7 +156,9 @@ class World(DistributedEntity):
             body.addToScene(base.physicsWorld)
             body.setPythonTag("entity", self)
             self.lvl.attachNewNode(body)
-        """
+
+        if not IS_CLIENT:
+            self.collectTeamSpawns()
 
 if not IS_CLIENT:
     WorldAI = World

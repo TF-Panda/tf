@@ -355,15 +355,22 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def respawn(self, sendRespawn = True):
         # Refill health
         self.health = self.maxHealth
+
         # Refill ammo
         for wpnId in self.weapons:
             wpn = base.net.doId2do.get(wpnId)
             wpn.ammo = wpn.maxAmmo
             wpn.clip = wpn.maxClip
+
         # Set to the primary weapon
         self.setActiveWeapon(0)
-        self.setPos(Point3(random.uniform(-128, 128), random.uniform(-128, 128), 0))
-        self.setHpr(Vec3(random.uniform(-180, 180), 0, 0))
+
+        # Select a random spawn location.
+        spawnPoints = base.air.world.teamSpawns[self.team]
+        origin, angles = random.choice(spawnPoints)
+        self.setPos(origin)
+        self.setHpr(angles[1] - 90, angles[0], angles[2])
+
         if sendRespawn:
             self.sendUpdate('respawn')
         self.playerState = self.StateAlive

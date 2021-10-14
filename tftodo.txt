@@ -1,0 +1,6 @@
+Levels:
+  - lighting solver
+  - visibility solver improvements
+  - culling system against PVS for dynamic stuff
+  - lighting for dynamic stuff from lighting solver
+  - level entities
