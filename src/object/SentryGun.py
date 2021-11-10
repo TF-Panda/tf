@@ -259,7 +259,7 @@ class SentryGun(BaseObject):
             # TODO: not cross water boundary
 
             # Ray trace!!!
-            return self.isEntityVisible(player, Contents.Solid | Contents.HitBox)
+            return self.isEntityVisible(player, Contents.Solid | Contents.HitBox)[0]
 
         def isValidTargetObject(self, obj, sentryOrigin, targetCenter):
             # TODO: is placing
@@ -269,7 +269,7 @@ class SentryGun(BaseObject):
             # TODO: not cross water boundary
 
             # Ray trace
-            return self.isEntityVisible(obj, Contents.Solid | Contents.HitBox)
+            return self.isEntityVisible(obj, Contents.Solid | Contents.HitBox)[0]
 
         def foundTarget(self, target, soundCenter):
             self.enemy = target

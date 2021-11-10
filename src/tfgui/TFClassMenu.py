@@ -50,10 +50,10 @@ class TFClassMenu:
         dl.setShadowCaster(True, 4096, 4096)
         dl.setInnerCone(60)
         dl.setOuterCone(90)
-        dl.setFalloff(0.0001)
+        dl.setAttenuation(Vec3(0, 0, 0.0001))
         dl.setExponent(1)
-        dl.setInnerRadius(128)
-        dl.setOuterRadius(256)
+        #dl.setInnerRadius(128)
+        #dl.setOuterRadius(256)
         #dl.showFrustum()
         dlnp = self.classRoot.attachNewNode(dl)
         dlnp.setHpr(45, -65, 0)
@@ -152,8 +152,7 @@ class TFClassMenu:
         return task.cont
 
     def __charAnimEvents(self, task):
-        #if self.classChar.modelNp:
-        #    self.classChar.doAnimationEvents()
+        self.classChar.doAnimationEvents()
         return task.cont
 
     def onHoverClassBtn(self, classId, params):
@@ -176,7 +175,8 @@ class TFClassMenu:
         for eyeNp in self.classChar.findAllMatches("**/+EyeballNode"):
             eyeNp.node().setViewTarget(self.classCam, Point3())
 
-        self.toIdleSeq = Sequence(ActorInterval(self.classChar, "SelectionMenu_Anim01"),
+        self.toIdleSeq = Sequence(Func(self.classChar.play, "SelectionMenu_Anim01"),
+                                  Wait(self.classChar.getDuration("SelectionMenu_Anim01")),
                                   Func(self.classChar.loop, "SelectionMenu_Idle"))
         self.toIdleSeq.start()
 

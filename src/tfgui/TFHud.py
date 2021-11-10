@@ -49,6 +49,17 @@ class TFHud(DirectObject):
 
         self.hideHud()
 
+    def destroy(self):
+        self.healthLabel.destroy()
+        self.healthLabel = None
+        self.clipLabel.destroy()
+        self.clipLabel = None
+        self.ammoLabel.destroy()
+        self.ammoLabel = None
+        self.crosshair.destroy()
+        self.crosshair = None
+        self.ignoreAll()
+
     def hideHud(self):
         self.crosshair.hide()
         self.healthLabel.hide()

@@ -23,6 +23,12 @@ class TFWeaponSelection(DirectObject):
         self.isActive = False
         self.activeTime = 0.0
 
+    def destroy(self):
+        self.scrollSound = None
+        self.wpnList = None
+        self.root.removeNode()
+        self.root = None
+
     def clearWeaponList(self):
         for _, item in self.wpnList:
             item.destroy()

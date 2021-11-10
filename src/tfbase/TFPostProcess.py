@@ -51,9 +51,9 @@ class TFPostProcess(PostProcess):
         base.accept('f2', self.incExposureBias)
 
         #self.setupHBAOControls()
-        if self.enableHDR:
-            self.setupCamDebugs()
-            taskMgr.add(self.updateCamDebugs, "updateCamDebugs")
+        #if self.enableHDR:
+        #    self.setupCamDebugs()
+        #    taskMgr.add(self.updateCamDebugs, "updateCamDebugs")
 
     def addCamDebug(self):
         self.camDebugs.append(OnscreenText("", align = TextNode.ALeft, scale = 0.1, pos = (0.05, self.camDebugZ), parent=base.a2dTopLeft, fg = (1, 1, 1, 1), shadow=(0, 0, 0, 1)))

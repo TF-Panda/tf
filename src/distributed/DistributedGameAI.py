@@ -24,10 +24,14 @@ import copy
 from panda3d.core import Vec3
 from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
 
-class DistributedGameAI(DistributedObjectAI):
+from .DistributedGameBase import DistributedGameBase
+
+class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
     def __init__(self):
         DistributedObjectAI.__init__(self)
+        DistributedGameBase.__init__(self)
+
         self.numBlue = 0
         self.numRed = 0
         self.numSoldier = 0
@@ -36,6 +40,26 @@ class DistributedGameAI(DistributedObjectAI):
 
         self.playersByTeam = {0: [], 1: []}
         self.objectsByTeam = {0: [], 1: []}
+
+    def collectTeamSpawns(self):
+        self.teamSpawns = {0: [], 1: []}
+
+        for i in range(self.lvlData.getNumEntities()):
+            ent = self.lvlData.getEntity(i)
+            if ent.getClassName() != "info_player_teamspawn":
+                continue
+            props = ent.getProperties()
+            origin = Vec3()
+            angles = Vec3()
+            props.getAttributeValue("origin").toVec3(origin)
+            props.getAttributeValue("angles").toVec3(angles)
+            team = props.getAttributeValue("TeamNum").getInt() - 2
+            if team >= 0 and team <= 1:
+                self.teamSpawns[team].append((origin, angles))
+
+    def changeLevel(self, lvlName):
+        DistributedGameBase.changeLevel(self, lvlName)
+        self.collectTeamSpawns()
 
     def d_doExplosion(self, pos, scale):
         self.sendUpdate('doExplosion', [pos, scale])

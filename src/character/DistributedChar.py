@@ -387,6 +387,11 @@ class DistributedChar(Char, DistributedEntity):
         self.clearModel()
         self.ivCycle = None
         self.animLayerIvs = None
+        if self.ragdoll:
+            self.ragdoll[1].destroy()
+            self.ragdoll[0].clearModel()
+            self.ragdoll[0].cleanup()
+        self.ragdoll = None
         DistributedEntity.disable(self)
 
     def delete(self):

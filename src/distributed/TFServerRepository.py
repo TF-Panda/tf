@@ -21,7 +21,9 @@ class TFServerRepository(ServerRepository):
         self.generateObject(self.game, TFGlobals.UberZone)
 
         self.world = WorldAI()
-        self.generateObject(self.world, TFGlobals.GameZone)
+        self.generateObject(self.world, TFGlobals.UberZone)
+
+        self.game.changeLevel("ctf_2fort")
 
     def addSnapshotHeaderData(self, dg, client):
         if not hasattr(client, 'player') or not client.player:

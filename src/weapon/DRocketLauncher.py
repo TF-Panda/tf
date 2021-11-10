@@ -28,7 +28,7 @@ class DRocketLauncher(TFWeaponGun):
         return TFLocalizer.RocketLauncher
 
     def getSingleSound(self):
-        return "Weapon_RPG.Single"
+        return "Weapon_QuakeRPG.Single"
 
 if not IS_CLIENT:
     DRocketLauncherAI = DRocketLauncher

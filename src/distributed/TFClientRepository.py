@@ -1,6 +1,6 @@
 from direct.distributed2.ClientRepository import ClientRepository
 from direct.fsm.FSM import FSM
-from direct.gui.DirectGui import DirectDialog, RetryCancelDialog, OkCancelDialog
+from direct.gui.DirectGui import DirectDialog, RetryCancelDialog, OkCancelDialog, OkDialog
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
@@ -144,16 +144,14 @@ class TFClientRepository(ClientRepository, FSM):
         base.taskMgr.remove('runPredictionTask')
 
     def enterConnectionLost(self):
-        self.dialog = OkCancelDialog(text = TFLocalizer.LostConnection,
-                                     buttonTextList = [TFLocalizer.OK, TFLocalizer.Cancel],
-                                     command = self.__onLostConnectionAck)
+        self.dialog = OkDialog(text = TFLocalizer.LostConnection,
+                               buttonTextList = [TFLocalizer.OK],
+                               command = self.__onLostConnectionAck,
+                               text_wordwrap = 12)
         self.dialog.show()
 
     def __onLostConnectionAck(self, value):
-        if value > 0:
-            self.request("Connect", self.connectInfo)
-        else:
-            base.request("MainMenu")
+        base.request("MainMenu")
 
     def exitConnectionLost(self):
         self.dialog.cleanup()

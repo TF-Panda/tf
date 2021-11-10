@@ -207,10 +207,13 @@ class Char(Actor):
             body.setTransform(TransformState.makeMat(self.character.getJointNetTransform(joint)))
 
     def doAnimationEvents(self):
+        if not self.character:
+            return
+
         # Assume we're visible if render or viewmodel render is the top of our
         # hierarchy.  FIXME: better solution for this
         top = self.getTop()
-        visible = (top in [render, base.vmRender]) and not self.isHidden()
+        visible = top not in (base.hidden, NodePath()) and not self.isHidden()
         if not visible:
             return
 
@@ -381,10 +384,16 @@ class Char(Actor):
             return None
         part = cinfo.getPart(0)
 
-        mdata = PhysConvexMeshData(part.mesh_data)
+        if part.concave:
+            mdata = PhysTriangleMeshData(part.mesh_data)
+        else:
+            mdata = PhysConvexMeshData(part.mesh_data)
         if not mdata.generateMesh():
             return None
-        mesh = PhysConvexMesh(mdata)
+        if part.concave:
+            mesh = PhysTriangleMesh(mdata)
+        else:
+            mesh = PhysConvexMesh(mdata)
         mat = PhysMaterial(0.5, 0.5, 0.5)
         shape = PhysShape(mesh, mat)
         return shape

@@ -422,6 +422,20 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.localAvatarId = self.doId
 
     def delete(self):
+        self.disableControls()
+        if self.hud:
+            self.hud.destroy()
+            self.hud = None
+        if self.wpnSelect:
+            self.wpnSelect.destroy()
+            self.wpnSelect = None
+        self.commandContext = None
+        self.lastCommand = None
+        self.commands = None
+        if self.classMenu:
+            self.classMenu.destroy()
+            self.classMenu = None
+        self.playerSimulatedEntities = None
         base.simTaskMgr.remove('runControls')
         base.taskMgr.remove('calcView')
         base.taskMgr.remove('mouseMovement')
@@ -454,15 +468,22 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
         self.accept(',', self.doChangeClass)
 
-        base.simTaskMgr.add(self.runControls, 'runControls')
         base.taskMgr.add(self.mouseMovement, 'mouseMovement')
         base.taskMgr.add(self.calcViewTask, 'calcView', sort = 38)
+
+        self.startControls()
 
         props = WindowProperties()
         props.setTitle(f"Team Fortress - {self.doId}")
         base.win.requestProperties(props)
 
         self.accept('escape', self.enableControls)
+
+    def startControls(self):
+        base.simTaskMgr.add(self.runControls, 'runControls')
+
+    def stopControls(self):
+        base.simTaskMgr.remove('runControls')
 
     def doChangeClass(self):
         if self.classMenu:

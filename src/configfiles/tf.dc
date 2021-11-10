@@ -123,6 +123,8 @@ dclass DistributedEntity : DistributedObject {
 };
 
 dclass DistributedGame : DistributedObject {
+  string levelName;
+
   joinGame(string name) clsend airecv;
 
   emitSound(uint32 soundIndex, uint8 waveIndex, int16 volume / 100, int16 pitch / 100, Position position) broadcast;

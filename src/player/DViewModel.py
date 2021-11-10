@@ -192,8 +192,9 @@ class DViewModel(DistributedChar, DViewModelShared):
         if self.player:
             self.player.viewModel = None
             self.player = None
-        if self.playerId == base.localAvatarId:
-            self.reparentTo(hidden)
+        if hasattr(base, 'localAvatarId'):
+            if self.playerId == base.localAvatarId:
+                self.reparentTo(hidden)
         DistributedChar.disable(self)
 
     def updatePlayer(self):

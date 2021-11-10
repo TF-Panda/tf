@@ -360,7 +360,7 @@ class BaseObject(BaseClass):
                 base.localAvatar.objectPanels[self.objectType].setObject(self)
 
         def delete(self):
-            if self.isBuiltByLocalAvatar():
+            if hasattr(base, 'localAvatar') and self.isBuiltByLocalAvatar():
                 base.localAvatar.objectPanels[self.objectType].setObject(None)
             BaseClass.delete(self)
 

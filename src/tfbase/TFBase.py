@@ -69,7 +69,7 @@ class TFBase(ShowBase, FSM):
         self.postProcess.setup()
         self.taskMgr.add(self.__updatePostProcess, 'updatePostProcess')
 
-        if self.postProcess.enableHDR:
+        if True:#self.postProcess.enableHDR:
             self.render.setAttrib(LightRampAttrib.makeIdentity())
 
         self.musicManager.setVolume(self.config.GetFloat('music-volume', 0.1))
@@ -118,6 +118,8 @@ class TFBase(ShowBase, FSM):
         self.taskMgr.add(self.viewModelSceneUpdate, 'viewModelSceneUpdate', sort = 39)
 
         self.playGame = None
+
+        base.accept('shift-w', self.toggleWireframe)
 
     def playMusic(self, audio, loop=False):
         if isinstance(audio, (str, Filename)):
@@ -189,7 +191,6 @@ class TFBase(ShowBase, FSM):
         pandaLogo = OnscreenImage('maps/powered_by_panda3d.txo')
         pandaLogo.setTransparency(True)
         pandaLogo.setAlphaScale(0)
-        song = self.loader.loadMusic('audio/bgm/gamestartup1.mp3')
         disclaimer = OnscreenText(TFLocalizer.TFDisclaimer, scale = 0.05, wordwrap = 40,
                                   fg = (1, 1, 1, 1), pos = (0, 0.1), font = self.loader.loadFont('models/fonts/arial.ttf'))
         disclaimer.setAlphaScale(0)
@@ -200,7 +201,7 @@ class TFBase(ShowBase, FSM):
             disclaimer.removeNode()
         seq = Sequence()
         seq.append(Wait(0.5))
-        seq.append(Func(self.playMusic, "audio/bgm/gamestartup1.mp3"))
+        seq.append(Func(self.playMusic, random.choice(TFMainMenu.MenuSongs)))
         seq.append(Wait(0.5))
         seq.append(LerpColorScaleInterval(pandaLogo, 0.75, (1, 1, 1, 1), (1, 1, 1, 0)))
         seq.append(Wait(1.5))

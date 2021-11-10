@@ -14,7 +14,7 @@ from .DViewModelAI import DViewModelAI
 from .ObserverMode import ObserverMode
 from tf.weapon.TakeDamageInfo import addMultiDamage
 
-from tf.tfbase import TFGlobals, Sounds
+from tf.tfbase import TFGlobals, Sounds, TFFilters
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
 from tf.object.BaseObject import BaseObject
 
@@ -113,15 +113,48 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             #if self.sentry:
             #    base.net.deleteObject(self.sentry)
             # Place a sentry in front of him.
-            from tf.object.SentryGun import SentryGunAI
-            sg = SentryGunAI()
-            sg.setBuilderDoId(self.doId)
+
             q = Quat()
             q.setHpr(Vec3(self.viewAngles[0], 0, 0))
             fwd = q.getForward()
-            sg.setPos(self.getPos() + (fwd * 64))
-            sg.setZ(0.0)
+            startPos = self.getPos() + (fwd * 64)
+            # Trace down to get to the floor.
+            result = PhysRayCastResult()
+            hadHit = base.physicsWorld.raycast(
+                result, startPos, Vec3.down(), 1000000,
+                Contents.Solid, Contents.Empty, CollisionGroup.Empty,
+                TFFilters.TFQueryFilter(
+                    self, [TFFilters.ignoreSelf])
+            )
+
+            good = True
+            pos = Point3()
+            if hadHit:
+                block = result.getBlock()
+                actor = block.getActor()
+                ent = actor.getPythonTag("entity")
+                print("sentry build test hit", ent)
+                if not ent or ent.__class__.__name__ != 'WorldAI':
+                    print("not the world")
+                    good = False
+                else:
+                    pos = block.getPosition()
+                    print("height to ground", (pos - startPos).length())
+                    if (pos - startPos).length() >= 64:
+                        good = False
+            else:
+                good = False
+
+            if not good:
+                print("not good")
+                return
+
+            from tf.object.SentryGun import SentryGunAI
+            sg = SentryGunAI()
+            sg.setBuilderDoId(self.doId)
             sg.setH(self.viewAngles[0])
+            sg.setPos(pos)
+
             base.net.generateObject(sg, self.zoneId)
             self.sentry = sg
             self.d_speak(
@@ -366,7 +399,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.setActiveWeapon(0)
 
         # Select a random spawn location.
-        spawnPoints = base.air.world.teamSpawns[self.team]
+        spawnPoints = base.air.game.teamSpawns[self.team]
         origin, angles = random.choice(spawnPoints)
         self.setPos(origin)
         self.setHpr(angles[1] - 90, angles[0], angles[2])
@@ -502,8 +535,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
     def allocCommandContext(self):
         self.commandContexts.append(CommandContext())
-        if len(self.commandContexts) > 1000:
-            self.notify.error("Too many command contexts")
+        #if len(self.commandContexts) > 1000:
+        #    self.notify.error("Too many command contexts")
         return self.commandContexts[len(self.commandContexts) - 1]
 
     def removeCommandContext(self, i):
