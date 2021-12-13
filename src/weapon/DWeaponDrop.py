@@ -1,8 +1,8 @@
 if not IS_CLIENT:
-    from tf.character.DistributedCharAI import DistributedCharAI
+    from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 else:
-    from tf.character.DistributedChar import DistributedChar
+    from tf.actor.DistributedChar import DistributedChar
     BaseClass = DistributedChar
 
 from panda3d.core import CallbackObject, NodePath
@@ -10,7 +10,7 @@ from panda3d.pphysics import PhysTriggerCallbackData
 
 from tf.tfbase.TFGlobals import SolidShape, SolidFlag, CollisionGroup, Contents
 
-class DAmmoPack(BaseClass):
+class DWeaponDrop(BaseClass):
 
     def __init__(self):
         BaseClass.__init__(self)
@@ -79,8 +79,8 @@ class DAmmoPack(BaseClass):
     else:
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
-            self.reparentTo(base.render)
+            self.reparentTo(base.dynRender)
 
 if not IS_CLIENT:
-    DAmmoPackAI = DAmmoPack
-    DAmmoPackAI.__name__ = 'DAmmoPackAI'
+    DWeaponDropAI = DWeaponDrop
+    DWeaponDropAI.__name__ = 'DWeaponDropAI'

@@ -60,7 +60,7 @@ def getWorldParent(parentId):
     if parentId == WorldParent.Unchanged:
         return None
     elif parentId == WorldParent.Render:
-        return base.render
+        return base.dynRender
     elif parentId == WorldParent.Hidden:
         return base.hidden
     elif parentId == WorldParent.ViewModel:

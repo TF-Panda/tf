@@ -1,8 +1,8 @@
 
-from tf.character.DistributedCharAI import DistributedCharAI
+from tf.actor.DistributedCharAI import DistributedCharAI
 
 from .DViewModelShared import DViewModelShared
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 
 class DViewModelAI(DistributedCharAI):
 

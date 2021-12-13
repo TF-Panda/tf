@@ -93,9 +93,9 @@ class SoundInfo:
         # The name of it in the script file, for instance "Weapon_Wrench.Draw"
         self.name = ""
         # Volume range
-        self.volume = [1, 1]
+        self.volume = [1.0, 1.0]
         # Pitch range.
-        self.pitch = [1, 1]
+        self.pitch = [1.0, 1.0]
         # We interpret this as an index into base.sfxManagerList.
         self.channel = Channel.CHAN_AUTO
         self.soundLevel = 0

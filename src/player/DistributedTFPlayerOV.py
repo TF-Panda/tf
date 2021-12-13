@@ -3,6 +3,10 @@
 from panda3d.core import WindowProperties, MouseData, Point2, Vec2, Datagram, OmniBoundingVolume, NodePath, Point3, Vec3, lookAt
 from panda3d.core import ConfigVariableDouble
 
+from panda3d.direct import InterpolatedVec3
+
+from panda3d.pphysics import PhysSweepResult
+
 from .DistributedTFPlayer import DistributedTFPlayer
 from .PlayerCommand import PlayerCommand
 from .InputButtons import InputFlag
@@ -10,7 +14,7 @@ from .TFClass import *
 from .ObserverMode import ObserverMode
 from tf.object.ObjectType import ObjectType
 
-from tf.character.Char import Char
+from tf.actor.Char import Char
 from tf.tfgui.TFHud import TFHud
 from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfbase import TFGlobals
@@ -99,6 +103,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.addPredictionField("onGround", bool, noErrorCheck=True)
         self.addPredictionField("condition", int)
 
+        self.ivPunchAngle = InterpolatedVec3()
+        self.ivPunchAngle.setAngles(True)
+        self.addInterpolatedVar(self.ivPunchAngle, self.getPunchAngle, self.setPunchAngle)
+        self.ivPunchAngleVel = InterpolatedVec3()
+        self.ivPunchAngleVel.setAngles(True)
+        self.addInterpolatedVar(self.ivPunchAngleVel, self.getPunchAngleVel, self.setPunchAngleVel)
+        self.addPredictionField("punchAngle", Vec3, getter=self.getPunchAngle, setter=self.setPunchAngle, tolerance=0.125)
+        self.addPredictionField("punchAngleVel", Vec3, getter=self.getPunchAngleVel, setter=self.setPunchAngleVel, tolerance=0.125)
+
         self.observerChaseDistance = 0
         self.freezeFrameStart = Point3()
         self.freezeCamStartTime = 0.0
@@ -169,7 +182,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
                 self.calcFreezeCamView()
         else:
             base.camera.setPos(self.getEyePosition())
-            base.camera.setHpr(self.viewAngles)
+            base.camera.setHpr(self.viewAngles + self.punchAngle)
             if self.viewModel:
                 # Also calculate the viewmodel position/rotation.
                 self.viewModel.calcView(self, base.camera)
@@ -206,7 +219,17 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         vForward.normalize()
         eyeOrigin = origin + (vForward * -self.observerChaseDistance)
 
-        # TODO: Box cast to find walls.
+        # Clip against world.
+        result = PhysSweepResult()
+        toEyeOrigin = eyeOrigin - origin
+        toEyeOriginLen = toEyeOrigin.length()
+        toEyeOrigin /= toEyeOriginLen
+        if base.physicsWorld.boxcast(result, WALL_MINS + origin, WALL_MAXS + origin,
+                                     toEyeOrigin, toEyeOriginLen, Vec3(0),
+                                     TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
+                                     TFGlobals.CollisionGroup.Empty):
+            eyeOrigin = result.getBlock().getPosition()
+            self.observerChaseDistance = (origin - eyeOrigin).length()
 
         base.camera.setPos(eyeOrigin)
 
@@ -255,9 +278,33 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         targetPos[2] = eyePosZ + self.freezeZOffset
 
         # trace so that we're put in front of any walls.
-        #result = PhysSweepResult()
-        #base.physicsWorld.boxcast(result, WALL_MINS + camTarget, WALL_MAXS + camTarget,
-        #                          )
+        result = PhysSweepResult()
+        camToTarget = targetPos - camTarget
+        camToTargetLen = camToTarget.length()
+        camToTarget /= camToTargetLen
+        if base.physicsWorld.boxcast(result, WALL_MINS + camTarget, WALL_MAXS + camTarget,
+                                     camToTarget, camToTargetLen,
+                                     Vec3(0), TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
+                                     TFGlobals.CollisionGroup.Empty):
+            # The camera's going to be really close to the target.  So we
+            # don't end up looking at someone's chest, aim close freezecams
+            # at the target's eyes.
+            block = result.getBlock()
+            targetPos = block.getPosition()
+            camTarget = camDesired
+
+            # To stop all close in views looking up at character's chins,
+            # move the view up.
+            targetPos[2] += abs(camTarget[2] - targetPos[2]) * 0.85
+            camToTarget = targetPos - camTarget
+            camToTargetLen = camToTarget.length()
+            camToTarget /= camToTargetLen
+            result2 = PhysSweepResult()
+            if base.physicsWorld.boxcast(result2, WALL_MINS + camTarget, WALL_MAXS + camTarget,
+                                         camToTarget, camToTargetLen,
+                                         Vec3(0), TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
+                                         TFGlobals.CollisionGroup.Empty):
+                targetPos = result2.getBlock().getPosition()
 
         # Look directly at the target.
         toTarget = camTarget - targetPos
@@ -297,8 +344,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
     def respawn(self):
         DistributedTFPlayer.respawn(self)
-        if self.modelNp:
-            self.modelNp.hide()
+        self.hide()
         self.viewModel.show()
         self.hud.showHud()
 
@@ -444,14 +490,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         del base.localAvatarId
         DistributedTFPlayer.delete(self)
 
-    def onModelChanged(self):
-        if not self.modelNp:
-            return
-
-        self.modelNp.hide()
-
     def announceGenerate(self):
         DistributedTFPlayer.announceGenerate(self)
+        self.hide()
+
         base.cr.sendTick()
 
         self.fwd = inputState.watchWithModifiers("forward", "w", inputSource = inputState.WASD)
@@ -556,10 +598,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             delta = (sample - self.lastMouseSample) * sens
             #base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
 
-            base.camera.setH(base.camera.getH() - (delta.x * 0.022))
-            base.camera.setP(max(-90, min(90, base.camera.getP() + (delta.y * 0.022))))
-            base.camera.setR(0.0)
-            self.viewAngles = base.camera.getHpr()
+            self.viewAngles[0] -= delta.x * 0.022
+            self.viewAngles[1] = max(-90, min(90, self.viewAngles[1] + (delta.y * 0.022)))
+            self.viewAngles[2] = 0.0
             self.mouseDelta += delta
             self.lastMouseSample = sample
         return task.cont

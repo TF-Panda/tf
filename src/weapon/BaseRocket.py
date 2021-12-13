@@ -1,14 +1,16 @@
 if IS_CLIENT:
-    from tf.character.DistributedChar import DistributedChar
+    from tf.actor.DistributedChar import DistributedChar
     BaseClass = DistributedChar
 else:
-    from tf.character.DistributedCharAI import DistributedCharAI
+    from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
-from panda3d.core import Vec3, Quat, lookAt
+from panda3d.core import *
+from panda3d.pphysics import *
 
 from tf.tfbase.TFGlobals import Contents, SolidFlag, SolidShape, TakeDamage, DamageType, CollisionGroup
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, applyMultiDamage
+from tf.tfbase import TFFilters
 
 TF_ROCKET_RADIUS = (110.0 * 1.1)
 
@@ -28,15 +30,16 @@ class BaseRocket(BaseClass):
             self.collideWithTeammates = False
             self.solidMask = Contents.Solid
             self.collisionGroup = CollisionGroup.Rockets
-            self.solidFlags = SolidFlag.Trigger
-            self.solidShape = SolidShape.Box
-            self.triggerCallback = True
+            #self.solidFlags = SolidFlag.Tangible
+            #self.solidShape = SolidShape.Box
+            #self.triggerCallback = True
             self.enemy = None
             self.shooter = None
             self.damage = 100
             self.damageType = DamageType.Blast
             self.takeDamageMode = TakeDamage.No
             self.enabled = False
+            self.sweepGeometry = None
 
     def determineSolidMask(self):
         contents = Contents.Solid
@@ -84,7 +87,7 @@ class BaseRocket(BaseClass):
             self.hide()
             self.addTask(self.__unhideRocket, 'unhideRocket', delay = 0.2, sim = False, appendTask = True)
 
-            self.reparentTo(base.render)
+            self.reparentTo(base.dynRender)
         else:
             # Don't collide with players on the owner's team for the first bit of life.
             self.collideWithTeammatesTime = globalClock.getFrameTime() + 0.25
@@ -102,21 +105,16 @@ class BaseRocket(BaseClass):
             self.velocity *= 1100
             self.initialVel = self.velocity
 
+            self.sweepGeometry = self.makeModelCollisionShape()[1]
+
             #print("Vel is", self.velocity)
 
     if not IS_CLIENT:
         def delete(self):
             self.enemy = None
             self.shooter = None
+            self.sweepGeometry = None
             BaseClass.delete(self)
-
-        def onTriggerEnter(self, ent):
-            #print("Trigger enter at", base.tickCount)
-            if not self.enabled or self.exploded:
-                #print("not enabled")
-                return
-            #print("yes enabled")
-            self.explode(ent)
 
         def explode(self, ent):
             #print("Rocket explode")
@@ -124,7 +122,7 @@ class BaseRocket(BaseClass):
 
             # Save this enemy, they will take 100% damage.
             self.enemy = ent
-            self.emitSound("Weapon_QuakeRPG.Explode")
+            self.emitSound("BaseExplosionEffect.Sound")
             base.game.d_doExplosion(self.getPos(), Vec3(7))
 
             #print("pos", self.getPos())
@@ -145,14 +143,32 @@ class BaseRocket(BaseClass):
         def simulate(self):
             BaseClass.simulate(self)
 
-            # Fly.
-            self.setPos(self.getPos() + (self.velocity * globalClock.getDt()))
-
             now = globalClock.getFrameTime()
             if now > self.collideWithTeammatesTime and not self.collideWithTeammates:
                 # It's time to collide with teammates.
                 self.collideWithTeammates = True
                 self.determineSolidMask()
+
+            currPos = self.getPos()
+            newPos = currPos + (self.velocity * globalClock.getDt())
+
+            sweepDir = newPos - currPos
+            sweepLen = sweepDir.length()
+            sweepDir /= sweepLen
+
+            # Sweep from current pos to new pos.  Check for hits.
+            result = PhysSweepResult()
+            filter = TFFilters.TFQueryFilter(self.shooter)
+            if base.physicsWorld.sweep(result, self.sweepGeometry, currPos, self.getHpr(),
+                                       sweepDir, sweepLen, self.solidMask, BitMask32.allOff(),
+                                       self.collisionGroup):
+                block = result.getBlock()
+                np = NodePath(block.getActor())
+                ent = np.getNetPythonTag("entity")
+                if ent:
+                    self.explode(ent)
+
+            self.setPos(newPos)
 
             self.enabled = True
 

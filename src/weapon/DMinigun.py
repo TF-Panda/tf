@@ -11,7 +11,7 @@ from tf.tfbase.TFGlobals import DamageType
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfbase import TFGlobals, TFLocalizer
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 from tf.tfbase import Sounds
 
 MG_STATE_IDLE = 0
@@ -54,7 +54,7 @@ class DMinigun(TFWeaponGun):
         self.damageType = DamageType.Bullet | DamageType.UseDistanceMod
         self.weaponData[TFWeaponMode.Primary].update({
             'spread': 0.08,
-            'damage': 9/2,
+            'damage': 9,
             'timeFireDelay': 0.1,
             'bulletsPerShot': 4
         })

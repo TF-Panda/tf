@@ -1,6 +1,6 @@
 
-from tf.character.DistributedCharAI import DistributedCharAI
-from tf.character.Activity import Activity
+from tf.actor.DistributedCharAI import DistributedCharAI
+from tf.actor.Activity import Activity
 
 from panda3d.core import *
 

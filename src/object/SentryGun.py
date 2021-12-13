@@ -4,9 +4,10 @@ from panda3d.direct import InterpolatedFloat
 
 from .BaseObject import BaseObject
 
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 from tf.tfbase import TFGlobals
 from tf.tfbase.TFGlobals import Contents, DamageType
+from tf.weapon.WeaponEffects import makeMuzzleFlash
 
 from .ObjectState import ObjectState
 from .ObjectType import ObjectType
@@ -340,9 +341,11 @@ class SentryGun(BaseObject):
                 self.startChannel(act = Activity.Object_Fire, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
 
                 if self.level > 1 and (self.ammoShells & 1):
+                    muzzleNum = 1
                     # level 2 and 3 turrets alternate muzzles each time they fizzy fizzy fire.
                     trans = self.character.getAttachmentNetTransform(1)
                 else:
+                    muzzleNum = 0
                     trans = self.character.getAttachmentNetTransform(0)
 
                 src = trans.getPos()
@@ -362,7 +365,8 @@ class SentryGun(BaseObject):
                     'dirShooting': aimDir,
                     'attacker': self.getBuilder(),
                     'distance': distToTarget + 100,
-                    'damageType': DamageType.Bullet
+                    'damageType': DamageType.Bullet,
+                    'tracerOrigin': src
                 }
                 self.fireBullets(info)
 
@@ -374,6 +378,8 @@ class SentryGun(BaseObject):
                     self.emitSound("Building_Sentrygun.Fire3")
 
                 self.ammoShells -= 1
+
+                self.sendUpdate('muzzleFlash', [muzzleNum])
             else:
                 self.startChannel(act = Activity.Object_Fire_Empty,
                                   layer = SENTRYGUN_BULLET_ANIM_LAYER,
@@ -499,6 +505,17 @@ class SentryGun(BaseObject):
             self.ivYaw = None
             self.ivPitch = None
             BaseObject.delete(self)
+
+        def muzzleFlash(self, muzzleNum):
+            if self.level == 1:
+                muzzle = self.find("**/muzzle")
+            else:
+                if muzzleNum == 0:
+                    muzzle = self.find("**/muzzle_l")
+                else:
+                    muzzle = self.find("**/muzzle_r")
+            if not muzzle.isEmpty():
+                makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), 1, (1, 0.75, 0, 1))
 
         def onModelChanged(self):
             BaseObject.onModelChanged(self)

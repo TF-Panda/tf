@@ -4,7 +4,7 @@
 // This file defines all of the TF animation event types.
 //
 // The value IDs can be accessed in Python code via:
-//    from tf.character.AnimEvents import AnimEvent
+//    from tf.actor.AnimEvents import AnimEvent
 //    AnimEvent.Name
 //
 // or in C++ code via:

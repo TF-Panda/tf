@@ -20,9 +20,16 @@ from direct.distributed2.DistributedObject/AI import DistributedObject/AI
 from tf.entity.DistributedEntity import DistributedEntity/AI
 from tf.distributed.DistributedGame/AI import DistributedGame/AI
 from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
-from tf.character.DistributedChar/AI import DistributedChar/AI
+from tf.actor.DistributedChar/AI import DistributedChar/AI
 from tf.distributed.DTestChar/AI import DTestChar/AI
 from tf.distributed.World import World/AI
+from tf.distributed.DPickupItemBase import DPickupItemBase/AI
+from tf.distributed.DAmmoPack/AI import DAmmoPackSmall/AI
+from tf.distributed.DAmmoPack/AI import DAmmoPackMedium/AI
+from tf.distributed.DAmmoPack/AI import DAmmoPackFull/AI
+from tf.distributed.DHealthKit/AI import DHealthKitSmall/AI
+from tf.distributed.DHealthKit/AI import DHealthKitMedium/AI
+from tf.distributed.DHealthKit/AI import DHealthKitFull/AI
 from tf.player.DViewModel/AI import DViewModel/AI
 from tf.weapon.DistributedWeapon/AI import DistributedWeapon/AI
 from tf.weapon.TFWeapon import TFWeapon/AI
@@ -33,11 +40,13 @@ from tf.weapon.DPistol import DPistol/AI
 from tf.weapon.DRocketLauncher import DRocketLauncher/AI
 from tf.weapon.TFWeaponGun import TFWeaponGun/AI
 from tf.weapon.TFWeaponMelee import TFWeaponMelee/AI
-from tf.weapon.DAmmoPack import DAmmoPack/AI
+from tf.weapon.DWeaponDrop import DWeaponDrop/AI
+from tf.weapon.DistributedGrenadeLauncher import DistributedGrenadeLauncher/AI
 from tf.object.BaseObject import BaseObject/AI
 from tf.object.SentryGun import SentryGun/AI
 from tf.weapon.BaseRocket import BaseRocket/AI
 from tf.weapon.RocketProjectile import RocketProjectile/AI
+from tf.weapon.DPipeBombProjectile import DPipeBombProjectile/AI
 from tf.weapon.DBottle import DBottle/AI
 from tf.weapon.DShovel import DShovel/AI
 from tf.weapon.DMinigun import DMinigun/AI
@@ -71,6 +80,12 @@ struct Angles {
   int16 h % 360 / 10;
   int16 p % 360 / 10;
   int16 r % 360 / 10;
+};
+
+struct FatAngles {
+  float64 h;
+  float64 p;
+  float64 r;
 };
 
 struct Quat {
@@ -129,6 +144,8 @@ dclass DistributedGame : DistributedObject {
 
   emitSound(uint32 soundIndex, uint8 waveIndex, int16 volume / 100, int16 pitch / 100, Position position) broadcast;
   doExplosion(Position pos, Scale scale) broadcast;
+  doTracer(Position start, Position end) broadcast;
+  doTracers(Position start, Position ends[]) broadcast;
 };
 
 dclass DistributedChar : DistributedEntity {
@@ -184,6 +201,9 @@ dclass DistributedTFPlayer : DistributedChar {
 
   uint16 condition; // 2
 
+  FatAngles punchAngle;
+  FatAngles punchAngleVel;
+
   // 46 bytes
 
   // Client request to change class.
@@ -230,6 +250,7 @@ dclass TFWeapon : DistributedWeapon {
 };
 
 dclass TFWeaponGun : TFWeapon {
+  doFireEffects() broadcast;
 };
 
 dclass TFWeaponMelee : TFWeapon {
@@ -244,7 +265,6 @@ dclass DViewModel : DistributedChar {
 };
 
 dclass DShotgun : TFWeaponGun {
-  flash();
 };
 
 dclass DShotgunSecondary : DShotgun {
@@ -259,7 +279,7 @@ dclass DRocketLauncher : TFWeaponGun {
 dclass DWrench : TFWeaponMelee {
 };
 
-dclass DAmmoPack : DistributedChar {
+dclass DWeaponDrop : DistributedChar {
 };
 
 dclass BaseObject : DistributedChar {
@@ -278,6 +298,8 @@ dclass SentryGun : BaseObject {
   uint16 maxRockets;
   uint16 numKills;
   uint16 numAssists;
+
+  muzzleFlash(uint8 muzzle) broadcast;
 };
 
 dclass BaseRocket : DistributedChar {
@@ -298,4 +320,33 @@ dclass DShovel : TFWeaponMelee {
 
 dclass DMinigun : TFWeaponGun {
   uint8 weaponState;
+};
+
+dclass DPickupItemBase : DistributedEntity {
+  uint8 modelIndex;
+  uint8 hidden;
+};
+
+dclass DAmmoPackSmall : DPickupItemBase {
+};
+
+dclass DAmmoPackMedium : DPickupItemBase {
+};
+
+dclass DAmmoPackFull : DPickupItemBase {
+};
+
+dclass DHealthKitSmall : DPickupItemBase {
+};
+
+dclass DHealthKitMedium : DPickupItemBase {
+};
+
+dclass DHealthKitFull : DPickupItemBase {
+};
+
+dclass DPipeBombProjectile : DistributedChar {
+};
+
+dclass DistributedGrenadeLauncher : TFWeaponGun {
 };

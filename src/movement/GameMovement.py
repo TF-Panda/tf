@@ -13,6 +13,9 @@ def simpleSpline(self, val):
     valueSquared = val * val
     return (3 * valueSquared - 2 * valueSquared * val)
 
+PUNCH_DAMPING = 9.0
+PUNCH_SPRING_CONSTANT = 65.0
+
 class GameMovement:
 
     def __init__(self):
@@ -76,12 +79,13 @@ class GameMovement:
 
     def decayPunchAngle(self):
         if self.player.punchAngle.lengthSquared() > 0.001 or self.player.punchAngleVel.lengthSquared() > 0.001:
-            self.player.punchAngle += self.player.punchAngleVel * globalClock.getFrameTime()
-            damping = 1 - (PUNCH_DAMPING * globalClock.getFrameTime())
+            dt = globalClock.getDt()
+            self.player.punchAngle += self.player.punchAngleVel * dt
+            damping = 1 - (PUNCH_DAMPING * dt)
             if damping < 0:
                 damping = 0
             self.player.punchAngleVel *= damping
-            springForceMagnitude = PUNCH_SPRING_CONSTANT * globalClock.getFrameTime()
+            springForceMagnitude = PUNCH_SPRING_CONSTANT * dt
             springForceMagnitude = max(0, min(2, springForceMagnitude))
             self.player.punchAngleVel -= self.player.punchAngle * springForceMagnitude
             # Don't wrap around.

@@ -495,8 +495,8 @@ class Prediction(DirectObject):
         move.oldAngles = Vec3(move.angles)
         move.oldButtons = avatar.lastButtons
         move.clientMaxSpeed = avatar.maxSpeed
-        move.angles = cmd.viewAngles
-        move.viewAngles = cmd.viewAngles
+        move.angles = Vec3(cmd.viewAngles)
+        move.viewAngles = Vec3(cmd.viewAngles)
         move.buttons = avatar.buttons
         move.onGround = avatar.onGround
 

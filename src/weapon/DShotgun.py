@@ -22,8 +22,15 @@ class DShotgun(TFWeaponGun):
         self.clip = self.maxClip
         self.primaryAttackInterval = 0.625
         self.weaponData[TFWeaponMode.Primary]['bulletsPerShot'] = 10
-        self.weaponData[TFWeaponMode.Primary]['spread'] = 0.1
-        self.weaponData[TFWeaponMode.Primary]['damage'] = 5
+        self.weaponData[TFWeaponMode.Primary]['spread'] = 0.0675
+        self.weaponData[TFWeaponMode.Primary]['damage'] = 6
+        self.weaponData[TFWeaponMode.Primary]['range'] = 8192
+        self.weaponData[TFWeaponMode.Primary]['punchAngle'] = 3.0
+        self.weaponData[TFWeaponMode.Primary]['timeIdle'] = 5.0
+        self.weaponData[TFWeaponMode.Primary]['timeIdleEmpty'] = 0.25
+        self.weaponData[TFWeaponMode.Primary]['timeReloadStart'] = 0.1
+        self.weaponData[TFWeaponMode.Primary]['timeReload'] = 0.5
+        self.weaponData[TFWeaponMode.Primary]['timeFireDelay'] = 0.625
         self.damageType = DamageType.Buckshot | DamageType.UseDistanceMod
 
     def getName(self):

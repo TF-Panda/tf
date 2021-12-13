@@ -103,6 +103,8 @@ class TFBase(ShowBase, FSM):
 
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
 
+        self.dynRender = self.render.attachNewNode(DynamicVisNode("dynamic"))
+
         # Set up the view model camera and scene.
         self.vmRender = NodePath("vmrender")
         self.vmLens = PerspectiveLens()
@@ -120,6 +122,17 @@ class TFBase(ShowBase, FSM):
         self.playGame = None
 
         base.accept('shift-w', self.toggleWireframe)
+        self.showingBounds = False
+        base.accept('shift-b', self.toggleBounds)
+
+        self.enableParticles()
+
+    def toggleBounds(self):
+        self.showingBounds = not self.showingBounds
+        if self.showingBounds:
+            messenger.send('show-bounds')
+        else:
+            messenger.send('hide-bounds')
 
     def playMusic(self, audio, loop=False):
         if isinstance(audio, (str, Filename)):

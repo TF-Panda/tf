@@ -8,6 +8,11 @@ from tf.tfbase import Sounds, TFGlobals
 from panda3d.core import *
 from panda3d.pphysics import *
 
+# Note: The server needs to maintain a minimum of 66 "frames" or simulation
+# ticks per second.  There's a lot more leeway since the server isn't
+# rendering anything like the client, but the server does a lot more
+# simulation work.
+
 class TFServerBase(HostBase):
     notify = directNotify.newCategory("TFServerBase")
 
@@ -16,10 +21,13 @@ class TFServerBase(HostBase):
 
         Sounds.loadSounds(True)
 
+        self.showingBounds = False
+
         if self.config.GetBool('want-server-pstats', False):
             PStatClient.connect()
 
         self.render = NodePath("render")
+        self.dynRender = NodePath("dynamic")
         self.hidden = NodePath("hidden")
 
         if self.config.GetBool("phys-enable-pvd-server", False):
@@ -45,6 +53,7 @@ class TFServerBase(HostBase):
         self.air = self.sv
         self.sr = self.sv
         self.net = self.sv
+        self.sv.game.changeLevel("ctf_2fort")
 
         precacheList = [
             "models/buildables/sentry1",
@@ -85,12 +94,12 @@ class TFServerBase(HostBase):
 
     def postRunFrame(self):
         HostBase.postRunFrame(self)
-        elapsed = self.globalClock.getRealTime() - self.frameTime
+        #elapsed = self.globalClock.getRealTime() - self.frameTime
         # Sleep for a fraction of the simulation tick interval.  The server
         # only does stuff on simulation ticks.
-        minDt = self.intervalPerTick * 0.1
-        if elapsed < minDt:
-            Thread.sleep(minDt - elapsed)
+        #minDt = self.intervalPerTick * 0.1
+        #if elapsed < minDt:
+        #    Thread.sleep(minDt - elapsed)
 
     def __physicsUpdate(self, task):
         self.physicsWorld.simulate(globalClock.getDt())

@@ -1,3 +1,5 @@
+#import pyjion
+#pyjion.enable()
 
 import argparse
 p = argparse.ArgumentParser(description='Team Fortress Entry-Point')

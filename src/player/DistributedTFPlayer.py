@@ -1,5 +1,5 @@
 
-from tf.character.DistributedChar import DistributedChar
+from tf.actor.DistributedChar import DistributedChar
 from direct.distributed2.DistributedObject import DistributedObject
 from .DistributedTFPlayerShared import DistributedTFPlayerShared
 
@@ -251,7 +251,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.speechNode.setZ(50)
         #self.talker = Talker.Talker(self.modelNp, Point3(0, 0, self.classInfo.ViewHeight), self.character, phonemes[self.classInfo.Phonemes], sentences)
         #self.modelNp.setH(180)
-        self.reparentTo(render)
+        self.reparentTo(base.dynRender)
 
     def disable(self):
         self.stopSpeech()

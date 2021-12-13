@@ -4,7 +4,7 @@
 // This file defines all of the TF animation activity types.
 //
 // The value IDs can be accessed in Python code via:
-//    from tf.character.Activity import Activity
+//    from tf.actor.Activity import Activity
 //    Activity.Name
 //
 // or in C++ code via:

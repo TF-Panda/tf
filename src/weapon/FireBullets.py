@@ -4,15 +4,20 @@ from .TakeDamageInfo import *
 
 from panda3d.core import Quat, Vec3
 
+from .WeaponEffects import *
+
 import random
 
-def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False):
+def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerOrigin = None):
     """
     Fires some bullets.  Server does damage calculations.  Client would
     theoretically do the effects (when I implement it).
     """
 
-    doEffects = False # TODO: true on client!
+    doEffects = False
+
+    if not tracerOrigin:
+        tracerOrigin = origin
 
     q = Quat()
     q.setHpr(angles)
@@ -32,6 +37,7 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     fireInfo['shots'] = 1
     fireInfo['spread'] = Vec3(spread, spread, 0.0)
     fireInfo['ammoType'] = 0
+    fireInfo['tracerOrigin'] = tracerOrigin
     #fireInfo['attacker'] =
 
     # Setup the bullet damage type

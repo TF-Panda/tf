@@ -1,5 +1,5 @@
 
-from tf.character.DistributedChar import DistributedChar
+from tf.actor.DistributedChar import DistributedChar
 
 from .DistributedWeaponShared import DistributedWeaponShared
 
@@ -85,14 +85,14 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         else:
             self.active = False
 
-        if self.active and self.modelNp and self.player and self.player.modelNp:
+        if self.active and self.player and self.player.character:
             # Make sure the world model is parented to the player.
-            self.modelNp.reparentTo(self.player.modelNp)
+            self.reparentTo(self.player)
             self.setJointMergeCharacter(self.player.character)
 
             if self.isActiveLocalPlayerWeapon() and self.player.viewModel:
                 # Parent the view model to the player's view model.
-                self.viewModelChar.modelNp.reparentTo(self.player.viewModel.modelNp)
+                self.viewModelChar.reparentTo(self.player.viewModel)
                 self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
 
     def activate(self):
@@ -108,11 +108,11 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
             DistributedWeaponShared.activate(self)
 
         # Parent the world model to the player.
-        self.modelNp.reparentTo(self.player.modelNp)
+        self.reparentTo(self.player)
         self.setJointMergeCharacter(self.player.character)
 
         # Parent the view model to the player's view model.
-        self.viewModelChar.modelNp.reparentTo(self.player.viewModel.modelNp)
+        self.viewModelChar.reparentTo(self.player.viewModel)
         self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
 
         if self.isActiveLocalPlayerWeapon():
@@ -126,8 +126,8 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
         self.active = False
 
-        self.modelNp.reparentTo(hidden)
-        self.viewModelChar.modelNp.reparentTo(hidden)
+        self.reparentTo(hidden)
+        self.viewModelChar.reparentTo(hidden)
 
         if self.isActiveLocalPlayerWeapon():
             DistributedWeaponShared.deactivate(self)

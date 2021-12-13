@@ -82,6 +82,30 @@ class DistributedTFPlayerShared:
         self.tickBase = 0
         self.deathTime = 0.0
 
+    def getPunchAngle(self):
+        return self.punchAngle
+
+    def setPunchAngle(self, ang):
+        self.punchAngle = ang
+
+    def getPunchAngleVel(self):
+        return self.punchAngleVel
+
+    def setPunchAngleVel(self, vel):
+        self.punchAngleVel = vel
+
+    def resetViewPunch(self, tolerance = 0):
+        if tolerance != 0:
+            tolerance *= tolerance
+            check = self.punchAngleVel.lengthSquared() + self.punchAngle.lengthSquared()
+            if check > tolerance:
+                return
+        self.punchAngle = Vec3(0)
+        self.punchAngleVel = Vec3(0)
+
+    def addViewPunch(self, ang):
+        self.punchAngle += ang * 20
+
     def removeCondition(self, cond):
         self.condition &= ~cond
 
@@ -112,6 +136,14 @@ class DistributedTFPlayerShared:
         if result.hasBlock():
             # Bullet hit something!
             block = result.getBlock()
+            if not IS_CLIENT:
+                if self.owner is not None:
+                    exclude = [self.owner]
+                else:
+                    exclude = []
+                base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
+            #else:
+            #    base.game.doTracer(info['tracerOrigin'], block.getPosition())
             actor = block.getActor()
             entity = actor.getPythonTag("entity")
             if not entity:
@@ -228,8 +260,8 @@ class DistributedTFPlayerShared:
         self.moveData.player = self
         self.moveData.origin = self.getPos()
         self.moveData.oldAngles = Vec3(self.moveData.angles)
-        self.moveData.angles = command.viewAngles
-        self.moveData.viewAngles = command.viewAngles
+        self.moveData.angles = Vec3(command.viewAngles)
+        self.moveData.viewAngles = Vec3(command.viewAngles)
         self.moveData.oldButtons = self.lastButtons
         self.moveData.buttons = self.buttons
         self.moveData.clientMaxSpeed = self.maxSpeed

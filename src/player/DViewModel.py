@@ -1,5 +1,5 @@
 
-from tf.character.DistributedChar import DistributedChar
+from tf.actor.DistributedChar import DistributedChar
 
 from .DViewModelShared import DViewModelShared
 
@@ -12,11 +12,11 @@ class ViewInfo:
 class BobState:
 
     def __init__(self):
-        self.bobTime = 0
-        self.lastBobTime = 0
-        self.lastSpeed = 0
-        self.verticalBob = 0
-        self.lateralBob = 0
+        self.bobTime = 0.0
+        self.lastBobTime = 0.0
+        self.lastSpeed = 0.0
+        self.verticalBob = 0.0
+        self.lateralBob = 0.0
 
 cl_wpn_sway_interp = 0.1
 cl_wpn_sway_scale = 5.0

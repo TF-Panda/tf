@@ -8,7 +8,7 @@ def lerp(v0, v1, amt):
 
 class MuzzleParticle(NodePath):
 
-    muzzleroot = "models/maps/starflash01.tga"
+    muzzleroot = "tfmodels/src/maps/starflash01.ptex"
 
     def __init__(self, startSize, endSize, roll, color, duration):
         NodePath.__init__(self, 'muzzleParticle')
@@ -26,6 +26,7 @@ class MuzzleParticle(NodePath):
         self.setMaterialOff(1)
         self.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
         self.setDepthWrite(False, 1)
+        self.setBin('fixed', 0, 1)
         #self.setTransparency(1)
 
         self.startAlpha = 0.5
@@ -34,7 +35,7 @@ class MuzzleParticle(NodePath):
         self.startSize = startSize
         self.endSize = endSize
         self.color = color
-        self.startTime = globalClock.getFrameTime()
+        self.startTime = base.getRenderTime()
         self.roll = roll
         taskMgr.add(self.particleUpdate, "muzzleParticleUpdate-" + str(id(self)))
 

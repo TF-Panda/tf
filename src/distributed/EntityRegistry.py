@@ -14,11 +14,14 @@ object (before `generate()`), passing in the `PDXElement` of entity properties
 specified in the level file.
 """
 
+from .DHealthKitAI import DHealthKitSmallAI, DHealthKitMediumAI, DHealthKitFullAI
+from .DAmmoPackAI import DAmmoPackSmallAI, DAmmoPackMediumAI, DAmmoPackFullAI
+
 EntityRegistry = {
-    "item_healthkit_small": DHealthKitSmall,
-    "item_healthkit_medium": DHealthKitMedium,
-    "item_healthkit_full": DHealthKitFull,
-    "item_ammopack_small": DAmmoPackSmall,
-    "item_ammopack_medium": DAmmoPackMedium,
-    "item_ammopack_full": DAmmoPackFull
+    "item_healthkit_small": DHealthKitSmallAI,
+    "item_healthkit_medium": DHealthKitMediumAI,
+    "item_healthkit_full": DHealthKitFullAI,
+    "item_ammopack_small": DAmmoPackSmallAI,
+    "item_ammopack_medium": DAmmoPackMediumAI,
+    "item_ammopack_full": DAmmoPackFullAI
 }

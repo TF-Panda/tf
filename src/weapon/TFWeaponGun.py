@@ -9,17 +9,21 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from .WeaponMode import TFWeaponMode, TFReloadMode, TFProjectileType
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from .FireBullets import fireBullets
+from .WeaponEffects import makeMuzzleFlash
 
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
 from tf.tfbase import TFFilters
 
-from tf.character.Char import Char
+from tf.actor.Char import Char
 
 if not IS_CLIENT:
     from .RocketProjectile import RocketProjectileAI
+    from .DPipeBombProjectile import DPipeBombProjectileAI
+
+import random
 
 class TFWeaponGun(BaseClass):
 
@@ -86,6 +90,8 @@ class TFWeaponGun(BaseClass):
             self.fireBullet(player)
         elif projType == TFProjectileType.Rocket:
             self.fireRocket(player)
+        elif projType == TFProjectileType.Pipebomb:
+            self.firePipebomb(player)
         else:
             assert False
 
@@ -98,10 +104,31 @@ class TFWeaponGun(BaseClass):
         self.updatePunchAngles(player)
 
     def doFireEffects(self):
-        pass
+        if IS_CLIENT:
+            if self.isOwnedByLocalPlayer():
+                # Get the muzzle from the view model weapon.
+                muzzle = self.viewModelChar.find("**/muzzle")
+                size = 0.5
+            else:
+                # World model.
+                muzzle = self.find("**/muzzle")
+                size = 1.0
+            if not muzzle.isEmpty():
+                makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), size, (1, 0.75, 0, 1))
+        else:
+            # Don't send to owner, who is predicting the effect.
+            self.sendUpdate('doFireEffects', excludeClients = [self.player.owner])
 
     def updatePunchAngles(self, player):
-        pass
+        player.resetViewPunch()
+        punchAngle = self.weaponData[self.weaponMode].get('punchAngle', 0)
+        if punchAngle > 0:
+            rand = random.Random()
+            rand.seed(base.net.predictionRandomSeed & 255)
+            player.punchAngle[1] += rand.randint(int(punchAngle - 1), int(punchAngle + 1))
+           # print("applied punch angle, it's now", player.punchAngle)
+            #print("pred tick", base.tickCount)
+            #print("random seed", base.net.predictionRandomSeed & 255)
 
     def getProjectileFireSetup(self, player, offset, hitTeammates = True):
         q = Quat()
@@ -164,16 +191,51 @@ class TFWeaponGun(BaseClass):
             rocket.damageType = self.damageType
             base.net.generateObject(rocket, player.zoneId)
 
+    def firePipebomb(self, player):
+        self.playSound(self.getSingleSound())
+        # Server only -- create the rocket.
+        if not IS_CLIENT:
+            src = self.player.getEyePosition()
+            q = Quat()
+            q.setHpr(self.player.viewAngles)
+            src += q.getForward() * 16.0 + q.getRight() * 8.0 + q.getUp() * -6.0
+            vel = (q.getForward() * 1200) + (q.getUp() * 200.0) + (q.getRight() * random.uniform(-10.0, 10.0)) + (q.getUp() * random.uniform(-10.0, 10.0))
+            rocket = DPipeBombProjectileAI()
+            rocket.setPos(src)
+            rocket.setHpr(self.player.viewAngles)
+            rocket.shooter = player
+            rocket.fullDamage = self.weaponData[self.weaponMode]['damage']
+            rocket.damage = rocket.fullDamage * 0.6
+            rocket.damageType = self.damageType
+            rocket.team = self.player.team
+            rocket.skin = self.player.team
+            rocket.setModel("models/weapons/w_grenade_grenadelauncher")
+            physMat = PhysMaterial(0.6, 0.2, 0.2)
+            rocket.node().getShape(0).setMaterial(physMat)
+            rocket.node().setLinearVelocity(vel)
+            rocket.node().setAngularVelocity((random.uniform(-1200, 1200), -600, 0))
+            rocket.node().setCcdEnabled(True)
+            rocket.node().setMass(5.0)
+            base.net.generateObject(rocket, player.zoneId)
+
     def fireBullet(self, player):
         self.playSound(self.getSingleSound())
         weaponData = self.weaponData.get(self.weaponMode, {})
         origin = self.player.getEyePosition()
         angles = self.player.viewAngles
+        tracerOrigin = origin
+        if IS_CLIENT:
+            muzzle = self.viewModelChar.find("**/muzzle")
+        else:
+            muzzle = self.find("**/muzzle")
+        if not muzzle.isEmpty():
+            tracerOrigin = muzzle.getPos(base.render)
         fireBullets(self.player, origin, angles, self,
                     self.weaponMode,
                     base.net.predictionRandomSeed & 255,
                     weaponData.get('spread', 0.0),
-                    weaponData.get('damage', 1.0))
+                    weaponData.get('damage', 1.0),
+                    tracerOrigin=tracerOrigin)
 
 if not IS_CLIENT:
     TFWeaponGunAI = TFWeaponGun

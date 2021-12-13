@@ -10,7 +10,7 @@ from tf.tfbase import TFGlobals
 from direct.interval.IntervalGlobal import Sequence, Wait, Func
 from direct.interval.ActorInterval import ActorInterval
 
-from tf.character.Char import Char
+from tf.actor.Char import Char
 
 def lightColor(light, temp, intensity):
     light.setColorTemperature(temp)
@@ -39,12 +39,12 @@ class TFClassMenu:
         #self.classRoot.setH(180)
 
         al = AmbientLight('al')
-        lightColor(al, 5500, 1)
+        lightColor(al, 5500, 0.8)
         alnp = self.classRoot.attachNewNode(al)
         self.classRoot.setLight(alnp)
 
         dl = Spotlight('cl')
-        lightColor(dl, 5000, 25)
+        lightColor(dl, 5000, 2.5)
         dl.setCameraMask(BitMask32.bit(2))
         #dl.setSceneCamera(base.render2d.find("**/+Camera"))
         dl.setShadowCaster(True, 4096, 4096)

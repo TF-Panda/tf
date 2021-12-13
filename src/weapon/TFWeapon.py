@@ -8,8 +8,9 @@ else:
 from panda3d.core import Quat, Vec3
 
 from .WeaponMode import TFWeaponMode, TFReloadMode, TFWeaponType, TFProjectileType
+from .WeaponEffects import makeMuzzleFlash
 
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.player.InputButtons import InputFlag
 
@@ -46,7 +47,8 @@ class TFWeapon(BaseClass):
                 'timeIdle': 1.0,
                 'timeFireDelay': 1.0,
                 'timeIdleEmpty': 0.0,
-                'smackDelay': 0.5
+                'smackDelay': 0.5,
+                'punchAngle': 0
             }
         }
 
@@ -530,8 +532,8 @@ class TFWeapon(BaseClass):
             Creates a medium ammo pack using the weapon's model from the
             current position.
             """
-            from .DAmmoPack import DAmmoPackAI
-            p = DAmmoPackAI()
+            from .DWeaponDrop import DWeaponDropAI
+            p = DWeaponDropAI()
             #p.skin = self.team
             p.solidShape = SolidShape.Model
             p.solidFlags |= SolidFlag.Tangible

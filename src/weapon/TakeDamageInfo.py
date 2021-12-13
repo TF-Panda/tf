@@ -66,6 +66,7 @@ def applyMultiDamage():
     if not g_multiDamage.target:
         return
 
+    #print("applying multi-damage", g_multiDamage.damage, "to", g_multiDamage.target)
     g_multiDamage.target.takeDamage(g_multiDamage)
 
     clearMultiDamage()

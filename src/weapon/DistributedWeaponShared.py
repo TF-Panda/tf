@@ -1,8 +1,8 @@
 """DistributedWeaponShared module: contains the DistributedWeaponShared class"""
 
-from tf.character.Char import Char
+from tf.actor.Char import Char
 
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 from tf.player.InputButtons import InputFlag
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
 

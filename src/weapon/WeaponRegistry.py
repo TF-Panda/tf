@@ -8,6 +8,7 @@ from .DRocketLauncher import DRocketLauncher
 from .DShovel import DShovel
 from .DBottle import DBottle
 from .DMinigun import DMinigun
+from .DistributedGrenadeLauncher import DistributedGrenadeLauncher
 
 Weapons = {
   Weapon.Shotgun: DShotgun,
@@ -17,5 +18,6 @@ Weapons = {
   Weapon.RocketLauncher: DRocketLauncher,
   Weapon.Shovel: DShovel,
   Weapon.Bottle: DBottle,
-  Weapon.Minigun: DMinigun
+  Weapon.Minigun: DMinigun,
+  Weapon.GrenadeLauncher: DistributedGrenadeLauncher
 }

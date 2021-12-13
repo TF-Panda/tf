@@ -2,9 +2,9 @@ from direct.gui.DirectGui import DirectButton, OnscreenImage, OnscreenText
 from direct.fsm.StateData import StateData
 
 import platform
-import psutil
+#import psutil
 
-from panda3d.core import TextNode, TextProperties, TextPropertiesManager
+from panda3d.core import TextNode, TextProperties, TextPropertiesManager, ConfigVariableInt, ConfigVariableString
 
 from tf.tfbase import TFLocalizer
 
@@ -43,7 +43,7 @@ class TFMainMenu(StateData):
         self.verLbl = None
 
     def __playGame(self):
-        base.request("Game", {'addr': 'http://127.0.0.1:6667'})
+        base.request("Game", {'addr': 'http://' + ConfigVariableString('client-addr', '127.0.0.1').value + ':' + str(ConfigVariableInt('client-port', 6667).value)})
 
     def addMenuButton(self, text, pos, callback, extraArgs = []):
         btn = DirectButton(text = text, pos = pos, command = callback, extraArgs = extraArgs,
@@ -90,7 +90,7 @@ class TFMainMenu(StateData):
         OpenGL %s
         GLSL %i.%i
         """ % (uname[0], uname[1], uname[2], uname[3], uname[4], uname[5],
-             psutil.cpu_freq().max / 1000, psutil.cpu_count(logical=True), psutil.virtual_memory().total / 1e+9,
+             0, 0, 0,#psutil.cpu_freq().max / 1000, psutil.cpu_count(logical=True), psutil.virtual_memory().total / 1e+9,
              gsg.getDriverVendor(), gsg.getDriverRenderer(), gsg.getDriverVersion(),
              gsg.getDriverShaderVersionMajor(), gsg.getDriverShaderVersionMinor())
 

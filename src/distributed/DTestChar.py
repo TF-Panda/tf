@@ -1,5 +1,5 @@
 
-from tf.character.DistributedChar import DistributedChar
+from tf.actor.DistributedChar import DistributedChar
 
 from panda3d.core import *
 
@@ -7,4 +7,4 @@ class DTestChar(DistributedChar):
 
     def announceGenerate(self):
         DistributedChar.announceGenerate(self)
-        self.reparentTo(render)
+        self.reparentTo(base.dynRender)

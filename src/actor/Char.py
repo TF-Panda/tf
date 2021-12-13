@@ -10,7 +10,7 @@ from .HitBox import HitBox
 from tf.tfbase.Sounds import Sounds, createSoundByName
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
 
-from tf.character.Ragdoll import Ragdoll
+from tf.actor.Ragdoll import Ragdoll
 
 class Char(Actor):
     notify = directNotify.newCategory("Char")
@@ -38,6 +38,11 @@ class Char(Actor):
         self.lastHitBoxSyncTime = 0.0
 
         self.skin = 0
+
+        if base.showingBounds:
+            self.showBounds()
+        self.accept('show-bounds', self.showBounds)
+        self.accept('hide-bounds', self.hideBounds)
 
     def setBodygroupValue(self, group, value):
         bg = self.bodygroups[group]
@@ -91,14 +96,15 @@ class Char(Actor):
         cCopy = Char()
         cCopy.setSkin(self.skin)
         cCopy.loadModel(self.model, loadHitBoxes=False)
-        cCopy.node().setBounds(OmniBoundingVolume())
+        #cCopy.node().setBounds(OmniBoundingVolume())
+        cCopy.setEffect(MapLightingEffect.make())
         # Copy the current joint positions of our character to the ragdoll
         # version.
         character = self.getPartBundle("modelRoot")
         cCharacter = cCopy.getPartBundle("modelRoot")
         for i in range(character.getNumJoints()):
             cCharacter.setJointForcedValue(i, character.getJointValue(i))
-        cCopy.reparentTo(render)
+        cCopy.reparentTo(base.dynRender)
         cCopy.setTransform(self.getNetTransform())
 
         # Create the ragdoll using the model's collision info.
@@ -396,7 +402,7 @@ class Char(Actor):
             mesh = PhysConvexMesh(mdata)
         mat = PhysMaterial(0.5, 0.5, 0.5)
         shape = PhysShape(mesh, mat)
-        return shape
+        return (shape, mesh)
 
     def loadModel(self, model, loadHitBoxes=True):
         if self.model == model:

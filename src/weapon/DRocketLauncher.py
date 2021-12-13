@@ -20,7 +20,12 @@ class DRocketLauncher(TFWeaponGun):
         self.ammo = self.maxAmmo
         self.clip = self.maxClip
         self.primaryAttackInterval = 0.8
-        self.weaponData[TFWeaponMode.Primary]['damage'] = 100
+        self.weaponData[TFWeaponMode.Primary]['damage'] = 90
+        self.weaponData[TFWeaponMode.Primary]['timeFireDelay'] = 0.8
+        self.weaponData[TFWeaponMode.Primary]['timeIdle'] = 0.8
+        self.weaponData[TFWeaponMode.Primary]['timeIdleEmpty'] = 0.8
+        self.weaponData[TFWeaponMode.Primary]['timeReloadStart'] = 0.1
+        self.weaponData[TFWeaponMode.Primary]['timeReload'] = 0.83
         self.weaponData[TFWeaponMode.Primary]['projectile'] = TFProjectileType.Rocket
         self.damageType = DamageType.Blast | DamageType.HalfFalloff | DamageType.UseDistanceMod
 
@@ -28,7 +33,7 @@ class DRocketLauncher(TFWeaponGun):
         return TFLocalizer.RocketLauncher
 
     def getSingleSound(self):
-        return "Weapon_QuakeRPG.Single"
+        return "Weapon_RPG.Single"
 
 if not IS_CLIENT:
     DRocketLauncherAI = DRocketLauncher

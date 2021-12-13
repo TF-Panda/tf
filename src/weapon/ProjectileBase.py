@@ -1,8 +1,8 @@
 if IS_CLIENT:
-    from tf.character.DistributedChar import DistributedChar
+    from tf.actor.DistributedChar import DistributedChar
     BaseClass = DistributedChar
 else:
-    from tf.character.DistributedCharAI import DistributedCharAI
+    from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
 from panda3d.core import Vec3

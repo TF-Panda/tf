@@ -83,6 +83,8 @@ class TFHud(DirectObject):
             self.lastWinSize = size
 
     def adjustCrosshairSize(self):
+        # I determined this formula empirically by comparing crosshair scaling
+        # behavior with actual TF2.
         factor = 32 * (base.win.getYSize() / cl_crosshairscale.getValue())
         tex = self.crosshairTex
         self.crosshair.setScale((tex.getXSize() / factor, tex.getYSize() / factor, tex.getYSize() / factor))

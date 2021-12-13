@@ -6,7 +6,7 @@ from tf.player.DViewModelAI import DViewModelAI
 
 from tf.tfbase import TFGlobals, Sounds
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
-from tf.tfbase.TFGlobals import Contents, DamageType, TakeDamage, CollisionGroup
+from tf.tfbase.TFGlobals import Contents, DamageType, TakeDamage, CollisionGroup, GameZone
 from tf.player.TFClass import *
 from .DTestCharAI import DTestCharAI
 from tf.weapon.DShotgun import DShotgunAI
@@ -42,20 +42,31 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.objectsByTeam = {0: [], 1: []}
 
     def collectTeamSpawns(self):
+
+        from .EntityRegistry import EntityRegistry
+
         self.teamSpawns = {0: [], 1: []}
 
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
-            if ent.getClassName() != "info_player_teamspawn":
-                continue
-            props = ent.getProperties()
-            origin = Vec3()
-            angles = Vec3()
-            props.getAttributeValue("origin").toVec3(origin)
-            props.getAttributeValue("angles").toVec3(angles)
-            team = props.getAttributeValue("TeamNum").getInt() - 2
-            if team >= 0 and team <= 1:
-                self.teamSpawns[team].append((origin, angles))
+
+            entCls = EntityRegistry.get(ent.getClassName(), None)
+            if entCls:
+                print("Generating a", ent.getClassName())
+                entObj = entCls()
+                entObj.initFromLevel(ent.getProperties())
+                base.air.generateObject(entObj, GameZone)
+            else:
+                if ent.getClassName() != "info_player_teamspawn":
+                    continue
+                props = ent.getProperties()
+                origin = Vec3()
+                angles = Vec3()
+                props.getAttributeValue("origin").toVec3(origin)
+                props.getAttributeValue("angles").toVec3(angles)
+                team = props.getAttributeValue("TeamNum").getInt() - 2
+                if team >= 0 and team <= 1:
+                    self.teamSpawns[team].append((origin, angles))
 
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
@@ -153,6 +164,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             adjustedInfo = copy.copy(info)
             adjustedInfo.setDamage(adjustedDamage - (adjustedDamage * blockedDamagePercent))
 
+            #print("Doing", adjustedInfo.damage, "to", do)
+
             # If we don't have a damage force, manufacture one.
             if adjustedInfo.damagePosition == Vec3() or adjustedInfo.damageForce == Vec3():
                 calculateExplosiveDamageForce(adjustedInfo, dir, src, 1.0)
@@ -181,6 +194,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             return
 
         self.sendUpdate('emitSound', soundInfo, client = client, excludeClients = excludeClients)
+
+    def d_doTracers(self, origin, ends, excludeClients = []):
+        self.sendUpdate('doTracers', [origin, ends], excludeClients = excludeClients)
 
     def playerCanTakeDamage(self, player, inflictor):
         if player == inflictor:

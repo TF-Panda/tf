@@ -3,7 +3,7 @@ from enum import IntEnum, auto
 
 from panda3d.core import *
 
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 from tf.tfbase import TFLocalizer
 
 class Class(IntEnum):
@@ -29,6 +29,7 @@ class Weapon(IntEnum):
     Bottle = auto()
     RocketLauncher = auto()
     Minigun = auto()
+    GrenadeLauncher = auto()
 
 BaseSpeed = 300
 
@@ -159,7 +160,7 @@ class DemoInfo:
         "Demoman.PainSharp07"
     ]
 
-    Weapons = [Weapon.Bottle]
+    Weapons = [Weapon.GrenadeLauncher, Weapon.Bottle]
 
 class HeavyInfo:
     Name = TFLocalizer.Heavy

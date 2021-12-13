@@ -9,7 +9,7 @@ else:
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.character.Char import Char
+from tf.actor.Char import Char
 from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, Contents, CollisionGroup, SolidShape, SolidFlag, angleMod
 from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
 from tf.tfbase import TFFilters
@@ -58,6 +58,7 @@ class DistributedEntity(BaseClass, NodePath):
 
         self.viewOffset = Vec3()
 
+        # Collision stuff
         self.collisionGroup = CollisionGroup.Empty
         self.contentsMask = Contents.Solid
         self.solidMask = Contents.Solid
@@ -75,6 +76,10 @@ class DistributedEntity(BaseClass, NodePath):
         self.hullMaxs = Point3()
 
         if IS_CLIENT:
+            # Makes the node compute its lighting state from the lighting
+            # information in the level when its rendered.
+            self.setEffect(MapLightingEffect.make())
+
             # Prediction-related variables.
             self.intermediateData = []
             for i in range(PREDICTION_DATA_SLOTS):
@@ -212,7 +217,7 @@ class DistributedEntity(BaseClass, NodePath):
             mat = PhysMaterial(0.5, 0.5, 0.5)
             shape = PhysShape(box, mat)
             shape.setLocalPos((cx, cy, cz))
-            return shape
+            return (shape, box)
         else:
             return None
 
@@ -254,9 +259,10 @@ class DistributedEntity(BaseClass, NodePath):
         body.setContentsMask(self.contentsMask)
         body.setSolidMask(self.solidMask)
 
-        shape = self.makeCollisionShape()
-        if not shape:
+        shapeData = self.makeCollisionShape()
+        if not shapeData:
             return
+        shape = shapeData[0]
         shape.setSceneQueryShape(True)
         if self.solidFlags & SolidFlag.Tangible:
             shape.setSimulationShape(True)
@@ -280,7 +286,7 @@ class DistributedEntity(BaseClass, NodePath):
         if (self.solidFlags & SolidFlag.Tangible) and \
             (self.solidFlags & SolidFlag.Trigger):
             # Add an identical shape for trigger usage only.
-            tshape = self.makeCollisionShape()
+            tshape = self.makeCollisionShape()[0]
             tshape.setSceneQueryShape(False)
             tshape.setSimulationShape(False)
             tshape.setTriggerShape(True)
@@ -328,6 +334,16 @@ class DistributedEntity(BaseClass, NodePath):
         if result.hasBlock():
             # Bullet hit something!
             block = result.getBlock()
+
+            if not IS_CLIENT:
+                if self.owner is not None:
+                    exclude = [self.owner]
+                else:
+                    exclude = []
+                base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
+            else:
+                base.game.doTracer(info['tracerOrigin'], block.getPosition())
+
             actor = block.getActor()
             entity = actor.getPythonTag("entity")
             if not entity:
@@ -609,6 +625,20 @@ class DistributedEntity(BaseClass, NodePath):
             return self.getScale()
 
     if not IS_CLIENT:
+        def initFromLevel(self, properties):
+            """
+            Called to initialize the level entity from the given property
+            structure.
+            """
+            if properties.hasAttribute("origin"):
+                origin = Vec3()
+                properties.getAttributeValue("origin").toVec3(origin)
+                self.setPos(origin)
+            if properties.hasAttribute("angles"):
+                angles = Vec3()
+                properties.getAttributeValue("angles").toVec3(angles)
+                self.setHpr(angles[1] - 90, -angles[0], angles[2])
+
         def takeDamage(self, info):
 
             # TODO: Damage filter

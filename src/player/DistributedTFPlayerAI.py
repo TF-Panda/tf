@@ -1,5 +1,5 @@
 
-from tf.character.DistributedCharAI import DistributedCharAI
+from tf.actor.DistributedCharAI import DistributedCharAI
 from direct.distributed2.ServerConfig import *
 from .DistributedTFPlayerShared import DistributedTFPlayerShared
 
@@ -193,6 +193,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.velocity += force
 
+        #print("subtracting", int(info.damage + 0.5), "from tf player hp")
         self.health -= int(info.damage + 0.5)
         self.health = max(0, self.health)
         if self.health <= 0:
@@ -229,6 +230,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.bulletForce[1] = max(-15000, min(15000, self.bulletForce[1]))
         self.bulletForce[2] = max(-15000, min(15000, self.bulletForce[2]))
 
+        """
+        # This is the code for random damage spread from 2007 TF2.
+        # Turned off for now, might revisit.
+
+        print("pre-random dmg", info.damage)
+
         # If we're not damaging ourselves, apply randomness
         if info.attacker != self and not (info.damageType & (DamageType.Drown | DamageType.Fall)):
             damage = 0
@@ -255,11 +262,16 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             damage = info.damage + out
             info.damage = damage
 
+        print("post random damage", info.damage)
+        """
+
         self.onTakeDamage_alive(info)
 
         if self.health > 0:
             # If still alive, flinch
             self.doAnimationEvent(PlayerAnimEvent.Flinch)
+            # Flinch the camera up.
+            self.punchAngle[1] = 2
 
             now = globalClock.getFrameTime()
             # Do sharp pain for local avatar and other players, severe for
@@ -399,7 +411,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.setActiveWeapon(0)
 
         # Select a random spawn location.
-        spawnPoints = base.air.game.teamSpawns[self.team]
+        spawnPoints = base.air.game.teamSpawns[0]#self.team]
         origin, angles = random.choice(spawnPoints)
         self.setPos(origin)
         self.setHpr(angles[1] - 90, angles[0], angles[2])
@@ -510,7 +522,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def announceGenerate(self):
         DistributedCharAI.announceGenerate(self)
         DistributedTFPlayerShared.announceGenerate(self)
-        self.reparentTo(base.render)
+        self.reparentTo(base.dynRender)
 
     def generate(self):
         # Generate our view model as well.

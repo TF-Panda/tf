@@ -2,19 +2,19 @@ from panda3d.pphysics import *
 from panda3d.core import *
 
 if IS_CLIENT:
-    from tf.character.DistributedChar import DistributedChar
+    from tf.actor.DistributedChar import DistributedChar
     BaseClass = DistributedChar
 else:
-    from tf.character.DistributedCharAI import DistributedCharAI
+    from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
 from .ObjectState import ObjectState
-from tf.character.Activity import Activity
+from tf.actor.Activity import Activity
 from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, CollisionGroup
 from tf.player.TFClass import Class
 
 if not IS_CLIENT:
-    from tf.weapon.DAmmoPack import DAmmoPackAI
+    from tf.weapon.DWeaponDrop import DWeaponDropAI
 
 import math
 import random
@@ -116,7 +116,7 @@ class BaseObject(BaseClass):
                 if not gib_data:
                     continue
                 model = gib_data.getAttributeValue("model").getString()
-                ap = DAmmoPackAI()
+                ap = DWeaponDropAI()
                 ap.solidShape = SolidShape.Model
                 ap.solidFlags |= SolidFlag.Tangible
                 ap.collisionGroup = CollisionGroup.Debris
@@ -355,7 +355,7 @@ class BaseObject(BaseClass):
                 self.contentsMask = Contents.BlueTeam
             self.node().setContentsMask(self.contentsMask)
 
-            self.reparentTo(base.render)
+            self.reparentTo(base.dynRender)
             if self.isBuiltByLocalAvatar():
                 base.localAvatar.objectPanels[self.objectType].setObject(self)
 

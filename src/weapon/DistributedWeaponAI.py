@@ -1,5 +1,5 @@
 
-from tf.character.DistributedCharAI import DistributedCharAI
+from tf.actor.DistributedCharAI import DistributedCharAI
 from .DistributedWeaponShared import DistributedWeaponShared
 
 class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
@@ -12,11 +12,11 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
     def activate(self):
         DistributedWeaponShared.activate(self)
         # Parent the world model to the player.
-        self.modelNp.reparentTo(self.player.modelNp)
+        self.reparentTo(self.player.modelNp)
         self.setJointMergeCharacter(self.player.character)
 
     def deactivate(self):
-        self.modelNp.reparentTo(base.hidden)
+        self.reparentTo(base.hidden)
         DistributedWeaponShared.deactivate(self)
 
     def playSound(self, soundName):
