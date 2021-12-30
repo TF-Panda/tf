@@ -110,6 +110,9 @@ class DistributedWeaponShared:
     def getHitWorldSound(self):
         return "Weapon_Crowbar.HitWorld"
 
+    def getReloadSound(self):
+        return ""
+
     def isWeaponVisible(self):
         return True
 

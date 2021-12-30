@@ -362,7 +362,8 @@ class TFWeapon(BaseClass):
             else:
                 self.updateReloadTimers(False)
 
-            # TODO: WEAPON sound reload
+            if not IS_CLIENT:
+                self.playSound(self.getReloadSound())
 
             self.reloadMode = TFReloadMode.ReloadingContinue
             return True
@@ -424,7 +425,8 @@ class TFWeapon(BaseClass):
         if not (reloadPrimary or reloadSecondary):
             return False
 
-        # TODO: play reload sound
+        if not IS_CLIENT:
+            self.playSound(self.getReloadSound())
 
         # Play the player's reload animation
         self.player.doAnimationEvent(PlayerAnimEvent.Reload)

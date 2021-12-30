@@ -42,6 +42,9 @@ class DShotgun(TFWeaponGun):
     def getEmptySound(self):
         return "Weapon_Shotgun.Empty"
 
+    def getReloadSound(self):
+        return "Weapon_Shotgun.WorldReload"
+
 if not IS_CLIENT:
     DShotgunAI = DShotgun
     DShotgunAI.__name__ = 'DShotgunAI'

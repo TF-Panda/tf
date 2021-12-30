@@ -3,6 +3,8 @@ from tf.actor.DistributedChar import DistributedChar
 
 from .DistributedWeaponShared import DistributedWeaponShared
 
+from tf.tfbase import Sounds
+
 class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
     def __init__(self):
@@ -23,6 +25,25 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         self.addPredictionField("activity", int, networked=False)
         self.addPredictionField("fireDuration", float, networked=False)
         self.addPredictionField("reloadsSingly", bool, networked=False)
+
+    def playSound(self, soundName):
+        """
+        Plays predicted client-side weapon sound.
+        """
+
+        if not base.cr.prediction.firstTimePredicted:
+            # We've already predicted this command, so don't play sounds again.
+            return
+
+        if len(soundName) == 0:
+            return
+
+        pos = self.player.getEyePosition()
+        snd = Sounds.createSoundByName(soundName)
+        if not snd:
+            return
+        snd.set3dAttributes(pos[0], pos[1], pos[2], 0.0, 0.0, 0.0)
+        snd.play()
 
     def addViewModelBob(self, viewModel, info):
         pass

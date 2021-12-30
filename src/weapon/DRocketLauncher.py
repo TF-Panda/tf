@@ -35,6 +35,9 @@ class DRocketLauncher(TFWeaponGun):
     def getSingleSound(self):
         return "Weapon_RPG.Single"
 
+    def getReloadSound(self):
+        return "Weapon_RPG.WorldReload"
+
 if not IS_CLIENT:
     DRocketLauncherAI = DRocketLauncher
     DRocketLauncherAI.__name__ = 'DRocketLauncherAI'

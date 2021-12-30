@@ -105,16 +105,17 @@ class TFWeaponGun(BaseClass):
 
     def doFireEffects(self):
         if IS_CLIENT:
-            if self.isOwnedByLocalPlayer():
-                # Get the muzzle from the view model weapon.
-                muzzle = self.viewModelChar.find("**/muzzle")
-                size = 0.5
-            else:
-                # World model.
-                muzzle = self.find("**/muzzle")
-                size = 1.0
-            if not muzzle.isEmpty():
-                makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), size, (1, 0.75, 0, 1))
+            if base.cr.prediction.firstTimePredicted:
+                if self.isOwnedByLocalPlayer():
+                    # Get the muzzle from the view model weapon.
+                    muzzle = self.viewModelChar.find("**/muzzle")
+                    size = 0.5
+                else:
+                    # World model.
+                    muzzle = self.find("**/muzzle")
+                    size = 1.0
+                if not muzzle.isEmpty():
+                    makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), size, (1, 0.75, 0, 1))
         else:
             # Don't send to owner, who is predicting the effect.
             self.sendUpdate('doFireEffects', excludeClients = [self.player.owner])

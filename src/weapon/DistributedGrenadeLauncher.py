@@ -36,6 +36,9 @@ class DistributedGrenadeLauncher(TFWeaponGun):
     def getSingleSound(self):
         return "Weapon_GrenadeLauncher.Single"
 
+    def getReloadSound(self):
+        return "Weapon_GrenadeLauncher.WorldReload"
+
 if not IS_CLIENT:
     DistributedGrenadeLauncherAI = DistributedGrenadeLauncher
     DistributedGrenadeLauncherAI.__name__ = 'DistributedGrenadeLauncherAI'

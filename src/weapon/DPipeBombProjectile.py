@@ -86,6 +86,8 @@ class DPipeBombProjectile(BaseClass):
                 self.removeTask(self.uniqueName('directHitTest'))
                 self.doingDirectTest = False
 
+            self.emitSound("Weapon_Grenade_Pipebomb.Bounce")
+
         def __directHitTest(self, task):
             """
             Sweeps ahead using the physics body's currently velocity to see if

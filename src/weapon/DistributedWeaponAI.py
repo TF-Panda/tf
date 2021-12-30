@@ -23,7 +23,9 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
         if len(soundName) == 0:
             return
 
-        base.net.game.d_emitSound(soundName, self.player.getWorldSpaceCenter())
+        # Only the AI side, don't send the sound to the player that is using
+        # weapon, as they should have already predicted the sound.
+        base.net.game.d_emitSound(soundName, self.player.getWorldSpaceCenter(), excludeClients=[self.player.owner])
 
     def delete(self):
         DistributedCharAI.delete(self)
