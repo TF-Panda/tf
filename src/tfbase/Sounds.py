@@ -4,7 +4,7 @@ Builds the sound list from the script file.
 
 import math
 from enum import IntEnum, auto
-from panda3d.core import ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager, PitchShiftDSP, PStatCollector
+from panda3d.core import ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager, PitchShiftDSP, PStatCollector, SteamAudioProperties
 import random
 
 csc_coll = PStatCollector("App:Sounds:CreateSoundClient")
@@ -101,6 +101,7 @@ class SoundInfo:
         self.soundLevel = 0
         # This changes the spatial attenuation of the sound, comes from SNDLVL_X
         self.minDistance = 1.0
+        self.distMult = 1.0
         self.wave = None
         # If there are multiple, we will randomly choose one.
         self.waves = []
@@ -114,6 +115,7 @@ class SoundInfo:
           soundLevel: {self.soundLevel}
           minDist:    {self.minDistance}
           wave:       {self.wave}
+          distMult:   {self.distMult}
           waves       {self.waves}
         """
 
@@ -134,10 +136,22 @@ def createSound(info):
 
     mgr = base.sfxManagerList[info.channel]
     sound = wave.getSound(mgr)
-    if wave.spatialized:
-        sound.set3dMinDistance(info.minDistance)
+    sound.set3dMinDistance(info.minDistance)
+    sound.set3dDistanceFactor(info.distMult)
     sound.setPlayRate(random.uniform(info.pitch[0], info.pitch[1]))
     sound.setVolume(random.uniform(info.volume[0], info.volume[1]))
+    if wave.spatialized:
+        props = SteamAudioProperties()
+        props._enable_occlusion = False
+        props._enable_transmission = False
+        props._enable_air_absorption = False
+        props._enable_reflections = False
+        props._bilinear_hrtf = False
+        #props._enable_pathing = True
+        #props._binaural_pathing = True
+        #props._enable_reflections = True
+        #props._binaural_reflections = False
+        sound.applySteamAudioProperties(props)
 
     return sound
 
@@ -155,7 +169,7 @@ def createSoundByIndex(index, getInfo=False):
     else:
         return (createSound(info), info)
 
-def createSoundClient(index, waveIndex, volume, pitch, pos):
+def createSoundClient(index, waveIndex, volume, pitch, pos, spatialized = False):
     csc_coll.start()
 
     if index >= len(AllSounds):
@@ -176,11 +190,23 @@ def createSoundClient(index, waveIndex, volume, pitch, pos):
     mgr = base.sfxManagerList[info.channel]
     sound = wave.getSound(mgr)
     get_sound_coll.stop()
-    if wave.spatialized:
-        sound.set3dMinDistance(info.minDistance)
+    sound.set3dMinDistance(info.minDistance)
+    sound.set3dDistanceFactor(info.distMult)
     sound.setPlayRate(pitch)
     sound.setVolume(volume)
     sound.set3dAttributes(pos[0], pos[1], pos[2], 0, 0, 0)
+    if wave.spatialized:
+        props = SteamAudioProperties()
+        props._enable_occlusion = False
+        props._enable_transmission = False
+        props._enable_air_absorption = False
+        props._enable_reflections = False
+        props._bilinear_hrtf = False
+        #props._enable_pathing = True
+        #props._binaural_pathing = True
+        #props._enable_reflections = True
+        #props._binaural_reflections = False
+        sound.applySteamAudioProperties(props)
 
     csc_coll.stop()
     return sound
@@ -229,11 +255,8 @@ def processSound(kv):
                 info.soundLevel = int(dbs[:len(dbs) - 3])
             else:
                 info.soundLevel = SoundLevel[value]
-            info.minDistance = soundLevelToDistMult(info.soundLevel)
-            if info.minDistance == 0:
-                info.minDistance = 1
-            else:
-                info.minDistance = 1 / info.minDistance
+            info.distMult = soundLevelToDistMult(info.soundLevel)
+            info.minDistance = 0.01
         elif key == "wave":
             info.wave = Wave()
             if value.startswith(")"):

@@ -144,6 +144,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
 
+        saData = self.lvlData.getSteamAudioSceneData()
+        base.sfxManagerList[0].loadSteamAudioScene(saData.verts, saData.tris, saData.tri_materials, saData.materials)
+        base.sfxManagerList[0].loadSteamAudioReflectionProbeBatch(self.lvlData.getSteamAudioProbeData())
+
         # Initialize the dynamic vis node to the number of visgroups in the
         # new level.
         base.dynRender.node().levelInit(self.lvlData.getNumClusters())
@@ -163,40 +167,100 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         render.setAttrib(LightRampAttrib.makeHdr0())
 
+        numSounds = 0
+        sounds = [
+            "/c/Users/brian/Desktop/Scott-joplin-maple-leaf-rag.mp3",
+            "tfmodels/built_src/sound/ambient/computer_working.wav",
+            "tfmodels/built_src/sound/ambient/computer_tape.wav",
+            "tfmodels/built_src/sound/ambient/machines/wall_loop1.wav",
+            "tfmodels/built_src/sound/ambient/engine_idle.wav",
+            "tfmodels/built_src/sound/ambient/printer.wav"
+        ]
+
         # Check for a fog controller.
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
-            if ent.getClassName() != "env_fog_controller":
-                continue
 
-            self.fogMgr = FogManager()
-            props = ent.getProperties()
+            if ent.getClassName() == "env_fog_controller":
+                if not self.fogMgr:
+                    self.fogMgr = FogManager()
+                    props = ent.getProperties()
 
-            if props.hasAttribute("fogstart"):
-                self.fogMgr.fogStart = props.getAttributeValue("fogstart").getFloat()
-            if props.hasAttribute("fogend"):
-                self.fogMgr.fogEnd = props.getAttributeValue("fogend").getFloat()
-            if props.hasAttribute("fogdir"):
-                props.getAttributeValue("fogdir").toVec3(self.fogMgr.fogDir)
-                self.fogMgr.fogDir.normalize()
-            if props.hasAttribute("fogblend"):
-                self.fogMgr.fogBlend = props.getAttributeValue("fogblend").getBool()
-            if props.hasAttribute("fogcolor"):
-                str_rgb = props.getAttributeValue("fogcolor").getString().split()
-                self.fogMgr.color[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
-                self.fogMgr.color[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
-                self.fogMgr.color[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
-            if props.hasAttribute("fogcolor2"):
-                str_rgb = props.getAttributeValue("fogcolor2").getString().split()
-                self.fogMgr.color2[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
-                self.fogMgr.color2[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
-                self.fogMgr.color2[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
-            if props.hasAttribute("fogenable"):
-                if props.getAttributeValue("fogenable").getBool():
-                    #print("enable")
-                    self.fogMgr.enableFog()
+                    if props.hasAttribute("fogstart"):
+                        self.fogMgr.fogStart = props.getAttributeValue("fogstart").getFloat()
+                    if props.hasAttribute("fogend"):
+                        self.fogMgr.fogEnd = props.getAttributeValue("fogend").getFloat()
+                    if props.hasAttribute("fogdir"):
+                        props.getAttributeValue("fogdir").toVec3(self.fogMgr.fogDir)
+                        self.fogMgr.fogDir.normalize()
+                    if props.hasAttribute("fogblend"):
+                        self.fogMgr.fogBlend = props.getAttributeValue("fogblend").getBool()
+                    if props.hasAttribute("fogcolor"):
+                        str_rgb = props.getAttributeValue("fogcolor").getString().split()
+                        self.fogMgr.color[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
+                        self.fogMgr.color[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
+                        self.fogMgr.color[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+                    if props.hasAttribute("fogcolor2"):
+                        str_rgb = props.getAttributeValue("fogcolor2").getString().split()
+                        self.fogMgr.color2[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
+                        self.fogMgr.color2[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
+                        self.fogMgr.color2[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+                    if props.hasAttribute("fogenable"):
+                        if props.getAttributeValue("fogenable").getBool():
+                            #print("enable")
+                            self.fogMgr.enableFog()
+            elif ent.getClassName() == "info_null":
+                props = ent.getProperties()
+                origin = Vec3()
+                props.getAttributeValue("origin").toVec3(origin)
+                snd = base.loader.loadSfx(sounds[numSounds])
+                numSounds += 1
+                snd.set3dDistanceFactor(0.008)
+                snd.set3dAttributes(origin[0], origin[1], origin[2], 0.0, 0.0, 0.0)
+                sprops = SteamAudioProperties()
+                sprops._enable_occlusion = True
+                sprops._enable_transmission = True
+                sprops._enable_pathing = True
+                sprops._binaural_pathing = True
+                sprops._enable_distance_atten = True
+                sprops._enable_air_absorption = True
+                sprops._bilinear_hrtf = True
+                snd.applySteamAudioProperties(sprops)
+                snd.setLoop(True)
+                snd.play()
+                sm = loader.loadModel("models/misc/smiley")
+                sm.setPos(origin)
+                sm.reparentTo(base.dynRender)
+                sm.setTextureOff(1)
+                sm.setEffect(MapLightingEffect.make())
+                sm.setScale(8)
 
-            break
+        self.snd1 = base.loader.loadSfx("ambient/indoors.wav")
+        self.snd1.setVolume(0.6)
+        self.snd1.setLoop(True)
+        #base.audio3ds[0].attachSoundToObject(self.snd1, base.cam)
+        #self.snd1.play()
+        self.snd2 = base.loader.loadSfx("ambient/lighthum.wav")
+        self.snd2.setVolume(0.05)
+        self.snd2.setLoop(True)
+        #base.audio3ds[0].attachSoundToObject(self.snd2, base.cam)
+        #self.snd2.play()
+
+        #base.vmRender.hide()
+        #base.render2d.hide()
+
+        #smc = loader.loadModel("models/misc/smiley.bam")
+
+        #smDebugVis = base.render.attachNewNode(DynamicVisNode("ambient-probe-debug"))
+        #smDebugVis.node().levelInit(self.lvlData.getNumClusters())
+        #print(self.lvlData.getNumAmbientProbes(), "ambient probes")
+        #for i in range(self.lvlData.getNumAmbientProbes()):
+        #    probe = self.lvlData.getAmbientProbe(i)
+        #    sm = smc.copyTo(smDebugVis)
+        #    sm.setScale(8)
+        #    sm.setPos(probe._pos)
+        #    sm.setTextureOff(1)
+        #    sm.reparentTo(smDebugVis)
 
     def delete(self):
         del base.game
@@ -209,6 +273,15 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             play_sound_coll.start()
             sound.play()
             play_sound_coll.stop()
+
+    def emitSoundSpatial(self, soundIndex, waveIndex, volume, pitch, doId, offset):
+        """
+        Plays a spatialized sound, attached to and offset from the given entity.
+        """
+        ent = base.cr.doId2do.get(doId)
+        if not ent:
+            return
+
 
     def doExplosion(self, pos, scale):
         root = base.dynRender.attachNewNode("expl")

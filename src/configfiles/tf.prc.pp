@@ -109,7 +109,7 @@ shadow-depth-bits 24
 
 fmod-speaker-mode stereo
 fmod-audio-preload-threshold -1
-fmod-mixer-sample-rate 192000
+fmod-mixer-sample-rate 44100
 
 viewmodel-fov 54
 fov 90

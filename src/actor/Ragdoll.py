@@ -24,9 +24,13 @@ class Ragdoll(PhysRagdoll):
     def __init__(self, characterNp, collInfo):
         PhysRagdoll.__init__(self, characterNp)
         for hard in HardSounds:
-            self.addHardImpactSound(base.audio3ds[0].loadSfx(hard))
+            sound = base.audio3ds[0].loadSfx(hard)
+            sound.set3dDistanceFactor(0.07)
+            self.addHardImpactSound(sound)
         for soft in SoftSounds:
-            self.addSoftImpactSound(base.audio3ds[0].loadSfx(soft))
+            sound.set3dDistanceFactor(0.07)
+            sound = base.audio3ds[0].loadSfx(soft)
+            self.addSoftImpactSound(sound)
         #self.setDebug(True, 4.0)
         self.task = None
         self.collInfo = collInfo

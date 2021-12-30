@@ -72,13 +72,13 @@ class TFBase(ShowBase, FSM):
         if True:#self.postProcess.enableHDR:
             self.render.setAttrib(LightRampAttrib.makeIdentity())
 
-        self.musicManager.setVolume(self.config.GetFloat('music-volume', 0.1))
+        self.musicManager.setVolume(self.config.GetFloat('music-volume', 1))
 
         self.audio3ds = []
         for mgr in base.sfxManagerList:
-            mgr.setVolume(base.config.GetFloat("sfx-volume", 0.1))
+            mgr.setVolume(base.config.GetFloat("sfx-volume", 1))
             audio3d = Audio3DManager(mgr, self.cam, self.render)
-            audio3d.setDistanceFactor(1/0.02032)
+            audio3d.setDistanceFactor(1)
             self.audio3ds.append(audio3d)
 
         self.setBackgroundColor(0, 0, 0)
