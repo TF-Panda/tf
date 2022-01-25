@@ -136,12 +136,12 @@ class DistributedTFPlayerShared:
         if result.hasBlock():
             # Bullet hit something!
             block = result.getBlock()
-            if not IS_CLIENT:
-                if self.owner is not None:
-                    exclude = [self.owner]
-                else:
-                    exclude = []
-                base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
+            #if not IS_CLIENT:
+            #    if self.owner is not None:
+            #        exclude = [self.owner]
+            #    else:
+            #        exclude = []
+            #    base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
             #else:
             #    base.game.doTracer(info['tracerOrigin'], block.getPosition())
             actor = block.getActor()

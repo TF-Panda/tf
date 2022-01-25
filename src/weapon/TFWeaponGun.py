@@ -104,6 +104,7 @@ class TFWeaponGun(BaseClass):
         self.updatePunchAngles(player)
 
     def doFireEffects(self):
+        return
         if IS_CLIENT:
             if base.cr.prediction.firstTimePredicted:
                 if self.isOwnedByLocalPlayer():
@@ -225,12 +226,12 @@ class TFWeaponGun(BaseClass):
         origin = self.player.getEyePosition()
         angles = self.player.viewAngles
         tracerOrigin = origin
-        if IS_CLIENT:
-            muzzle = self.viewModelChar.find("**/muzzle")
-        else:
-            muzzle = self.find("**/muzzle")
-        if not muzzle.isEmpty():
-            tracerOrigin = muzzle.getPos(base.render)
+        #if IS_CLIENT:
+        #    muzzle = self.viewModelChar.find("**/muzzle")
+        #else:
+        #    muzzle = self.find("**/muzzle")
+        #if not muzzle.isEmpty():
+        #    tracerOrigin = muzzle.getPos(base.render)
         fireBullets(self.player, origin, angles, self,
                     self.weaponMode,
                     base.net.predictionRandomSeed & 255,
