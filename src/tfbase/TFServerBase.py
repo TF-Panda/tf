@@ -53,7 +53,7 @@ class TFServerBase(HostBase):
         self.air = self.sv
         self.sr = self.sv
         self.net = self.sv
-        self.sv.game.changeLevel("test_steam_audio")
+        self.sv.game.changeLevel("tr_target")
 
         precacheList = [
             "models/buildables/sentry1",
