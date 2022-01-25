@@ -210,11 +210,6 @@ class TFPostProcess(PostProcess):
             self.hdr = HDREffect(self)
             self.addEffect(self.hdr)
 
-        # Then antialias it.
-        if self.enableFXAA:
-            self.fxaa = FXAA_Effect(self)
-            self.addEffect(self.fxaa)
-
         # Then apply bloom.
         if self.enableBloom:
             self.bloom = BloomEffect(self)
@@ -224,6 +219,11 @@ class TFPostProcess(PostProcess):
         if self.enableToneMapping:
             self.toneMapping = ToneMappingEffect(self)
             self.addEffect(self.toneMapping)
+
+        # Then antialias it.
+        if self.enableFXAA:
+            self.fxaa = FXAA_Effect(self)
+            self.addEffect(self.fxaa)
 
         #if self.enableSSAO:
         #    self.ssao = SSAO_Effect(self, SSAO_Effect.M_HBAO)
