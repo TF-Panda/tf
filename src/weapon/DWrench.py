@@ -41,9 +41,9 @@ class DWrench(TFWeaponMelee):
     def onFriendlyBuildingHit(self, bldg):
         usefulHit = bldg.inputWrenchHit(self.player)
         if usefulHit:
-            self.playSound("Weapon_Wrench.HitBuilding_Success")
+            self.playSound("Weapon_Wrench.HitBuilding_Success", False)
         else:
-            self.playSound("Weapon_Wrench.HitBuilding_Failure")
+            self.playSound("Weapon_Wrench.HitBuilding_Failure", False)
 
     def smack(self):
         # See if we can hit an object with a higher range.
