@@ -127,6 +127,12 @@ class TFBase(ShowBase, FSM):
 
         self.enableParticles()
 
+        # Play a constantly looping silence sound so the reverb always has
+        # an input and doesn't go idle and cut off.
+        self.silenceSound = self.loadSfx("audio/sfx/silence.wav")
+        self.silenceSound.setLoop(True)
+        self.silenceSound.play()
+
     def toggleBounds(self):
         self.showingBounds = not self.showingBounds
         if self.showingBounds:
