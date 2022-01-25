@@ -208,8 +208,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                     if props.hasAttribute("fogenable"):
                         if props.getAttributeValue("fogenable").getBool():
                             #print("enable")
-                            self.fogMgr.enableFog()
+                            #self.fogMgr.enableFog()
+                            pass
             elif ent.getClassName() == "info_null":
+                pass
                 props = ent.getProperties()
                 origin = Vec3()
                 props.getAttributeValue("origin").toVec3(origin)
@@ -261,6 +263,24 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #    sm.setPos(probe._pos)
         #    sm.setTextureOff(1)
         #    sm.reparentTo(smDebugVis)
+
+        # Pre-render the entire scene to get all data uploaded and shaders compiled.
+        print("Pre-rendering level...")
+        root = self.lvl.find("**/+MapRoot")
+        visNodes = base.render.findAllMatches("**/+DynamicVisNode")
+        base.render.node().setBounds(OmniBoundingVolume())
+        base.render.node().setFinal(True)
+        root.node().setPvsCull(False)
+        for node in visNodes:
+            node.node().setCullingEnabled(False)
+        # Pre-render now.
+        base.graphicsEngine.renderFrame()
+        base.render.node().clearBounds()
+        base.render.node().setFinal(False)
+        root.node().setPvsCull(True)
+        for node in visNodes:
+            node.node().setCullingEnabled(True)
+        print("Pre-render finished.")
 
     def delete(self):
         del base.game
