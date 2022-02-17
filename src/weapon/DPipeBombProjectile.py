@@ -62,7 +62,7 @@ class DPipeBombProjectile(BaseClass):
             return task.done
 
         def explode(self, ent):
-            self.emitSound("Weapon_Grenade_Pipebomb.Explode")
+            self.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode")
             base.game.d_doExplosion(self.getPos(), Vec3(7))
 
             self.removeTask(self.uniqueName('explodeTask'))
@@ -86,7 +86,7 @@ class DPipeBombProjectile(BaseClass):
                 self.removeTask(self.uniqueName('directHitTest'))
                 self.doingDirectTest = False
 
-            self.emitSound("Weapon_Grenade_Pipebomb.Bounce")
+            self.emitSoundSpatial("Weapon_Grenade_Pipebomb.Bounce")
 
         def __directHitTest(self, task):
             """
@@ -130,6 +130,15 @@ class DPipeBombProjectile(BaseClass):
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
             self.reparentTo(base.dynRender)
+            # Hide the pipe bomb for the first 0.1 seconds of its life to hide
+            # interpolation artifacts.  Same thing is done with rocket
+            # projectiles.
+            self.hide()
+            self.addTask(self.__showTask, self.uniqueName('showPipeBomb'), appendTask=True, delay=0.1)
+
+        def __showTask(self, task):
+            self.show()
+            return task.done
 
 if not IS_CLIENT:
     DPipeBombProjectileAI = DPipeBombProjectile

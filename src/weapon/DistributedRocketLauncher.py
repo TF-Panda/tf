@@ -5,10 +5,11 @@ from tf.tfbase import TFLocalizer
 from tf.tfbase.TFGlobals import DamageType
 from .WeaponMode import TFWeaponMode, TFProjectileType
 
-class DRocketLauncher(TFWeaponGun):
+class DistributedRocketLauncher(TFWeaponGun):
 
     WeaponModel = "models/weapons/c_rocketlauncher"
-    WeaponViewModel = "models/weapons/c_rocketlauncher"
+    WeaponViewModel = "models/weapons/v_rocketlauncher_soldier"
+    UsesViewModel = True
 
     def __init__(self):
         TFWeaponGun.__init__(self)
@@ -39,5 +40,5 @@ class DRocketLauncher(TFWeaponGun):
         return "Weapon_RPG.WorldReload"
 
 if not IS_CLIENT:
-    DRocketLauncherAI = DRocketLauncher
-    DRocketLauncherAI.__name__ = 'DRocketLauncherAI'
+    DistributedRocketLauncherAI = DistributedRocketLauncher
+    DistributedRocketLauncherAI.__name__ = 'DistributedRocketLauncherAI'

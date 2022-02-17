@@ -11,3 +11,4 @@ class PlayerAnimEvent(IntEnum):
     Flinch = 7
     AttackPre = 8
     AttackPost = 9
+    DoubleJump = 10

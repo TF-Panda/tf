@@ -84,6 +84,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.clientSideAnimation = True
 
+    def pushExpression(self, name):
+        self.sendUpdate('pushExpression', [name])
+
     def shouldCollide(self, collisionGroup, contentsMask):
         #print("Should collide?", collisionGroup, contentsMask)
         if collisionGroup == CollisionGroup.PlayerMovement or collisionGroup == CollisionGroup.Rockets:
@@ -117,7 +120,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             q = Quat()
             q.setHpr(Vec3(self.viewAngles[0], 0, 0))
             fwd = q.getForward()
-            startPos = self.getPos() + (fwd * 64)
+            startPos = (self.getPos() + (fwd * 64)) + Point3(0, 0, 8)
             # Trace down to get to the floor.
             result = PhysRayCastResult()
             hadHit = base.physicsWorld.raycast(
@@ -273,6 +276,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             # Flinch the camera up.
             self.punchAngle[1] = 2
 
+            # Look in pain.
+            self.pushExpression('pain')
+
             now = globalClock.getFrameTime()
             # Do sharp pain for local avatar and other players, severe for
             # player that did the damage.
@@ -320,6 +326,16 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         else:
             dmgPos = Point3()
             dmgType = DamageType.Generic
+
+        if info:
+            if info.inflictor and isinstance(info.inflictor, BaseObject):
+                killer = info.inflictor.doId
+            else:
+                killer = info.attacker.doId
+            base.net.game.sendUpdate('killEvent', [killer, -1, -1, self.doId])
+        else:
+            # Suicide.
+            base.net.game.sendUpdate('killEvent', [self.doId, -1, -1, self.doId])
 
         # Become a ragdoll.
         #print("Die at forcejoit", self.forceJoint, "force", self.bulletForce + self.velocity)
@@ -371,7 +387,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             freezeSoundLength = 0.3
             freezeSoundTime = (self.deathTime + TF_DEATH_ANIMATION_TIME) + spec_freeze_traveltime.getValue() - freezeSoundLength
             if now >= freezeSoundTime:
-                base.net.game.d_emitSound("TFPlayer.FreezeCam", Point3(), self.owner)
+                self.emitSound("TFPlayer.FreezeCam", client=self.owner)
                 self.playedFreezeSound = True
 
         if now >= (self.deathTime + TF_DEATH_ANIMATION_TIME): # allow x seconds death animation/death cam
@@ -436,6 +452,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.stripWeapons()
         self.tfClass = cls
         self.classInfo = ClassInfos[self.tfClass]
+        self.updateClassSpeed()
         self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
         self.maxHealth = self.classInfo.MaxHealth
         self.health = self.maxHealth

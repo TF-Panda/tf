@@ -122,7 +122,7 @@ class BaseRocket(BaseClass):
 
             # Save this enemy, they will take 100% damage.
             self.enemy = ent
-            self.emitSound("BaseExplosionEffect.Sound")
+            self.emitSoundSpatial("BaseExplosionEffect.Sound")
             base.game.d_doExplosion(self.getPos(), Vec3(7))
 
             #print("pos", self.getPos())

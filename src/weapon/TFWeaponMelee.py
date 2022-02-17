@@ -40,7 +40,7 @@ class TFWeaponMelee(TFWeapon):
         self.swing()
 
         if not IS_CLIENT:
-            self.player.sendUpdate('makeAngry')
+            self.player.pushExpression('specialAction')
 
         # TODO: speak weapon fire
 
@@ -52,10 +52,14 @@ class TFWeaponMelee(TFWeapon):
         self.inAttack2 = True
         self.nextSecondaryAttack = globalClock.getFrameTime() + 0.5
 
+    def doViewModelAnimation(self):
+        self.sendWeaponAnim(Activity.VM_Fire)
+
     def swing(self):
         player = self.player
         player.doAnimationEvent(PlayerAnimEvent.AttackPrimary)
-        self.sendWeaponAnim(Activity.VM_Fire)
+
+        self.doViewModelAnimation()
 
         self.nextPrimaryAttack = globalClock.getFrameTime() + self.weaponData[self.weaponMode]['timeFireDelay']
         self.timeWeaponIdle = self.nextPrimaryAttack + self.weaponData[self.weaponMode]['timeIdleEmpty']

@@ -4,10 +4,11 @@ from .WeaponMode import TFWeaponType, TFWeaponMode
 
 from tf.tfbase import TFLocalizer
 
-class DBottle(TFWeaponMelee):
+class DistributedBottle(TFWeaponMelee):
 
     WeaponModel = "models/weapons/c_bottle"
-    WeaponViewModel = "models/weapons/c_bottle"
+    WeaponViewModel = "models/weapons/v_bottle_demoman"
+    UsesViewModel = True
 
     def __init__(self):
         TFWeaponMelee.__init__(self)
@@ -29,5 +30,5 @@ class DBottle(TFWeaponMelee):
         return TFLocalizer.Bottle
 
 if not IS_CLIENT:
-    DBottleAI = DBottle
-    DBottleAI.__name__ = 'DBottleAI'
+    DistributedBottleAI = DistributedBottle
+    DistributedBottleAI.__name__ = 'DistributedBottleAI'

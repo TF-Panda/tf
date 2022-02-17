@@ -4,10 +4,11 @@ from .WeaponMode import TFWeaponType, TFWeaponMode
 
 from tf.tfbase import TFLocalizer
 
-class DShovel(TFWeaponMelee):
+class DistributedShovel(TFWeaponMelee):
 
     WeaponModel = "models/weapons/c_shovel"
-    WeaponViewModel = "models/weapons/c_shovel"
+    WeaponViewModel = "models/weapons/v_shovel_soldier"
+    UsesViewModel = True
 
     def __init__(self):
         TFWeaponMelee.__init__(self)
@@ -29,5 +30,5 @@ class DShovel(TFWeaponMelee):
         return TFLocalizer.Shovel
 
 if not IS_CLIENT:
-    DShovelAI = DShovel
-    DShovelAI.__name__ = 'DShovelAI'
+    DistributedShovelAI = DistributedShovel
+    DistributedShovelAI.__name__ = 'DistributedShovelAI'

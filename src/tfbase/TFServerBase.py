@@ -53,7 +53,7 @@ class TFServerBase(HostBase):
         self.air = self.sv
         self.sr = self.sv
         self.net = self.sv
-        self.sv.game.changeLevel("tr_target")
+        self.sv.game.changeLevel("cp_granary")
 
         precacheList = [
             "models/buildables/sentry1",

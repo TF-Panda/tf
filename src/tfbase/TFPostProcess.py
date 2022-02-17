@@ -51,9 +51,9 @@ class TFPostProcess(PostProcess):
         base.accept('f2', self.incExposureBias)
 
         #self.setupHBAOControls()
-        #if self.enableHDR:
-        #    self.setupCamDebugs()
-        #    taskMgr.add(self.updateCamDebugs, "updateCamDebugs")
+        if self.enableHDR:
+            self.setupCamDebugs()
+            taskMgr.add(self.updateCamDebugs, "updateCamDebugs")
 
     def addCamDebug(self):
         self.camDebugs.append(OnscreenText("", align = TextNode.ALeft, scale = 0.1, pos = (0.05, self.camDebugZ), parent=base.a2dTopLeft, fg = (1, 1, 1, 1), shadow=(0, 0, 0, 1)))
@@ -205,15 +205,15 @@ class TFPostProcess(PostProcess):
             self.mb.setSceneCamera(base.cam)
             self.addEffect(self.mb)
 
-        # First expose the image.
-        if self.enableHDR:
-            self.hdr = HDREffect(self)
-            self.addEffect(self.hdr)
-
         # Then apply bloom.
         if self.enableBloom:
             self.bloom = BloomEffect(self)
             self.addEffect(self.bloom)
+
+        # First expose the image.
+        if self.enableHDR:
+            self.hdr = HDREffect(self)
+            self.addEffect(self.hdr)
 
         # Then tone map it.
         if self.enableToneMapping:

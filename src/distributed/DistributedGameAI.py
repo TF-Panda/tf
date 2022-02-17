@@ -9,13 +9,6 @@ from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateExplosiveDamageFor
 from tf.tfbase.TFGlobals import Contents, DamageType, TakeDamage, CollisionGroup, GameZone
 from tf.player.TFClass import *
 from .DTestCharAI import DTestCharAI
-from tf.weapon.DShotgun import DShotgunAI
-from tf.weapon.DWrench import DWrenchAI
-from tf.weapon.DShotgunSecondary import DShotgunSecondaryAI
-from tf.weapon.DPistol import DPistolAI
-from tf.weapon.DRocketLauncher import DRocketLauncherAI
-from tf.weapon.DBottle import DBottleAI
-from tf.weapon.DShovel import DShovelAI
 from tf.object.BaseObject import BaseObject
 
 import random
@@ -185,15 +178,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 do.takeDamage(adjustedInfo)
 
             # TODO: hit all triggers
-
-    def d_emitSound(self, soundName, origin, client = None, excludeClients = []):
-        #print("d_emitSound", soundName, origin)
-        soundInfo = Sounds.createSoundServer(soundName, origin)
-        #print(soundInfo)
-        if soundInfo == None:
-            return
-
-        self.sendUpdate('emitSound', soundInfo, client = client, excludeClients = excludeClients)
 
     def d_doTracers(self, origin, ends, excludeClients = []):
         self.sendUpdate('doTracers', [origin, ends], excludeClients = excludeClients)

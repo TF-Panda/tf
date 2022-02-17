@@ -21,6 +21,8 @@ MG_STATE_SPINNING = 3
 MG_STATE_DRYFIRE = 4
 
 MAX_BARREL_SPIN_VELOCITY = 20
+BARREL_WIND_DOWN_SPEED = 6.666667 # 3 seconds to wind down.
+BARREL_WIND_UP_SPEED = 20 # 1 second to wind up.
 
 class DMinigun(TFWeaponGun):
 
@@ -55,6 +57,7 @@ class DMinigun(TFWeaponGun):
         self.weaponData[TFWeaponMode.Primary].update({
             'spread': 0.08,
             'damage': 9,
+            'range': 8192,
             'timeFireDelay': 0.1,
             'bulletsPerShot': 4
         })
@@ -62,6 +65,8 @@ class DMinigun(TFWeaponGun):
 
         if IS_CLIENT:
             self.addPredictionField("weaponState", int)
+            self.addPredictionField("barrelTargetVelocity", float)
+            self.addPredictionField("barrelAccelSpeed", float)
 
     def getName(self):
         return TFLocalizer.Minigun
@@ -72,6 +77,7 @@ class DMinigun(TFWeaponGun):
         self.barrelCurrVelocity = 0.0
         self.barrelTargetVelocity = 0.0
         self.barrelAngle = 0.0
+        self.barrelAccelSpeed = BARREL_WIND_UP_SPEED
         self.currSoundId = -1
         self.currSound = None
         self.weaponState = MG_STATE_IDLE
@@ -93,10 +99,16 @@ class DMinigun(TFWeaponGun):
 
             if self.barrelCurrVelocity != self.barrelTargetVelocity:
                 # Update barrel velocity to bing it up to speed or to rest
-                self.barrelCurrVelocity = TFGlobals.approach(self.barrelTargetVelocity, self.barrelCurrVelocity, 0.1)
+                self.barrelCurrVelocity = TFGlobals.approach(self.barrelTargetVelocity,
+                    self.barrelCurrVelocity, self.barrelAccelSpeed * globalClock.getDt())
+
+            #print("barrel curr vel", self.barrelCurrVelocity)
+            #print("barrel target", self.barrelTargetVelocity)
 
             # Update the barrel rotation based on current velo.
             self.barrelAngle += self.barrelCurrVelocity * globalClock.getDt()
+
+            #print("barrel angle", self.barrelAngle)
 
             barrelAngleDeg = rad2Deg(self.barrelAngle)
             # Update view and world model control joints with new angle.
@@ -112,6 +124,7 @@ class DMinigun(TFWeaponGun):
             self.barrelAngle = 0
             self.barrelCurrVelocity = 0
             self.barrelTargetVelocity = 0
+            self.barrelAccelSpeed = BARREL_WIND_UP_SPEED
             self.barrelControlJoints = []
             # Create a node to control the barrel joint with.  We will animate this
             # node to spin the barrel.
@@ -120,28 +133,32 @@ class DMinigun(TFWeaponGun):
 
         def stopWeaponSound(self):
             if self.currSound:
-                self.currSound[0].stop()
-                base.audio3ds[self.currSound[1].channel].detachSound(self.currSound[0])
+                self.currSound.stop()
+                #base.audio3ds[self.currSound[1].channel].detachSound(self.currSound[0])
                 self.currSound = None
 
         def weaponSoundUpdate(self):
             sound = -1
+            loop = False
             if self.weaponState == MG_STATE_IDLE:
                 if self.barrelCurrVelocity > 0:
                     sound = self.SoundWindDown
-                    if IS_CLIENT:
-                        if self.barrelTargetVelocity > 0:
-                            self.barrelTargetVelocity = 0
+                    #if IS_CLIENT:
+                    #    if self.barrelTargetVelocity > 0:
+                    #        self.barrelTargetVelocity = 0
                 else:
                     sound = -1
             elif self.weaponState == MG_STATE_STARTFIRING:
                 sound = self.SoundWindUp
             elif self.weaponState == MG_STATE_FIRING:
                 sound = self.SoundFire
+                loop = True
             elif self.weaponState == MG_STATE_SPINNING:
                 sound = self.SoundSpin
+                loop = True
             elif self.weaponState == MG_STATE_DRYFIRE:
                 sound = self.SoundDryFire
+                loop = True
 
             if sound == self.currSoundId:
                 return
@@ -152,17 +169,21 @@ class DMinigun(TFWeaponGun):
             if self.currSoundId == -1:
                 return
 
-            self.currSound = Sounds.createSoundByName(self.Sounds[sound], True)
-            base.audio3ds[self.currSound[1].channel].attachSoundToObject(self.currSound[0], self.player)
-            self.currSound[0].setLoop(True)
-            self.currSound[0].play()
+            spatialize = not self.isOwnedByLocalPlayer()
+            self.currSound = Sounds.createSoundByName(self.Sounds[sound], False, spatialize)
+            if self.currSound:
+                self.currSound.setLoop(loop)
+                if spatialize:
+                    offset = self.player.getWorldSpaceCenter() - self.getPos(base.render)
+                    self.registerSpatialSound(self.currSound, offset)
+                self.currSound.play()
 
     def windUp(self):
         if not self.player:
             return
 
         # Play wind-up animation and sound
-        self.sendWeaponAnim(Activity.Primary_Attack_Stand_Prefire)
+        self.sendWeaponAnim(Activity.Attack_Stand_Prefire)
 
         # Set the appropriate firing state
         self.weaponState = MG_STATE_STARTFIRING
@@ -171,6 +192,7 @@ class DMinigun(TFWeaponGun):
             self.weaponSoundUpdate()
 
         self.player.setCondition(self.player.CondAiming)
+        self.player.updateClassSpeed()
 
         # TODO: update player's speed
 
@@ -180,7 +202,7 @@ class DMinigun(TFWeaponGun):
         if not self.player:
             return
 
-        self.sendWeaponAnim(Activity.Primary_Attack_Stand_Postfire)
+        self.sendWeaponAnim(Activity.Attack_Stand_Postfire)
 
         # Set the appropriate firing state.
         self.weaponState = MG_STATE_IDLE
@@ -192,9 +214,12 @@ class DMinigun(TFWeaponGun):
         # Time to weapon idle.
         self.timeWeaponIdle = globalClock.getFrameTime() + 2
 
+        self.player.updateClassSpeed()
+
         # TODO: update player's speed
 
         self.barrelTargetVelocity = 0
+        self.barrelAccelSpeed = BARREL_WIND_DOWN_SPEED
 
     def weaponIdle(self):
         now = globalClock.getFrameTime()
@@ -215,15 +240,17 @@ class DMinigun(TFWeaponGun):
         self.timeWeaponIdle = now + 12.5 # How long till we do this again.
 
     def sendWeaponAnim(self, act):
-        if IS_CLIENT:
+        if True:#IS_CLIENT:
             # Client procedurally animates the barrel joint.
-            if act == Activity.Primary_Attack_Stand or \
-                act == Activity.Primary_Attack_Stand_Prefire:
+            if act == Activity.Attack_Stand or \
+                act == Activity.Attack_Stand_Prefire:
 
                 self.barrelTargetVelocity = MAX_BARREL_SPIN_VELOCITY
+                self.barrelAccelSpeed = BARREL_WIND_UP_SPEED
 
-            elif act == Activity.Primary_Attack_Stand_Postfire:
+            elif act == Activity.Attack_Stand_Postfire:
                 self.barrelTargetVelocity = 0
+                self.barrelAccelSpeed = BARREL_WIND_DOWN_SPEED
 
         # When we start firing, play the startup anim first.
         if act == Activity.VM_Fire:

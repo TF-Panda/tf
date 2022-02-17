@@ -16,9 +16,6 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
 
     doEffects = False
 
-    if not tracerOrigin:
-        tracerOrigin = origin
-
     q = Quat()
     q.setHpr(angles)
     forward = q.getForward()

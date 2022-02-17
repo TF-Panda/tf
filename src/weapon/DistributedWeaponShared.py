@@ -16,6 +16,8 @@ class DistributedWeaponShared:
 
     WeaponModel = None
     WeaponViewModel = None
+    UsesViewModel = False
+    HideWeapon = False
 
     def __init__(self):
         self.ammo = 0
@@ -429,12 +431,14 @@ class DistributedWeaponShared:
             self.viewModel = None
 
     def generate(self):
-        self.viewModelChar = Char()
-        self.viewModelChar.loadModel(self.WeaponViewModel)
+        if not self.UsesViewModel:
+            self.viewModelChar = Char()
+            self.viewModelChar.loadModel(self.WeaponViewModel)
 
     def delete(self):
-        self.viewModelChar.clearModel()
-        self.viewModelChar = None
+        if self.viewModelChar:
+            self.viewModelChar.clearModel()
+            self.viewModelChar = None
         self.player = None
         self.viewModel = None
 

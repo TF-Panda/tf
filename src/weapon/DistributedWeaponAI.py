@@ -10,13 +10,19 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
         self.clientSideAnimation = True
 
     def activate(self):
+        if self.UsesViewModel:
+            self.player.viewModel.setModel(self.WeaponViewModel)
+
         DistributedWeaponShared.activate(self)
-        # Parent the world model to the player.
-        self.reparentTo(self.player.modelNp)
-        self.setJointMergeCharacter(self.player.character)
+        if not self.HideWeapon:
+            # Parent the world model to the player.
+            self.reparentTo(self.player.modelNp)
+            self.setJointMergeCharacter(self.player.character)
 
     def deactivate(self):
         self.reparentTo(base.hidden)
+        if self.UsesViewModel:
+            self.player.viewModel.setModel(self.player.classInfo.ViewModel)
         DistributedWeaponShared.deactivate(self)
 
     def playSound(self, soundName, predicted=True):
@@ -38,7 +44,12 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
 
         # Only the AI side, don't send the sound to the player that is using
         # weapon, as they should have already predicted the sound.
-        base.net.game.d_emitSound(soundName, self.player.getWorldSpaceCenter(), excludeClients=exclude)
+
+        # Make it spatial for other players, non-spatial for the player.
+        offset = self.player.getWorldSpaceCenter() - self.getPos(base.render)
+        if not predicted:
+            self.emitSound(soundName, client=self.player.owner)
+        self.emitSoundSpatial(soundName, offset, excludeClients=exclude)
 
     def delete(self):
         DistributedCharAI.delete(self)

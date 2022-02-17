@@ -81,11 +81,11 @@ class SentryGun(BaseObject):
 
     if not IS_CLIENT:
 
-        def onKilled(self, killer):
+        def onKilled(self, info):
             bldr = self.getBuilder()
-            if bldr:
+            if bldr and not bldr.isDead():
                 bldr.d_speak("Engineer.AutoDestroyedSentry01")
-            BaseObject.onKilled(self, killer)
+            BaseObject.onKilled(self, info)
 
         def onKillEntity(self, ent):
             # Don't count killing the engineer.
@@ -134,10 +134,10 @@ class SentryGun(BaseObject):
                 self.setModel("models/buildables/sentry2")
             elif self.level == 3:
                 self.setModel("models/buildables/sentry3")
-            self.emitSound("Building_Sentrygun.Built")
+            self.emitSoundSpatial("Building_Sentrygun.Built")
 
         def onFinishConstruction(self):
-            self.emitSound("Building_Sentrygun.Built")
+            self.emitSoundSpatial("Building_Sentrygun.Built")
 
         def onBecomeActive(self):
             if self.level > 1:
@@ -278,8 +278,8 @@ class SentryGun(BaseObject):
                 # Play one sound to everyone but the target.
                 if target.__class__.__name__ == 'DistributedTFPlayerAI':
                     # Play a specific sound just to the target.
-                    self.emitSound("Building_Sentrygun.AlertTarget", client=target.owner)
-                self.emitSound("Building_Sentrygun.Alert", excludeClients=[target.owner])
+                    self.emitSoundSpatial("Building_Sentrygun.AlertTarget", client=target.owner)
+                self.emitSoundSpatial("Building_Sentrygun.Alert", excludeClients=[target.owner])
 
             # Update timers, we are attacking now!
             self.sentryState = SentryState.Attacking
@@ -351,7 +351,7 @@ class SentryGun(BaseObject):
                 src = trans.getPos()
                 #ang = trans.getHpr()
 
-                midEnemy = self.enemy.getEyePosition() - (0, 0, 5)
+                midEnemy = self.enemy.getWorldSpaceCenter()
                 aimDir = midEnemy - src
                 distToTarget = aimDir.length()
                 aimDir.normalize()
@@ -371,11 +371,11 @@ class SentryGun(BaseObject):
                 self.fireBullets(info)
 
                 if self.level == 1:
-                    self.emitSound("Building_Sentrygun.Fire")
+                    self.emitSoundSpatial("Building_Sentrygun.Fire")
                 elif self.level == 2:
-                    self.emitSound("Building_Sentrygun.Fire2")
+                    self.emitSoundSpatial("Building_Sentrygun.Fire2")
                 elif self.level == 3:
-                    self.emitSound("Building_Sentrygun.Fire3")
+                    self.emitSoundSpatial("Building_Sentrygun.Fire3")
 
                 self.ammoShells -= 1
 
@@ -386,7 +386,7 @@ class SentryGun(BaseObject):
                                   restart = False)
 
                 # Out of ammo, play click.
-                self.emitSound("Building_Sentrygun.Empty")
+                self.emitSoundSpatial("Building_Sentrygun.Empty")
 
             return True
 
@@ -479,15 +479,15 @@ class SentryGun(BaseObject):
                 # Change direction
 
                 if self.isDisabled():
-                    self.emitSound("Building_Sentrygun.Disabled")
+                    self.emitSoundSpatial("Building_Sentrygun.Disabled")
                     self.goalAngles.y = 30
                 else:
                     if self.level == 1:
-                        self.emitSound("Building_Sentrygun.Idle")
+                        self.emitSoundSpatial("Building_Sentrygun.Idle")
                     elif self.level == 2:
-                        self.emitSound("Building_Sentrygun.Idle2")
+                        self.emitSoundSpatial("Building_Sentrygun.Idle2")
                     elif self.level == 3:
-                        self.emitSound("Building_Sentrygun.Idle3")
+                        self.emitSoundSpatial("Building_Sentrygun.Idle3")
 
                     # Switch rotation direction
                     if self.turningRight:

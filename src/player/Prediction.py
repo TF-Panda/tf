@@ -415,6 +415,7 @@ class Prediction(DirectObject):
 
             base.setFrameTime(frameTime)
             base.setDeltaTime(base.intervalPerTick)
+            base.setTickCount(cmd.tickCount)
 
             # Call untouch on any entities no longer predicted to be touching.
             #self.untouch() # TODO
@@ -456,6 +457,7 @@ class Prediction(DirectObject):
             # Always reset.
             base.setFrameTime(frameTime)
             base.setDeltaTime(base.intervalPerTick)
+            base.setTickCount(cmd.tickCount)
 
             p = self.predictables[i]
             if not p:
@@ -497,7 +499,7 @@ class Prediction(DirectObject):
         move.clientMaxSpeed = avatar.maxSpeed
         move.angles = Vec3(cmd.viewAngles)
         move.viewAngles = Vec3(cmd.viewAngles)
-        move.buttons = avatar.buttons
+        move.buttons = cmd.buttons
         move.onGround = avatar.onGround
 
         move.forwardMove = cmd.move[1]
@@ -512,7 +514,7 @@ class Prediction(DirectObject):
         avatar.velocity = Vec3(move.velocity)
         #print("OUT velocity", avatar.velocity)
         #avatar.networkPos = Point3(move.origin)
-        avatar.oldButtons = move.buttons
+        avatar.lastButtons = move.buttons
         avatar.onGround = move.onGround
         avatar.maxSpeed = move.clientMaxSpeed
         avatar.setPos(move.origin)
@@ -526,6 +528,7 @@ class Prediction(DirectObject):
         # Set globals appropriately
         base.setFrameTime(avatar.tickBase * base.intervalPerTick)
         base.setDeltaTime(base.intervalPerTick)
+        base.setTickCount(cmd.tickCount)
 
         # Do weapon selection
         if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(avatar.weapons) and cmd.weaponSelect != avatar.activeWeapon:
@@ -600,14 +603,14 @@ class Prediction(DirectObject):
         # Save off current timer values.
         saveDeltaTime = globalClock.getDt()
         saveFrameTime = globalClock.getFrameTime()
-        saveFrameCount = globalClock.getFrameCount()
+        saveFrameCount = base.tickCount
 
         self.doUpdate(receivedNewWorldUpdate, validFrame, incomingAcknowledged, outgoingCommand)
 
         # Restore true timer values.
         base.setFrameTime(saveFrameTime)
         base.setDeltaTime(saveDeltaTime)
-        base.setFrameCount(saveFrameCount)
+        base.setTickCount(saveFrameCount)
 
     def doUpdate(self, receivedNewWorldUpdate, validFrame, incomingAcknowledged, outgoingCommand):
         if not hasattr(base, 'localAvatar') or not base.localAvatar:

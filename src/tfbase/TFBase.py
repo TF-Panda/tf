@@ -3,7 +3,7 @@ from panda3d.pphysics import PhysScene, PhysSystem
 
 from direct.showbase.ShowBase import ShowBase
 from direct.directnotify.DirectNotifyGlobal import directNotify
-from direct.gui.DirectGui import DGG, OnscreenText
+from direct.gui.DirectGui import DGG, OnscreenText, OnscreenImage
 from direct.directbase import DirectRender
 
 from direct.fsm.FSM import FSM
@@ -17,6 +17,8 @@ from . import Sounds
 
 from direct.showbase.Audio3DManager import Audio3DManager
 
+from .Console import Console
+
 import random
 
 class TFBase(ShowBase, FSM):
@@ -27,6 +29,15 @@ class TFBase(ShowBase, FSM):
         ShowBase.__init__(self)
         FSM.__init__(self, 'TFBase')
 
+        # Perform a Z-prepass on the main scene render.
+        self.camNode.setTag("z_pre", "1")
+
+       # self.render.setAttrib(DepthTestAttrib.make(DepthTestAttrib.MEqual))
+
+        self.accept('shift-c', self.openConsole)
+
+        self.console = None
+
         # For publishes, will be set to correct version of release in the
         # publish config.
         self.gameVersion = ConfigVariableString('tf-version', 'dev').value
@@ -34,16 +45,23 @@ class TFBase(ShowBase, FSM):
         self.music = None
         self.musicFilename = None
 
+        # Add text properties for the different notify levels.
+        tpm = TextPropertiesManager.getGlobalPtr()
+        warning = TextProperties()
+        warning.setTextColor(1, 1, 0, 1)
+        tpm.setProperties("warning", warning)
+        error = TextProperties()
+        error.setTextColor(1, 0, 0, 1)
+        tpm.setProperties("error", error)
+        tpm.setProperties("fatal", error)
+        red = TextProperties()
+        red.setTextColor(1, 0, 0, 1)
+        blue = TextProperties()
+        blue.setTextColor(0, 0, 1, 1)
+        tpm.setProperties('redteam', red)
+        tpm.setProperties('blueteam', blue)
+
         if self.config.GetBool('want-notify-view', 0):
-            # Add text properties for the different notify levels.
-            tpm = TextPropertiesManager.getGlobalPtr()
-            warning = TextProperties()
-            warning.setTextColor(1, 1, 0, 1)
-            tpm.setProperties("warning", warning)
-            error = TextProperties()
-            error.setTextColor(1, 0, 0, 1)
-            tpm.setProperties("error", error)
-            tpm.setProperties("fatal", error)
             self.notifyView = NotifyView()
 
         TextNode.setDefaultFont(self.loader.loadFont("models/fonts/TF2.ttf"))
@@ -51,9 +69,11 @@ class TFBase(ShowBase, FSM):
         if base.config.GetBool("want-pstats-hotkey", False):
             self.accept('shift-s', self.togglePStats)
 
-        #self.win.disableClears()
+        self.win.disableClears()
 
         Sounds.loadSounds()
+
+        self.render.hide(DirectRender.ShadowCameraBitmask)
 
         self.camLens.setMinFov(base.config.GetInt("fov", 75) / (4./3.))
 
@@ -101,6 +121,9 @@ class TFBase(ShowBase, FSM):
         self.physicsWorld.setGroupCollisionFlag(
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
 
+        self.physRemainder = 0.0
+        self.physPrevRemainder = 0.0
+        self.lastPhysFrameTime = 0.0
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
 
         self.dynRender = self.render.attachNewNode(DynamicVisNode("dynamic"))
@@ -123,7 +146,12 @@ class TFBase(ShowBase, FSM):
 
         base.accept('shift-w', self.toggleWireframe)
         self.showingBounds = False
+        self.enablePbr = False
+        self.enableIk = True
         base.accept('shift-b', self.toggleBounds)
+        base.accept('shift-r', ShaderManager.getGlobalPtr().reloadShaders)
+        base.accept('shift-p', self.togglePbr)
+        base.accept('shift-i', self.toggleIk)
 
         self.enableParticles()
 
@@ -132,6 +160,39 @@ class TFBase(ShowBase, FSM):
         self.silenceSound = self.loadSfx("audio/sfx/silence.wav")
         self.silenceSound.setLoop(True)
         self.silenceSound.play()
+
+        #cm = CardMaker('cm')
+        #cm.setHasUvs(True)
+        #cm.setFrame(-1, 1, -1, 1)
+        #self.csmDebug = base.aspect2d.attachNewNode(cm.generate())
+        #self.csmDebug.setScale(0.3)
+        #self.csmDebug.setZ(-0.7)
+        #self.csmDebug.setShader(Shader.load(Shader.SL_GLSL, "shaders/debug_csm.vert.glsl", "shaders/debug_csm.frag.glsl"))
+
+        #self.csmDebug = OnscreenImage(scale=0.3, pos=(0, 0, -0.7))
+
+    def toggleIk(self):
+        self.enableIk = not self.enableIk
+        if self.enableIk:
+            loadPrcFileData('', 'ik-enable 1')
+        else:
+            loadPrcFileData('', 'ik-enable 0')
+
+    def openConsole(self):
+        if not self.console:
+            self.console = Console()
+        else:
+            self.console.cleanup()
+            self.console = None
+
+    def togglePbr(self):
+        self.enablePbr = not self.enablePbr
+        if self.enablePbr:
+            loadPrcFileData('', 'use-orig-source-shader 0')
+        else:
+            loadPrcFileData('', 'use-orig-source-shader 1')
+        ShaderManager.getGlobalPtr().reloadShaders()
+        print("PBR Source shader:", self.enablePbr)
 
     def toggleBounds(self):
         self.showingBounds = not self.showingBounds
@@ -168,7 +229,29 @@ class TFBase(ShowBase, FSM):
             PStatClient.connect()
 
     def physicsUpdate(self, task):
-        self.physicsWorld.simulate(globalClock.getDt())
+        # Maintain an independent fixed timestep for physics
+        # simulation.
+
+        now = globalClock.getRealTime()
+        deltaTime = now - self.lastPhysFrameTime
+
+        self.physPrevRemainder = self.remainder
+        if self.physPrevRemainder < 0.0:
+            self.physPrevRemainder = 0.0
+        self.physRemainder += deltaTime
+
+        physTimeStep = 0.015
+
+        numTicks = 0
+        if self.physRemainder >= physTimeStep:
+            numTicks = int(self.physRemainder / physTimeStep)
+            self.physRemainder -= numTicks * physTimeStep
+
+        for _ in range(numTicks):
+            self.physicsWorld.simulate(physTimeStep)
+
+        self.lastPhysFrameTime = now
+
         return task.cont
 
     def viewModelSceneUpdate(self, task):
@@ -290,7 +373,10 @@ class TFBase(ShowBase, FSM):
             "models/char/c_demo_arms",
             "models/weapons/c_bottle",
             "models/weapons/c_shovel",
-            "models/char/heavy"
+            "models/char/heavy",
+            "models/weapons/v_scattergun_scout",
+            "models/weapons/w_scattergun",
+            "models/weapons/v_shotgun_engineer"
         ]
         self.precache = []
         for pc in precacheList:

@@ -6,17 +6,16 @@ from tf.tfbase import TFLocalizer
 from .WeaponMode import TFWeaponMode, TFWeaponType
 from tf.tfbase.TFGlobals import DamageType
 
-class DPistol(TFWeaponGun):
+class DistributedPistol(TFWeaponGun):
 
     WeaponModel = "models/weapons/c_pistol"
-    WeaponViewModel = "models/weapons/c_pistol"
+    UsesViewModel = True
 
     def __init__(self):
         TFWeaponGun.__init__(self)
         self.usesAmmo = True
         self.usesClip = True
         self.reloadsSingly = False
-        self.maxAmmo = 200
         self.maxClip = 12
         self.ammo = self.maxAmmo
         self.clip = self.maxClip
@@ -43,6 +42,26 @@ class DPistol(TFWeaponGun):
     def getReloadSound(self):
         return "Weapon_Pistol.WorldReload"
 
+class DistributedPistolEngineer(DistributedPistol):
+    WeaponViewModel = "models/weapons/v_pistol_engineer"
+
+    def __init__(self):
+        DistributedPistol.__init__(self)
+        self.maxAmmo = 200
+        self.ammo = self.maxAmmo
+
+class DistributedPistolScout(DistributedPistol):
+    WeaponViewModel = "models/weapons/v_pistol_scout"
+
+    def __init__(self):
+        DistributedPistol.__init__(self)
+        self.maxAmmo = 36
+        self.ammo = self.maxAmmo
+
 if not IS_CLIENT:
-    DPistolAI = DPistol
-    DPistolAI.__name__ = 'DPistolAI'
+    DistributedPistolAI = DistributedPistol
+    DistributedPistolAI.__name__ = 'DistributedPistolAI'
+    DistributedPistolEngineerAI = DistributedPistolEngineer
+    DistributedPistolEngineerAI.__name__ = 'DistributedPistolEngineerAI'
+    DistributedPistolScoutAI = DistributedPistolScout
+    DistributedPistolScoutAI.__name__ = 'DistributedPistolScoutAI'

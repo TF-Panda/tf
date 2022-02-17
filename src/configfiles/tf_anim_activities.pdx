@@ -204,4 +204,22 @@
   Object_Disabled
   Object_Upgrade
   Object_Fire_Empty
+
+  Double_Jump
+  Double_Jump_Loser
+
+  Attack_Stand_Prefire
+  Attack_Stand_Postfire
+  Attack_Crouch_Prefire
+  Attack_Crouch_Postfire
+  Attack_Swim_Prefire
+  Attack_Swim_Postfire
+  Attack_Air_Walk_Prefire
+  Attack_Air_Walk_Postfire
+
+  VM_Hit_Left
+  VM_Hit_Right
+
+  Melee_VM_Hit_Left
+  Melee_VM_Hit_Right
 ]

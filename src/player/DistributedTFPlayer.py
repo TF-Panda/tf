@@ -7,6 +7,8 @@ from .TFClass import *
 from .TFPlayerAnimState import TFPlayerAnimState
 
 from tf.tfbase import Sounds
+from tf.actor.Eyes import Eyes
+from tf.actor.Expressions import Expressions
 
 #from test_talker import Talker
 
@@ -14,21 +16,39 @@ from panda3d.core import *
 from panda3d.direct import *
 
 from direct.interval.IntervalGlobal import *
+from direct.directbase import DirectRender
 
 import random
+import math
 
-#sentences = Talker.parseSentences("scripts/game_sounds_vo_phonemes.txt")
+sentences = SentenceCollection()
+sentences.load("scripts/game_sounds_vo_phonemes.txt")
 
-#phonemes = {}
-#phonemes['engineer'] = Talker.Phonemes("expressions/player/engineer/phonemes/phonemes.txt",
-#                               "expressions/player/engineer/phonemes/phonemes_weak.txt",
-#                               "expressions/player/engineer/phonemes/phonemes_strong.txt")
-#phonemes['soldier'] = Talker.Phonemes("expressions/player/soldier/phonemes/phonemes.txt",
-#                               "expressions/player/soldier/phonemes/phonemes_weak.txt",
-#                               "expressions/player/soldier/phonemes/phonemes_strong.txt")
-#phonemes['demo'] = Talker.Phonemes("expressions/player/demo/phonemes/phonemes.txt",
-#                               "expressions/player/demo/phonemes/phonemes_weak.txt",
-#                               "expressions/player/demo/phonemes/phonemes_strong.txt")
+phonemes = {}
+
+def loadClassPhonemes(clsName):
+    # We need to load the model and get the character so it can map slider
+    # names to slider indices.
+    mdl = NodePath(Loader.getGlobalPtr().loadSync("models/char/%s" % clsName))
+    char = mdl.find("**/+CharacterNode").node().getCharacter()
+    phonemes[clsName] = Phonemes()
+    phonemes[clsName].read(Phonemes.PCNormal, "expressions/player/%s/phonemes/phonemes.txt" % clsName, char)
+    phonemes[clsName].read(Phonemes.PCStrong, "expressions/player/%s/phonemes/phonemes_strong.txt" % clsName, char)
+    phonemes[clsName].read(Phonemes.PCWeak, "expressions/player/%s/phonemes/phonemes_weak.txt" % clsName, char)
+
+phonemeClasses = [
+    'engineer',
+    'heavy',
+    'demo',
+    'soldier',
+    'scout'
+]
+
+def loadPhonemes():
+    for clsName in phonemeClasses:
+        loadClassPhonemes(clsName)
+
+loadPhonemes()
 
 class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
@@ -40,9 +60,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.lastActiveWeapon = -1
 
-        self.lastAngryTime = 0.0
-
         self.talker = None
+        self.eyes = None
+        self.expressions = None
 
         self.classInfo = None
 
@@ -58,21 +78,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.addInterpolatedVar(self.ivEyeP, self.getEyeP, self.setEyeP, DistributedObject.SimulationVar)
 
         self.currentSpeech = None
-        self.speechNode = None
-
-        #self.ivLookPitch = InterpolatedFloat()
-        #self.ivLookPitch.setLooping(True)
-        #self.addInterpolatedVar(self.ivLookPitch, self.getLookPitch, self.setLookPitch, DistributedObject.AnimationVar)
-
-        #self.ivLookYaw = InterpolatedFloat()
-        #self.ivLookYaw.setLooping(True)
-        #self.addInterpolatedVar(self.ivLookYaw, self.getLookYaw, self.setLookYaw, DistributedObject.AnimationVar)
-
-        #self.ivMoveX = InterpolatedFloat()
-        #self.addInterpolatedVar(self.ivMoveX, self.getMoveX, self.setMoveX, DistributedObject.AnimationVar)
-
-        #self.ivMoveY = InterpolatedFloat()
-        #self.addInterpolatedVar(self.ivMoveY, self.getMoveY, self.setMoveY, DistributedObject.AnimationVar)
 
     def RecvProxy_rot(self, r, i, j, k):
         # Ignoring this because the player angles are set in TFPlayerAnimState.
@@ -104,6 +109,13 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def becomeRagdoll(self, *args, **kwargs):
         self.disableController()
         DistributedChar.becomeRagdoll(self, *args, **kwargs)
+        if self.ragdoll:
+            self.ragdoll[0].showThrough(DirectRender.ShadowCameraBitmask)
+            # Re-direct lip-sync to ragdoll.
+            if self.talker:
+                self.talker.setCharacter(self.ragdoll[0].character)
+        if self.eyes:
+            self.eyes.disable()
 
     def respawn(self):
         # Release reference to the ragdoll.
@@ -111,9 +123,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.ragdoll[1].destroy()
             self.ragdoll[0].clearModel()
             self.ragdoll[0].cleanup()
+            # Return lip-sync to actual model.
+            if self.talker:
+                self.talker.setCharacter(self.character)
         self.ragdoll = None
         self.show()
         self.enableController()
+        if self.eyes:
+            self.eyes.enable()
 
     def RecvProxy_activeWeapon(self, index):
         self.setActiveWeapon(index)
@@ -185,81 +202,102 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
     def postDataUpdate(self):
         DistributedChar.postDataUpdate(self)
-        self.classInfo = ClassInfos[self.tfClass]
+        self.updateClassSpeed()
 
         if self.activeWeapon != self.lastActiveWeapon:
             self.lastActiveWeapon = self.activeWeapon
-
-        #print(self.position, self.lookPitch, self.lookYaw)
 
     def update(self):
         DistributedChar.update(self)
         self.animState.update()
 
-    #def update(self):
-    #    DistributedObject.update(self)
-
-        #ctx = InterpolationContext()
-        #ctx.enableExtrapolation(True)
-
-        #self.prevPos = Point3(self.position)
-
     def stopSpeech(self):
+        if self.talker:
+            self.talker.stop()
         if self.currentSpeech:
-            self.currentSpeech[0].detachSound(self.currentSpeech[1])
-            self.currentSpeech[1].stop()
+            self.currentSpeech.stop()
             self.currentSpeech = None
 
     def speak(self, soundIndex):
         self.stopSpeech()
+
+        spatial = self != base.localAvatar
         info = Sounds.AllSounds[soundIndex]
-        sound = Sounds.createSound(info)
-        audio3d = base.audio3ds[info.channel]
-        audio3d.attachSoundToObject(sound, self.speechNode)
+        data = Sounds.createSound(info, spatial=spatial, getWave=True)
+        if not data:
+            return
+        sound, wave = data
+        if spatial:
+            self.registerSpatialSound(sound, self.viewOffset)
+        self.currentSpeech = sound
+        if self.talker:
+            self.talker.speak(sound, sentences.getSentence(str(wave.filename)))
         sound.play()
-        self.currentSpeech = (audio3d, sound)
-        #self.talker.speak(soundIndex)
+
+    def onTFClassChanged(self):
+        self.stopSpeech()
+        if self.classInfo.Phonemes is not None:
+            self.talker = CharacterTalker(self.character, phonemes[self.classInfo.Phonemes])
+        else:
+            self.talker = None
+        if self.eyes:
+            self.eyes.cleanup()
+        self.eyes = Eyes(self.characterNp)
+        self.eyes.headRotationOffset = self.classInfo.HeadRotationOffset
+        self.eyes.enable()
+        if self.expressions:
+            self.expressions.cleanup()
+            self.expressions = None
+        if self.classInfo.Expressions is not None:
+            self.expressions = Expressions(self.character, self.classInfo.Expressions)
+            self.expressions.pushExpression('idle', 1.0, oscillation=0.4, oscillationSpeed=1.5)
+        self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
+
+    def RecvProxy_tfClass(self, tfClass):
+        self.tfClass = tfClass
+        self.classInfo = ClassInfos[tfClass]
+        self.onTFClassChanged()
+
+    def pushExpression(self, name):
+        if self.expressions:
+            if not self.expressions.hasExpression(name):
+                self.expressions.pushExpression(name, 0.8, 2.5)
 
     def makeAngry(self):
-        return
+        self.pushExpression('specialAction')
 
-        now = globalClock.getFrameTime()
-        if now - self.lastAngryTime < 2:
-            return
+    def __updateTalker(self, task):
+        if self.ragdoll:
+            # Don't do this while ragdolling and the model is hidden.
+            return task.cont
 
-        def angryFade(val):
-            mad = self.character.findSlider("mad")
-            self.character.setSliderValue(mad, val)
-            madUpper = self.character.findSlider("madUpper")
-            self.character.setSliderValue(madUpper, val)
+        if self.talker:
+            self.talker.update()
 
-        seq = Sequence()
-        seq.append(LerpFunc(angryFade, fromData=0, toData=0.65, duration=0.5, blendType='easeOut'))
-        seq.append(Wait(1.0))
-        seq.append(LerpFunc(angryFade, fromData=0.65, toData=0, duration=0.5, blendType='easeOut'))
-        seq.start()
+        if self.expressions:
+            self.expressions.update()
 
-        self.lastAngryTime = now
+        return task.cont
 
     def announceGenerate(self):
         DistributedChar.announceGenerate(self)
         DistributedTFPlayerShared.announceGenerate(self)
-        #for hide in self.classInfo.Hide:
-        #    self.modelNp.findAllMatches("**/*" + hide + "*").hide()
-        self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
-        self.speechNode = self.attachNewNode("speechPoint")
-        self.speechNode.setZ(50)
-        #self.talker = Talker.Talker(self.modelNp, Point3(0, 0, self.classInfo.ViewHeight), self.character, phonemes[self.classInfo.Phonemes], sentences)
-        #self.modelNp.setH(180)
         self.reparentTo(base.dynRender)
+        self.addTask(self.__updateTalker, 'talker', appendTask=True, sim=False)
 
     def disable(self):
+        if self.expressions:
+            self.expressions.cleanup()
+            self.expressions = None
+        if self.eyes:
+            self.eyes.cleanup()
+            self.eyes = None
         self.stopSpeech()
-        self.speechNode.removeNode()
-        self.speechNode = None
+        self.talker = None
         self.ivPos = None
         self.ivLookPitch = None
         self.ivLookYaw = None
         self.removeTask("animUpdate")
+        self.removeTask("talker")
         DistributedTFPlayerShared.disable(self)
         DistributedChar.disable(self)

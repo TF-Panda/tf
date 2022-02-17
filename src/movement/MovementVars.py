@@ -1,6 +1,6 @@
 from panda3d.core import ConfigVariableDouble
 
-sv_maxspeed = ConfigVariableDouble("sv-maxspeed", 320)
+sv_maxspeed = ConfigVariableDouble("sv-maxspeed", 400)
 sv_maxvelocity = ConfigVariableDouble("sv-maxvelocity", 3500)
 sv_rollspeed = ConfigVariableDouble("sv-rollspeed", 200)
 sv_rollangle = ConfigVariableDouble("sv-rollangle", 0)

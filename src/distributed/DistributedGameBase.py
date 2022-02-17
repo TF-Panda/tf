@@ -4,12 +4,15 @@ from panda3d.pphysics import *
 
 from tf.tfbase.TFGlobals import Contents
 
+from direct.directbase import DirectRender
+
 class DistributedGameBase:
 
     def __init__(self):
         self.levelName = ""
         self.lvl = None
         self.lvlData = None
+        self.propPhysRoot = None
 
     def loadLevelProps(self):
         # Create a dedicated DynamicVisNode for culling static props.
@@ -20,6 +23,7 @@ class DistributedGameBase:
         # parented to the same node, we have a lot more nodes to union.
         # And since static props never move, that would be a waste.
         propRoot = self.lvl.attachNewNode(DynamicVisNode("props"))
+        propPhysRoot = NodePath("propPhysRoot")
         propRoot.node().levelInit(self.lvlData.getNumClusters())
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
@@ -66,19 +70,29 @@ class DistributedGameBase:
                     cnode = PhysRigidStaticNode("propcoll")
                     cnode.addShape(shape)
                     cnode.addToScene(base.physicsWorld)
-                    cnp = propModel.attachNewNode(cnode)
+                    cnp = propPhysRoot.attachNewNode(cnode)
                     cnp.setTransform(NodePath(), propModel.getTransform(NodePath()))
                     cnode.setContentsMask(Contents.Solid)
                     cnode.setPythonTag("entity", base.world)
 
             propModel.reparentTo(propRoot)
+            propModel.clearModelNodes()
             propModel.flattenStrong()
+            #lodNode = propModel.find("**/+LODNode")
+            #if not lodNode.isEmpty():
+                # Grab the first LOD and throw away the rest so we can flatten.
+            #    highestLod = lodNode.getChild(0)
+            #    highestLod.reparentTo(lodNode.getParent())
+            #    lodNode.removeNode()
             propModel.node().setFinal(True)
+            propModel.showThrough(DirectRender.ShadowCameraBitmask)
             # Static props don't have precomputed lighting yet, so treat them
             # as dynamic models for lighting purposes.
             propModel.setEffect(MapLightingEffect.make())
             if cnode:
                 cnode.syncTransform()
+
+        self.propPhysRoot = propPhysRoot
 
     def delete(self):
         self.unloadLevel()
@@ -98,7 +112,8 @@ class DistributedGameBase:
         self.lvl = loader.loadModel(lvlName)
         self.lvl.reparentTo(base.render)
         lvlRoot = self.lvl.find("**/+MapRoot")
-        lvlRoot.setLightOff(1)
+        lvlRoot.setLightOff(-1)
+        self.lvl.showThrough(DirectRender.ShadowCameraBitmask)
         # Make sure all the RAM copies of lightmaps get thrown away when they
         # get uploaded to the graphics card.  They take up a lot of memory.
         for tex in lvlRoot.findAllTextures():
@@ -106,9 +121,29 @@ class DistributedGameBase:
         data = lvlRoot.node().getData()
         self.lvlData = data
 
-        for gnp in self.lvl.findAllMatches("**/+GeomNode"):
-            gnp.node().setFinal(True)
+        dummyRoot = PandaNode("mapRoot")
+        dummyRoot.replaceNode(lvlRoot.node())
 
+        for gnp in self.lvl.findAllMatches("**/+GeomNode"):
+            #gnp.node().setFinal(True)
+
+            # Delete skybox faces so we can do the actual source engine
+            # skybox rendering.
+            for i in reversed(range(gnp.node().getNumGeoms())):
+                geom = gnp.node().getGeom(i)
+                state = gnp.node().getGeomState(i)
+                if state.hasAttrib(MaterialAttrib):
+                    mattr = state.getAttrib(MaterialAttrib)
+                    mat = mattr.getMaterial()
+                    if mat and isinstance(mat, SkyBoxMaterial):
+                        gnp.node().removeGeom(i)
+
+        self.lvl.clearModelNodes()
+        self.lvl.flattenStrong()
+
+        self.loadLevelProps()
+
+        physRoot = self.lvl.attachNewNode("physRoot")
         for i in range(data.getNumModelPhysDatas()):
             meshBuffer = data.getModelPhysData(i)
             if len(meshBuffer) == 0:
@@ -121,6 +156,8 @@ class DistributedGameBase:
             body.setContentsMask(Contents.Solid)
             body.addToScene(base.physicsWorld)
             body.setPythonTag("entity", base.world)
-            self.lvl.attachNewNode(body)
+            physRoot.attachNewNode(body)
+        self.propPhysRoot.reparentTo(self.lvl)
 
-        self.loadLevelProps()
+        self.lvl.ls()
+        self.lvl.analyze()

@@ -83,14 +83,20 @@ class BaseObject(BaseClass):
 
             if self.health <= 0:
                 # Died.
-                self.onKilled(info.inflictor)
+                self.onKilled(info)
 
-        def onKilled(self, killer):
+        def onKilled(self, info):
+            if info.inflictor and isinstance(info.inflictor, BaseObject):
+                killer = info.inflictor.doId
+            else:
+                killer = info.attacker.doId
+            base.net.game.sendUpdate('killEvent', [killer, -1, -1, self.doId])
+
             self.explode()
             base.net.deleteObject(self)
 
         def explode(self):
-            self.emitSound(self.explodeSound)
+            self.emitSoundSpatial(self.explodeSound)
             base.game.d_doExplosion(self.getPos(), Vec3(7))
             self.turnIntoGibs()
 
@@ -124,6 +130,7 @@ class BaseObject(BaseClass):
                 ap.skin = self.team
                 ap.setModel(model)
                 ap.node().setSleepThreshold(0.25)
+                ap.node().setCcdEnabled(True)
                 ap.singleUse = True
                 ap.packType = "med"
                 ap.metalAmount = metalPerGib
@@ -357,17 +364,23 @@ class BaseObject(BaseClass):
 
             self.reparentTo(base.dynRender)
             if self.isBuiltByLocalAvatar():
-                base.localAvatar.objectPanels[self.objectType].setObject(self)
+                panel = base.localAvatar.objectPanels.get(self.objectType)
+                if panel:
+                    panel.setObject(self)
 
         def delete(self):
             if hasattr(base, 'localAvatar') and self.isBuiltByLocalAvatar():
-                base.localAvatar.objectPanels[self.objectType].setObject(None)
+                panel = base.localAvatar.objectPanels.get(self.objectType)
+                if panel:
+                    panel.setObject(None)
             BaseClass.delete(self)
 
         def postDataUpdate(self):
             BaseClass.postDataUpdate(self)
             if self.isBuiltByLocalAvatar():
-                base.localAvatar.objectPanels[self.objectType].updateState()
+                panel = base.localAvatar.objectPanels.get(self.objectType)
+                if panel:
+                    panel.updateState()
 
         def isBuiltByLocalAvatar(self):
             return self.builderDoId == base.localAvatar.doId

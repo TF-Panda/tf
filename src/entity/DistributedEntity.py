@@ -12,7 +12,8 @@ from panda3d.pphysics import *
 from tf.actor.Char import Char
 from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, Contents, CollisionGroup, SolidShape, SolidFlag, angleMod
 from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
-from tf.tfbase import TFFilters
+from tf.tfbase import TFFilters, Sounds
+from direct.directbase import DirectRender
 
 if IS_CLIENT:
     from tf.player.Prediction import *
@@ -79,6 +80,8 @@ class DistributedEntity(BaseClass, NodePath):
             # Makes the node compute its lighting state from the lighting
             # information in the level when its rendered.
             self.setEffect(MapLightingEffect.make())
+            # And render into shadow maps.
+            self.showThrough(DirectRender.ShadowCameraBitmask)
 
             # Prediction-related variables.
             self.intermediateData = []
@@ -95,7 +98,7 @@ class DistributedEntity(BaseClass, NodePath):
             self.addPredictionField("team", int)
             self.addPredictionField("pos", Point3, getter=self.getPos, setter=self.setPos, tolerance=0.02)
             self.addPredictionField("hpr", Vec3, getter=self.getHpr, setter=self.setHpr, noErrorCheck=True)
-            self.addPredictionField("baseVelocity", Vec3, networked=False)
+            self.addPredictionField("baseVelocity", Vec3, tolerance=0.5)
             self.addPredictionField("gravity", float, networked=False)
 
             # Add interpolators for transform state of the entity/node.
@@ -105,6 +108,10 @@ class DistributedEntity(BaseClass, NodePath):
             self.addInterpolatedVar(self.ivRot, self.getQuat, self.setQuat)
             self.ivScale = InterpolatedVec3()
             #self.addInterpolatedVar(self.ivScale, self.getScale, self.setScale)
+
+            # List of sounds being emitted from this entity and their offsets from
+            # the entity's position.
+            self.sounds = {}
 
         # Create a root node for all physics objects to live under, and hide
         # it.  This can improve cull traverser performance since it only has
@@ -416,6 +423,10 @@ class DistributedEntity(BaseClass, NodePath):
         def addPredictionField(self, name, *args, **kwargs):
             self.predictionFields[name] = PredictionField(name, *args, **kwargs)
 
+        def removePredictionField(self, name):
+            if name in self.predictionFields:
+                del self.predictionFields[name]
+
         def saveData(self, context, slot, type):
             """
             Saves the current values of prediction fields for this entity into
@@ -653,8 +664,24 @@ class DistributedEntity(BaseClass, NodePath):
                 # Apply the damage force to the physics-simulated body.
                 self.node().addForce(info.damageForce, self.node().FTImpulse)
 
-        def emitSound(self, soundName, client = None, excludeClients = []):
-            base.game.d_emitSound(soundName, self.getPos(), client=client, excludeClients=excludeClients)
+        def emitSound(self, soundName, volume=None, client=None, excludeClients=[]):
+            soundInfo = Sounds.createSoundServer(soundName)
+            if soundInfo is None:
+                return
+
+            if volume is not None:
+                soundInfo[2] = volume
+
+            self.sendUpdate('emitSound_sv', soundInfo, client=client, excludeClients=excludeClients)
+
+        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, client=None, excludeClients=[]):
+            soundInfo = Sounds.createSoundServer(soundName)
+            if soundInfo is None:
+                return
+            if volume is not None:
+                soundInfo[2] = volume
+            soundInfo.append(offset)
+            self.sendUpdate('emitSoundSpatial_sv', soundInfo, client=client, excludeClients=excludeClients)
 
         def isEntityVisible(self, entity, traceMask):
             """
@@ -716,6 +743,80 @@ class DistributedEntity(BaseClass, NodePath):
 
         def onKillEntity(self, ent):
             pass
+    else:
+        def announceGenerate(self):
+            BaseClass.announceGenerate(self)
+            self.addTask(self.__updateSounds, 'updateEntSounds', appendTask=True, sim=False, sort=49)
+
+        def disable(self):
+            self.removeTask('updateEntSounds')
+            BaseClass.disable(self)
+
+        # IS_CLIENT
+        def emitSound_sv(self, soundIndex, waveIndex, volume, pitch):
+            sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch)
+            if sound is not None:
+                sound.play()
+
+        def emitSoundSpatial_sv(self, soundIndex, waveIndex, volume, pitch, offset):
+            sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch, True)
+            if sound is None:
+                return
+
+            self.registerSpatialSound(sound, offset)
+            sound.play()
+
+        def emitSound(self, soundName, loop=False, volume=None):
+            sound = Sounds.createSoundByName(soundName)
+            if sound is not None:
+                if volume is not None:
+                    sound.setVolume(volume)
+                sound.setLoop(loop)
+                sound.play()
+            return sound
+
+        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, loop=False):
+            sound = Sounds.createSoundByName(soundName, spatial=True)
+            if sound is None:
+                return None
+            if volume is not None:
+                sound.setVolume(volume)
+            sound.setLoop(loop)
+            self.registerSpatialSound(sound, offset)
+            return sound
+
+        def registerSpatialSound(self, sound, offset):
+            event = "sound-" + str(id(sound)) + "-finished"
+            sound.setFinishedEvent(event)
+            worldPos = self.getMat(base.render).xformPoint(offset)
+            sound.set3dAttributes(worldPos[0], worldPos[1], worldPos[2], 0.0, 0.0, 0.0)
+            self.sounds[sound] = [offset, worldPos]
+            self.acceptOnce(event, self.__onSoundFinished)
+
+        def __onSoundFinished(self, sound):
+            # Called when a spatial sound being emitted from this entity has
+            # finished playing.
+            if sound in self.sounds:
+                del self.sounds[sound]
+
+        def __updateSounds(self, task):
+            """
+            Updates the 3-D position and velocity of spatial sounds being
+            emitted from this entity.
+            """
+
+            worldMat = self.getMat(base.render)
+            dt = globalClock.getDt()
+
+            for sound, data in self.sounds.items():
+                offset, lastPos = data
+                worldPos = worldMat.xformPoint(offset)
+                delta = worldPos - lastPos
+                vel = delta / dt
+                sound.set3dAttributes(worldPos[0], worldPos[1], worldPos[2], vel[0], vel[1], vel[2])
+                data[1] = worldPos
+
+            return task.cont
 
     def dispatchTraceAttack(self, info, dir, hit):
         # TODO: Damage filter?
@@ -736,6 +837,7 @@ class DistributedEntity(BaseClass, NodePath):
         self.destroyCollisions()
         self.parentEntity = None
         self.physicsRoot = None
+        self.sounds = None
         if not self.isEmpty():
             self.removeNode()
         BaseClass.delete(self)

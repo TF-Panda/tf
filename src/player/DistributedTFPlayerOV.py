@@ -16,6 +16,7 @@ from tf.object.ObjectType import ObjectType
 
 from tf.actor.Char import Char
 from tf.tfgui.TFHud import TFHud
+from tf.tfgui.KillFeed import KillFeed
 from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfbase import TFGlobals
 
@@ -86,6 +87,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.commands.append(PlayerCommand())
         self.finalPredictedTick = 0
         self.hud = TFHud()
+        self.killFeed = KillFeed()
         self.wpnSelect = TFWeaponSelection()
         self.controlsEnabled = False
         self.mouseDelta = Vec2()
@@ -100,8 +102,14 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         # Add fields predicted by the local player.
         self.addPredictionField("tickBase", int)
         self.addPredictionField("activeWeapon", int, getter=self.getActiveWeapon, setter=self.setActiveWeapon)
-        self.addPredictionField("onGround", bool, noErrorCheck=True)
+        self.addPredictionField("onGround", bool)
         self.addPredictionField("condition", int)
+        self.addPredictionField("airDashing", bool, noErrorCheck=True, networked=False)
+        self.addPredictionField("buttons", int, noErrorCheck=False, networked=True)
+        self.addPredictionField("lastButtons", int, noErrorCheck=False, networked=True)
+        self.addPredictionField("buttonsPressed", int, noErrorCheck=True, networked=False)
+        self.addPredictionField("buttonsReleased", int, noErrorCheck=True, networked=False)
+        self.addPredictionField("stepSoundTime", float, noErrorCheck=True, networked=False)
 
         self.ivPunchAngle = InterpolatedVec3()
         self.ivPunchAngle.setAngles(True)
@@ -318,6 +326,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if curTime >= spec_freeze_traveltime.getValue() and not self.sentFreezeFrame:
             # Freeze the frame.
             base.postProcess.freezeFrame.freezeFrame(spec_freeze_time.getValue())
+            #for mgr in base.sfxManagerList:
+            #    mgr.setVolume(0.0)
             if self.killedByLabel:
                 self.killedByLabel.destroy()
             if target.__class__.__name__ == 'SentryGun':
@@ -348,8 +358,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.viewModel.show()
         self.hud.showHud()
 
-    def RecvProxy_tfClass(self, tfclass):
-        self.tfClass = tfclass
+    def onTFClassChanged(self):
+        DistributedTFPlayer.onTFClassChanged(self)
+
         if self.tfClass == Class.Engineer and not self.objectPanels:
             self.createObjectPanels()
         elif self.tfClass != Class.Engineer:
@@ -469,6 +480,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
     def delete(self):
         self.disableControls()
+        if self.killFeed:
+            self.killFeed.cleanup()
+            self.killFeed = None
         if self.hud:
             self.hud.destroy()
             self.hud = None
@@ -650,8 +664,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         elif cmd.buttons & InputFlag.MoveLeft:
             cmd.move[0] = -BaseSpeed * self.classInfo.ForwardFactor
 
-        if cmd.move[0] and cmd.move[1]:
-            cmd.move *= self.DiagonalFactor
+        #if cmd.move[0] and cmd.move[1]:
+        #    cmd.move *= self.DiagonalFactor
 
         self.considerSendCommand()
 
@@ -692,6 +706,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             # Start rendering to the 3D output display region again.  Turns off
             # the freeze frame.
             base.postProcess.freezeFrame.freezeFrame(0.0)
+            #for mgr in base.sfxManagerList:
+            #    mgr.setVolume(base.config.GetFloat('sfx-volume', 1))
             if self.killedByLabel:
                 self.killedByLabel.destroy()
                 self.killedByLabel = None

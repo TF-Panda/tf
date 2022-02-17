@@ -23,13 +23,21 @@ class Ragdoll(PhysRagdoll):
 
     def __init__(self, characterNp, collInfo):
         PhysRagdoll.__init__(self, characterNp)
+        props = SteamAudioProperties()
+        props._enable_occlusion = False
+        props._enable_transmission = False
+        props._enable_air_absorption = False
+        props._enable_reflections = False
+        props._bilinear_hrtf = False
         for hard in HardSounds:
             sound = base.audio3ds[0].loadSfx(hard)
             sound.set3dDistanceFactor(0.07)
+            sound.applySteamAudioProperties(props)
             self.addHardImpactSound(sound)
         for soft in SoftSounds:
-            sound.set3dDistanceFactor(0.07)
             sound = base.audio3ds[0].loadSfx(soft)
+            sound.set3dDistanceFactor(0.07)
+            sound.applySteamAudioProperties(props)
             self.addSoftImpactSound(sound)
         #self.setDebug(True, 4.0)
         self.task = None

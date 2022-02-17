@@ -38,12 +38,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         if len(soundName) == 0:
             return
 
-        pos = self.player.getEyePosition()
-        snd = Sounds.createSoundByName(soundName)
-        if not snd:
-            return
-        snd.set3dAttributes(pos[0], pos[1], pos[2], 0.0, 0.0, 0.0)
-        snd.play()
+        self.emitSound(soundName)
 
     def addViewModelBob(self, viewModel, info):
         pass
@@ -107,11 +102,13 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
             self.active = False
 
         if self.active and self.player and self.player.character:
-            # Make sure the world model is parented to the player.
-            self.reparentTo(self.player)
-            self.setJointMergeCharacter(self.player.character)
 
-            if self.isActiveLocalPlayerWeapon() and self.player.viewModel:
+            if not self.HideWeapon:
+                # Make sure the world model is parented to the player.
+                self.reparentTo(self.player)
+                self.setJointMergeCharacter(self.player.character)
+
+            if self.isActiveLocalPlayerWeapon() and self.player.viewModel and self.viewModelChar:
                 # Parent the view model to the player's view model.
                 self.viewModelChar.reparentTo(self.player.viewModel)
                 self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
@@ -125,16 +122,21 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
         self.active = True
 
+        if self.UsesViewModel:
+            self.player.viewModel.loadModel(self.WeaponViewModel)
+
         if self.isActiveLocalPlayerWeapon():
             DistributedWeaponShared.activate(self)
 
-        # Parent the world model to the player.
-        self.reparentTo(self.player)
-        self.setJointMergeCharacter(self.player.character)
+        if not self.HideWeapon:
+            # Parent the world model to the player.
+            self.reparentTo(self.player)
+            self.setJointMergeCharacter(self.player.character)
 
-        # Parent the view model to the player's view model.
-        self.viewModelChar.reparentTo(self.player.viewModel)
-        self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
+        if self.viewModelChar:
+            # Parent the c-model weapon to the player's view model.
+            self.viewModelChar.reparentTo(self.player.viewModel)
+            self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
 
         if self.isActiveLocalPlayerWeapon():
             base.localAvatar.hud.updateAmmoLabel()
@@ -148,7 +150,10 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         self.active = False
 
         self.reparentTo(hidden)
-        self.viewModelChar.reparentTo(hidden)
+        if self.viewModelChar:
+            self.viewModelChar.reparentTo(hidden)
+        else:
+            self.player.viewModel.loadModel(self.player.classInfo.ViewModel)
 
         if self.isActiveLocalPlayerWeapon():
             DistributedWeaponShared.deactivate(self)

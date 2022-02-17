@@ -54,6 +54,11 @@ class DistributedTFPlayerShared:
         self.vel = Vec3()
         self.controller = None
 
+        self.airDashing = False
+
+        self.stepSoundTime = 0.0
+        self.stepSide = 0
+
         self.observerMode = ObserverMode.Off
         self.observerTarget = -1
 
@@ -74,13 +79,81 @@ class DistributedTFPlayerShared:
         self.punchAngle = Vec3(0)
         self.punchAngleVel = Vec3(0)
         self.surfaceFriction = 1
-        self.maxSpeed = 320
+        self.maxSpeed = 400
         self.onGround = False
 
         self.moveData = MoveData()
 
         self.tickBase = 0
         self.deathTime = 0.0
+
+    def updateClassSpeed(self):
+        maxSpeed = 300 * self.classInfo.ForwardFactor
+
+        if self.inCondition(self.CondAiming):
+            # Heavies and snipers aiming.
+            if maxSpeed > 80:
+                maxSpeed = 80
+
+        self.maxSpeed = maxSpeed
+
+    def setStepSoundTime(self, time, walking):
+        if True:
+            self.stepSoundTime = TFGlobals.remapValClamped(self.maxSpeed, 200, 450, 400, 200)
+            if walking:
+                self.stepSoundTime += 100
+
+    def updateStepSound(self, origin, vel):
+        dt = base.deltaTime
+        if self.stepSoundTime > 0:
+            self.stepSoundTime -= 1000.0 * dt
+            if self.stepSoundTime < 0:
+                self.stepSoundTime = 0
+
+        if self.stepSoundTime > 0:
+            return
+
+        speed = vel.length()
+        groundSpeed = vel.getXy().length()
+
+        velRun = self.maxSpeed * 0.8
+        velWalk = self.maxSpeed * 0.3
+
+        onGround = self.onGround
+        movingAlongGround = groundSpeed > 0.0001
+        movingFastEnough = speed >= velWalk
+
+        if not movingFastEnough or not (onGround and movingAlongGround):
+            return
+
+        walking = speed < velRun
+
+        self.setStepSoundTime(0, walking)
+        vol = 0.2 if walking else 0.5
+
+        # TODO: if ducking vol *= 0.65
+
+        self.playStepSound(origin, vol, False)
+
+    def playStepSound(self, origin, volume, force):
+        if IS_CLIENT:
+            # Only play footstep sound if first time predicted.
+            if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
+                return
+
+        steps = ["Default.StepLeft", "Default.StepRight"]
+        stepSoundName = steps[self.stepSide]
+
+        self.stepSide = not self.stepSide
+
+        if IS_CLIENT:
+            self.emitSound(stepSoundName, volume=volume)
+        else:
+            # On the server side, emit a spatial sound from the world so the
+            # footstep sound doesn't follow the player.  Exclude the client
+            # owner as they are predicting the sound and not spatializing it.
+            base.world.emitSoundSpatial(stepSoundName, origin, volume=volume,
+                                        excludeClients=[self.owner])
 
     def getPunchAngle(self):
         return self.punchAngle
@@ -136,14 +209,19 @@ class DistributedTFPlayerShared:
         if result.hasBlock():
             # Bullet hit something!
             block = result.getBlock()
-            #if not IS_CLIENT:
-            #    if self.owner is not None:
-            #        exclude = [self.owner]
-            #    else:
-            #        exclude = []
-            #    base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
-            #else:
-            #    base.game.doTracer(info['tracerOrigin'], block.getPosition())
+
+            if info.get('tracerOrigin', None) is not None:
+                if not IS_CLIENT:
+                    if self.owner is not None:
+                        exclude = [self.owner]
+                    else:
+                        exclude = []
+                    base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
+                else:
+                    if base.cr.prediction.firstTimePredicted:
+                        # Fire tracers on first prediction only.
+                        base.game.doTracer(info['tracerOrigin'], block.getPosition())
+
             actor = block.getActor()
             entity = actor.getPythonTag("entity")
             if not entity:
@@ -207,7 +285,8 @@ class DistributedTFPlayerShared:
 
         self.controller.setUpDirection(Vec3.up())
         self.controller.setFootPosition(self.getPos())
-        #self.controller.setContactOffset(0.00001)
+        self.controller.setStepOffset(24) # 18 HUs to inches?
+        self.controller.setContactOffset(6) # 6 inches idk
         self.controller.getActorNode().setPythonTag("entity", self)
         self.attachNewNode(self.controller.getActorNode())
 
@@ -263,10 +342,11 @@ class DistributedTFPlayerShared:
         self.moveData.angles = Vec3(command.viewAngles)
         self.moveData.viewAngles = Vec3(command.viewAngles)
         self.moveData.oldButtons = self.lastButtons
-        self.moveData.buttons = self.buttons
+        self.moveData.buttons = command.buttons
         self.moveData.clientMaxSpeed = self.maxSpeed
         self.moveData.velocity = Vec3(self.velocity)
         self.moveData.onGround = self.onGround
+        self.moveData.firstRunOfFunctions = True
 
         self.moveData.forwardMove = command.move[1]
         self.moveData.sideMove = command.move[0]
@@ -277,7 +357,7 @@ class DistributedTFPlayerShared:
 
         # Extract the new position.
         self.velocity = Vec3(self.moveData.velocity)
-        self.oldButtons = self.moveData.buttons
+        self.lastButtons = self.moveData.buttons
         self.onGround = self.moveData.onGround
         self.maxSpeed = self.moveData.maxSpeed
         self.setPos(self.moveData.origin)

@@ -21,6 +21,8 @@ import random
 
 class TFWeapon(BaseClass):
 
+    DropAmmo = True
+
     def __init__(self):
         BaseClass.__init__(self)
         self.weaponMode = TFWeaponMode.Primary
@@ -49,6 +51,19 @@ class TFWeapon(BaseClass):
                 'timeIdleEmpty': 0.0,
                 'smackDelay': 0.5,
                 'punchAngle': 0
+            },
+            TFWeaponMode.Secondary: {
+                'bulletsPerShot': 1,
+                'ammoPerShot': 1,
+                'spread': 0.0,
+                'damage': 1,
+                'range': 8192,
+                'projectile': TFProjectileType.Bullet,
+                'timeIdle': 1.0,
+                'timeFireDelay': 1.0,
+                'timeIdleEmpty': 0.0,
+                'smackDelay': 0.5,
+                'punchAngle': 0
             }
         }
 
@@ -62,7 +77,9 @@ class TFWeapon(BaseClass):
                 Activity.VM_Reload: Activity.Primary_VM_Reload,
                 Activity.VM_Reload_Start: Activity.Primary_VM_Reload_Start,
                 Activity.VM_Reload_Finish: Activity.Primary_VM_Reload_End,
-                Activity.VM_SecondaryFire: Activity.Primary_VM_SecondaryFire
+                Activity.VM_SecondaryFire: Activity.Primary_VM_SecondaryFire,
+                Activity.Attack_Stand_Prefire: Activity.Primary_Attack_Stand_Prefire,
+                Activity.Attack_Stand_Postfire: Activity.Primary_Attack_Stand_Postfire
             },
 
             TFWeaponType.Secondary: {
@@ -95,9 +112,17 @@ class TFWeapon(BaseClass):
                 Activity.Jump_Land: Activity.Primary_Jump_Land,
                 Activity.Double_Jump_Crouch: Activity.Primary_Double_Jump_Crouch,
                 Activity.Attack_Stand: Activity.Primary_Attack_Stand,
+                Activity.Attack_Stand_Prefire: Activity.Primary_Attack_Stand_Prefire,
+                Activity.Attack_Stand_Postfire: Activity.Primary_Attack_Stand_Postfire,
                 Activity.Attack_Crouch: Activity.Primary_Attack_Crouch,
+                Activity.Attack_Crouch_Prefire: Activity.Primary_Attack_Crouch_Prefire,
+                Activity.Attack_Crouch_Postfire: Activity.Primary_Attack_Crouch_Postfire,
                 Activity.Attack_Swim: Activity.Primary_Attack_Swim,
+                Activity.Attack_Swim_Prefire: Activity.Primary_Attack_Swim_Prefire,
+                Activity.Attack_Swim_Postfire: Activity.Primary_Attack_Swim_Postfire,
                 Activity.Attack_Air_Walk: Activity.Primary_Attack_Air_Walk,
+                Activity.Attack_Air_Walk_Prefire: Activity.Primary_Attack_Air_Walk_Prefire,
+                Activity.Attack_Air_Walk_Postfire: Activity.Primary_Attack_Air_Walk_Postfire,
                 Activity.Reload_Stand: Activity.Primary_Reload_Stand,
                 Activity.Reload_Stand_Loop: Activity.Primary_Reload_Stand_Loop,
                 Activity.Reload_Stand_End: Activity.Primary_Reload_Stand_End,
@@ -267,6 +292,8 @@ class TFWeapon(BaseClass):
                 self.addViewModelBobHelper(info, bobState)
 
     def translateViewModelActivity(self, activity):
+        if self.UsesViewModel:
+            return activity
         return self.vmActTable[self.weaponType].get(activity, activity)
 
     def translateActivity(self, activity):
@@ -296,7 +323,7 @@ class TFWeapon(BaseClass):
         BaseClass.primaryAttack(self)
 
         if not IS_CLIENT:
-            self.player.sendUpdate('makeAngry')
+            self.player.pushExpression('specialAction')
 
         if self.reloadsSingly:
             self.reloadMode = TFReloadMode.Start
@@ -534,6 +561,11 @@ class TFWeapon(BaseClass):
             Creates a medium ammo pack using the weapon's model from the
             current position.
             """
+
+            if not self.DropAmmo:
+                # Don't drop if the weapon shouldn't drop ammo.
+                return
+
             from .DWeaponDrop import DWeaponDropAI
             p = DWeaponDropAI()
             #p.skin = self.team
@@ -544,6 +576,7 @@ class TFWeapon(BaseClass):
             # Make sure the weapon goes to sleep and doesn't jitter, because
             # the pickup only becomes active when it's asleep.
             p.node().setSleepThreshold(0.25)
+            p.node().setCcdEnabled(True)
             p.singleUse = True
             p.packType = "med"
             p.metalAmount = 100

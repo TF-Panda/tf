@@ -71,7 +71,7 @@ class DPickupItemBase(DistributedEntity):
             if self.singleUse and self.lifetime > 0:
                 self.addTask(self.__lifetimeTask, self.uniqueName('itemLifetime'), appendTask=True, delay=self.lifetime)
             self.enabled = True
-            self.emitSound("Item.Materialize")
+            self.emitSoundSpatial("Item.Materialize")
 
         def giveItem(self, ent):
             """
@@ -121,7 +121,7 @@ class DPickupItemBase(DistributedEntity):
             self.enabled = True
             self.hidden = 0
             # Play the extremely satisfying spawning sound.
-            self.emitSound("Item.Materialize")
+            self.emitSoundSpatial("Item.Materialize")
             # If someone was waiting for us, give the item to them now.
             if self.currentlyTouching:
                 self.onTriggerEnter(self.currentlyTouching)

@@ -7,11 +7,13 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, Parallel, LerpPosInterval, LerpScaleInterval
+from direct.directbase import DirectRender
 
 from tf.tfbase import Sounds
 
 from .DistributedGameBase import DistributedGameBase
 from .FogManager import FogManager
+from .SkyBox import SkyBox
 
 play_sound_coll = PStatCollector("App:Sounds:PlaySound")
 
@@ -32,6 +34,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         DistributedObject.__init__(self)
         DistributedGameBase.__init__(self)
 
+        self.sky = None
         self.visDebug = False
         self.loadedVisBoxes = False
         self.clusterNodes = None
@@ -140,9 +143,35 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
         base.dynRender.node().levelShutdown()
+        if self.sky:
+            self.sky.destroy()
+            self.sky = None
 
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
+
+        # Extract the skybox name.
+        worldEnt = self.lvlData.getEntity(0)
+        worldData = worldEnt.getProperties()
+        skyName = "sky_well_01_hdr"
+        if worldData.hasAttribute("skyname"):
+            skyName = worldData.getAttributeValue("skyname").getString()
+            skyName += "_hdr"
+        print("skyname:", skyName)
+        self.sky = SkyBox(skyName)
+
+        self.lvlData.setCam(base.cam)
+        self.lvlData.buildTraceScene()
+
+        clnp = self.lvlData.getDirLight()
+        if not clnp.isEmpty():
+            cl = clnp.node()
+            cl.setSceneCamera(base.cam)
+            cl.setShadowCaster(True, 4096, 4096)
+            cl.setCameraMask(DirectRender.ShadowCameraBitmask)
+            clnp.reparentTo(base.cam)
+            clnp.setCompass()
+        #base.csmDebug.setShaderInput("cascadeSampler", cl.getShadowMap())
 
         saData = self.lvlData.getSteamAudioSceneData()
         base.sfxManagerList[0].loadSteamAudioScene(saData.verts, saData.tris, saData.tri_materials, saData.materials)
@@ -226,7 +255,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                 sprops._binaural_pathing = True
                 sprops._enable_distance_atten = True
                 sprops._enable_air_absorption = True
-                sprops._bilinear_hrtf = True
+                sprops._bilinear_hrtf = False
                 snd.applySteamAudioProperties(sprops)
                 snd.setLoop(True)
                 snd.play()
@@ -266,42 +295,83 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         # Pre-render the entire scene to get all data uploaded and shaders compiled.
         print("Pre-rendering level...")
-        root = self.lvl.find("**/+MapRoot")
-        visNodes = base.render.findAllMatches("**/+DynamicVisNode")
+        #root = self.lvl.find("**/+MapRoot")
+        #visNodes = base.render.findAllMatches("**/+DynamicVisNode")
         base.render.node().setBounds(OmniBoundingVolume())
         base.render.node().setFinal(True)
-        root.node().setPvsCull(False)
-        for node in visNodes:
-            node.node().setCullingEnabled(False)
+        #root.node().setPvsCull(False)
+        #for node in visNodes:
+        #    node.node().setCullingEnabled(False)
         # Pre-render now.
+        base.graphicsEngine.renderFrame()
         base.graphicsEngine.renderFrame()
         base.render.node().clearBounds()
         base.render.node().setFinal(False)
-        root.node().setPvsCull(True)
-        for node in visNodes:
-            node.node().setCullingEnabled(True)
+        #root.node().setPvsCull(True)
+        #for node in visNodes:
+        #    node.node().setCullingEnabled(True)
         print("Pre-render finished.")
+
+    def getTeamFormat(self, team):
+        if team == 0:
+            return "\1redteam\1"
+        else:
+            return "\1blueteam\1"
+
+    def killEvent(self, killerDoId, assistDoId, weaponDoId, killedDoId):
+        if not hasattr(base, 'localAvatar'):
+            return
+
+        from tf.player.DistributedTFPlayer import DistributedTFPlayer
+        from tf.object.BaseObject import BaseObject
+
+        killer = base.cr.doId2do.get(killerDoId)
+        assist = base.cr.doId2do.get(assistDoId)
+        weapon = base.cr.doId2do.get(weaponDoId)
+        killed = base.cr.doId2do.get(killedDoId)
+
+        suicide = killer is not None and killed is not None and killer == killed
+
+        priority = killer == base.localAvatar or assist == base.localAvatar or killed == base.localAvatar
+        if suicide:
+            # Someone killed themselves.
+            if assist:
+                text = self.getTeamFormat(assist.team) + killer.playerName + "\2 finished off " + self.getTeamFormat(killed.team) + killed.playerName + "\2"
+            else:
+                text = self.getTeamFormat(killed.team) + killed.playerName + "\2 bid farewell, cruel world!"
+        else:
+            # Someone killed someone else.
+            text = ""
+            if isinstance(killer, BaseObject):
+                text += self.getTeamFormat(killer.team) + "Sentry Gun"
+                builder = base.cr.doId2do.get(killer.builderDoId)
+                if builder:
+                    if builder == base.localAvatar:
+                        priority = True
+                    text += " (" + builder.playerName + ")"
+                text += "\2"
+            else:
+                text += self.getTeamFormat(killer.team) + killer.playerName + "\2"
+                if assist:
+                    text += " + " + self.getTeamFormat(assist.team) + assist.playerName + "\2"
+            text += " killed "
+            if isinstance(killed, BaseObject):
+                text += self.getTeamFormat(killed.team) + "Sentry Gun"
+                builder = base.cr.doId2do.get(killed.builderDoId)
+                if builder:
+                    if builder == base.localAvatar:
+                        priority = True
+                    text += " (" + builder.playerName + ")"
+                text += "\2"
+            else:
+                text += self.getTeamFormat(killed.team) + killed.playerName + "\2"
+
+        base.localAvatar.killFeed.pushEvent(text, priority)
 
     def delete(self):
         del base.game
         DistributedObject.delete(self)
         DistributedGameBase.delete(self)
-
-    def emitSound(self, soundIndex, waveIndex, volume, pitch, origin):
-        sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch, origin)
-        if sound:
-            play_sound_coll.start()
-            sound.play()
-            play_sound_coll.stop()
-
-    def emitSoundSpatial(self, soundIndex, waveIndex, volume, pitch, doId, offset):
-        """
-        Plays a spatialized sound, attached to and offset from the given entity.
-        """
-        ent = base.cr.doId2do.get(doId)
-        if not ent:
-            return
-
 
     def doExplosion(self, pos, scale):
         root = base.dynRender.attachNewNode("expl")
@@ -339,13 +409,15 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         np.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
         segs.setVertexColor(1, Vec4(0.0))
 
+        tracerScale = min(64, traceLen)
+
         seq = Sequence()
 
         p1 = Parallel()
         p1.append(LerpPosInterval(np, length, end, start))
-        p1.append(LerpScaleInterval(np, length, (1, traceLen, 1), (1, 0.01, 1)))
+        p1.append(LerpScaleInterval(np, tracerScale / speed, (1, tracerScale, 1), (1, 0.01, 1)))
         p2 = Parallel()
-        p2.append(LerpScaleInterval(np, length, (1, 0.01, 1), (1, traceLen, 1)))
+        p2.append(LerpScaleInterval(np, tracerScale / speed, (1, 0.01, 1), (1, tracerScale, 1)))
 
         seq.append(p1)
         seq.append(p2)
@@ -354,7 +426,14 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         seq.start()
 
     def doTracers(self, origin, ends):
+        if base.cr.prediction.inPrediction:
+            saveFrameTime = float(base.frameTime)
+            base.setFrameTime(base.getRenderTime())
+
         for i in range(len(ends)):
             self.doTracer(origin, ends[i])
+
+        if base.cr.prediction.inPrediction:
+            base.setFrameTime(saveFrameTime)
 
 

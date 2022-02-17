@@ -31,10 +31,14 @@ class TFPlayerAnimState:
         self.currentMainSequenceActivity = Activity.Invalid
         self.specificMainSequence = -1
         self.inSwim = False
+        self.inAirWalk = False
         self.jumping = False
         self.firstJumpFrame = False
         self.jumpStartTime = 0.0
         self.idealActivity = Activity.Invalid
+
+    def isGestureSlotPlaying(self, slot, activity):
+        return (not self.player.isCurrentChannelFinished(layer=slot)) and (self.player.getCurrentActivity(layer=slot) == activity)
 
     def restartGesture(self, slot, activity, autoKill = True, blendIn = 0.1, blendOut = 0.1):
         self.player.startChannel(act = self.translateActivity(activity),
@@ -42,9 +46,17 @@ class TFPlayerAnimState:
                                  layer = slot)
 
     def doAnimationEvent(self, event, data):
+        #print("anim event", event)
+        from tf.weapon.DMinigun import DMinigun
         if event == PlayerAnimEvent.AttackPrimary:
-            # Weapon primary fire.
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
+            isMinigun = isinstance(self.player.getActiveWeaponObj(), DMinigun)
+            if isMinigun:
+                gestureActivity = Activity.Attack_Stand
+                if not self.isGestureSlotPlaying(GestureSlot.AttackAndReload, self.translateActivity(gestureActivity)):
+                    self.restartGesture(GestureSlot.AttackAndReload, gestureActivity)
+            else:
+                # Weapon primary fire.
+                self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
         elif event == PlayerAnimEvent.AttackSecondary:
             # Weapon secondary fire.
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
@@ -68,10 +80,27 @@ class TFPlayerAnimState:
             self.firstJumpFrame = True
             self.jumpStartTime = globalClock.getFrameTime()
             #self.restartMainSequence()
+        elif event == PlayerAnimEvent.DoubleJump:
+            if not self.jumping:
+                self.jumping = True
+                self.firstJumpFrame = True
+                self.jumpStartTime = globalClock.getFrameTime()
+
+            self.inAirWalk = False
+
+            self.restartGesture(GestureSlot.Jump, Activity.Double_Jump)
+
         elif event == PlayerAnimEvent.AttackPre:
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Primary_Attack_Stand_Prefire)
+            isMinigun = isinstance(self.player.getActiveWeaponObj(), DMinigun)
+            autoKill = False
+            if isMinigun:
+                autoKill = True
+            #print("attack pre")
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand_Prefire, autoKill=autoKill)
+
         elif event == PlayerAnimEvent.AttackPost:
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Primary_Attack_Stand_Postfire)
+            #print("attack post")
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand_Postfire)
 
     def angleNormalize(self, ang):
         ang = ang % 360
@@ -282,8 +311,8 @@ class TFPlayerAnimState:
             pitchParam.setValue(self.eyePitch)
         #self.player.lookPitch = pitchParam.getNormValue()
 
-        forwardSpeed = BaseSpeed * self.player.classInfo.ForwardFactor
-        backwardSpeed = BaseSpeed * self.player.classInfo.BackwardFactor
+        forwardSpeed = self.player.maxSpeed
+        backwardSpeed = self.player.maxSpeed
         moveX = vel[0] / forwardSpeed
         moveY = vel[1] / forwardSpeed if vel[1] > 0 else vel[1] / backwardSpeed
         if moveXParam:

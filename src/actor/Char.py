@@ -220,7 +220,7 @@ class Char(Actor):
         # hierarchy.  FIXME: better solution for this
         top = self.getTop()
         visible = top not in (base.hidden, NodePath()) and not self.isHidden()
-        if not visible:
+        if not visible or (base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted):
             return
 
         queue = AnimEventQueue()
@@ -238,10 +238,23 @@ class Char(Actor):
             event = channel.getEvent(info.event)
             self.fireEvent(pos, hpr, event.getEvent(), event.getOptions())
 
+    def shouldPlayAnimEventSound(self):
+        return True
+
     def fireEvent(self, pos, angles, event, options):
         if event == AnimEvent.Client_Play_Sound:
+
+            from tf.entity.DistributedEntity import DistributedEntity
+            shouldSpatialize = False
+            if isinstance(self, DistributedEntity) and \
+                self != base.localAvatar and \
+                self.doId not in base.localAvatar.weapons and \
+                self != base.localAvatar.viewModel:
+                # Don't spatialize local avatar or local avatar weapon anim event sounds.
+                shouldSpatialize = True
+
             soundName = options
-            sound = createSoundByName(soundName)
+            sound = createSoundByName(soundName, spatial=shouldSpatialize)
             if not sound:
                 return
             info = Sounds[soundName]
@@ -250,7 +263,8 @@ class Char(Actor):
                 if currSound:
                     currSound.stop()
             self.soundsByChannel[info.channel] = sound
-            sound.set3dAttributes(pos[0], pos[1], pos[2], 0, 0, 0)
+            if shouldSpatialize:
+                self.registerSpatialSound(sound, self.getWorldSpaceCenter() - self.getPos(base.render))
             sound.play()
 
         elif event == AnimEvent.Client_Bodygroup_Set_Value:
@@ -434,10 +448,6 @@ class Char(Actor):
 
         if loadHitBoxes:
             self.setupHitBoxes()
-
-        if hasattr(base, 'camera'):
-            for eyeNp in self.findAllMatches("**/+EyeballNode"):
-                eyeNp.node().setViewTarget(base.camera, Point3())
 
         self.loadBodygroups()
 

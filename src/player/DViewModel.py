@@ -34,13 +34,28 @@ class DViewModel(DistributedChar, DViewModelShared):
         self.doAnimDebug = False
         self.accept('u', self.toggleAnimDebug)
 
+        # We shouldn't attempt to predict the view model transform.
+        # Neither the server or client simulate it, and the view is
+        # setup before rendering.
+        self.removePredictionField("pos")
+        self.removePredictionField("hpr")
+
+    def RecvProxy_pos(self, x, y, z):
+        pass
+
+    def RecvProxy_rot(self, r, i, j, k):
+        pass
+
+    def RecvProxy_scale(self, sx, sy, sz):
+        pass
+
     def toggleAnimDebug(self):
         self.doAnimDebug = not self.doAnimDebug
 
     def debugAnim(self):
         if not self.character or not self.doAnimDebug:
             return
-        self.character.setAutoAdvanceFlag(False)
+        #sself.character.setAutoAdvanceFlag(False)
         layer = self.character.getAnimLayer(0)
         print("\n")
         print("curtime", globalClock.getFrameTime())

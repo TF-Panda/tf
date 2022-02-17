@@ -71,7 +71,7 @@ class TFWeaponGun(BaseClass):
             self.reloadMode = TFReloadMode.Start
 
         if not IS_CLIENT:
-            self.player.sendUpdate('makeAngry')
+            self.player.pushExpression('specialAction')
 
     def secondaryAttack(self):
         if self.inAttack2:
@@ -104,19 +104,25 @@ class TFWeaponGun(BaseClass):
         self.updatePunchAngles(player)
 
     def doFireEffects(self):
-        return
+        if self.HideWeapon:
+            return
+
         if IS_CLIENT:
-            if base.cr.prediction.firstTimePredicted:
-                if self.isOwnedByLocalPlayer():
-                    # Get the muzzle from the view model weapon.
-                    muzzle = self.viewModelChar.find("**/muzzle")
-                    size = 0.5
+            if base.cr.prediction.inPrediction and base.cr.prediction.firstTimePredicted:
+                return
+            if self.isOwnedByLocalPlayer():
+                # Get the muzzle from the view model weapon.
+                if self.UsesViewModel:
+                    muzzle = self.player.viewModel.find("**/muzzle")
                 else:
-                    # World model.
-                    muzzle = self.find("**/muzzle")
-                    size = 1.0
-                if not muzzle.isEmpty():
-                    makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), size, (1, 0.75, 0, 1))
+                    muzzle = self.viewModelChar.find("**/muzzle")
+                size = 0.5
+            else:
+                # World model.
+                muzzle = self.find("**/muzzle")
+                size = 1.0
+            if not muzzle.isEmpty():
+                makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), size, (1, 0.75, 0, 1))
         else:
             # Don't send to owner, who is predicting the effect.
             self.sendUpdate('doFireEffects', excludeClients = [self.player.owner])
@@ -225,13 +231,33 @@ class TFWeaponGun(BaseClass):
         weaponData = self.weaponData.get(self.weaponMode, {})
         origin = self.player.getEyePosition()
         angles = self.player.viewAngles
-        tracerOrigin = origin
-        #if IS_CLIENT:
-        #    muzzle = self.viewModelChar.find("**/muzzle")
-        #else:
-        #    muzzle = self.find("**/muzzle")
-        #if not muzzle.isEmpty():
-        #    tracerOrigin = muzzle.getPos(base.render)
+
+        tracerOrigin = None
+        char = None
+        charNP = None
+        if not self.HideWeapon:
+            if IS_CLIENT:
+                if base.cr.prediction.firstTimePredicted:
+                    if self.UsesViewModel:
+                        char = self.player.viewModel.character
+                        charNP = self.player.viewModel.characterNp
+                    else:
+                        char = self.viewModelChar.character
+                        charNP = self.viewModelChar.characterNp
+            else:
+                char = self.character
+                charNP = self.characterNp
+
+        if char is not None:
+            muzzleAttachment = char.findAttachment("muzzle")
+            if muzzleAttachment != -1:
+                tracerOrigin = char.getAttachmentTransform(muzzleAttachment).getPos()
+                tracerOrigin = charNP.getMat(NodePath()).xformPoint(tracerOrigin)
+
+                print("VM origin is", self.player.viewModel.getNetTransform())
+
+        print("tracer origin", tracerOrigin)
+
         fireBullets(self.player, origin, angles, self,
                     self.weaponMode,
                     base.net.predictionRandomSeed & 255,

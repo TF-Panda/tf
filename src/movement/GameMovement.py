@@ -1,3 +1,6 @@
+# Code referenced exactly from gamemovement.cpp/tf_gamemovement.cpp.
+# It's horrible, want to clean it up eventually.
+
 from panda3d.core import *
 from panda3d.pphysics import *
 
@@ -6,6 +9,7 @@ from .MoveType import MoveType
 
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
+from tf.player.TFClass import Class
 
 import math
 
@@ -38,8 +42,11 @@ class GameMovement:
         self.speedCropped = False
         self.player = player
         self.mv = moveData
-        self.mv.maxSpeed = sv_maxspeed.getValue()
-        self.mv.onGround = self.isControllerOnGround()
+        #self.mv.maxSpeed = sv_maxspeed.getValue()
+        self.mv.maxSpeed = self.player.maxSpeed
+        #self.mv.onGround = self.isControllerOnGround()
+        #if self.mv.onGround:
+        #    self.player.airDashing = False
         #if IS_CLIENT:
         #    print("Start move, on ground?", self.mv.onGround)
         ##    print("buttons", self.mv.buttons)
@@ -56,7 +63,7 @@ class GameMovement:
         self.player = None
 
     def finishMove(self):
-        pass
+        self.mv.oldButtons = self.mv.buttons
 
     def calcRoll(self, angles, velocity, rollAngle, rollSpeed):
         q = Quat()
@@ -197,7 +204,12 @@ class GameMovement:
         self.right = q.getRight()
         self.up = q.getUp()
 
+        if self.mv.velocity.z > 250.0:
+            self.mv.onGround = False
+
         self.oldWaterLevel = self.player.waterLevel
+
+        self.player.updateStepSound(self.mv.origin, self.mv.velocity)
 
         self.updateDuckJumpEyeOffset()
         self.duck()
@@ -207,6 +219,8 @@ class GameMovement:
             self.fullWalkMove()
         else:
             assert False
+
+        # TODO: TF water interaction
 
     def checkVelocity(self):
         for i in range(3):
@@ -236,6 +250,7 @@ class GameMovement:
         self.checkVelocity()
 
     def canAccelerate(self):
+        # TODO: false if water jumping?
         return True
 
     def accelerate(self, wishdir, wishspeed, accel):
@@ -261,49 +276,69 @@ class GameMovement:
         self.mv.velocity += wishdir * accelspeed
 
     def walkMove(self):
-        q = Quat()
-        # Determine forward vector from yaw only.
-        q.setHpr((self.mv.viewAngles[0], 0, 0))
-        forward = q.getForward()
-        up = q.getUp()
-        right = q.getRight()
+        # Get movement direction, ignoring Z.
+        forward = Vec3(self.forward)
+        right = Vec3(self.right)
+        forward.z = 0.0
+        right.z = 0.0
+        forward.normalize()
+        right.normalize()
 
         fmove = self.mv.forwardMove
         smove = self.mv.sideMove
 
-        wishvel = Vec3(0)
+        wishDirection = Vec3(
+            forward.x * fmove + right.x * smove,
+            forward.y * fmove + right.y * smove,
+            0
+        )
 
-        if True:
-            if forward[2] != 0:
-                forward[2] = 0
-                forward.normalize()
+        # Calculate the speed and direction of movement, then clamp the speed.
+        wishSpeed = wishDirection.length()
+        if wishSpeed > 0.0:
+            wishDirection /= wishSpeed
+        wishSpeed = max(0.0, min(self.mv.maxSpeed, wishSpeed))
 
-            if right[2] != 0:
-                right[2] = 0
-                right.normalize()
+        # Accelerate in the x/y plane.
+        self.mv.velocity.z = 0.0
+        self.accelerate(wishDirection, wishSpeed, sv_accelerate.getValue())
 
-        wishvel = (forward*fmove) + (right*smove)
-        wishvel[2] = 0
-        wishdir = Vec3(wishvel)
-        wishspeed = wishdir.length()
-        wishdir.normalize()
+        # Clamp the players speed in x/y.
+        newSpeed = self.mv.velocity.length()
+        if newSpeed > self.mv.maxSpeed:
+            scale = self.mv.maxSpeed / newSpeed
+            self.mv.velocity.x *= scale
+            self.mv.velocity.y *= scale
 
-        # Clamp to server defined min/max.
-        if (wishspeed != 0.0) and (wishspeed > self.mv.maxSpeed):
-            wishvel *= self.mv.maxSpeed / wishspeed
-            wishspeed = self.mv.maxSpeed
+        # Now reduce their backwards speed to some percent of max,
+        # if they are travelling backwards unless they are under some minimum,
+        # to not penalize deployed snipers or heavies.
+        tf_clamp_back_speed = 0.9
+        tf_clamp_back_speed_min = 100
+        if (tf_clamp_back_speed < 1.0 and self.mv.velocity.length() > tf_clamp_back_speed_min):
+            dot = forward.dot(self.mv.velocity)
 
-        self.mv.velocity[2] = 0
-        self.accelerate(wishdir, wishspeed, sv_accelerate.getValue())
-        self.mv.velocity[2] = 0
+            # Are we moving backwards at all?
+            if dot < 0:
+                backMove = forward * dot
+                rightMove = right * right.dot(self.mv.velocity)
+
+                # Clamp the back move vector if it is faster than max.
+                backSpeed = backMove.length()
+                maxBackSpeed = (self.mv.maxSpeed * tf_clamp_back_speed)
+
+                if backSpeed > maxBackSpeed:
+                    backMove *= maxBackSpeed / backSpeed
+
+                # Reassemble velocity.
+                self.mv.velocity = backMove + rightMove
 
         # Add in any base velocity to the current velocity
         self.mv.velocity += self.player.baseVelocity
-        spd = self.mv.velocity.length()
 
+        spd = self.mv.velocity.length()
         if spd < 1.0:
             self.mv.velocity.set(0, 0, 0)
-            # Now pull the base velocity back out.  Base velocity is set if you are on a moving object.
             self.mv.velocity -= self.player.baseVelocity
             return
 
@@ -314,7 +349,7 @@ class GameMovement:
         flags = self.player.controller.move(globalClock.getDt(), vel, 0.1)
         self.mv.origin = self.player.controller.getFootPosition()
 
-        self.mv.outWishVel += wishdir * wishspeed
+        self.mv.outWishVel += wishDirection * wishSpeed
 
         # This is the new, clipped velocity.
         self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / globalClock.getDt()
@@ -356,11 +391,9 @@ class GameMovement:
         self.mv.outWishVel += wishdir * accelspeed
 
     def airMove(self):
-        q = Quat()
-        q.setHpr(self.mv.viewAngles)
-        forward = q.getForward()
-        up = q.getUp()
-        right = q.getRight()
+        forward = Vec3(self.forward)
+        up = Vec3(self.up)
+        right = Vec3(self.right)
 
         fmove = self.mv.forwardMove
         smove = self.mv.sideMove
@@ -456,13 +489,36 @@ class GameMovement:
 
         # TODO: See if we are water jumping.
 
-        if not self.mv.onGround:
-            self.mv.oldButtons &= ~InputFlag.Jump
-            return False # in air, so no effect
+        # Cannot jump while aiming.
+        if self.player.inCondition(self.player.CondAiming):
+            return False
+
+        isScout = self.player.tfClass == Class.Scout
+        airDash = False
+        onGround = bool(self.mv.onGround)
+
+        #if not self.mv.onGround:
+        #    self.mv.oldButtons &= ~InputFlag.Jump
+        #    return False # in air, so no effect
 
         if self.mv.oldButtons & InputFlag.Jump:
             # Don't pogo stick!
             return False
+
+        # In air, so ignore jumps (unless you are a scout).
+        if not onGround:
+            if isScout and not self.player.airDashing:
+                airDash = True
+            else:
+                self.mv.oldButtons |= InputFlag.Jump
+                return False
+
+        # Check for a scout air dash.
+        if airDash:
+            self.airDash()
+            return True
+
+        self.preventBunnyJumping()
 
         # TODO: Cannot jump while in the unduck transition.
         # TODO: Still updating eye position.
@@ -472,9 +528,12 @@ class GameMovement:
 
         # Start jump animation.
         self.player.doAnimationEvent(PlayerAnimEvent.Jump)
+        # Play footstep sound.
+        self.player.playStepSound(self.mv.origin, 1.0, True)
 
         # In the air now.
         self.mv.onGround = False
+        #print("jump at cmdnum", self.player.currentCommand.commandNumber)
 
         groundFactor = 1.0
 
@@ -485,7 +544,7 @@ class GameMovement:
         # Accelerate upward
         # TODO: IF we are ducking
         startZ = self.mv.velocity[2]
-        self.mv.velocity[2] += groundFactor * mul
+        self.mv.velocity[2] += mul
 
         self.finishGravity()
 
@@ -497,10 +556,71 @@ class GameMovement:
 
         return True
 
+    def airDash(self):
+        """
+        Does a Scout air dash.
+        """
+
+        assert(sv_gravity.getValue() == 800)
+        dashZ = 268.3281572999747
+
+        # Get the wish direction.
+        forward = Vec3(self.forward)
+        forward[2] = 0.0
+        right = Vec3(self.right)
+        right[2] = 0.0
+        forward.normalize()
+        right.normalize()
+
+        # Find the direction, velocity in the x/y plane.
+        wishDirection = Vec3(
+            forward.x * self.mv.forwardMove + right.x * self.mv.sideMove,
+            forward.y * self.mv.forwardMove + right.y * self.mv.sideMove,
+            0.0
+        )
+
+        # Update the velocity on the Scout.
+        self.mv.velocity = wishDirection
+        self.mv.velocity.z += dashZ
+
+        self.player.airDashing = True
+
+        self.player.doAnimationEvent(PlayerAnimEvent.DoubleJump)
+
+    def preventBunnyJumping(self):
+        # Speed at which bunny jumping is limited.
+        maxScaledSpeed = 1.2 * self.mv.maxSpeed
+        if maxScaledSpeed <= 0.0:
+            return
+
+        # Current player speed.
+        spd = self.mv.velocity.length()
+        if spd <= maxScaledSpeed:
+            return
+
+        # Apply this cropping friction to velocity.
+        fraction = maxScaledSpeed / spd
+        self.mv.velocity *= fraction
+
     #def checkFalling(self):
 
+    def printData(self):
+        print("move data at cmd num", self.player.currentCommand.commandNumber)
+        print("buttons:", self.mv.buttons)
+        print("old buttons:", self.mv.oldButtons)
+        print("view angles:", self.mv.viewAngles)
+        print("origin:", self.mv.origin)
+        print("vel:", self.mv.velocity)
+        print("wishmove:", self.mv.forwardMove, self.mv.sideMove, self.mv.upMove)
+        print("on ground:", self.mv.onGround)
+        print("max speed:", self.mv.maxSpeed)
 
     def fullWalkMove(self):
+        #print("PRE WALK")
+        #self.printData()
+
+        #self.mv.onGround = self.isControllerOnGround()
+
         if (not self.checkWater()):
             self.startGravity()
 
@@ -521,11 +641,20 @@ class GameMovement:
         # Do the move.  This will clip our velocity and tell us if we are on
         # the ground.
         if self.mv.onGround:
+            #wasOnGround = True
             self.walkMove()
         else:
+            #wasOnGround = False
             self.airMove()
 
+        #print("POST WALK")
+        #self.printData()
+
         self.mv.onGround = self.isControllerOnGround()
+        if self.mv.onGround:
+            #if not wasOnGround:
+                #print("landed at cmdnum", self.player.currentCommand.commandNumber)
+            self.player.airDashing = False
 
         self.checkVelocity()
 

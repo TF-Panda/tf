@@ -16,10 +16,11 @@ from tf.player.DistributedTFPlayerShared import DistributedTFPlayerShared
 SWING_MINS = Vec3(-18)
 SWING_MAXS = Vec3(18)
 
-class DWrench(TFWeaponMelee):
+class DistributedWrench(TFWeaponMelee):
 
     WeaponModel = "models/weapons/c_wrench"
-    WeaponViewModel = "models/weapons/c_wrench"
+    WeaponViewModel = "models/weapons/v_wrench_engineer"
+    UsesViewModel = True
 
     def __init__(self):
         TFWeaponMelee.__init__(self)
@@ -108,5 +109,5 @@ class DWrench(TFWeaponMelee):
         return TFLocalizer.Wrench
 
 if not IS_CLIENT:
-    DWrenchAI = DWrench
-    DWrenchAI.__name__ = 'DWrenchAI'
+    DistributedWrenchAI = DistributedWrench
+    DistributedWrenchAI.__name__ = 'DistributedWrenchAI'

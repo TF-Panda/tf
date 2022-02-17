@@ -122,7 +122,7 @@ class SoundInfo:
 Sounds = {}
 AllSounds = []
 
-def createSound(info):
+def createSound(info, spatial=False, getWave=False):
     if not info:
         return None
 
@@ -140,7 +140,7 @@ def createSound(info):
     sound.set3dDistanceFactor(info.distMult)
     sound.setPlayRate(random.uniform(info.pitch[0], info.pitch[1]))
     sound.setVolume(random.uniform(info.volume[0], info.volume[1]))
-    if wave.spatialized:
+    if spatial:
         props = SteamAudioProperties()
         props._enable_occlusion = False
         props._enable_transmission = False
@@ -153,23 +153,26 @@ def createSound(info):
         #props._binaural_reflections = False
         sound.applySteamAudioProperties(props)
 
-    return sound
+    if getWave:
+        return (sound, wave)
+    else:
+        return sound
 
-def createSoundByName(name, getInfo=False):
+def createSoundByName(name, getInfo=False, spatial=False):
     info = Sounds.get(name, None)
     if not getInfo:
-        return createSound(info)
+        return createSound(info, spatial)
     else:
         return (createSound(info), info)
 
-def createSoundByIndex(index, getInfo=False):
+def createSoundByIndex(index, getInfo=False, spatial=False):
     info = AllSounds[index]
     if not getInfo:
-        return createSound(info)
+        return createSound(info, spatial)
     else:
         return (createSound(info), info)
 
-def createSoundClient(index, waveIndex, volume, pitch, pos, spatialized = False):
+def createSoundClient(index, waveIndex, volume, pitch, spatialized = False):
     csc_coll.start()
 
     if index >= len(AllSounds):
@@ -194,8 +197,7 @@ def createSoundClient(index, waveIndex, volume, pitch, pos, spatialized = False)
     sound.set3dDistanceFactor(info.distMult)
     sound.setPlayRate(pitch)
     sound.setVolume(volume)
-    sound.set3dAttributes(pos[0], pos[1], pos[2], 0, 0, 0)
-    if wave.spatialized:
+    if spatialized:
         props = SteamAudioProperties()
         props._enable_occlusion = False
         props._enable_transmission = False
@@ -211,7 +213,7 @@ def createSoundClient(index, waveIndex, volume, pitch, pos, spatialized = False)
     csc_coll.stop()
     return sound
 
-def createSoundServer(name, pos):
+def createSoundServer(name):
     info = Sounds.get(name, None)
     if not info:
         return None
@@ -224,7 +226,7 @@ def createSoundServer(name, pos):
     if waveIdx == -1:
         return None
 
-    return [info.index, waveIdx, random.uniform(info.volume[0], info.volume[1]), random.uniform(info.pitch[0], info.pitch[1]), pos]
+    return [info.index, waveIdx, random.uniform(info.volume[0], info.volume[1]), random.uniform(info.pitch[0], info.pitch[1])]
 
 def processSound(kv):
     global Sounds
