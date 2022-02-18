@@ -86,7 +86,7 @@ class DPipeBombProjectile(BaseClass):
                 self.removeTask(self.uniqueName('directHitTest'))
                 self.doingDirectTest = False
 
-            self.emitSoundSpatial("Weapon_Grenade_Pipebomb.Bounce")
+            #self.emitSoundSpatial("Weapon_Grenade_Pipebomb.Bounce")
 
         def __directHitTest(self, task):
             """

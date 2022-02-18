@@ -37,6 +37,7 @@ load-sounds scripts/game_sounds_footsteps.txt
 load-sounds scripts/game_sounds_weapons.txt
 load-sounds scripts/game_sounds_player.txt
 load-sounds scripts/game_sounds_vo.txt
+load-sounds scripts/game_sounds_physics.txt
 
 dc-file $TF/src/configfiles/tf.dc
 

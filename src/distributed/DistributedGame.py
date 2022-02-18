@@ -153,10 +153,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         # Extract the skybox name.
         worldEnt = self.lvlData.getEntity(0)
         worldData = worldEnt.getProperties()
-        skyName = "sky_well_01_hdr"
-        if worldData.hasAttribute("skyname"):
-            skyName = worldData.getAttributeValue("skyname").getString()
-            skyName += "_hdr"
+        skyName = "sky_upward_hdr"
+        #if worldData.hasAttribute("skyname"):
+        #    skyName = worldData.getAttributeValue("skyname").getString()
+        #    skyName += "_hdr"
         print("skyname:", skyName)
         self.sky = SkyBox(skyName)
 

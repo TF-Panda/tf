@@ -1,6 +1,8 @@
 from panda3d.pphysics import *
 from panda3d.core import *
 
+from tf.tfbase.SurfaceProperties import SurfaceProperties
+
 HardSounds = [
     "sound/physics/body/body_medium_impact_hard1.wav",
     "sound/physics/body/body_medium_impact_hard2.wav",
@@ -54,7 +56,7 @@ class Ragdoll(PhysRagdoll):
             part = self.collInfo.getPart(i)
             meshData = PhysConvexMeshData(part.mesh_data)
             mesh = PhysConvexMesh(meshData)
-            shape = PhysShape(mesh, PhysMaterial(0.25, 0.5, 0.75))
+            shape = PhysShape(mesh, SurfaceProperties['flesh'].getPhysMaterial())
             if part.parent != -1:
                 parentName = self.collInfo.getPart(part.parent).name
             else:

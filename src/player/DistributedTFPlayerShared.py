@@ -14,6 +14,7 @@ from .ObserverMode import ObserverMode
 from tf.tfbase import TFGlobals, TFFilters
 
 from tf.tfbase.TFGlobals import Contents, CollisionGroup
+from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce, addMultiDamage
 from tf.movement.MoveType import MoveType
 from tf.movement.GameMovement import g_game_movement
@@ -141,7 +142,23 @@ class DistributedTFPlayerShared:
             if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
                 return
 
-        steps = ["Default.StepLeft", "Default.StepRight"]
+        # Trace down to get current ground material, ignoring player.
+        surfaceDef = None
+        filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
+        result = PhysRayCastResult()
+        base.physicsWorld.raycast(result, Point3(origin) + (0, 0, 16), Vec3.down(), 32,
+                                  Contents.Solid, Contents.Empty, CollisionGroup.Empty, filter)
+        if result.hasBlock():
+            b = result.getBlock()
+            physMat = b.getMaterial()
+            if physMat:
+                # Get the surface definition associated with the PhysMaterial
+                # the ray hit.
+                surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
+        if not surfaceDef:
+            surfaceDef = SurfaceProperties['default']
+
+        steps = [surfaceDef.stepLeft, surfaceDef.stepRight]
         stepSoundName = steps[self.stepSide]
 
         self.stepSide = not self.stepSide
@@ -232,6 +249,26 @@ class DistributedTFPlayerShared:
                 # TODO
                 pass
 
+            # Play bullet impact sound for material we hit.
+            if not IS_CLIENT:
+                # Don't send to client who predicted it.
+                if self.owner is not None:
+                    exclude = [self.owner]
+                else:
+                    exclude = []
+                physMat = block.getMaterial()
+                surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
+                if not surfaceDef:
+                    surfaceDef = SurfaceProperties['default']
+                base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=exclude)
+            else:
+                if base.cr.prediction.firstTimePredicted:
+                    physMat = block.getMaterial()
+                    surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
+                    if not surfaceDef:
+                        surfaceDef = SurfaceProperties['default']
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition())
+
             if not IS_CLIENT:
                 # Server-specific.
                 dmgInfo = TakeDamageInfo()
@@ -275,7 +312,7 @@ class DistributedTFPlayerShared:
         mins = TFGlobals.VEC_HULL_MIN
         maxs = TFGlobals.VEC_HULL_MAX
         halfExts = Vec3((maxs[0] - mins[0]) / 2, (maxs[1] - mins[1]) / 2, (maxs[2] - mins[2]) / 2)
-        mat = PhysMaterial(0.3, 0.3, 0.0)
+        mat = SurfaceProperties[self.getModelSurfaceProp()].getPhysMaterial()
         self.controller = PhysBoxController(
             base.physicsWorld, self,
             halfExts, mat

@@ -3,7 +3,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from tf.distributed.TFServerRepository import TFServerRepository
 
-from tf.tfbase import Sounds, TFGlobals
+from tf.tfbase import Sounds, TFGlobals, SurfaceProperties
 
 from panda3d.core import *
 from panda3d.pphysics import *
@@ -20,6 +20,7 @@ class TFServerBase(HostBase):
         HostBase.__init__(self)
 
         Sounds.loadSounds(True)
+        SurfaceProperties.loadSurfaceProperties()
 
         self.showingBounds = False
 
@@ -53,7 +54,7 @@ class TFServerBase(HostBase):
         self.air = self.sv
         self.sr = self.sv
         self.net = self.sv
-        self.sv.game.changeLevel("cp_granary")
+        self.sv.game.changeLevel("tr_target")
 
         precacheList = [
             "models/buildables/sentry1",
@@ -102,5 +103,59 @@ class TFServerBase(HostBase):
         #    Thread.sleep(minDt - elapsed)
 
     def __physicsUpdate(self, task):
-        self.physicsWorld.simulate(globalClock.getDt())
+        dt = globalClock.getDt()
+
+        self.physicsWorld.simulate(dt)
+
+        # Process global contact events, play sounds.
+        while self.physicsWorld.hasContactEvent():
+            data = self.physicsWorld.popContactEvent()
+
+            if data.getNumContactPairs() == 0:
+                continue
+
+            pair = data.getContactPair(0)
+            if not pair.isContactType(PhysEnums.CTFound):
+                continue
+
+            if pair.getNumContactPoints() == 0:
+                continue
+
+            point = pair.getContactPoint(0)
+
+            speed = point.getImpulse().length()
+            if speed < 70.0:
+                continue
+
+            #a = data.getActorA()
+            #b = data.getActorB()
+
+            position = point.getPosition()
+
+            volume = speed * speed * (1.0 / (320.0 * 320.0))
+            volume = min(1.0, volume)
+
+            matA = point.getMaterialA(pair.getShapeA())
+            matB = point.getMaterialB(pair.getShapeB())
+
+            #force = speed / dt
+
+            # Play sounds from materials of both surfaces.
+            # This is more realistic, Source only played from one material.
+            if matA:
+                surfDefA = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matA)
+                if surfDefA:
+                    if speed >= 500:
+                        base.world.emitSoundSpatial(surfDefA.impactHard, position, volume)
+                    elif speed >= 100:
+                        base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume)
+            if matB:
+                surfDefB = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matB)
+                if surfDefB:
+                    if speed >= 500:
+                        base.world.emitSoundSpatial(surfDefB.impactHard, position, volume)
+                    elif speed >= 100:
+                        base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume)
+
+
         return task.cont

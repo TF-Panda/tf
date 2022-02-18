@@ -3,6 +3,7 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from tf.tfbase.TFGlobals import Contents
+from tf.tfbase.SurfaceProperties import SurfaceProperties
 
 from direct.directbase import DirectRender
 
@@ -65,7 +66,14 @@ class DistributedGameBase:
                         mesh = PhysTriangleMesh(mdata)
                     else:
                         mesh = PhysConvexMesh(mdata)
-                    mat = PhysMaterial(0.4, 0.25, 0.0)
+
+                    surfaceProp = "default"
+                    cdata = propModel.node().getCustomData()
+                    if cdata:
+                        if cdata.hasAttribute("surfaceprop"):
+                            surfaceProp = cdata.getAttributeValue("surfaceprop").getString().lower()
+                    mat = SurfaceProperties[surfaceProp].getPhysMaterial()
+
                     shape = PhysShape(mesh, mat)
                     cnode = PhysRigidStaticNode("propcoll")
                     cnode.addShape(shape)
@@ -145,12 +153,24 @@ class DistributedGameBase:
 
         physRoot = self.lvl.attachNewNode("physRoot")
         for i in range(data.getNumModelPhysDatas()):
-            meshBuffer = data.getModelPhysData(i)
+            mapModelPhysData = data.getModelPhysData(i)
+            meshBuffer = mapModelPhysData._phys_mesh_data
             if len(meshBuffer) == 0:
                 continue
             meshData = PhysTriangleMeshData(meshBuffer)
             geom = PhysTriangleMesh(meshData)
-            shape = PhysShape(geom, PhysMaterial(0.4, 0.25, 0.0))
+
+            materials = []
+            for j in range(mapModelPhysData.getNumSurfaceProps()):
+                materials.append(SurfaceProperties[mapModelPhysData.getSurfaceProp(j).lower()].getPhysMaterial())
+
+            shape = PhysShape(geom, materials[0])
+
+            # Append remaining materials if there are multiple.
+            if len(materials) > 1:
+                for j in range(1, len(materials)):
+                    shape.addMaterial(materials[j])
+
             body = PhysRigidStaticNode("model-phys-%i" % i)
             body.addShape(shape)
             body.setContentsMask(Contents.Solid)

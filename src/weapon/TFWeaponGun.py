@@ -217,9 +217,10 @@ class TFWeaponGun(BaseClass):
             rocket.damageType = self.damageType
             rocket.team = self.player.team
             rocket.skin = self.player.team
+            # Material for grenade comes from surfaceproperties now.
             rocket.setModel("models/weapons/w_grenade_grenadelauncher")
-            physMat = PhysMaterial(0.6, 0.2, 0.2)
-            rocket.node().getShape(0).setMaterial(physMat)
+            #physMat = PhysMaterial(0.6, 0.2, 0.2)
+            #rocket.node().getShape(0).setMaterial(physMat)
             rocket.node().setLinearVelocity(vel)
             rocket.node().setAngularVelocity((random.uniform(-1200, 1200), -600, 0))
             rocket.node().setCcdEnabled(True)

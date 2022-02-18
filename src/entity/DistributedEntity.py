@@ -13,6 +13,7 @@ from tf.actor.Char import Char
 from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, Contents, CollisionGroup, SolidShape, SolidFlag, angleMod
 from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
 from tf.tfbase import TFFilters, Sounds
+from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
 from direct.directbase import DirectRender
 
 if IS_CLIENT:
@@ -210,6 +211,9 @@ class DistributedEntity(BaseClass, NodePath):
     def makeModelCollisionShape(self):
         return None
 
+    def getModelSurfaceProp(self):
+        return "default"
+
     def makeCollisionShape(self):
         if self.solidShape == SolidShape.Model:
             return self.makeModelCollisionShape()
@@ -221,7 +225,7 @@ class DistributedEntity(BaseClass, NodePath):
             cy = (self.hullMins[1] + self.hullMaxs[1]) / 2
             cz = (self.hullMins[2] + self.hullMaxs[2]) / 2
             box = PhysBox(hx, hy, hz)
-            mat = PhysMaterial(0.5, 0.5, 0.5)
+            mat = SurfaceProperties[self.getModelSurfaceProp()].getPhysMaterial()
             shape = PhysShape(box, mat)
             shape.setLocalPos((cx, cy, cz))
             return (shape, box)
@@ -360,6 +364,21 @@ class DistributedEntity(BaseClass, NodePath):
             #if doEffects:
                 # TODO
             #    pass
+
+            # Play bullet impact sound for material we hit.
+            if not IS_CLIENT:
+                physMat = block.getMaterial()
+                surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
+                if not surfaceDef:
+                    surfaceDef = SurfaceProperties['default']
+
+                if entity.owner is not None:
+                    # Make it non-spatialized for the client who got hit.
+                    entity.emitSound(surfaceDef.bulletImpact, client=entity.owner)
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=[entity.owner])
+                else:
+                    # Didn't hit a player entity, spatialize for all.
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition())
 
             if not IS_CLIENT:
                 # Server-specific.

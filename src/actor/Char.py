@@ -9,6 +9,7 @@ from .AnimEvents import AnimEvent, AnimEventType
 from .HitBox import HitBox
 from tf.tfbase.Sounds import Sounds, createSoundByName
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
+from tf.tfbase.SurfaceProperties import SurfaceProperties
 
 from tf.actor.Ragdoll import Ragdoll
 
@@ -169,7 +170,7 @@ class Char(Actor):
         box = PhysBox(hX, hY, hZ)
         # Even though hit boxes are scene query shapes, they still need a
         # material.  Just give it a bogus one.
-        mat = PhysMaterial(0, 0, 0)
+        mat = SurfaceProperties[self.getModelSurfaceProp()].getPhysMaterial()
         shape = PhysShape(box, mat)
         shape.setLocalPos((cX, cY, cZ))
         shape.setSimulationShape(False)
@@ -398,11 +399,21 @@ class Char(Actor):
         for name in self.bodygroups.keys():
             self.setBodygroupValue(name, 0)
 
+    def getModelSurfaceProp(self):
+        surfaceProp = "default"
+        data = self.getPartModel().node().getCustomData()
+        if data:
+            if data.hasAttribute("surfaceprop"):
+                surfaceProp = data.getAttributeValue("surfaceprop").getString().lower()
+        return surfaceProp
+
     def makeModelCollisionShape(self):
         cinfo = self.getPartModel().node().getCollisionInfo()
         if not cinfo:
             return None
         part = cinfo.getPart(0)
+
+        surfaceProp = self.getModelSurfaceProp()
 
         if part.concave:
             mdata = PhysTriangleMeshData(part.mesh_data)
@@ -414,7 +425,7 @@ class Char(Actor):
             mesh = PhysTriangleMesh(mdata)
         else:
             mesh = PhysConvexMesh(mdata)
-        mat = PhysMaterial(0.5, 0.5, 0.5)
+        mat = SurfaceProperties[surfaceProp].getPhysMaterial()
         shape = PhysShape(mesh, mat)
         return (shape, mesh)
 
