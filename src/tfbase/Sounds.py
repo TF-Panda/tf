@@ -293,7 +293,7 @@ def processSound(kv):
         child = kv.getChild(i)
         if child.getName() == "rndwave":
             for j in range(child.getNumKeys()):
-                value = child.getValue(i)
+                value = child.getValue(j)
                 wave = Wave()
                 if value.startswith(")"):
                     wave.spatialized = True
@@ -319,6 +319,8 @@ def loadSounds(server = False):
 
     for i in range(load_sounds.getNumUniqueValues()):
         filename = Filename.fromOsSpecific(load_sounds.getUniqueValue(i))
+
+        print("Loading sounds from %s" % filename.getFullpath())
 
         kv = KeyValues.load(filename)
         if not kv:
