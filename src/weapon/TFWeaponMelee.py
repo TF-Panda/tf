@@ -55,10 +55,13 @@ class TFWeaponMelee(TFWeapon):
     def doViewModelAnimation(self):
         self.sendWeaponAnim(Activity.VM_Fire)
 
-    def swing(self):
-        player = self.player
+    def doPlayerAnimation(self, player):
         player.doAnimationEvent(PlayerAnimEvent.AttackPrimary)
 
+    def swing(self):
+        player = self.player
+
+        self.doPlayerAnimation(player)
         self.doViewModelAnimation()
 
         self.nextPrimaryAttack = globalClock.getFrameTime() + self.weaponData[self.weaponMode]['timeFireDelay']
@@ -115,6 +118,9 @@ class TFWeaponMelee(TFWeapon):
             )
             return (hadSweepHit, sweepResult)
 
+    def getMeleeDamage(self, target):
+        return self.weaponData[self.weaponMode]['damage']
+
     def smack(self):
         self.syncAllHitBoxes()
 
@@ -136,7 +142,7 @@ class TFWeaponMelee(TFWeapon):
 
             if not IS_CLIENT and (ent is not None):
                 dmgType = DamageType.Bullet | DamageType.NeverGib | DamageType.Club
-                damage = self.weaponData[self.weaponMode]['damage']
+                damage = self.getMeleeDamage(ent)
                 customDamage = -1
                 info = TakeDamageInfo()
                 info.attacker = self.player

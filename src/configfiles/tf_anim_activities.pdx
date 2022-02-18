@@ -222,4 +222,12 @@
 
   Melee_VM_Hit_Left
   Melee_VM_Hit_Right
+
+  Attack_Stand_SecondaryFire
+  Melee_Attack_Stand_SecondaryFire
+
+  VM_Swing_Hard
+  VM_Backstab_Up
+  VM_Backstab_Down
+  VM_Backstab_Idle
 ]

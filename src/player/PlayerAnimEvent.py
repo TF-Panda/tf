@@ -12,3 +12,4 @@ class PlayerAnimEvent(IntEnum):
     AttackPre = 8
     AttackPost = 9
     DoubleJump = 10
+    CustomGesture = 11

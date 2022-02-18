@@ -818,13 +818,19 @@ class DistributedEntity(BaseClass, NodePath):
             if sound in self.sounds:
                 del self.sounds[sound]
 
+        def getSpatialAudioCenter(self):
+            # Returns the world-space center point for spatial audio
+            # being emitted from this entity.  Spatial sounds can be
+            # offset from this matrix.
+            return self.getMat(base.render)
+
         def __updateSounds(self, task):
             """
             Updates the 3-D position and velocity of spatial sounds being
             emitted from this entity.
             """
 
-            worldMat = self.getMat(base.render)
+            worldMat = self.getSpatialAudioCenter()
             dt = globalClock.getDt()
 
             for sound, data in self.sounds.items():

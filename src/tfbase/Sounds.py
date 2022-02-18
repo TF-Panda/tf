@@ -146,7 +146,7 @@ def createSound(info, spatial=False, getWave=False):
         props._enable_transmission = False
         props._enable_air_absorption = False
         props._enable_reflections = False
-        props._bilinear_hrtf = False
+        props._bilinear_hrtf = True
         #props._enable_pathing = True
         #props._binaural_pathing = True
         #props._enable_reflections = True
@@ -203,7 +203,7 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False):
         props._enable_transmission = False
         props._enable_air_absorption = False
         props._enable_reflections = False
-        props._bilinear_hrtf = False
+        props._bilinear_hrtf = True
         #props._enable_pathing = True
         #props._binaural_pathing = True
         #props._enable_reflections = True

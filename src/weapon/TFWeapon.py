@@ -185,7 +185,8 @@ class TFWeapon(BaseClass):
                 Activity.Attack_Stand: Activity.Melee_Attack_Stand,
                 Activity.Attack_Crouch: Activity.Melee_Attack_Crouch,
                 Activity.Attack_Swim: Activity.Melee_Attack_Swim,
-                Activity.Attack_Air_Walk: Activity.Melee_Attack_Air_Walk
+                Activity.Attack_Air_Walk: Activity.Melee_Attack_Air_Walk,
+                Activity.Attack_Stand_SecondaryFire: Activity.Melee_Attack_Stand_SecondaryFire
             }
         }
 

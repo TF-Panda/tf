@@ -41,7 +41,8 @@ phonemeClasses = [
     'heavy',
     'demo',
     'soldier',
-    'scout'
+    'scout',
+    'spy'
 ]
 
 def loadPhonemes():
@@ -79,6 +80,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.currentSpeech = None
 
+    def getSpatialAudioCenter(self):
+        # If we're ragdolling, position spatial audio relative to
+        # the root ragdoll joint.
+        if self.ragdoll:
+            return self.ragdoll[1].getRagdollMatrix()
+
+        return DistributedChar.getSpatialAudioCenter(self)
+
     def RecvProxy_rot(self, r, i, j, k):
         # Ignoring this because the player angles are set in TFPlayerAnimState.
         pass
@@ -95,11 +104,11 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def getEyeP(self):
         return self.eyeP
 
-    def playerAnimEvent(self, event):
+    def playerAnimEvent(self, event, data):
         """
         Animation event sent by the AI.
         """
-        self.animState.doAnimationEvent(event, 0)
+        self.animState.doAnimationEvent(event, data)
 
     def setPos(self, *args, **kwargs):
         DistributedChar.setPos(self, *args, **kwargs)

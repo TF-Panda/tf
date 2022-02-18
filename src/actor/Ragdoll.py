@@ -50,6 +50,10 @@ class Ragdoll(PhysRagdoll):
     def getRagdollPosition(self):
         return Point3(self.getJointActor(self.collInfo.root_part).getTransform().getPos())
 
+    def getRagdollMatrix(self):
+        # Returns the world-space matrix transform of the root ragdoll joint.
+        return self.getJointActor(self.collInfo.root_part).getTransform().getMat()
+
     def setup(self):
         #collideWith = {}
         for i in range(self.collInfo.getNumParts()):

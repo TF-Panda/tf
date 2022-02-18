@@ -314,7 +314,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def doAnimationEvent(self, event, data = 0):
         self.animState.doAnimationEvent(event, data)
         # Broadcast event to clients.
-        self.sendUpdate('playerAnimEvent', [event])
+        self.sendUpdate('playerAnimEvent', [event, data])
 
     def die(self, info = None):
         if self.playerState == self.StateDead:

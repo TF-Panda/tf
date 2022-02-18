@@ -16,6 +16,8 @@ from .DistributedGrenadeLauncher import DistributedGrenadeLauncher
 from .DistributedBat import DistributedBat
 from .DistributedFists import DistributedFists
 from .DistributedFireAxe import DistributedFireAxe
+from .DistributedRevolver import DistributedRevolver
+from .DistributedKnife import DistributedKnife
 
 Weapons = {
   Weapon.ShotgunEngineer: DistributedShotgunEngineer,
@@ -33,5 +35,7 @@ Weapons = {
   Weapon.Scattergun: DistributedScattergunScout,
   Weapon.Bat: DistributedBat,
   Weapon.Fists: DistributedFists,
-  Weapon.FireAxe: DistributedFireAxe
+  Weapon.FireAxe: DistributedFireAxe,
+  Weapon.Revolver: DistributedRevolver,
+  Weapon.Knife: DistributedKnife
 }

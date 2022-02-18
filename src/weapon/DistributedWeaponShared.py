@@ -125,53 +125,41 @@ class DistributedWeaponShared:
         return self.actTable.get(activity, activity)
 
     def sendWeaponAnim(self, activity):
+        """
+        Sets the view model activity immediately.
+        """
         activity = self.translateViewModelActivity(activity)
-        # Just set the ideal activity and be done with it.
-        return self.setIdealActivity(activity)
+        seq = self.viewModel.getChannelForActivity(activity)
+        return self.playViewModelAnim(activity, seq)
+
+    def setNextWeaponAnim(self, activity):
+        """
+        Sets the desired next view model activity after the current one finishes.
+        """
+        self.idealActivity = self.translateViewModelActivity(activity)
+        self.idealSequence = self.viewModel.getChannelForActivity(self.idealActivity)
 
     def maintainIdealActivity(self):
-        if self.activity != Activity.Transition:
-            return
+        if self.activity != self.idealActivity or self.idealSequence != self.sequence:
+            if self.viewModel.isCurrentChannelFinished():
+                # Play desired next activity.
+                self.playViewModelAnim(self.idealActivity, self.idealSequence)
+                self.setNextWeaponAnim(Activity.VM_Idle)
 
-        if self.activity == self.idealActivity and self.sequence == self.idealSequence:
-            return
+    def playViewModelAnim(self, act, seq):
+        self.activity = act
+        self.sequence = seq
 
-        if (not self.viewModel.isCurrentChannelFinished()):
-            return
-
-        # Move to the next animation towards our ideal.
-        self.sendWeaponAnim(self.idealActivity)
-
-    def setIdealActivity(self, act):
-        idealSequence = self.viewModel.getChannelForActivity(act)
-        if idealSequence == -1:
+        if seq < 0:
             return False
 
-        # Take the new activity
-        self.idealActivity = act
-        self.idealSequence = idealSequence
-
-        nextSequence = self.idealSequence
-        if act != Activity.VM_Draw and self.isWeaponVisible() and nextSequence != self.idealSequence:
-            self.activity = Activity.Transition
-            self.sequence = nextSequence
-            self.sendViewModelAnim(nextSequence)
-        else:
-            self.activity = self.idealActivity
-            self.sequence = self.idealSequence
-            self.sendViewModelAnim(self.idealSequence)
-
-        self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getDuration()
-        return True
-
-    def sendViewModelAnim(self, seq):
-        if seq < 0:
-            return
-
         if not self.viewModel:
-            return
+            return False
 
-        self.viewModel.startChannel(seq)
+        self.viewModel.startChannel(seq, act)
+        self.timeWeaponIdle = globalClock.getFrameTime() + self.viewModel.getDuration()
+
+        return True
 
     def weaponIdle(self):
         if self.hasWeaponIdleTimeElapsed():

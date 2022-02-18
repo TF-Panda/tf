@@ -124,7 +124,7 @@ class TFServerBase(HostBase):
             point = pair.getContactPoint(0)
 
             speed = point.getImpulse().length()
-            if speed < 70.0:
+            if speed < 100.0:#70.0:
                 continue
 
             #a = data.getActorA()
@@ -144,18 +144,28 @@ class TFServerBase(HostBase):
             # This is more realistic, Source only played from one material.
             if matA:
                 surfDefA = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matA)
-                if surfDefA:
-                    if speed >= 500:
-                        base.world.emitSoundSpatial(surfDefA.impactHard, position, volume)
-                    elif speed >= 100:
-                        base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume)
+            else:
+                surfDefA = None
             if matB:
                 surfDefB = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matB)
-                if surfDefB:
-                    if speed >= 500:
-                        base.world.emitSoundSpatial(surfDefB.impactHard, position, volume)
-                    elif speed >= 100:
-                        base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume)
+            else:
+                surfDefB = None
 
+            if surfDefA and surfDefB:
+                # If we have an impact sound for both surfaces, divide up the
+                # volume between both sounds, so impact sounds are roughly the
+                # same volume as Source.
+                volume *= 0.5
+
+            if speed >= 500:
+                if surfDefA:
+                    base.world.emitSoundSpatial(surfDefA.impactHard, position, volume)
+                if surfDefB:
+                    base.world.emitSoundSpatial(surfDefB.impactHard, position, volume)
+            elif speed >= 100:
+                if surfDefA:
+                    base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume)
+                if surfDefB:
+                    base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume)
 
         return task.cont

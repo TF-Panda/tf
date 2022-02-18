@@ -37,6 +37,8 @@ class Weapon(IntEnum):
     Bat = auto()
     Fists = auto()
     FireAxe = auto()
+    Revolver = auto()
+    Knife = auto()
 
 BaseSpeed = 300
 
@@ -162,9 +164,6 @@ class DemoInfo:
         'specialAction': ['evilHappy'],
         'pain': ['pain']
     }
-
-    DefaultFace = ['defaultFace']
-    SpecialAction = ['evilHappy']
 
     HeadRotationOffset = Vec3(0, -80, 0)
 
@@ -297,9 +296,6 @@ class PyroInfo:
     Phonemes = None
     Expressions = None
 
-    DefaultFace = []
-    SpecialAction = []
-
     HeadRotationOffset = Vec3(40, -80, 0)
 
     PainFilenames = [
@@ -327,11 +323,53 @@ class PyroInfo:
 
     Weapons = [Weapon.ShotgunPyro, Weapon.FireAxe]
 
+class SpyInfo:
+    Name = TFLocalizer.Spy
+    MenuWeapon = "models/weapons/w_knife"
+    PlayerModel = "models/char/spy"
+    ViewModel = "models/weapons/v_revolver_spy"
+    ForwardFactor = 1.07
+    BackwardFactor = 0.96
+    CrouchFactor = 0.36
+    SwimmingFactor = 0.85
+    ViewHeight = 75
+    MaxHealth = 125
+    Phonemes = 'spy'
+    Expressions = {
+        'idle': ['defaultFace'],
+        'specialAction': ['specialAction01'],
+        'pain': ['painSmall']
+    }
+
+    HeadRotationOffset = Vec3(0, -80, 0)
+
+    PainFilenames = [
+        "Spy.PainSevere01",
+        "Spy.PainSevere02",
+        "Spy.PainSevere03",
+        "Spy.PainSevere04",
+        "Spy.PainSevere05"
+    ]
+    CritPainFilenames = [
+        "Spy.PainCrticialDeath01",
+        "Spy.PainCrticialDeath02",
+        "Spy.PainCrticialDeath03"
+    ]
+    SharpPainFilenames = [
+        "Spy.PainSharp01",
+        "Spy.PainSharp02",
+        "Spy.PainSharp03",
+        "Spy.PainSharp04"
+    ]
+
+    Weapons = [Weapon.Revolver, Weapon.Knife]
+
 ClassInfos = {
     Class.Soldier: SoldierInfo,
     Class.Demo: DemoInfo,
     Class.Engineer: EngineerInfo,
     Class.HWGuy: HeavyInfo,
     Class.Scout: ScoutInfo,
-    Class.Pyro: PyroInfo
+    Class.Pyro: PyroInfo,
+    Class.Spy: SpyInfo
 }

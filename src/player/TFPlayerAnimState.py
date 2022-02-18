@@ -59,7 +59,7 @@ class TFPlayerAnimState:
                 self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
         elif event == PlayerAnimEvent.AttackSecondary:
             # Weapon secondary fire.
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
+            self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand_SecondaryFire)
         elif event == PlayerAnimEvent.AttackGrenade:
             # Grenade throw.
             pass

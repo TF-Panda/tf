@@ -23,6 +23,9 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         self.addPredictionField("fireOnEmpty", bool, networked=False)
         self.addPredictionField("nextEmptySoundTime", float, networked=False)
         self.addPredictionField("activity", int, networked=False)
+        self.addPredictionField("idealActivity", int, networked=False)
+        self.addPredictionField("sequence", int, networked=False)
+        self.addPredictionField("idealSequence", int, networked=False)
         self.addPredictionField("fireDuration", float, networked=False)
         self.addPredictionField("reloadsSingly", bool, networked=False)
 

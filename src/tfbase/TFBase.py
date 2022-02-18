@@ -251,54 +251,65 @@ class TFBase(ShowBase, FSM):
         for _ in range(numTicks):
             self.physicsWorld.simulate(physTimeStep)
 
-        # Process global contact events, play sounds.
-        while hasattr(self, 'world') and self.physicsWorld.hasContactEvent():
-            data = self.physicsWorld.popContactEvent()
+            # Process global contact events, play sounds.
+            while hasattr(self, 'world') and self.physicsWorld.hasContactEvent():
+                data = self.physicsWorld.popContactEvent()
 
-            if data.getNumContactPairs() == 0:
-                continue
+                if data.getNumContactPairs() == 0:
+                    continue
 
-            pair = data.getContactPair(0)
-            if not pair.isContactType(PhysEnums.CTFound):
-                continue
+                pair = data.getContactPair(0)
+                if not pair.isContactType(PhysEnums.CTFound):
+                    continue
 
-            if pair.getNumContactPoints() == 0:
-                continue
+                if pair.getNumContactPoints() == 0:
+                    continue
 
-            point = pair.getContactPoint(0)
+                point = pair.getContactPoint(0)
 
-            speed = point.getImpulse().length()
-            if speed < 70.0:
-                continue
+                speed = point.getImpulse().length()
+                if speed < 100.0:#70.0:
+                    continue
 
-            #a = data.getActorA()
-            #b = data.getActorB()
+                #a = data.getActorA()
+                #b = data.getActorB()
 
-            position = point.getPosition()
+                position = point.getPosition()
 
-            volume = speed * speed * (1.0 / (320.0 * 320.0))
-            volume = min(1.0, volume)
+                volume = speed * speed * (1.0 / (320.0 * 320.0))
+                volume = min(1.0, volume)
 
-            matA = point.getMaterialA(pair.getShapeA())
-            matB = point.getMaterialB(pair.getShapeB())
+                matA = point.getMaterialA(pair.getShapeA())
+                matB = point.getMaterialB(pair.getShapeB())
 
-            #force = speed / dt
+                #force = speed / dt
 
-            # Play sounds from materials of both surfaces.
-            # This is more realistic, Source only played from one material.
-            if matA:
-                surfDefA = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matA)
-                if surfDefA:
-                    if speed >= 500:
+                # Play sounds from materials of both surfaces.
+                # This is more realistic, Source only played from one material.
+                if matA:
+                    surfDefA = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matA)
+                else:
+                    surfDefA = None
+                if matB:
+                    surfDefB = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matB)
+                else:
+                    surfDefB = None
+
+                if surfDefA and surfDefB:
+                    # If we have an impact sound for both surfaces, divide up the
+                    # volume between both sounds, so impact sounds are roughly the
+                    # same volume as Source.
+                    volume *= 0.5
+
+                if speed >= 500:
+                    if surfDefA:
                         base.world.emitSoundSpatial(surfDefA.impactHard, position, volume)
-                    elif speed >= 100:
-                        base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume)
-            if matB:
-                surfDefB = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matB)
-                if surfDefB:
-                    if speed >= 500:
+                    if surfDefB:
                         base.world.emitSoundSpatial(surfDefB.impactHard, position, volume)
-                    elif speed >= 100:
+                elif speed >= 100:
+                    if surfDefA:
+                        base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume)
+                    if surfDefB:
                         base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume)
 
         self.lastPhysFrameTime = now

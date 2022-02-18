@@ -57,6 +57,8 @@ from tf.weapon.DistributedBat import DistributedBat/AI
 from tf.weapon.DMinigun import DMinigun/AI
 from tf.weapon.DistributedFists import DistributedFists/AI
 from tf.weapon.DistributedFireAxe import DistributedFireAxe/AI
+from tf.weapon.DistributedRevolver import DistributedRevolver/AI
+from tf.weapon.DistributedKnife import DistributedKnife/AI
 
 // Coordinate range (per axis): -21474836.47 to 21474836.47
 // Two decimals of precision.
@@ -246,7 +248,7 @@ dclass DistributedTFPlayer : DistributedChar {
   playerCommand(blob) ownsend airecv unreliable;
 
   // Animation event for doing a gesture or something.
-  playerAnimEvent(uint8) broadcast ownrecv;
+  playerAnimEvent(uint8, uint16) broadcast ownrecv;
 };
 
 dclass DistributedWeapon : DistributedChar {
@@ -382,3 +384,6 @@ dclass DistributedBat : TFWeaponMelee { };
 dclass DistributedFists : TFWeaponMelee { };
 
 dclass DistributedFireAxe : TFWeaponMelee { };
+
+dclass DistributedRevolver : TFWeaponGun { };
+dclass DistributedKnife : TFWeaponMelee { };
