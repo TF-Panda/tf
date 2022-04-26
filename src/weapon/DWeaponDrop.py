@@ -27,6 +27,7 @@ class DWeaponDrop(BaseClass):
             self.solidFlags = SolidFlag.Trigger
             self.solidMask = Contents.Solid | Contents.AnyTeam
             self.collisionGroup = CollisionGroup.Debris
+            self.used = False
 
     if not IS_CLIENT:
         def simulate(self):
@@ -44,7 +45,7 @@ class DWeaponDrop(BaseClass):
             self.enabled = False
 
         def onTriggerEnter(self, ent):
-            if not self.enabled:
+            if not self.enabled or self.used:
                 return
 
             if ent.health <= 0:
@@ -72,9 +73,18 @@ class DWeaponDrop(BaseClass):
                     if maxToGive > 0:
                         gaveAny = True
 
+                if ent.usesMetal() and self.metalAmount > 0:
+                    # Class can utilize metal.
+                    maxToGive = max(0, ent.maxMetal - ent.metal)
+                    ent.metal += min(maxToGive, self.metalAmount)
+                    if maxToGive > 0:
+                        gaveAny = True
+
                 if gaveAny:
                     ent.emitSound("BaseCombatCharacter.AmmoPickup", client=ent.owner)
                     if self.singleUse:
+                        self.enabled = False
+                        self.used = True
                         base.net.deleteObject(self)
     else:
         def announceGenerate(self):

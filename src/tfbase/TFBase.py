@@ -9,13 +9,11 @@ from direct.directbase import DirectRender
 from direct.fsm.FSM import FSM
 
 from tf.distributed.TFClientRepository import TFClientRepository
-from tf.tfbase import TFGlobals, TFLocalizer, SurfaceProperties
+from tf.tfbase import TFGlobals, TFLocalizer, SurfaceProperties, Soundscapes, Sounds
 from tf.tfgui.TFMainMenu import TFMainMenu
 from tf.tfgui.NotifyView import NotifyView
 from .TFPostProcess import TFPostProcess
 from . import Sounds
-
-from direct.showbase.Audio3DManager import Audio3DManager
 
 from .Console import Console
 
@@ -69,10 +67,17 @@ class TFBase(ShowBase, FSM):
         if base.config.GetBool("want-pstats-hotkey", False):
             self.accept('shift-s', self.togglePStats)
 
+        self.camNode.setCameraMask(DirectRender.MainCameraBitmask)
+
         self.win.disableClears()
+
+        sceneDr = self.camNode.getDisplayRegion(0)
+        sceneDr.disableClears()
+        #sceneDr.setClearDepthActive(True)
 
         Sounds.loadSounds()
         SurfaceProperties.loadSurfaceProperties()
+        Soundscapes.loadSoundscapes()
 
         self.render.hide(DirectRender.ShadowCameraBitmask)
 
@@ -95,12 +100,8 @@ class TFBase(ShowBase, FSM):
 
         self.musicManager.setVolume(self.config.GetFloat('music-volume', 1))
 
-        self.audio3ds = []
-        for mgr in base.sfxManagerList:
+        for mgr in self.sfxManagerList:
             mgr.setVolume(base.config.GetFloat("sfx-volume", 1))
-            audio3d = Audio3DManager(mgr, self.cam, self.render)
-            audio3d.setDistanceFactor(1)
-            self.audio3ds.append(audio3d)
 
         self.setBackgroundColor(0, 0, 0)
         #self.enableMouse()
@@ -122,12 +123,28 @@ class TFBase(ShowBase, FSM):
         self.physicsWorld.setGroupCollisionFlag(
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
 
-        self.physRemainder = 0.0
-        self.physPrevRemainder = 0.0
-        self.lastPhysFrameTime = 0.0
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
 
-        self.dynRender = self.render.attachNewNode(DynamicVisNode("dynamic"))
+        self.dynRender = self.render.attachNewNode("dynamic")#DynamicVisNode("dynamic"))
+
+        # Separate 3-D skybox scene graph and display region.
+        self.sky3DTop = NodePath("sky3DTop")
+        self.sky3DRoot = self.sky3DTop.attachNewNode("sky3DRoot")
+        self.sky3DCam = Camera("sky3DCam")
+        self.sky3DCam.setLens(self.camLens)
+        self.sky3DCamNp = self.sky3DTop.attachNewNode(self.sky3DCam)
+        self.sky3DDisplayRegion = self.win.makeDisplayRegion()
+        #self.sky3DDisplayRegion.setActive(False)
+        self.sky3DDisplayRegion.disableClears()
+        # Clear the depth here as this is the first display region rendered
+        # for the main scene.  The actual 3D world display region clears
+        # nothing.
+        self.sky3DDisplayRegion.setClearDepthActive(True)
+        self.sky3DDisplayRegion.setSort(-1)
+        self.sky3DDisplayRegion.setCamera(self.sky3DCamNp)
+        self.sky3DMat = LMatrix4.identMat()
+        self.postProcess.addCamera(self.sky3DCamNp, 0, -1)
+        self.taskMgr.add(self.__update3DSkyCam, 'update3DSkyCam', sort=49)
 
         # Set up the view model camera and scene.
         self.vmRender = NodePath("vmrender")
@@ -135,6 +152,7 @@ class TFBase(ShowBase, FSM):
         self.vmLens.setMinFov(self.config.GetInt("viewmodel-fov", 54) / (4./3.))
         self.vmLens.setAspectRatio(self.camLens.getAspectRatio())
         self.vmLens.setNear(1.0)
+        # Clear depth to render viewmodel on top of world.
         self.vmCamera = self.makeCamera(
             self.win, lens = self.vmLens,
             clearDepth = True, clearColor = False)
@@ -171,6 +189,32 @@ class TFBase(ShowBase, FSM):
         #self.csmDebug.setShader(Shader.load(Shader.SL_GLSL, "shaders/debug_csm.vert.glsl", "shaders/debug_csm.frag.glsl"))
 
         #self.csmDebug = OnscreenImage(scale=0.3, pos=(0, 0, -0.7))
+
+        self.lastListenerPos = Point3()
+        self.taskMgr.add(self.__updateAudioListener, 'updateAudioListener', sort=51)
+
+    def __updateAudioListener(self, task):
+        ts = self.cam.getNetTransform()
+        pos = ts.getPos()
+        q = ts.getQuat()
+        fwd = q.getForward()
+        up = q.getUp()
+
+        vel = (pos - self.lastListenerPos) / globalClock.getDt()
+
+        for mgr in self.sfxManagerList:
+            mgr.audio3dSetListenerAttributes(pos[0], pos[1], pos[2],
+                                             vel[0], vel[1], vel[2],
+                                             fwd[0], fwd[1], fwd[2],
+                                             up[0], up[1], up[2])
+
+        self.lastListenerPos = Point3(pos)
+
+        return task.cont
+
+    def __update3DSkyCam(self, task):
+        self.sky3DCamNp.setMat(self.cam.getMat(self.render) * self.sky3DMat)
+        return task.cont
 
     def toggleIk(self):
         self.enableIk = not self.enableIk
@@ -233,86 +277,82 @@ class TFBase(ShowBase, FSM):
         # Maintain an independent fixed timestep for physics
         # simulation.
 
-        now = globalClock.getRealTime()
-        deltaTime = now - self.lastPhysFrameTime
+        self.physicsWorld.simulate(self.clock.getFrameTime())
 
-        self.physPrevRemainder = self.remainder
-        if self.physPrevRemainder < 0.0:
-            self.physPrevRemainder = 0.0
-        self.physRemainder += deltaTime
+        if not hasattr(self, 'world'):
+            return task.cont
 
-        physTimeStep = 0.015
+        #soundsEmitted = 0
 
-        numTicks = 0
-        if self.physRemainder >= physTimeStep:
-            numTicks = int(self.physRemainder / physTimeStep)
-            self.physRemainder -= numTicks * physTimeStep
+        chan = Sounds.Channel.CHAN_STATIC
 
-        for _ in range(numTicks):
-            self.physicsWorld.simulate(physTimeStep)
+        # Process global contact events, play sounds.
+        while self.physicsWorld.hasContactEvent():
+            data = self.physicsWorld.popContactEvent()
 
-            # Process global contact events, play sounds.
-            while hasattr(self, 'world') and self.physicsWorld.hasContactEvent():
-                data = self.physicsWorld.popContactEvent()
+            if data.getNumContactPairs() == 0:
+                continue
 
-                if data.getNumContactPairs() == 0:
-                    continue
+            pair = data.getContactPair(0)
+            if not pair.isContactType(PhysEnums.CTFound):
+                continue
 
-                pair = data.getContactPair(0)
-                if not pair.isContactType(PhysEnums.CTFound):
-                    continue
+            if pair.getNumContactPoints() == 0:
+                continue
 
-                if pair.getNumContactPoints() == 0:
-                    continue
+            point = pair.getContactPoint(0)
 
-                point = pair.getContactPoint(0)
+            speed = point.getImpulse().length()
+            if speed < 100.0:#70.0:
+                continue
 
-                speed = point.getImpulse().length()
-                if speed < 100.0:#70.0:
-                    continue
+            #a = data.getActorA()
+            #b = data.getActorB()
 
-                #a = data.getActorA()
-                #b = data.getActorB()
+            position = point.getPosition()
 
-                position = point.getPosition()
+            volume = speed * speed * (1.0 / (320.0 * 320.0))
+            volume = min(1.0, volume)
 
-                volume = speed * speed * (1.0 / (320.0 * 320.0))
-                volume = min(1.0, volume)
+            matA = point.getMaterialA(pair.getShapeA())
+            matB = point.getMaterialB(pair.getShapeB())
 
-                matA = point.getMaterialA(pair.getShapeA())
-                matB = point.getMaterialB(pair.getShapeB())
+            #force = speed / dt
 
-                #force = speed / dt
+            # Play sounds from materials of both surfaces.
+            # This is more realistic, Source only played from one material.
+            if matA:
+                surfDefA = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matA)
+            else:
+                surfDefA = None
+            if matB:
+                surfDefB = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matB)
+            else:
+                surfDefB = None
 
-                # Play sounds from materials of both surfaces.
-                # This is more realistic, Source only played from one material.
-                if matA:
-                    surfDefA = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matA)
-                else:
-                    surfDefA = None
-                if matB:
-                    surfDefB = SurfaceProperties.SurfacePropertiesByPhysMaterial.get(matB)
-                else:
-                    surfDefB = None
+            if surfDefA and surfDefB:
+                # If we have an impact sound for both surfaces, divide up the
+                # volume between both sounds, so impact sounds are roughly the
+                # same volume as Source.
+                volume *= 0.5
 
-                if surfDefA and surfDefB:
-                    # If we have an impact sound for both surfaces, divide up the
-                    # volume between both sounds, so impact sounds are roughly the
-                    # same volume as Source.
-                    volume *= 0.5
+            if speed >= 500:
+                if surfDefA:
+                    base.world.emitSoundSpatial(surfDefA.impactHard, position, volume, chan=chan)
+                    #soundsEmitted += 1
+                if surfDefB:
+                    base.world.emitSoundSpatial(surfDefB.impactHard, position, volume, chan=chan)
+                    #soundsEmitted += 1
+            elif speed >= 100:
+                if surfDefA:
+                    base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume, chan=chan)
+                    #soundsEmitted += 1
+                if surfDefB:
+                    base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume, chan=chan)
+                    #soundsEmitted += 1
 
-                if speed >= 500:
-                    if surfDefA:
-                        base.world.emitSoundSpatial(surfDefA.impactHard, position, volume)
-                    if surfDefB:
-                        base.world.emitSoundSpatial(surfDefB.impactHard, position, volume)
-                elif speed >= 100:
-                    if surfDefA:
-                        base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume)
-                    if surfDefB:
-                        base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume)
-
-        self.lastPhysFrameTime = now
+        #if soundsEmitted > 0:
+        #    print("emitted", soundsEmitted, "physics contact sounds")
 
         return task.cont
 
@@ -365,7 +405,7 @@ class TFBase(ShowBase, FSM):
             disclaimer.removeNode()
         seq = Sequence()
         seq.append(Wait(0.5))
-        seq.append(Func(self.playMusic, random.choice(TFMainMenu.MenuSongs)))
+        seq.append(Func(self.playMusic, TFMainMenu.pickMenuSong()))
         seq.append(Wait(0.5))
         seq.append(LerpColorScaleInterval(pandaLogo, 0.75, (1, 1, 1, 1), (1, 1, 1, 0)))
         seq.append(Wait(1.5))
@@ -404,8 +444,15 @@ class TFBase(ShowBase, FSM):
         cm.setHasUvs(True)
         bg = self.render2d.attachNewNode(cm.generate())
         bg.setColorScale((0.5, 0.5, 0.5, 1))
-        tex = random.choice(
-            ["maps/background01_widescreen.txo", "maps/background02_widescreen.txo"])
+
+        aspectRatio = base.win.getXSize() / base.win.getYSize()
+        if aspectRatio <= (4./3.):
+            tex = random.choice(
+                ["maps/background01.txo", "maps/background02.txo"])
+        else:
+            tex = random.choice(
+                ["maps/background01_widescreen.txo", "maps/background02_widescreen.txo"])
+
         bg.setTexture(loader.loadTexture(tex))
         bg.setBin('background', 0)
 
@@ -414,35 +461,14 @@ class TFBase(ShowBase, FSM):
         base.graphicsEngine.renderFrame()
         base.graphicsEngine.flipFrame()
 
-        precacheList = [
-            "models/buildables/sentry1",
-            "models/char/engineer",
-            "models/char/c_engineer_arms",
-            "models/char/soldier",
-            "models/char/c_soldier_arms",
-            "models/weapons/c_rocketlauncher",
-            "models/weapons/c_shotgun",
-            "models/weapons/c_pistol",
-            "models/weapons/c_wrench",
-            "models/buildables/sentry2_heavy",
-            "models/buildables/sentry2",
-            "models/buildables/sentry1_gib1",
-            "models/buildables/sentry1_gib2",
-            "models/buildables/sentry1_gib3",
-            "models/buildables/sentry1_gib4",
-            "models/weapons/w_rocket",
-            "models/char/demo",
-            "models/char/c_demo_arms",
-            "models/weapons/c_bottle",
-            "models/weapons/c_shovel",
-            "models/char/heavy",
-            "models/weapons/v_scattergun_scout",
-            "models/weapons/w_scattergun",
-            "models/weapons/v_shotgun_engineer"
-        ]
         self.precache = []
-        for pc in precacheList:
-            self.precache.append(loader.loadModel(pc))
+        for pc in TFGlobals.ModelPrecacheList:
+            mdl = loader.loadModel(pc)
+            self.precache.append(mdl)
+
+            # Upload textures, vertex buffers, index buffers.
+            mdl.prepareScene(base.win.getGsg())
+
             # Keep the window pumping.
             base.graphicsEngine.renderFrame()
 

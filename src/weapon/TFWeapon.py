@@ -22,6 +22,159 @@ import random
 class TFWeapon(BaseClass):
 
     DropAmmo = True
+    HiddenFromUI = False
+
+    vmActTable = {
+        TFWeaponType.Primary: {
+            Activity.VM_Draw: Activity.Primary_VM_Draw,
+            Activity.VM_Idle: Activity.Primary_VM_Idle,
+            Activity.VM_Fire: Activity.Primary_VM_Fire,
+            Activity.VM_Reload: Activity.Primary_VM_Reload,
+            Activity.VM_Reload_Start: Activity.Primary_VM_Reload_Start,
+            Activity.VM_Reload_Finish: Activity.Primary_VM_Reload_End,
+            Activity.VM_SecondaryFire: Activity.Primary_VM_SecondaryFire,
+            Activity.Attack_Stand_Prefire: Activity.Primary_Attack_Stand_Prefire,
+            Activity.Attack_Stand_Postfire: Activity.Primary_Attack_Stand_Postfire
+        },
+
+        TFWeaponType.Secondary: {
+            Activity.VM_Draw: Activity.Secondary_VM_Draw,
+            Activity.VM_Idle: Activity.Secondary_VM_Idle,
+            Activity.VM_Fire: Activity.Secondary_VM_Fire,
+            Activity.VM_Reload: Activity.Secondary_VM_Reload,
+            Activity.VM_Reload_Start: Activity.Secondary_VM_Reload_Start,
+            Activity.VM_Reload_Finish: Activity.Secondary_VM_Reload_End
+        },
+
+        TFWeaponType.Melee: {
+            Activity.VM_Draw: Activity.Melee_VM_Draw,
+            Activity.VM_Idle: Activity.Melee_VM_Idle,
+            Activity.VM_Fire: Activity.Melee_VM_Swing
+        }
+    }
+
+    actTable = {
+        TFWeaponType.Primary: {
+            Activity.Stand: Activity.Primary_Stand,
+            Activity.Run: Activity.Primary_Run,
+            Activity.Crouch: Activity.Primary_Crouch,
+            Activity.Crouch_Walk: Activity.Primary_Crouch_Walk,
+            Activity.Swim: Activity.Primary_Swim,
+            Activity.Air_Walk: Activity.Primary_Air_Walk,
+            Activity.Jump: Activity.Primary_Jump,
+            Activity.Jump_Start: Activity.Primary_Jump_Start,
+            Activity.Jump_Float: Activity.Primary_Jump_Float,
+            Activity.Jump_Land: Activity.Primary_Jump_Land,
+            Activity.Double_Jump_Crouch: Activity.Primary_Double_Jump_Crouch,
+            Activity.Attack_Stand: Activity.Primary_Attack_Stand,
+            Activity.Attack_Stand_Prefire: Activity.Primary_Attack_Stand_Prefire,
+            Activity.Attack_Stand_Postfire: Activity.Primary_Attack_Stand_Postfire,
+            Activity.Attack_Crouch: Activity.Primary_Attack_Crouch,
+            Activity.Attack_Crouch_Prefire: Activity.Primary_Attack_Crouch_Prefire,
+            Activity.Attack_Crouch_Postfire: Activity.Primary_Attack_Crouch_Postfire,
+            Activity.Attack_Swim: Activity.Primary_Attack_Swim,
+            Activity.Attack_Swim_Prefire: Activity.Primary_Attack_Swim_Prefire,
+            Activity.Attack_Swim_Postfire: Activity.Primary_Attack_Swim_Postfire,
+            Activity.Attack_Air_Walk: Activity.Primary_Attack_Air_Walk,
+            Activity.Attack_Air_Walk_Prefire: Activity.Primary_Attack_Air_Walk_Prefire,
+            Activity.Attack_Air_Walk_Postfire: Activity.Primary_Attack_Air_Walk_Postfire,
+            Activity.Reload_Stand: Activity.Primary_Reload_Stand,
+            Activity.Reload_Stand_Loop: Activity.Primary_Reload_Stand_Loop,
+            Activity.Reload_Stand_End: Activity.Primary_Reload_Stand_End,
+            Activity.Reload_Crouch: Activity.Primary_Reload_Crouch,
+            Activity.Reload_Crouch_Loop: Activity.Primary_Reload_Crouch_Loop,
+            Activity.Reload_Crouch_End: Activity.Primary_Reload_Crouch_End,
+            Activity.Reload_Swim: Activity.Primary_Reload_Swim,
+            Activity.Reload_Swim_Loop: Activity.Primary_Reload_Swim_Loop,
+            Activity.Reload_Swim_End: Activity.Primary_Reload_Swim_End,
+            Activity.Reload_Air_Walk: Activity.Primary_Reload_Air_Walk,
+            Activity.Reload_Air_Walk_Loop: Activity.Primary_Reload_Air_Walk_Loop,
+            Activity.Reload_Air_Walk_End: Activity.Primary_Reload_Air_Walk_End,
+            Activity.Deployed: Activity.Primary_Deployed,
+            Activity.Deployed_Idle: Activity.Primary_Deployed_Idle,
+            Activity.Deployed_Idle_Crouch: Activity.Primary_Deployed_Idle_Crouch,
+            Activity.Gesture_Flinch: Activity.Primary_Gesture_Flinch
+        },
+
+        TFWeaponType.Secondary: {
+            Activity.Stand: Activity.Secondary_Stand,
+            Activity.Run: Activity.Secondary_Run,
+            Activity.Crouch: Activity.Secondary_Crouch,
+            Activity.Crouch_Walk: Activity.Secondary_Crouch_Walk,
+            Activity.Swim: Activity.Secondary_Swim,
+            Activity.Air_Walk: Activity.Secondary_Air_Walk,
+            Activity.Jump: Activity.Secondary_Jump,
+            Activity.Jump_Start: Activity.Secondary_Jump_Start,
+            Activity.Jump_Float: Activity.Secondary_Jump_Float,
+            Activity.Jump_Land: Activity.Secondary_Jump_Land,
+            Activity.Double_Jump_Crouch: Activity.Secondary_Double_Jump_Crouch,
+            Activity.Attack_Stand: Activity.Secondary_Attack_Stand,
+            Activity.Attack_Crouch: Activity.Secondary_Attack_Crouch,
+            Activity.Attack_Swim: Activity.Secondary_Attack_Swim,
+            Activity.Attack_Air_Walk: Activity.Secondary_Attack_Air_Walk,
+            Activity.Reload_Stand: Activity.Secondary_Reload_Stand,
+            Activity.Reload_Stand_Loop: Activity.Secondary_Reload_Stand_Loop,
+            Activity.Reload_Stand_End: Activity.Secondary_Reload_Stand_End,
+            Activity.Reload_Crouch: Activity.Secondary_Reload_Crouch,
+            Activity.Reload_Crouch_Loop: Activity.Secondary_Reload_Crouch_Loop,
+            Activity.Reload_Crouch_End: Activity.Secondary_Reload_Crouch_End,
+            Activity.Reload_Swim: Activity.Secondary_Reload_Swim,
+            Activity.Reload_Swim_Loop: Activity.Secondary_Reload_Swim_Loop,
+            Activity.Reload_Swim_End: Activity.Secondary_Reload_Swim_End,
+            Activity.Reload_Air_Walk: Activity.Secondary_Reload_Air_Walk,
+            Activity.Reload_Air_Walk_Loop: Activity.Secondary_Reload_Air_Walk_Loop,
+            Activity.Reload_Air_Walk_End: Activity.Secondary_Reload_Air_Walk_End,
+            Activity.Gesture_Flinch: Activity.Secondary_Gesture_Flinch
+        },
+
+        TFWeaponType.Melee: {
+            Activity.Stand: Activity.Melee_Stand,
+            Activity.Run: Activity.Melee_Run,
+            Activity.Crouch: Activity.Melee_Crouch,
+            Activity.Crouch_Walk: Activity.Melee_Crouch_Walk,
+            Activity.Swim: Activity.Melee_Swim,
+            Activity.Air_Walk: Activity.Melee_Air_Walk,
+            Activity.Jump: Activity.Melee_Jump,
+            Activity.Jump_Start: Activity.Melee_Jump_Start,
+            Activity.Jump_Float: Activity.Melee_Jump_Float,
+            Activity.Jump_Land: Activity.Melee_Jump_Land,
+            Activity.Double_Jump_Crouch: Activity.Melee_Double_Jump_Crouch,
+            Activity.Attack_Stand: Activity.Melee_Attack_Stand,
+            Activity.Attack_Crouch: Activity.Melee_Attack_Crouch,
+            Activity.Attack_Swim: Activity.Melee_Attack_Swim,
+            Activity.Attack_Air_Walk: Activity.Melee_Attack_Air_Walk,
+            Activity.Attack_Stand_SecondaryFire: Activity.Melee_Attack_Stand_SecondaryFire,
+            Activity.Gesture_Flinch: Activity.Melee_Gesture_Flinch
+        },
+
+        TFWeaponType.PDA: {
+            Activity.Stand: Activity.PDA_Stand,
+            Activity.Run: Activity.PDA_Run,
+            Activity.Crouch: Activity.PDA_Crouch,
+            Activity.Crouch_Walk: Activity.PDA_Crouch_Walk,
+            Activity.Swim: Activity.PDA_Swim,
+            Activity.Air_Walk: Activity.PDA_Air_Walk,
+            Activity.Jump: Activity.PDA_Jump,
+            Activity.Jump_Start: Activity.PDA_Jump_Start,
+            Activity.Jump_Float: Activity.PDA_Jump_Float,
+            Activity.Jump_Land: Activity.PDA_Jump_Land,
+            Activity.Gesture_Flinch: Activity.PDA_Gesture_Flinch
+        },
+
+        TFWeaponType.Building: {
+            Activity.Stand: Activity.Building_Stand,
+            Activity.Run: Activity.Building_Run,
+            Activity.Crouch: Activity.Building_Crouch,
+            Activity.Crouch_Walk: Activity.Building_Crouch_Walk,
+            Activity.Swim: Activity.Building_Swim,
+            Activity.Air_Walk: Activity.Building_Air_Walk,
+            Activity.Jump: Activity.Building_Jump,
+            Activity.Jump_Start: Activity.Building_Jump_Start,
+            Activity.Jump_Float: Activity.Building_Jump_Float,
+            Activity.Jump_Land: Activity.Building_Jump_Land,
+            Activity.Gesture_Flinch: Activity.Building_Gesture_Flinch
+        }
+    }
 
     def __init__(self):
         BaseClass.__init__(self)
@@ -69,134 +222,22 @@ class TFWeapon(BaseClass):
 
         self.weaponType = TFWeaponType.Primary
 
-        self.vmActTable = {
-            TFWeaponType.Primary: {
-                Activity.VM_Draw: Activity.Primary_VM_Draw,
-                Activity.VM_Idle: Activity.Primary_VM_Idle,
-                Activity.VM_Fire: Activity.Primary_VM_Fire,
-                Activity.VM_Reload: Activity.Primary_VM_Reload,
-                Activity.VM_Reload_Start: Activity.Primary_VM_Reload_Start,
-                Activity.VM_Reload_Finish: Activity.Primary_VM_Reload_End,
-                Activity.VM_SecondaryFire: Activity.Primary_VM_SecondaryFire,
-                Activity.Attack_Stand_Prefire: Activity.Primary_Attack_Stand_Prefire,
-                Activity.Attack_Stand_Postfire: Activity.Primary_Attack_Stand_Postfire
-            },
+    if IS_CLIENT:
+        def addPredictionFields(self):
+            """
+            Called when initializing an entity for prediction.
 
-            TFWeaponType.Secondary: {
-                Activity.VM_Draw: Activity.Secondary_VM_Draw,
-                Activity.VM_Idle: Activity.Secondary_VM_Idle,
-                Activity.VM_Fire: Activity.Secondary_VM_Fire,
-                Activity.VM_Reload: Activity.Secondary_VM_Reload,
-                Activity.VM_Reload_Start: Activity.Secondary_VM_Reload_Start,
-                Activity.VM_Reload_Finish: Activity.Secondary_VM_Reload_End
-            },
+            This method should define fields that should be predicted
+            for this entity.
+            """
 
-            TFWeaponType.Melee: {
-                Activity.VM_Draw: Activity.Melee_VM_Draw,
-                Activity.VM_Idle: Activity.Melee_VM_Idle,
-                Activity.VM_Fire: Activity.Melee_VM_Swing
-            }
-        }
+            BaseClass.addPredictionFields(self)
 
-        self.actTable = {
-            TFWeaponType.Primary: {
-                Activity.Stand: Activity.Primary_Stand,
-                Activity.Run: Activity.Primary_Run,
-                Activity.Crouch: Activity.Primary_Crouch,
-                Activity.Crouch_Walk: Activity.Primary_Crouch_Walk,
-                Activity.Swim: Activity.Primary_Swim,
-                Activity.Air_Walk: Activity.Primary_Air_Walk,
-                Activity.Jump: Activity.Primary_Jump,
-                Activity.Jump_Start: Activity.Primary_Jump_Start,
-                Activity.Jump_Float: Activity.Primary_Jump_Float,
-                Activity.Jump_Land: Activity.Primary_Jump_Land,
-                Activity.Double_Jump_Crouch: Activity.Primary_Double_Jump_Crouch,
-                Activity.Attack_Stand: Activity.Primary_Attack_Stand,
-                Activity.Attack_Stand_Prefire: Activity.Primary_Attack_Stand_Prefire,
-                Activity.Attack_Stand_Postfire: Activity.Primary_Attack_Stand_Postfire,
-                Activity.Attack_Crouch: Activity.Primary_Attack_Crouch,
-                Activity.Attack_Crouch_Prefire: Activity.Primary_Attack_Crouch_Prefire,
-                Activity.Attack_Crouch_Postfire: Activity.Primary_Attack_Crouch_Postfire,
-                Activity.Attack_Swim: Activity.Primary_Attack_Swim,
-                Activity.Attack_Swim_Prefire: Activity.Primary_Attack_Swim_Prefire,
-                Activity.Attack_Swim_Postfire: Activity.Primary_Attack_Swim_Postfire,
-                Activity.Attack_Air_Walk: Activity.Primary_Attack_Air_Walk,
-                Activity.Attack_Air_Walk_Prefire: Activity.Primary_Attack_Air_Walk_Prefire,
-                Activity.Attack_Air_Walk_Postfire: Activity.Primary_Attack_Air_Walk_Postfire,
-                Activity.Reload_Stand: Activity.Primary_Reload_Stand,
-                Activity.Reload_Stand_Loop: Activity.Primary_Reload_Stand_Loop,
-                Activity.Reload_Stand_End: Activity.Primary_Reload_Stand_End,
-                Activity.Reload_Crouch: Activity.Primary_Reload_Crouch,
-                Activity.Reload_Crouch_Loop: Activity.Primary_Reload_Crouch_Loop,
-                Activity.Reload_Crouch_End: Activity.Primary_Reload_Crouch_End,
-                Activity.Reload_Swim: Activity.Primary_Reload_Swim,
-                Activity.Reload_Swim_Loop: Activity.Primary_Reload_Swim_Loop,
-                Activity.Reload_Swim_End: Activity.Primary_Reload_Swim_End,
-                Activity.Reload_Air_Walk: Activity.Primary_Reload_Air_Walk,
-                Activity.Reload_Air_Walk_Loop: Activity.Primary_Reload_Air_Walk_Loop,
-                Activity.Reload_Air_Walk_End: Activity.Primary_Reload_Air_Walk_End,
-                Activity.Deployed: Activity.Primary_Deployed,
-                Activity.Deployed_Idle: Activity.Primary_Deployed_Idle,
-                Activity.Deployed_Idle_Crouch: Activity.Primary_Deployed_Idle_Crouch
-            },
-
-            TFWeaponType.Secondary: {
-                Activity.Stand: Activity.Secondary_Stand,
-                Activity.Run: Activity.Secondary_Run,
-                Activity.Crouch: Activity.Secondary_Crouch,
-                Activity.Crouch_Walk: Activity.Secondary_Crouch_Walk,
-                Activity.Swim: Activity.Secondary_Swim,
-                Activity.Air_Walk: Activity.Secondary_Air_Walk,
-                Activity.Jump: Activity.Secondary_Jump,
-                Activity.Jump_Start: Activity.Secondary_Jump_Start,
-                Activity.Jump_Float: Activity.Secondary_Jump_Float,
-                Activity.Jump_Land: Activity.Secondary_Jump_Land,
-                Activity.Double_Jump_Crouch: Activity.Secondary_Double_Jump_Crouch,
-                Activity.Attack_Stand: Activity.Secondary_Attack_Stand,
-                Activity.Attack_Crouch: Activity.Secondary_Attack_Crouch,
-                Activity.Attack_Swim: Activity.Secondary_Attack_Swim,
-                Activity.Attack_Air_Walk: Activity.Secondary_Attack_Air_Walk,
-                Activity.Reload_Stand: Activity.Secondary_Reload_Stand,
-                Activity.Reload_Stand_Loop: Activity.Secondary_Reload_Stand_Loop,
-                Activity.Reload_Stand_End: Activity.Secondary_Reload_Stand_End,
-                Activity.Reload_Crouch: Activity.Secondary_Reload_Crouch,
-                Activity.Reload_Crouch_Loop: Activity.Secondary_Reload_Crouch_Loop,
-                Activity.Reload_Crouch_End: Activity.Secondary_Reload_Crouch_End,
-                Activity.Reload_Swim: Activity.Secondary_Reload_Swim,
-                Activity.Reload_Swim_Loop: Activity.Secondary_Reload_Swim_Loop,
-                Activity.Reload_Swim_End: Activity.Secondary_Reload_Swim_End,
-                Activity.Reload_Air_Walk: Activity.Secondary_Reload_Air_Walk,
-                Activity.Reload_Air_Walk_Loop: Activity.Secondary_Reload_Air_Walk_Loop,
-                Activity.Reload_Air_Walk_End: Activity.Secondary_Reload_Air_Walk_End
-            },
-
-            TFWeaponType.Melee: {
-                Activity.Stand: Activity.Melee_Stand,
-                Activity.Run: Activity.Melee_Run,
-                Activity.Crouch: Activity.Melee_Crouch,
-                Activity.Crouch_Walk: Activity.Melee_Crouch_Walk,
-                Activity.Swim: Activity.Melee_Swim,
-                Activity.Air_Walk: Activity.Melee_Air_Walk,
-                Activity.Jump: Activity.Melee_Jump,
-                Activity.Jump_Start: Activity.Melee_Jump_Start,
-                Activity.Jump_Float: Activity.Melee_Jump_Float,
-                Activity.Jump_Land: Activity.Melee_Jump_Land,
-                Activity.Double_Jump_Crouch: Activity.Melee_Double_Jump_Crouch,
-                Activity.Attack_Stand: Activity.Melee_Attack_Stand,
-                Activity.Attack_Crouch: Activity.Melee_Attack_Crouch,
-                Activity.Attack_Swim: Activity.Melee_Attack_Swim,
-                Activity.Attack_Air_Walk: Activity.Melee_Attack_Air_Walk,
-                Activity.Attack_Stand_SecondaryFire: Activity.Melee_Attack_Stand_SecondaryFire
-            }
-        }
-
-        if IS_CLIENT:
             # Add TF weapon prediction fields.
             self.addPredictionField("lowered", bool)
             self.addPredictionField("reloadMode", int)
             self.addPredictionField("reloadedThroughAnimEvent", bool)
-
-    if IS_CLIENT:
+            self.addPredictionField("weaponMode", int, networked=False)
 
         def getBobState(self):
             if not self.player:
@@ -580,7 +621,11 @@ class TFWeapon(BaseClass):
             p.node().setCcdEnabled(True)
             p.singleUse = True
             p.packType = "med"
-            p.metalAmount = 100
+
+            # Give amount of metal player has at the time of dropping
+            # up to a maximum of 100 and a minimum of 5.
+            # For non-engineers, it will always give 100 metal.
+            p.metalAmount = min(100, max(5, self.player.metal))
 
             # Match current weapon position/rotation in animation.
             p.setMat(self.character.getJointNetTransform(0) * self.characterNp.getMat(base.render))
@@ -604,8 +649,10 @@ class TFWeapon(BaseClass):
 
             p.setMass(25.0)
             angImpulse = Vec3(random.uniform(0, 100), 0, 0)
-            p.node().addForce(impulse, p.node().FTImpulse)
-            p.node().addTorque(angImpulse, p.node().FTImpulse)
+            #p.node().setLinearVelocity(impulse)
+            #p.node().setAngularVelocity(angImpulse)
+            p.node().addForce(impulse, p.node().FTVelocityChange)
+            p.node().addTorque(angImpulse, p.node().FTVelocityChange)
 
             base.net.generateObject(p, self.zoneId)
             #p.ls()

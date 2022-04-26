@@ -69,12 +69,15 @@ class Wave:
         # Cached AudioSound data, None until first time wave is needed.
         self.sound = None
         self.spatialized = False
+        self.loopStart = 0.0
+        self.loopEnd = -1.0
 
     def getSound(self, mgr):
         if self.sound:
             return mgr.getSound(self.sound)
         else:
             self.sound = mgr.getSound(self.filename, self.spatialized)
+            self.sound.setLoopRange(self.loopStart, self.loopEnd)
             return self.sound
 
     def __repr__(self):
@@ -134,8 +137,7 @@ def createSound(info, spatial=False, getWave=False):
     if not wave:
         return None
 
-    mgr = base.sfxManagerList[info.channel]
-    sound = wave.getSound(mgr)
+    sound = wave.getSound(base.sfxManagerList[0])
     sound.set3dMinDistance(info.minDistance)
     sound.set3dDistanceFactor(info.distMult)
     sound.setPlayRate(random.uniform(info.pitch[0], info.pitch[1]))
@@ -163,20 +165,22 @@ def createSoundByName(name, getInfo=False, spatial=False):
     if not getInfo:
         return createSound(info, spatial)
     else:
-        return (createSound(info), info)
+        return (createSound(info, spatial), info)
 
 def createSoundByIndex(index, getInfo=False, spatial=False):
     info = AllSounds[index]
     if not getInfo:
         return createSound(info, spatial)
     else:
-        return (createSound(info), info)
+        return (createSound(info, spatial), info)
 
-def createSoundClient(index, waveIndex, volume, pitch, spatialized = False):
+def createSoundClient(index, waveIndex, volume, pitch, spatialized = False, getInfo=False):
     csc_coll.start()
 
     if index >= len(AllSounds):
         csc_coll.stop()
+        if getInfo:
+            return (None, None)
         return None
 
     info = AllSounds[index]
@@ -187,11 +191,12 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False):
 
     if not wave:
         csc_coll.stop()
+        if getInfo:
+            return (None, None)
         return None
 
     get_sound_coll.start()
-    mgr = base.sfxManagerList[info.channel]
-    sound = wave.getSound(mgr)
+    sound = wave.getSound(base.sfxManagerList[0])
     get_sound_coll.stop()
     sound.set3dMinDistance(info.minDistance)
     sound.set3dDistanceFactor(info.distMult)
@@ -211,6 +216,8 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False):
         sound.applySteamAudioProperties(props)
 
     csc_coll.stop()
+    if getInfo:
+        return (sound, info)
     return sound
 
 def createSoundServer(name):
@@ -222,11 +229,12 @@ def createSoundServer(name):
     if info.wave:
         waveIdx = 0
     else:
-        waveIdx = random.choice(range(len(info.waves)))
+        waveIdx = random.randint(0, len(info.waves) - 1)
     if waveIdx == -1:
         return None
 
-    return [info.index, waveIdx, random.uniform(info.volume[0], info.volume[1]), random.uniform(info.pitch[0], info.pitch[1])]
+    return [info.index, waveIdx, random.uniform(info.volume[0], info.volume[1]),
+            random.uniform(info.pitch[0], info.pitch[1]), info.channel]
 
 def processSound(kv):
     global Sounds
@@ -261,10 +269,16 @@ def processSound(kv):
             info.minDistance = 0.01
         elif key == "wave":
             info.wave = Wave()
-            if value.startswith(")"):
+            if value.startswith(")") or value.startswith(">") or value.startswith("<"):
                 info.wave.spatialized = True
                 value = value[1:]
             info.wave.filename = Filename.fromOsSpecific(value.lower())
+        elif key == "loopstart":
+            assert info.wave
+            info.wave.loopStart = float(value)
+        elif key == "loopend":
+            assert info.wave
+            info.wave.loopEnd = float(value)
         elif key == "pitch":
             if value.upper() in Pitch.__members__:
                 info.pitch = [Pitch[value.upper()], Pitch[value.upper()]]
@@ -295,7 +309,7 @@ def processSound(kv):
             for j in range(child.getNumKeys()):
                 value = child.getValue(j)
                 wave = Wave()
-                if value.startswith(")"):
+                if value.startswith(")") or value.startswith(">") or value.startswith("<"):
                     wave.spatialized = True
                     value = value[1:]
                 wave.filename = Filename.fromOsSpecific(value.lower())
@@ -306,17 +320,6 @@ def processSound(kv):
     AllSounds.append(info)
 
 def loadSounds(server = False):
-    if not server:
-        for chan in Channel:
-            # Create a new audio manager for each channel above the default
-            # (which ShowBase creates automatically).
-            if chan > 1:
-                mgr = AudioManager.createAudioManager()
-                base.addSfxManager(mgr)
-
-        #for mgr in base.sfxManagerList:
-
-
     for i in range(load_sounds.getNumUniqueValues()):
         filename = Filename.fromOsSpecific(load_sounds.getUniqueValue(i))
 

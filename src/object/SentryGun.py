@@ -1,6 +1,5 @@
 
-from panda3d.core import Vec3, Quat, lookAt, Filename
-from panda3d.direct import InterpolatedFloat
+from panda3d.core import Vec3, Quat, lookAt, Filename, InterpolatedFloat, Point3
 
 from .BaseObject import BaseObject
 
@@ -79,6 +78,11 @@ class SentryGun(BaseObject):
 
         self.maxLevel = 2
 
+    def loadModelBBoxIntoHull(self):
+        # Override the collision hull in the model.
+        self.hullMins = Point3(-20, -20, 0)
+        self.hullMaxs = Point3(20, 20, 66)
+
     if not IS_CLIENT:
 
         def onKilled(self, info):
@@ -95,14 +99,14 @@ class SentryGun(BaseObject):
         def onWrenchHit(self, player):
             didWork = BaseObject.onWrenchHit(self, player)
             if not self.isUpgrading():
-                playerMetal = 200 #TODO
+                playerMetal = player.metal
                 # If the sentry has less than 100% ammo, put some ammo in it
                 if self.ammoShells < self.maxAmmoShells and playerMetal > 0:
                     maxShellsCanAfford = int(playerMetal / metal_per_shell)
                     # Cap to the amount we can add
                     amountToAdd = min(40, maxShellsCanAfford)
                     amountToAdd = min(self.maxAmmoShells - self.ammoShells, amountToAdd)
-                    # TODO: remove metal
+                    player.metal -= amountToAdd
                     self.ammoShells += amountToAdd
                     if amountToAdd > 0:
                         didWork = True
@@ -546,14 +550,18 @@ class SentryGun(BaseObject):
 
         def setLookPitch(self, pitch):
             self.lookPitch = pitch
-            self.getPoseParameter("aim_pitch").setNormValue(pitch)
+            pp = self.getPoseParameter("aim_pitch")
+            if pp:
+                pp.setNormValue(pitch)
 
         def getLookYaw(self):
             return self.lookYaw
 
         def setLookYaw(self, yaw):
             self.lookYaw = yaw
-            self.getPoseParameter("aim_yaw").setNormValue(yaw)
+            pp = self.getPoseParameter("aim_yaw")
+            if pp:
+                pp.setNormValue(yaw)
 
 if not IS_CLIENT:
     SentryGunAI = SentryGun

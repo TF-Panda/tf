@@ -16,6 +16,7 @@ specified in the level file.
 
 from .DHealthKitAI import DHealthKitSmallAI, DHealthKitMediumAI, DHealthKitFullAI
 from .DAmmoPackAI import DAmmoPackSmallAI, DAmmoPackMediumAI, DAmmoPackFullAI
+from .DistributedTeamFlag import DistributedTeamFlagAI
 
 EntityRegistry = {
     "item_healthkit_small": DHealthKitSmallAI,
@@ -23,5 +24,6 @@ EntityRegistry = {
     "item_healthkit_full": DHealthKitFullAI,
     "item_ammopack_small": DAmmoPackSmallAI,
     "item_ammopack_medium": DAmmoPackMediumAI,
-    "item_ammopack_full": DAmmoPackFullAI
+    "item_ammopack_full": DAmmoPackFullAI,
+    "item_teamflag": DistributedTeamFlagAI
 }

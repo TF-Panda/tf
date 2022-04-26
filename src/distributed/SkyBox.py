@@ -14,7 +14,7 @@ texorder = [0,2,1,3,4,5]
 
 class SkyBox:
 
-    def __init__(self, skyName = "sky_upward_hdr"):
+    def __init__(self, skyName = "sky_well_01_hdr"):
         self.root = base.render.attachNewNode("skybox")
 
         for i in range(6):
@@ -26,6 +26,7 @@ class SkyBox:
 
         self.root.setBin("background", 0)
         self.root.setDepthWrite(False)
+        #self.root.setTwoSided(True)
         self.root.flattenStrong()
         self.root.node().setBounds(OmniBoundingVolume())
         self.root.node().setFinal(True)

@@ -48,6 +48,10 @@ from tf.weapon.DWeaponDrop import DWeaponDrop/AI
 from tf.weapon.DistributedGrenadeLauncher import DistributedGrenadeLauncher/AI
 from tf.object.BaseObject import BaseObject/AI
 from tf.object.SentryGun import SentryGun/AI
+from tf.object.DistributedDispenser import DistributedDispenser/AI
+from tf.object.DistributedTeleporter import DistributedTeleporter/AI
+from tf.object.DistributedTeleporter import DistributedTeleporterEntrance/AI
+from tf.object.DistributedTeleporter import DistributedTeleporterExit/AI
 from tf.weapon.BaseRocket import BaseRocket/AI
 from tf.weapon.RocketProjectile import RocketProjectile/AI
 from tf.weapon.DPipeBombProjectile import DPipeBombProjectile/AI
@@ -59,6 +63,11 @@ from tf.weapon.DistributedFists import DistributedFists/AI
 from tf.weapon.DistributedFireAxe import DistributedFireAxe/AI
 from tf.weapon.DistributedRevolver import DistributedRevolver/AI
 from tf.weapon.DistributedKnife import DistributedKnife/AI
+from tf.weapon.DistributedPDA import DistributedConstructionPDA/AI
+from tf.weapon.DistributedPDA import DistributedDestructionPDA/AI
+from tf.weapon.DistributedToolbox import DistributedToolbox/AI
+
+from tf.distributed.DistributedTeamFlag import DistributedTeamFlag/AI
 
 // Coordinate range (per axis): -21474836.47 to 21474836.47
 // Two decimals of precision.
@@ -137,20 +146,25 @@ dclass DistributedEntity : DistributedObject {
   Position pos; // 12 //
   Quat rot; // 8 //
   Scale scale; // 6
+  // If the server changes this, the client will clear transform interpolation
+  // so the entity teleports to the new server transform.
+  uint8 teleportParity;
   Vector velocity; // 24 //
   Vector baseVelocity; // 24 //
   int8 team; // 1
-  uint16 health; // 2
   uint16 maxHealth; // 2
+  uint16 health; // 2
   uint8 takeDamageMode; // 1
 
   // 60 bytes
 
   // Emits a non-spatialized sound from this entity.
-  emitSound_sv(uint32 soundIndex, uint8 waveIndex, int16 volume / 100, int16 pitch / 100) broadcast;
+  emitSound_sv(uint32 soundIndex, uint8 waveIndex, int16 volume / 100,
+               int16 pitch / 100, uint8 channel, uint8 loop) broadcast;
   // Emits a spatialized sound from this entity.
   // The sound follows the entity with `position` offset.
-  emitSoundSpatial_sv(uint32 soundIndex, uint8 waveIndex, int16 volume / 100, int16 pitch / 100, Position position) broadcast;
+  emitSoundSpatial_sv(uint32 soundIndex, uint8 waveIndex, int16 volume / 100, int16 pitch / 100,
+                      uint8 channel, Position position, uint8 loop) broadcast;
 };
 
 dclass DistributedGame : DistributedObject {
@@ -209,9 +223,12 @@ dclass DistributedTFPlayer : DistributedChar {
   // DoId of entity we are observing.
   int32 observerTarget; // 4
 
+  uint8 selectedBuilding;
+
   // The weapons we are carrying.
   int32 weapons[]; // 12
   // The weapon currently deployed.  It's an index into the weapons list.
+  int8 lastActiveWeapon;
   int8 activeWeapon; // 1
 
   uint8 playerState; // 1
@@ -220,6 +237,8 @@ dclass DistributedTFPlayer : DistributedChar {
 
   uint16 condition; // 2
 
+  uint16 maxSpeed / 10;
+
   uint32 buttons;
   uint32 lastButtons;
   //uint32 buttonsPressed;
@@ -227,6 +246,8 @@ dclass DistributedTFPlayer : DistributedChar {
 
   FatAngles punchAngle;
   FatAngles punchAngleVel;
+
+  uint8 metal;
 
   // 46 bytes
 
@@ -241,6 +262,7 @@ dclass DistributedTFPlayer : DistributedChar {
 
   pushExpression(string) broadcast;
 
+  gib() broadcast ownrecv;
   respawn() broadcast ownrecv;
 
   pain() broadcast;
@@ -249,6 +271,10 @@ dclass DistributedTFPlayer : DistributedChar {
 
   // Animation event for doing a gesture or something.
   playerAnimEvent(uint8, uint16) broadcast ownrecv;
+
+  // Sent from AI to owner to set view angles to teleporter exit
+  // direction and perform the FOV lerp.
+  doTeleport(int16 h % 360 / 10, float64 fovTime, float64 fovStart) ownrecv;
 };
 
 dclass DistributedWeapon : DistributedChar {
@@ -322,6 +348,28 @@ dclass SentryGun : BaseObject {
   muzzleFlash(uint8 muzzle) broadcast;
 };
 
+dclass DistributedDispenser : BaseObject {
+  uint16 ammoMetal;
+  uint32 healingTargets[];
+};
+
+dclass DistributedTeleporter : BaseObject {
+  uint8 teleState;
+  uint8 showingBlur;
+  uint8 showingDirectionArrow;
+  int16 yawToExit % 360 / 10;
+  int16 rechargeTime / 10;
+  uint16 timesUsed;
+};
+
+dclass DistributedTeleporterEntrance : DistributedTeleporter {
+
+};
+
+dclass DistributedTeleporterExit : DistributedTeleporter {
+
+};
+
 dclass BaseRocket : DistributedChar {
   Vector initialVel;
 };
@@ -387,3 +435,19 @@ dclass DistributedFireAxe : TFWeaponMelee { };
 
 dclass DistributedRevolver : TFWeaponGun { };
 dclass DistributedKnife : TFWeaponMelee { };
+
+dclass DistributedConstructionPDA : TFWeapon {
+  selectBuilding(uint8) clsend airecv;
+};
+
+dclass DistributedDestructionPDA : TFWeapon {
+  destroyBuilding(uint8) clsend airecv;
+};
+
+dclass DistributedToolbox : TFWeapon {
+  uint8 rotation;
+};
+
+dclass DistributedTeamFlag : DistributedEntity {
+  string flagModelName;
+};

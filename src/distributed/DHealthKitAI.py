@@ -8,8 +8,7 @@ class DHealthKitAI(DPickupItemBaseAI):
         if ent.health < 1:
             return False
 
-        from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
-        if not isinstance(ent, DistributedTFPlayerAI):
+        if not ent.isPlayer():
             # Only for players.
             return False
 

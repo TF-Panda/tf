@@ -9,7 +9,18 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
         DistributedWeaponShared.__init__(self)
         self.clientSideAnimation = True
 
+        self.active = False
+
+    def updatePlayer(self):
+        DistributedWeaponShared.updatePlayer(self)
+        # Be on same team as player and use team-colored skin for
+        # weapon model.
+        self.team = self.player.team
+        self.skin = self.player.skin
+
     def activate(self):
+        self.active = True
+
         if self.UsesViewModel:
             self.player.viewModel.setModel(self.WeaponViewModel)
 
@@ -20,8 +31,10 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
             self.setJointMergeCharacter(self.player.character)
 
     def deactivate(self):
+        self.active = False
+
         self.reparentTo(base.hidden)
-        if self.UsesViewModel:
+        if self.UsesViewModel and self.player and self.player.viewModel:
             self.player.viewModel.setModel(self.player.classInfo.ViewModel)
         DistributedWeaponShared.deactivate(self)
 
@@ -52,6 +65,9 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
         self.emitSoundSpatial(soundName, offset, excludeClients=exclude)
 
     def delete(self):
+        if self.active:
+            self.deactivate()
+
         DistributedCharAI.delete(self)
         DistributedWeaponShared.delete(self)
 

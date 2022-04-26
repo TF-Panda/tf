@@ -15,6 +15,7 @@ class DViewModelAI(DistributedCharAI):
         if self.player:
             self.player.viewModel = None
             self.player = None
+        DistributedCharAI.delete(self)
 
     def setPlayerId(self, playerId):
         self.playerId = playerId

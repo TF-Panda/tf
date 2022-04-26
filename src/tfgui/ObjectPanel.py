@@ -16,7 +16,8 @@ class ObjectPanel(NodePath):
                                  state = DGG.NORMAL,
                                  frameColor = (1, 0.5, 0.5, 0.8),
                                  frameSize = (-2, 2, -1, 1),
-                                 parent = self)
+                                 parent = self,
+                                 suppressMouse = False)
 
         # Unplaced/placed
         self.topFSM = ClassicFSM('ObjectPanelTop',
@@ -122,7 +123,8 @@ class ObjectPanel(NodePath):
             frameColor=(0, 0, 0, 0.5),
             barColor=(1,1,1,1),
             range=1.0,
-            value=0.7
+            value=0.7,
+            suppressMouse=False
         )
         self.hpBar.setR(-90)
         self.hpBar.setScale(0.8, 1, 1.2)
@@ -153,7 +155,8 @@ class ObjectPanel(NodePath):
             barColor = (1, 1, 1, 1),
             range = 1.0,
             value = 0.4,
-            relief = DGG.FLAT
+            relief = DGG.FLAT,
+            suppressMouse = False
         )
         self.buildingBar.setZ(-0.3)
         self.buildingBar.setSx(1.18)
@@ -248,7 +251,8 @@ class SentryPanel(ObjectPanel):
             barColor = (1, 1, 1, 1),
             range = 1.0,
             value = 0.4,
-            relief = DGG.FLAT
+            relief = DGG.FLAT,
+            suppressMouse = False
         )
         self.shellsBar.setZ(-0.25)
         self.shellsBar.setSx(1.18)
@@ -269,7 +273,8 @@ class SentryPanel(ObjectPanel):
             barColor = (1, 1, 1, 1),
             range = 1.0,
             value = 0.4,
-            relief = DGG.FLAT
+            relief = DGG.FLAT,
+            suppressMouse = False
         )
         self.upgradeBar.setZ(-0.8)
         self.upgradeBar.setSx(1.18)

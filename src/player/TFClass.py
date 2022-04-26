@@ -39,6 +39,7 @@ class Weapon(IntEnum):
     FireAxe = auto()
     Revolver = auto()
     Knife = auto()
+    Toolbox = auto()
 
 BaseSpeed = 300
 
@@ -92,7 +93,12 @@ class EngineerInfo:
         "Engineer.PainSharp08"
     ]
 
-    Weapons = [Weapon.ShotgunEngineer, Weapon.PistolEngineer, Weapon.Wrench]
+    TeleporterThanks = [
+        "Engineer.ThanksForTheTeleporter01",
+        "Engineer.ThanksForTheTeleporter02"
+    ]
+
+    Weapons = [Weapon.ShotgunEngineer, Weapon.PistolEngineer, Weapon.Wrench, Weapon.ConstructionPDA, Weapon.DestructionPDA, Weapon.Toolbox]
 
 class SoldierInfo:
     Name = TFLocalizer.Soldier
@@ -140,6 +146,12 @@ class SoldierInfo:
         "Soldier.PainSharp06",
         "Soldier.PainSharp07",
         "Soldier.PainSharp08"
+    ]
+
+    TeleporterThanks = [
+        "Soldier.ThanksForTheTeleporter01",
+        "Soldier.ThanksForTheTeleporter02",
+        "Soldier.ThanksForTheTeleporter03"
     ]
 
     Weapons = [Weapon.RocketLauncher,
@@ -192,6 +204,11 @@ class DemoInfo:
         "Demoman.PainSharp07"
     ]
 
+    TeleporterThanks = [
+        "Demoman.ThanksForTheTeleporter01",
+        "Demoman.ThanksForTheTeleporter02"
+    ]
+
     Weapons = [Weapon.GrenadeLauncher, Weapon.Bottle]
 
 class HeavyInfo:
@@ -232,6 +249,12 @@ class HeavyInfo:
         "Heavy.PainSharp03",
         "Heavy.PainSharp04",
         "Heavy.PainSharp05"
+    ]
+
+    TeleporterThanks = [
+        "Heavy.ThanksForTheTeleporter01",
+        "Heavy.ThanksForTheTeleporter02",
+        "Heavy.ThanksForTheTeleporter03"
     ]
 
     Weapons = [Weapon.Minigun, Weapon.ShotgunHeavy, Weapon.Fists]
@@ -279,12 +302,17 @@ class ScoutInfo:
         "Scout.PainSharp07",
         "Scout.PainSharp08"
     ]
+    TeleporterThanks = [
+        "Scout.ThanksForTheTeleporter01",
+        "Scout.ThanksForTheTeleporter02",
+        "Scout.ThanksForTheTeleporter03"
+    ]
 
     Weapons = [Weapon.Scattergun, Weapon.PistolScout, Weapon.Bat]
 
 class PyroInfo:
     Name = TFLocalizer.Pyro
-    MenuWeapon = "models/weapons/c_flamethrower"
+    MenuWeapon = ["models/weapons/c_flamethrower", "models/weapons/c_flamethrower_pilotlight"]
     PlayerModel = "models/char/pyro"
     ViewModel = "models/weapons/v_shotgun_pyro"
     ForwardFactor = 1.0
@@ -319,6 +347,9 @@ class PyroInfo:
         "Pyro.PainSharp05",
         "Pyro.PainSharp06",
         "Pyro.PainSharp07"
+    ]
+    TeleporterThanks = [
+        "Pyro.ThanksForTheTeleporter01"
     ]
 
     Weapons = [Weapon.ShotgunPyro, Weapon.FireAxe]
@@ -360,6 +391,11 @@ class SpyInfo:
         "Spy.PainSharp02",
         "Spy.PainSharp03",
         "Spy.PainSharp04"
+    ]
+    TeleporterThanks = [
+        "Spy.ThanksForTheTeleporter01",
+        "Spy.ThanksForTheTeleporter02",
+        "Spy.ThanksForTheTeleporter03"
     ]
 
     Weapons = [Weapon.Revolver, Weapon.Knife]

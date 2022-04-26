@@ -17,6 +17,10 @@ class DistributedCharAI(Char, DistributedEntityAI):
 
         self.lastEventCheck = 0.0
 
+    def delete(self):
+        Char.delete(self, removeNode=False)
+        DistributedEntityAI.delete(self)
+
     def onModelChanged(self):
         self.initializeCollisions()
         Char.onModelChanged(self)

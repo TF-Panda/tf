@@ -7,6 +7,8 @@ from panda3d.core import *
 
 from enum import IntEnum, auto
 
+import math
+
 class GestureSlot(IntEnum):
     AttackAndReload = 1
     Grenade = 2
@@ -36,12 +38,32 @@ class TFPlayerAnimState:
         self.firstJumpFrame = False
         self.jumpStartTime = 0.0
         self.idealActivity = Activity.Invalid
+        self.estimatedYaw = 0.0
+        self.initPoseParameters()
+
+    def delete(self):
+        self.player = None
+        self.moveXParam = None
+        self.moveYParam = None
+        self.bodyPitchParam = None
+        self.bodyYawParam = None
+        self.vel = None
+
+    def onPlayerModelChanged(self):
+        self.gotPoseParameters = False
+
+    def initPoseParameters(self):
+        self.moveXParam = self.player.getPoseParameter("move_x")
+        self.moveYParam = self.player.getPoseParameter("move_y")
+        self.bodyPitchParam = self.player.getPoseParameter("body_pitch")
+        self.bodyYawParam = self.player.getPoseParameter("body_yaw")
+        self.gotPoseParameters = True
 
     def isGestureSlotPlaying(self, slot, activity):
         return (not self.player.isCurrentChannelFinished(layer=slot)) and (self.player.getCurrentActivity(layer=slot) == activity)
 
     def restartGesture(self, slot, activity, autoKill = True, blendIn = 0.1, blendOut = 0.1):
-        self.player.startChannel(act = self.translateActivity(activity),
+        self.player.startChannel(act = self.translateActivity(activity, slot),
                                  autoKill = autoKill, blendIn = blendIn, blendOut = blendOut,
                                  layer = slot)
 
@@ -52,7 +74,7 @@ class TFPlayerAnimState:
             isMinigun = isinstance(self.player.getActiveWeaponObj(), DMinigun)
             if isMinigun:
                 gestureActivity = Activity.Attack_Stand
-                if not self.isGestureSlotPlaying(GestureSlot.AttackAndReload, self.translateActivity(gestureActivity)):
+                if not self.isGestureSlotPlaying(GestureSlot.AttackAndReload, self.translateActivity(gestureActivity, GestureSlot.AttackAndReload)):
                     self.restartGesture(GestureSlot.AttackAndReload, gestureActivity)
             else:
                 # Weapon primary fire.
@@ -74,17 +96,18 @@ class TFPlayerAnimState:
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_End, blendIn=0.0)
         elif event == PlayerAnimEvent.Flinch:
             if not self.player.isChannelPlaying(layer=GestureSlot.Flinch):
-                self.restartGesture(GestureSlot.Flinch, Activity.Gesture_Flinch)
+                self.restartGesture(GestureSlot.Flinch, self.translateActivity(Activity.Gesture_Flinch, GestureSlot.Flinch))
         elif event == PlayerAnimEvent.Jump:
             self.jumping = True
             self.firstJumpFrame = True
             self.jumpStartTime = globalClock.getFrameTime()
-            #self.restartMainSequence()
+            self.restartMainSequence()
         elif event == PlayerAnimEvent.DoubleJump:
             if not self.jumping:
                 self.jumping = True
                 self.firstJumpFrame = True
                 self.jumpStartTime = globalClock.getFrameTime()
+                self.restartMainSequence()
 
             self.inAirWalk = False
 
@@ -111,7 +134,7 @@ class TFPlayerAnimState:
         return ang
 
     def computeAimPoseParam(self):
-        moving = self.vel.length() > 1.0
+        moving = self.vel.getXy().length() > 1.0
 
         if moving or self.forceAimYaw:
             # Feet match the eye direction when moving.
@@ -148,9 +171,8 @@ class TFPlayerAnimState:
         aimYaw = self.angleNormalize(aimYaw)
 
         # Set the aim yaw and save.
-        yawParam = self.player.getPoseParameter("body_yaw")
-        if yawParam:
-            yawParam.setValue(-aimYaw)
+        if self.bodyYawParam:
+            self.bodyYawParam.setValue(-aimYaw)
         #self.player.lookYaw = yawParam.getNormValue()
         #print(-aimYaw)
 
@@ -181,7 +203,7 @@ class TFPlayerAnimState:
 
         return currentYaw
 
-    def translateActivity(self, actDesired):
+    def translateActivity(self, actDesired, layer=0):
         translateActivity = actDesired
         if self.inSwim:
             if actDesired == Activity.Attack_Stand:
@@ -192,6 +214,11 @@ class TFPlayerAnimState:
         wpn = self.player.getActiveWeaponObj()
         if wpn:
             translateActivity = wpn.translateActivity(translateActivity)
+
+        chan = self.player.getChannelForActivity(translateActivity, layer=layer)
+        if chan < 0:
+            # Don't have a channel for this translated activity, use original.
+            return actDesired
 
         return translateActivity
 
@@ -218,7 +245,7 @@ class TFPlayerAnimState:
             if self.jumping:
                 if self.firstJumpFrame:
                     self.firstJumpFrame = False
-                    #self.restartMainSequence()
+                    self.restartMainSequence()
 
                 # TODO: reset after we hit water and start swimming.
 
@@ -228,7 +255,7 @@ class TFPlayerAnimState:
                 if globalClock.getFrameTime() - self.jumpStartTime > 0.2:
                     if self.player.onGround:
                         self.jumping = False
-                        #self.restartMainSequence()
+                        self.restartMainSequence()
 
                         self.restartGesture(GestureSlot.Jump, Activity.Jump_Land)
 
@@ -248,7 +275,7 @@ class TFPlayerAnimState:
         return False
 
     def handleMoving(self):
-        speed = self.vel.length()
+        speed = self.vel.getXy().length()
 
         if self.player.inCondition(self.player.CondAiming):
             if speed > 0.5:
@@ -287,39 +314,121 @@ class TFPlayerAnimState:
 
         self.player.startChannel(animDesired)
 
+    def computeMovePoseParam(self):
+        self.estimateYaw()
+
+        angle = self.angleNormalize(self.eyeYaw)
+
+        # Calc side to side turning - the view vs. movement yaw.
+        yaw = angle - self.estimatedYaw
+        yaw = self.angleNormalize(-yaw)
+
+        playbackRate, isMoving = self.calcMovementPlaybackRate()
+
+        # Get the current speed the character is running.
+        moveXVal = 0.0
+        moveYVal = 0.0
+        if isMoving:
+            moveXVal = -math.cos(deg2Rad(yaw)) * playbackRate
+            moveYVal = -math.sin(deg2Rad(yaw)) * playbackRate
+
+        if self.moveXParam:
+            self.moveXParam.setValue(moveXVal)
+        if self.moveYParam:
+            self.moveYParam.setValue(moveYVal)
+
+    def calcMovementPlaybackRate(self):
+        speed = self.vel.getXy().length()
+
+        moving = (speed > 0.5)
+
+        ret = 1.0
+        if moving:
+            groundSpeed = self.getCurrentMaxGroundSpeed()
+            if groundSpeed < 0.001:
+                ret = 0.01
+            else:
+                ret = speed / groundSpeed
+                ret = max(0.01, min(10.0, ret))
+
+        return (ret, moving)
+
+    def getCurrentMaxGroundSpeed(self):
+        if self.player.airDashing:
+            return 1.0
+
+        # Get current blend values and normalize it to get the max speed along
+        # that blend direction.
+        blendValues = Vec2()
+        if self.moveXParam:
+            blendValues.x = self.moveXParam.getValue()
+        if self.moveYParam:
+            blendValues.y = self.moveYParam.getValue()
+
+        if blendValues.x == 0 and blendValues.y == 0:
+            return 0.0
+
+        blendDir = blendValues.normalized()
+
+        # Get root motion speed along the normalized blend direction.
+        if self.moveXParam:
+            self.moveXParam.setValue(blendDir.x)
+        if self.moveYParam:
+            self.moveYParam.setValue(blendDir.y)
+
+        bundle = self.player.character
+        chan = bundle.getChannel(bundle.getAnimLayer(0)._sequence)
+        duration = max(0.01, chan.getLength(bundle))
+        speed = chan.getRootMotionVector(bundle).getXy().length() / duration
+
+        # Restore previous blend values.
+        if self.moveXParam:
+            self.moveXParam.setValue(blendValues.x)
+        if self.moveYParam:
+            self.moveYParam.setValue(blendValues.y)
+
+        return speed
+
+    def estimateYaw(self):
+        dt = base.clock.getDt()
+        if dt == 0.0:
+            return
+
+        angles = self.player.getHpr()
+
+        if self.vel.x == 0.0 and self.vel.y == 0.0:
+            # If we are not moving, sync up the feet and eyes slowly.
+            yawDelta = angles[0] - self.estimatedYaw
+            yawDelta = self.angleNormalize(yawDelta)
+            if dt < 0.25:
+                yawDelta *= (dt * 4.0)
+            else:
+                yawDelta *= dt
+            self.estimatedYaw += yawDelta
+            self.estimatedYaw = self.angleNormalize(self.estimatedYaw)
+        else:
+            self.estimatedYaw = (math.atan2(self.vel.y, self.vel.x) * 180.0 / math.pi)
+            self.estimatedYaw = max(-180.0, min(180.0, self.estimatedYaw))
+
     def update(self):
         if self.player.isDead():
             return
 
-        pitchParam = self.player.getPoseParameter("body_pitch")
-        #yawParam = self.player.getPoseParameter("look_yaw")
-        moveXParam = self.player.getPoseParameter("move_x")
-        moveYParam = self.player.getPoseParameter("move_y")
+        if not self.gotPoseParameters:
+            self.initPoseParameters()
 
         self.vel = -self.player.getVelocity()
         vel = self.vel
+        speed = vel.getXy().length()
 
         self.eyeYaw = self.angleNormalize(self.player.eyeH * 360)
         self.eyePitch = self.angleNormalize(self.player.eyeP * 360)
 
         self.computeMainSequence()
-        #self.computeGestureSequence()
+        self.computeMovePoseParam()
 
         self.computeAimPoseParam()
 
-        if pitchParam:
-            pitchParam.setValue(self.eyePitch)
-        #self.player.lookPitch = pitchParam.getNormValue()
-
-        forwardSpeed = self.player.maxSpeed
-        backwardSpeed = self.player.maxSpeed
-        moveX = vel[0] / forwardSpeed
-        moveY = vel[1] / forwardSpeed if vel[1] > 0 else vel[1] / backwardSpeed
-        if moveXParam:
-            moveXParam.setValue(moveX)
-        if moveYParam:
-            moveYParam.setValue(moveY)
-
-        #self.player.moveX = moveXParam.getNormValue()
-        #self.player.moveY = moveYParam.getNormValue()
+        if self.bodyPitchParam:
+            self.bodyPitchParam.setValue(self.eyePitch)
 

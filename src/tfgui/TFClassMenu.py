@@ -5,7 +5,8 @@ from panda3d.core import *
 from direct.gui.DirectGui import *
 
 from tf.player.TFClass import *
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, Sounds
+from tf.tfbase.SoundEmitter import SoundEmitter
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func
 from direct.interval.ActorInterval import ActorInterval
@@ -15,6 +16,24 @@ from tf.actor.Char import Char
 def lightColor(light, temp, intensity):
     light.setColorTemperature(temp)
     light.setColor(Vec4(light.getColor().getXyz() * intensity, 1.0))
+
+class MenuChar(Char):
+
+    def __init__(self):
+        Char.__init__(self)
+        self.soundEmitter = SoundEmitter(self)
+
+    def doAnimEventSound(self, soundName):
+        sound, info = Sounds.createSoundByName(soundName, getInfo=True)
+        if not sound:
+            return
+        self.soundEmitter.registerSound(sound, None if info.channel == Sounds.Channel.CHAN_STATIC else info.channel)
+        sound.play()
+
+    def delete(self):
+        self.soundEmitter.delete()
+        self.soundEmitter = None
+        Char.delete(self)
 
 class TFClassMenu:
 
@@ -61,8 +80,8 @@ class TFClassMenu:
         dlnp.lookAt(64, 200, -32)
         self.classRoot.setLight(dlnp)
 
-        self.classChar = Char()
-        self.weaponChar = Char()
+        self.classChar = MenuChar()
+        self.weaponChars = []
 
         self.toIdleSeq = None
 
@@ -118,9 +137,10 @@ class TFClassMenu:
         if self.toIdleSeq:
             self.toIdleSeq.finish()
         del self.toIdleSeq
-        self.weaponChar.clearModel()
-        del self.weaponChar
-        self.classChar.clearModel()
+        for char in self.weaponChars:
+            char.delete()
+        del self.weaponChars
+        self.classChar.delete()
         del self.classChar
         self.modelQuad.removeNode()
         del self.modelQuad
@@ -160,8 +180,9 @@ class TFClassMenu:
             self.toIdleSeq.finish()
             self.toIdleSeq = None
 
-        self.weaponChar.clearModel()
-        self.classChar.clearModel()
+        for char in self.weaponChars:
+            char.delete()
+        self.weaponChars = []
 
         info = ClassInfos[classId]
         self.classChar.loadModel(info.PlayerModel)
@@ -181,6 +202,13 @@ class TFClassMenu:
         self.toIdleSeq.start()
 
         if info.MenuWeapon:
-            self.weaponChar.loadModel(info.MenuWeapon)
-            self.weaponChar.characterNp.reparentTo(self.classChar.characterNp)
-            self.weaponChar.setJointMergeCharacter(self.classChar.character)
+            wpns = info.MenuWeapon
+            if not isinstance(info.MenuWeapon, list):
+                wpns = [info.MenuWeapon]
+            for wpn in wpns:
+                char = Char()
+                char.loadModel(wpn)
+                char.reparentTo(self.classChar)
+                char.setJointMergeCharacter(self.classChar.character)
+                char.setSkin(base.localAvatar.team)
+                self.weaponChars.append(char)

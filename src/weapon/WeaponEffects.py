@@ -1,6 +1,8 @@
 
-from panda3d.core import NodePath, CardMaker, ColorBlendAttrib
+from panda3d.core import *
 
+from tf.tfbase import Sounds
+from direct.interval.IntervalGlobal import Sequence, LerpFunc, Func
 import random
 
 def lerp(v0, v1, amt):
@@ -86,3 +88,128 @@ def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1)):
         p.reparentTo(node)
         p.setPos(offset)
         p.setHpr(hpr)
+
+def intersectRayWithRay(start1, end1, start2, end2):
+
+    v0 = end1 - start1
+    v1 = end2 - start2
+    v0.normalize()
+    v1.normalize()
+
+    v0xv1 = v0.cross(v1)
+    lengthSq = v0xv1.lengthSquared()
+
+    if lengthSq == 0.0:
+        return (False, 0.0, 0.0) # Parallel
+
+    p1p0 = start2 - start1
+
+    AxC = -p1p0.cross(v0xv1)
+    detT = AxC.dot(v1)
+    detS = AxC.dot(v0)
+
+    t = detT / lengthSq
+    s = detS / lengthSq
+
+    # Intersection?
+    i0 = v0 * t
+    i1 = v1 * s
+    i0 += start1
+    i1 += start2
+
+    if i0.almostEqual(i1):
+        return (True, s, t)
+
+    return (False, s, t)
+
+def calcClosestPointToLineT(P, lineA, lineB, dir):
+    dir.set(lineB.x - lineA.x,
+            lineB.y - lineA.y,
+            lineB.z - lineA.z)
+
+    div = dir.dot(dir)
+    if div < 0.00001:
+        return 0
+
+    return (dir.dot(P) - dir.dot(lineA)) / div
+
+def calcClosestPointOnLineSegment(P, lineA, lineB):
+    dir = Vec3()
+    t = calcClosestPointToLineT(P, lineA, lineB, dir)
+    t = max(0.0, min(1.0, t))
+    return lineA + dir * t
+
+def calcDistanceSqrToLineSegment(P, lineA, lineB):
+    closest = calcClosestPointOnLineSegment(P, lineA, lineB)
+    return ((P - closest).lengthSquared(), closest)
+
+class Whiz:
+
+    def __init__(self, snd, start, end):
+        length = snd.length()
+        self.snd = snd
+        self.start = start
+        self.end = end
+        self.delta = end - start
+        ival = Sequence(LerpFunc(self.__update, length), Func(self.cleanup))
+        ival.start()
+
+    def cleanup(self):
+        self.snd = None
+        self.start = None
+        self.end = None
+        self.delta = None
+
+    def __update(self, t):
+        point = self.start + self.delta * t
+        self.snd.set3dAttributes(point.x, point.y, point.z, 0, 0, 0)
+
+nextWhizTime = 0.0
+def tracerSound(start, end):
+    global nextWhizTime
+
+    #print("tracer sound")
+
+    dt = nextWhizTime - base.clock.getFrameTime()
+    #print("Dt", dt)
+    if dt > 0:
+        return
+
+    #print("start", start, "end", end)
+    #print("len", (start-end).length())
+
+    if (start - end).length() < 200.0:
+        return
+
+    soundName = "Bullets.DefaultNearmiss"
+    whizDist = 96
+    listenOrigin = base.cam.getPos(base.render)
+
+    lower = Point3(listenOrigin)
+    lower.z -= 24.0
+
+    ret, s, t = intersectRayWithRay(start, end, listenOrigin, lower)
+    t = max(0.0, min(1.0, t))
+    listenOrigin.z -= t * 24.0
+
+    #print("listen origin", listenOrigin, "cam pos", base.cam.getPos(base.render))
+
+    dist, point = calcDistanceSqrToLineSegment(listenOrigin, start, end)
+    #print("dist", dist, "point", point)
+    if dist >= whizDist*whizDist:
+        #print("too far")
+        return
+
+    nextWhizTime = base.clock.getFrameTime() + 0.1
+
+    snd = Sounds.createSoundByName(soundName, spatial=True)
+    snd.set3dDistanceFactor(0.0)
+    snd.set3dAttributes(start[0], start[1], start[2], 0, 0, 0)
+    snd.play()
+
+    dir = (end - start).normalized()
+    w = Whiz(snd, point - (dir * 512), point + (dir * 512))
+
+    #snd = base.world.emitSoundSpatial(soundName, point)
+    #snd.set3dDistanceFactor(0.0)
+    #print("snd", snd)

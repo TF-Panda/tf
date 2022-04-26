@@ -17,6 +17,7 @@ from tf.weapon.TakeDamageInfo import addMultiDamage
 from tf.tfbase import TFGlobals, Sounds, TFFilters
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
 from tf.object.BaseObject import BaseObject
+from tf.object.ObjectType import ObjectType
 
 from panda3d.core import *
 from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
@@ -77,12 +78,30 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.viewModel = DViewModelAI()
         self.viewModel.player = self
 
-        self.sentry = None
-        self.lastBuildTime = 0.0
-
         self.lastPainTime = 0.0
 
         self.clientSideAnimation = True
+
+    def d_setViewAngles(self, hpr):
+        """
+        Allows server to override view angles, which are normally
+        controlled entirely by the client and sent via player commands.
+        """
+        self.sendUpdate('setViewAngles', [hpr[0], hpr[1]], client=self.owner)
+
+    def onModelChanged(self):
+        DistributedCharAI.onModelChanged(self)
+        if self.animState:
+            # Re-fetch pose parameters on new model.
+            self.animState.onPlayerModelChanged()
+
+    def isPlayer(self):
+        """
+        Returns True if this entity is a player.  Overridden in
+        DistributedTFPlayer to return True.  Convenience method
+        to avoid having to check isinstance() or __class__.__name__.
+        """
+        return True
 
     def pushExpression(self, name):
         self.sendUpdate('pushExpression', [name])
@@ -108,64 +127,109 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.sendUpdate('speak', [info.index], client = client, excludeClients = excludeClients)
 
     def doClassSpecialSkill(self):
-        if self.tfClass == Class.Engineer:
-            now = globalClock.getFrameTime()
-            if now - self.lastBuildTime < 5.0:
-                return
-            self.lastBuildTime = now
-            #if self.sentry:
-            #    base.net.deleteObject(self.sentry)
-            # Place a sentry in front of him.
+        return
 
-            q = Quat()
-            q.setHpr(Vec3(self.viewAngles[0], 0, 0))
-            fwd = q.getForward()
-            startPos = (self.getPos() + (fwd * 64)) + Point3(0, 0, 8)
-            # Trace down to get to the floor.
-            result = PhysRayCastResult()
-            hadHit = base.physicsWorld.raycast(
-                result, startPos, Vec3.down(), 1000000,
-                Contents.Solid, Contents.Empty, CollisionGroup.Empty,
-                TFFilters.TFQueryFilter(
-                    self, [TFFilters.ignoreSelf])
-            )
+        #if self.tfClass == Class.Engineer:
+        #    self.placeSentry()
 
-            good = True
-            pos = Point3()
-            if hadHit:
-                block = result.getBlock()
-                actor = block.getActor()
-                ent = actor.getPythonTag("entity")
-                print("sentry build test hit", ent)
-                if not ent or ent.__class__.__name__ != 'WorldAI':
-                    print("not the world")
-                    good = False
-                else:
-                    pos = block.getPosition()
-                    print("height to ground", (pos - startPos).length())
-                    if (pos - startPos).length() >= 64:
-                        good = False
-            else:
+    def placeSentry(self, rotation):
+        if self.selectedBuilding < 0 or self.selectedBuilding > 3:
+            return
+
+        metals = [
+            130,
+            100,
+            50,
+            50
+        ]
+        if self.hasObject(self.selectedBuilding) or self.metal < metals[self.selectedBuilding]:
+            return
+
+        #if self.sentry:
+        #    base.net.deleteObject(self.sentry)
+        # Place a sentry in front of him.
+
+        q = Quat()
+        q.setHpr(Vec3(self.viewAngles[0], 0, 0))
+        fwd = q.getForward()
+        startPos = (self.getPos() + (fwd * 64)) + Point3(0, 0, 8)
+        # Trace down to get to the floor.
+        result = PhysRayCastResult()
+        hadHit = base.physicsWorld.raycast(
+            result, startPos, Vec3.down(), 1000000,
+            Contents.Solid, Contents.Empty, CollisionGroup.Empty,
+            TFFilters.TFQueryFilter(
+                self, [TFFilters.ignoreSelf])
+        )
+
+        good = True
+        pos = Point3()
+        if hadHit:
+            block = result.getBlock()
+            actor = block.getActor()
+            ent = actor.getPythonTag("entity")
+            if not ent or ent.__class__.__name__ != 'WorldAI':
                 good = False
+            else:
+                pos = block.getPosition()
+                if (pos - startPos).length() >= 64:
+                    good = False
+        else:
+            good = False
 
-            if not good:
-                print("not good")
-                return
+        if not good:
+            return False
 
+        if self.selectedBuilding == 0:
             from tf.object.SentryGun import SentryGunAI
             sg = SentryGunAI()
-            sg.setBuilderDoId(self.doId)
-            sg.setH(self.viewAngles[0])
-            sg.setPos(pos)
+        elif self.selectedBuilding == 1:
+            from tf.object.DistributedDispenser import DistributedDispenserAI
+            sg = DistributedDispenserAI()
+        elif self.selectedBuilding == 2:
+            from tf.object.DistributedTeleporter import DistributedTeleporterEntranceAI
+            sg = DistributedTeleporterEntranceAI()
+        elif self.selectedBuilding == 3:
+            from tf.object.DistributedTeleporter import DistributedTeleporterExitAI
+            sg = DistributedTeleporterExitAI()
 
-            base.net.generateObject(sg, self.zoneId)
-            self.sentry = sg
+        sg.setBuilderDoId(self.doId)
+        sg.setH(rotation)
+        sg.setPos(pos)
+
+        self.metal -= metals[self.selectedBuilding]
+
+        base.net.generateObject(sg, self.zoneId)
+        #self.sentry = sg
+
+        if self.selectedBuilding == 0:
             self.d_speak(
                 random.choice(
                     ["Engineer.AutoBuildingSentry01",
                      "Engineer.AutoBuildingSentry02"]
                 )
             )
+        elif self.selectedBuilding == 1:
+            self.d_speak(
+                random.choice(
+                    ["Engineer.AutoBuildingDispenser01",
+                     "Engineer.AutoBuildingDispenser02"]
+                )
+            )
+        else:
+            self.d_speak(
+                random.choice(
+                    ["Engineer.AutoBuildingTeleporter01",
+                     "Engineer.AutoBuildingTeleporter02"]
+                )
+            )
+
+        return True
+
+    def speakTeleported(self):
+        chance = random.random()
+        if chance < 0.3:
+            self.d_speak(random.choice(self.classInfo.TeleporterThanks))
 
     def getClassSize(self):
         mins = TFGlobals.VEC_HULL_MIN
@@ -185,7 +249,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             else:
                 force = vecDir * -self.damageForce(self.getClassSize(), info.damage, damage_force_self_scale)
         else:
-            if info.inflictor.__class__.__name__ == 'SentryGunAI':
+            if info.inflictor.isObject():
                 # Sentries push a lot harder
                 force = vecDir * -self.damageForce(self.getClassSize(), info.damage, 16)
             else:
@@ -198,10 +262,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         #print("subtracting", int(info.damage + 0.5), "from tf player hp")
         self.health -= int(info.damage + 0.5)
-        self.health = max(0, self.health)
         if self.health <= 0:
             # Died.
             self.die(info)
+            self.health = 0
 
     def damageForce(self, size, damage, scale):
         force = damage * ((48 * 48 * 82.0) / (size[0] * size[1] * size[2])) * scale
@@ -316,6 +380,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Broadcast event to clients.
         self.sendUpdate('playerAnimEvent', [event, data])
 
+    def isDead(self):
+        return (self.playerState == self.StateDead) or DistributedCharAI.isDead(self)
+
     def die(self, info = None):
         if self.playerState == self.StateDead:
             return
@@ -328,7 +395,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             dmgType = DamageType.Generic
 
         if info:
-            if info.inflictor and isinstance(info.inflictor, BaseObject):
+            if info.inflictor and info.inflictor.isObject():
                 killer = info.inflictor.doId
             else:
                 killer = info.attacker.doId
@@ -339,14 +406,18 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Become a ragdoll.
         #print("Die at forcejoit", self.forceJoint, "force", self.bulletForce + self.velocity)
-        self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce + (self.velocity * 20)])
+        if (dmgType & DamageType.Blast) != 0 and self.health <= -10:
+            # I think the logic is if the blast damage >= remaining health + 10
+            self.sendUpdate('gib', [])
+        else:
+            self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce + (self.velocity * 20)])
         self.disableController()
 
         # Respawn after 5 seconds.
         self.addTask(self.respawnTask, 'respawn', appendTask = True)
 
         if info:
-            if info.inflictor and isinstance(info.inflictor, BaseObject):
+            if info.inflictor and info.inflictor.isObject():
                 self.observerTarget = info.inflictor.doId
             else:
                 self.observerTarget = info.attacker.doId
@@ -362,6 +433,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             wpn = base.net.doId2do.get(self.weapons[self.activeWeapon])
             if wpn:
                 wpn.dropAsAmmoPack()
+        self.setActiveWeapon(-1)
+        self.health = 0
 
         # Player died.
         if dmgType & DamageType.Club:
@@ -423,6 +496,13 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             wpn.ammo = wpn.maxAmmo
             wpn.clip = wpn.maxClip
 
+        # If we are an Engineer, give 200 metal.  Otherwise only 100 metal.
+        # Consistent with original TF2.
+        if self.tfClass == Class.Engineer:
+            self.metal = 200
+        else:
+            self.metal = 100
+
         # Set to the primary weapon
         self.setActiveWeapon(0)
 
@@ -431,11 +511,29 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         origin, angles = random.choice(spawnPoints)
         self.setPos(origin)
         self.setHpr(angles[1] - 90, angles[0], angles[2])
+        # Make client teleport player to respawn location.
+        self.teleport()
 
         if sendRespawn:
             self.sendUpdate('respawn')
         self.playerState = self.StateAlive
         self.enableController()
+
+    def destroyObject(self, index):
+        if not self.hasObject(index):
+            return
+        obj = base.air.doId2do.get(self.objects[index])
+        if obj:
+            obj.explode()
+            base.air.deleteObject(obj)
+
+    def destroyAllObjects(self):
+        for objId in self.objects:
+            if objId != -1:
+                obj = base.air.doId2do.get(objId)
+                if obj:
+                    obj.explode()
+                    base.air.deleteObject(obj)
 
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
         if (cls == self.tfClass) and not force:
@@ -448,6 +546,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.die()
             self.pendingChangeClass = cls
             return
+
+        # Kill any objects that were built by the player.
+        self.destroyAllObjects()
 
         self.stripWeapons()
         self.tfClass = cls
@@ -483,11 +584,14 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             base.sv.deleteObject(wpn)
         self.weapons = []
         self.activeWeapon = -1
+        self.lastActiveWeapon = -1
 
     def setActiveWeapon(self, index):
         if self.activeWeapon == index:
             # Already the active weapon.
             return
+
+        self.lastActiveWeapon = self.activeWeapon
 
         if self.activeWeapon > 0 and self.activeWeapon < len(self.weapons):
             # Deactive the old weapon.
@@ -542,6 +646,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.reparentTo(base.dynRender)
 
     def generate(self):
+        DistributedCharAI.generate(self)
+
         # Generate our view model as well.
         self.viewModel.setPlayerId(self.doId)
         self.viewModel.team = self.team
@@ -551,6 +657,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def delete(self):
         # Get rid of the view model along with us.
         base.sv.deleteObject(self.viewModel)
+
+        # Destroy all built objects.
+        self.destroyAllObjects()
+
+        # Delete all weapons.
+        self.stripWeapons()
 
         base.game.playersByTeam[self.team].remove(self)
 

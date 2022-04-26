@@ -8,8 +8,7 @@ class DAmmoPackAI(DPickupItemBaseAI):
         if ent.health < 1:
             return False
 
-        from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
-        if not isinstance(ent, DistributedTFPlayerAI):
+        if not ent.isPlayer():
             # Only for players.
             return False
 
@@ -28,6 +27,13 @@ class DAmmoPackAI(DPickupItemBaseAI):
             if maxToGive > 0:
                 gaveAny = True
 
+        # Give metal if class uses it.
+        if ent.usesMetal():
+            maxToGive = max(0, ent.maxMetal - ent.metal)
+            ent.metal += min(maxToGive, self.MetalAmount)
+            if maxToGive > 0:
+                gaveAny = True
+
         if gaveAny:
             ent.emitSound("AmmoPack.Touch", client=ent.owner)
 
@@ -35,12 +41,15 @@ class DAmmoPackAI(DPickupItemBaseAI):
 
 class DAmmoPackSmallAI(DAmmoPackAI):
     AmmoRatio = 4
+    MetalAmount = 40
     ModelIndex = 2
 
 class DAmmoPackMediumAI(DAmmoPackAI):
     AmmoRatio = 2
+    MetalAmount = 100
     ModelIndex = 1
 
 class DAmmoPackFullAI(DAmmoPackAI):
     AmmoRatio = 1
+    MetalAmount = 200
     ModelIndex = 0

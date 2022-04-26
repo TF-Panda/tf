@@ -12,6 +12,7 @@ class DistributedChar(Char, DistributedEntity):
     def __init__(self):
         Char.__init__(self)
         DistributedEntity.__init__(self)
+
         self.oldAnimTime = 0.0
         self.animTime = 0.0
 
@@ -20,30 +21,54 @@ class DistributedChar(Char, DistributedEntity):
 
         self.clientSideAnimation = False
 
-        self.addPredictionField("skin", int, setter=self.setSkin)
-        #self.addPredictionField("sequence", int, setter=self.setSequence,
-        #                        getter=self.getCurrSequence, noErrorCheck=True)
-        #self.addPredictionField("playRate", float, setter=self.setPlayRate,
-        #                        getter=self.getPlayRate, noErrorCheck=True)
-        #self.addPredictionField("cycle", float, setter=self.setCycle,
-        #                        getter=self.getCycle, noErrorCheck=True)
-        #self.addPredictionField("playMode", int, setter=self.setPlayMode,
-        #                        getter=self.getPlayMode, noErrorCheck=True)
-        #self.addPredictionField("startCycle", float, setter=self.setPlayMode,
-        #                        getter=self.getPlayMode, noErrorCheck=True)
-        #self.addPredictionField("playCycles", float, setter=self.setPlayMode,
-        #                        getter=self.getPlayMode, noErrorCheck=True)
-        #self.addPredictionField("animTime", float, getter=self.getAnimTime, setter=self.setAnimTime,
-        #                        tolerance=0.001, noErrorCheck=True)
-        #self.addPredictionField("newSequenceParity", int, getter=self.getNewSequenceParity,
-        #                        setter=self.setNewSequenceParity, noErrorCheck=True)
-        #self.addPredictionField("prevAnimTime", float, networked=False)
-
         self.animLayerIvs = []
 
         self.ivCycle = InterpolatedFloat()
         self.addInterpolatedVar(self.ivCycle, self.getCycle, self.setCycle, self.SimulationVar)
         self.ivCycleAdded = True
+
+    def shouldSpatializeAnimEventSounds(self):
+        return True
+
+    def doAnimEventSound(self, soundName):
+        if self.shouldSpatializeAnimEventSounds():
+            self.emitSoundSpatial(soundName)
+        else:
+            self.emitSound(soundName)
+
+    def addPredictionFields(self):
+        """
+        Called when initializing an entity for prediction.
+
+        This method should define fields that should be predicted
+        for this entity.
+        """
+
+        DistributedEntity.addPredictionFields(self)
+
+        self.addPredictionField("skin", int, setter=self.setSkin)
+
+        return
+
+        # Animation-related prediction fields.  Only need this if server
+        # is sending us animation data.
+        if not self.clientSideAnimation:
+            self.addPredictionField("sequence", int, setter=self.setSequence,
+                                    getter=self.getCurrSequence)
+            self.addPredictionField("playRate", float, setter=self.setPlayRate,
+                                    getter=self.getPlayRate)
+            self.addPredictionField("cycle", float, setter=self.setCycle,
+                                    getter=self.getCycle)
+            self.addPredictionField("playMode", int, setter=self.setPlayMode,
+                                    getter=self.getPlayMode)
+            self.addPredictionField("startCycle", float, setter=self.setPlayMode,
+                                    getter=self.getPlayMode)
+            self.addPredictionField("playCycles", float, setter=self.setPlayMode,
+                                    getter=self.getPlayMode)
+            self.addPredictionField("animTime", float, getter=self.getAnimTime, setter=self.setAnimTime,
+                                    tolerance=0.001)
+            self.addPredictionField("newSequenceParity", int, getter=self.getNewSequenceParity,
+                                    setter=self.setNewSequenceParity)
 
     def RecvProxy_sequence(self, seq):
         if self.clientSideAnimation:
@@ -264,9 +289,6 @@ class DistributedChar(Char, DistributedEntity):
                 layer._flags &= ~AnimLayer.F_active
 
     def checkForLayerChanges(self, now):
-        if self.clientSideAnimation:
-            return
-
         layersChanged = False
         info = InterpolationInfo()
         # FIXME: damn, there has to be a better way to do this.
@@ -321,6 +343,9 @@ class DistributedChar(Char, DistributedEntity):
                 self.setLayerIV(i, self.animLayerIvs[i].getInterpolatedValue())
 
     def checkForLayerChangesTask(self, task):
+        if self.clientSideAnimation:
+            return task.cont
+
         self.checkForLayerChanges(globalClock.getFrameTime())
         return task.cont
 
@@ -384,18 +409,16 @@ class DistributedChar(Char, DistributedEntity):
         self.addTask(self.checkForLayerChangesTask, "checkForLayerChanges", sim = False, appendTask = True, sort = 37)
 
     def disable(self):
-        self.clearModel()
         self.ivCycle = None
         self.animLayerIvs = None
         if self.ragdoll:
             self.ragdoll[1].destroy()
-            self.ragdoll[0].clearModel()
-            self.ragdoll[0].cleanup()
+            self.ragdoll[0].delete()
         self.ragdoll = None
         DistributedEntity.disable(self)
 
     def delete(self):
-        self.cleanup()
+        Char.delete(self, removeNode=False)
         DistributedEntity.delete(self)
 
     def RecvProxy_animTime(self, addT):

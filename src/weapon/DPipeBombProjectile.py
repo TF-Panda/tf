@@ -15,8 +15,7 @@ else:
 from panda3d.core import NodePath, Vec3, Point3
 from panda3d.pphysics import PhysSweepResult
 
-from tf.tfbase import TFGlobals
-from tf.tfbase import TFFilters
+from tf.tfbase import TFGlobals, TFFilters, Sounds
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
 PIPE_DMG_RADIUS = 146
@@ -62,8 +61,10 @@ class DPipeBombProjectile(BaseClass):
             return task.done
 
         def explode(self, ent):
-            self.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode")
-            base.game.d_doExplosion(self.getPos(), Vec3(7))
+            pos = self.getPos()
+
+            base.world.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode", pos, chan=Sounds.Channel.CHAN_STATIC)
+            base.game.d_doExplosion(pos, Vec3(7))
 
             self.removeTask(self.uniqueName('explodeTask'))
             self.removeTask(self.uniqueName('directHitTask'))
@@ -73,11 +74,11 @@ class DPipeBombProjectile(BaseClass):
             info = TakeDamageInfo()
             info.inflictor = self
             info.attacker = self.shooter
-            info.damagePosition = self.getPos()
+            info.damagePosition = pos
             info.sourcePosition = self.shooter.getPos()
             info.damage = self.damage
             info.damageType = self.damageType
-            base.game.radiusDamage(info, self.getPos(), PIPE_DMG_RADIUS, -1, None)
+            base.game.radiusDamage(info, pos, PIPE_DMG_RADIUS, -1, None)
 
             base.air.deleteObject(self)
 
@@ -85,8 +86,6 @@ class DPipeBombProjectile(BaseClass):
             if self.doingDirectTest:
                 self.removeTask(self.uniqueName('directHitTest'))
                 self.doingDirectTest = False
-
-            #self.emitSoundSpatial("Weapon_Grenade_Pipebomb.Bounce")
 
         def __directHitTest(self, task):
             """
@@ -135,6 +134,10 @@ class DPipeBombProjectile(BaseClass):
             # projectiles.
             self.hide()
             self.addTask(self.__showTask, self.uniqueName('showPipeBomb'), appendTask=True, delay=0.1)
+
+        #def RecvProxy_pos(self, x, y, z):
+        #    BaseClass.RecvProxy_pos(self, x, y, z)
+        #    print("Received pos for pipebomb", x, y, z)
 
         def __showTask(self, task):
             self.show()

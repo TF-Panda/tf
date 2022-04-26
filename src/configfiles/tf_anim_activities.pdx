@@ -230,4 +230,42 @@
   VM_Backstab_Up
   VM_Backstab_Down
   VM_Backstab_Idle
+
+  PDA_Stand
+  PDA_Run
+  PDA_Crouch
+  PDA_Crouch_Walk
+  PDA_Swim
+  PDA_Air_Walk
+  PDA_Jump
+  PDA_Jump_Start
+  PDA_Jump_Float
+  PDA_Jump_Land
+
+  PDA_Gesture_Flinch
+  PDA_Gesture_VC_Hand_Mouth
+  PDA_Gesture_VC_Finger_Point
+  PDA_Gesture_VC_Fist_Pump
+  PDA_Gesture_VC_Thumbs_Up
+  PDA_Gesture_VC_Nod_Yes
+  PDA_Gesture_VC_Nod_No
+
+  Building_Stand
+  Building_Run
+  Building_Crouch
+  Building_Crouch_Walk
+  Building_Swim
+  Building_Air_Walk
+  Building_Jump
+  Building_Jump_Start
+  Building_Jump_Float
+  Building_Jump_Land
+
+  Building_Gesture_Flinch
+  Building_Gesture_VC_Hand_Mouth
+  Building_Gesture_VC_Finger_Point
+  Building_Gesture_VC_Fist_Pump
+  Building_Gesture_VC_Thumbs_Up
+  Building_Gesture_VC_Nod_Yes
+  Building_Gesture_VC_Nod_No
 ]

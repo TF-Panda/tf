@@ -4,10 +4,12 @@ from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.actor.Actor import Actor
+from direct.directbase import DirectRender
+
 from .Activity import Activity
 from .AnimEvents import AnimEvent, AnimEventType
 from .HitBox import HitBox
-from tf.tfbase.Sounds import Sounds, createSoundByName
+from tf.tfbase.Sounds import Sounds, createSoundByName, Channel
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 
@@ -23,10 +25,8 @@ class Char(Actor):
         self.characterNp = None
         self.modelNp = None
         self.hullNp = None
-        self.collAttached = False
-        self.anims = {}
         self.hitBoxes = []
-        self.soundsByChannel = {}
+        #self.soundsByChannel = {}
         self.bodygroups = {}
         # Filename of the model.
         self.model = ""
@@ -46,13 +46,28 @@ class Char(Actor):
         self.accept('hide-bounds', self.hideBounds)
 
     def setBodygroupValue(self, group, value):
-        bg = self.bodygroups[group]
+        bg = self.bodygroups.get(group)
+        if not bg:
+            return
+
         for i in range(len(bg)):
             body = bg[i]
             if i == value:
                 body.show()
             else:
                 body.hide()
+
+    def getBodygroupNodes(self, group, value):
+        """
+        Returns the set of NodePaths that are turned on by the given bodygroup
+        value.
+        """
+
+        bg = self.bodygroups.get(group)
+        if not bg:
+            return NodePathCollection()
+
+        return bg[value]
 
     def setSkin(self, skin):
         self.skin = skin
@@ -98,7 +113,7 @@ class Char(Actor):
         cCopy.setSkin(self.skin)
         cCopy.loadModel(self.model, loadHitBoxes=False)
         #cCopy.node().setBounds(OmniBoundingVolume())
-        cCopy.setEffect(MapLightingEffect.make())
+        cCopy.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
         # Copy the current joint positions of our character to the ragdoll
         # version.
         character = self.getPartBundle("modelRoot")
@@ -127,7 +142,7 @@ class Char(Actor):
                     joint = cCopy.character.getJointParent(joint)
 
             if foundJoint:
-                #print("Applying force", forceVector, "to joint", jointName, "at pos", forcePosition)
+                print("Applying force", forceVector, "to joint", jointName, "at pos", forcePosition)
                 rd.setEnabled(True, jointName, forceVector, forcePosition)
             else:
                 rd.setEnabled(True, None, forceVector, forcePosition)
@@ -239,34 +254,12 @@ class Char(Actor):
             event = channel.getEvent(info.event)
             self.fireEvent(pos, hpr, event.getEvent(), event.getOptions())
 
-    def shouldPlayAnimEventSound(self):
-        return True
+    def doAnimEventSound(self, soundName):
+        pass
 
     def fireEvent(self, pos, angles, event, options):
         if event == AnimEvent.Client_Play_Sound:
-
-            from tf.entity.DistributedEntity import DistributedEntity
-            shouldSpatialize = False
-            if isinstance(self, DistributedEntity) and \
-                self != base.localAvatar and \
-                self.doId not in base.localAvatar.weapons and \
-                self != base.localAvatar.viewModel:
-                # Don't spatialize local avatar or local avatar weapon anim event sounds.
-                shouldSpatialize = True
-
-            soundName = options
-            sound = createSoundByName(soundName, spatial=shouldSpatialize)
-            if not sound:
-                return
-            info = Sounds[soundName]
-            if info.channel in self.soundsByChannel:
-                currSound = self.soundsByChannel[info.channel]
-                if currSound:
-                    currSound.stop()
-            self.soundsByChannel[info.channel] = sound
-            if shouldSpatialize:
-                self.registerSpatialSound(sound, self.getWorldSpaceCenter() - self.getPos(base.render))
-            sound.play()
+            self.doAnimEventSound(options)
 
         elif event == AnimEvent.Client_Bodygroup_Set_Value:
             name, value = options.split()
@@ -316,12 +309,19 @@ class Char(Actor):
             animLayer._activity = act
 
     def addPoseParameter(self, name, minVal, maxVal, looping = False):
+        if not self.character:
+            return None
         return self.character.addPoseParameter(name, minVal, maxVal, looping)
 
     def findPoseParameter(self, name):
+        if not self.character:
+            return None
         return self.character.findPoseParameter(name)
 
     def getPoseParameter(self, name):
+        if not self.character:
+            return None
+
         if isinstance(name, str):
             idx = self.character.findPoseParameter(name)
             if idx == -1:
@@ -359,8 +359,46 @@ class Char(Actor):
             return
         self.character.getJointMerge(jointIdx)
 
+    def delete(self, removeNode=True):
+        """
+        Deletes the model and releases all references.  Call this when you are
+        getting rid of the Char for good.  Also see clearModel() if you just
+        want to swap out models.
+
+        Set removeNode to False if a derived class needs to perform additional
+        cleanup before node removal that relies on the node still existing.
+        """
+
+        # Release references.
+        self.characterNp = None
+        self.character = None
+        self.modelNp = None
+        self.bodygroups = None
+        self.model = None
+
+        self.ignoreAll()
+
+        # Remove hitboxes from the physics scene and release references.
+        for hbox in self.hitBoxes:
+            hbox.body.removeFromScene(base.physicsWorld)
+            hbox.body = None
+        self.hitBoxes = None
+
+        # Stop all anim event sounds and release references.
+        #for snd in list(self.soundsByChannel.values()):
+        #    snd.stop()
+        #self.soundsByChannel = None
+
+        # Perform actor cleanup.
+        Actor.delete(self, removeNode=removeNode)
+
     def clearModel(self):
-        self.removePart("modelRoot")
+        """
+        Unloads the current model, in expectation for another
+        model to be loaded in its place.  Use delete() to get rid
+        of the Char for good.
+        """
+        self.removePart()
         self.characterNp = None
         self.character = None
         self.modelNp = None
@@ -370,6 +408,7 @@ class Char(Actor):
         # them from both the physics world and memory.
         for hbox in self.hitBoxes:
             hbox.body.removeFromScene(base.physicsWorld)
+            hbox.body = None
         self.hitBoxes = []
         self.lastHitBoxSyncTime = 0.0
 
@@ -433,7 +472,9 @@ class Char(Actor):
         if self.model == model:
             return
 
-        self.clearModel()
+        if self.modelNp is not None:
+            # Clear existing model.
+            self.clearModel()
 
         self.model = model
 
@@ -450,6 +491,16 @@ class Char(Actor):
         if cdata:
             if cdata.hasAttribute("omni") and cdata.getAttributeValue("omni").getBool():
                 modelNode.setBounds(OmniBoundingVolume())
+            if cdata.hasAttribute("bbox"):
+                # Model specifies a user bounding volume.
+                # Note that this doesn't override the bounds of the geometry
+                # of the model, it just unions with it.
+                mins = Point3()
+                maxs = Point3()
+                bbox = cdata.getAttributeValue("bbox").getElement()
+                bbox.getAttributeValue("mins").toVec3(mins)
+                bbox.getAttributeValue("maxs").toVec3(maxs)
+                modelNode.setBounds(BoundingBox(mins, maxs))
 
         # We don't need to consider culling past the root of the model.
         modelNode.setFinal(True)
@@ -482,7 +533,13 @@ class Char(Actor):
         if not self.character:
             return
         layer = self.character.getAnimLayer(0)
-        layer._cycle = cycle
+        if self.character.getAutoAdvanceFlag():
+            # If we're auto advancing (client-side animation),
+            # the cycle is computed from the unclamped cycle.
+            layer._unclamped_cycle = cycle
+        else:
+            # Without auto advance, we control the cycle directly.
+            layer._cycle = cycle
 
     def getCycle(self):
         if not self.character:

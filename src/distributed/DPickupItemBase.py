@@ -40,7 +40,7 @@ class DPickupItemBase(DistributedEntity):
             # When we're disabled, we keep track of the first person to touch
             # us, so when we regenerate and that person is still touching us,
             # we can give the item to them right away.
-            self.currentlyTouching = None
+            self.currentlyTouching = []
 
             self.enabled = False
             self.triggerCallback = True
@@ -83,20 +83,25 @@ class DPickupItemBase(DistributedEntity):
             """
             return False
 
+        def onTriggerExit(self, ent):
+            if ent in self.currentlyTouching:
+                self.currentlyTouching.remove(ent)
+
         def onTriggerEnter(self, ent):
             """
             Called when an entity enters the trigger volume of this entity.
             """
+
+            if not ent in self.currentlyTouching:
+                self.currentlyTouching.append(ent)
+
             if not self.enabled:
-                if not self.currentlyTouching:
-                    self.currentlyTouching = ent
                 return
 
-            if not self.giveItem(ent):
-                return
+            if self.giveItem(ent):
+                self.itemPickedUp()
 
-            self.currentlyTouching = None
-
+        def itemPickedUp(self):
             self.enabled = False
             self.hidden = 1
 
@@ -122,9 +127,15 @@ class DPickupItemBase(DistributedEntity):
             self.hidden = 0
             # Play the extremely satisfying spawning sound.
             self.emitSoundSpatial("Item.Materialize")
-            # If someone was waiting for us, give the item to them now.
-            if self.currentlyTouching:
-                self.onTriggerEnter(self.currentlyTouching)
+
+            # If multiple players are touching the item at the time we
+            # regenerate, give it to the first eligible player that started
+            # touching the earliest.
+            for ent in self.currentlyTouching:
+                if self.giveItem(ent):
+                    self.itemPickedUp()
+                    break
+
             return task.done
 
         def delete(self):

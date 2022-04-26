@@ -34,6 +34,9 @@ class TFHud(DirectObject):
         self.healthLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomLeft,
                                         scale = 0.1, pos = (0.15, 0.1))
 
+        self.metalLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomLeft,
+                                       scale = 0.07, pos = (0.35, 0.12))
+
         self.clipLabel = OnscreenText(text = "", fg = (1,1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
                                       scale = self.ClipScale, pos = self.ClipPos, align = self.ClipAlign)
         self.ammoLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
@@ -50,6 +53,8 @@ class TFHud(DirectObject):
         self.hideHud()
 
     def destroy(self):
+        self.metalLabel.destroy()
+        self.metalLabel = None
         self.healthLabel.destroy()
         self.healthLabel = None
         self.clipLabel.destroy()
@@ -65,6 +70,8 @@ class TFHud(DirectObject):
         self.healthLabel.hide()
         self.clipLabel.hide()
         self.ammoLabel.hide()
+        self.metalLabel.hide()
+        self.ignore('localPlayerMetalChanged')
         self.hidden = True
 
     def showHud(self):
@@ -72,6 +79,8 @@ class TFHud(DirectObject):
         self.crosshair.show()
         self.healthLabel.show()
         self.updateAmmoLabel()
+        self.updateMetalLabel()
+        self.accept('localPlayerMetalChanged', self.updateMetalLabel)
 
     def handleWindowEvent(self, win):
         if win != base.win:
@@ -111,6 +120,17 @@ class TFHud(DirectObject):
             self.healthLabel['fg'] = self.LowHealthColor
         else:
             self.healthLabel['fg'] = self.GoodHealthColor
+
+    def updateMetalLabel(self):
+        if self.hidden:
+            return
+
+        if not base.localAvatar.usesMetal():
+            self.metalLabel.hide()
+        else:
+            self.metalLabel.show()
+
+        self.metalLabel.setText("Metal\n" + str(base.localAvatar.metal))
 
     def updateAmmoLabel(self):
         if self.hidden:

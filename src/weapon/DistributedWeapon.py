@@ -11,6 +11,16 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         DistributedChar.__init__(self)
         DistributedWeaponShared.__init__(self)
 
+    def addPredictionFields(self):
+        """
+        Called when initializing an entity for prediction.
+
+        This method should define fields that should be predicted
+        for this entity.
+        """
+
+        DistributedChar.addPredictionFields(self)
+
         # Fields we predict locally.
         self.addPredictionField("nextPrimaryAttack", float, tolerance=0.001)
         self.addPredictionField("nextSecondaryAttack", float, tolerance=0.001)
@@ -53,6 +63,9 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         #return False
 
     def delete(self):
+        if self.active:
+            self.deactivate()
+
         DistributedChar.delete(self)
         DistributedWeaponShared.delete(self)
 
@@ -70,8 +83,11 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         return self.isOwnedByLocalPlayer() and (base.localAvatar.weapons[base.localAvatar.activeWeapon] == self.doId)
 
     def setAmmo(self, ammo):
+        changed = self.ammo != ammo
         self.ammo = ammo
-        if self.isActiveLocalPlayerWeapon():
+        if self.isActiveLocalPlayerWeapon() and changed:
+            if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
+                return
             base.localAvatar.hud.updateAmmoLabel()
 
     def RecvProxy_ammo(self, ammo):
@@ -79,7 +95,10 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
     def setClip(self, clip):
         self.clip = clip
-        if self.isActiveLocalPlayerWeapon():
+        changed = self.clip != clip
+        if self.isActiveLocalPlayerWeapon() and changed:
+            if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
+                return
             base.localAvatar.hud.updateAmmoLabel()
 
     def RecvProxy_clip(self, clip):
@@ -115,6 +134,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
                 # Parent the view model to the player's view model.
                 self.viewModelChar.reparentTo(self.player.viewModel)
                 self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
+                self.viewModelChar.setSkin(self.player.skin)
 
     def activate(self):
         """

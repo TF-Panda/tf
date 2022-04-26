@@ -1,9 +1,7 @@
 """ DistributedTFPlayerOV: Local TF player """
 
 from panda3d.core import WindowProperties, MouseData, Point2, Vec2, Datagram, OmniBoundingVolume, NodePath, Point3, Vec3, lookAt
-from panda3d.core import ConfigVariableDouble
-
-from panda3d.direct import InterpolatedVec3
+from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker
 
 from panda3d.pphysics import PhysSweepResult
 
@@ -93,23 +91,13 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.mouseDelta = Vec2()
         self.classMenu = None
 
+        self.wasLastWeaponSwitchPressed = False
+
         self.lastMouseSample = Vec2()
 
         # Entities that the player predicts/simulates along with itself.  For
         # instance, weapons.
         self.playerSimulatedEntities = []
-
-        # Add fields predicted by the local player.
-        self.addPredictionField("tickBase", int)
-        self.addPredictionField("activeWeapon", int, getter=self.getActiveWeapon, setter=self.setActiveWeapon)
-        self.addPredictionField("onGround", bool)
-        self.addPredictionField("condition", int)
-        self.addPredictionField("airDashing", bool, noErrorCheck=True, networked=False)
-        self.addPredictionField("buttons", int, noErrorCheck=False, networked=True)
-        self.addPredictionField("lastButtons", int, noErrorCheck=False, networked=True)
-        self.addPredictionField("buttonsPressed", int, noErrorCheck=True, networked=False)
-        self.addPredictionField("buttonsReleased", int, noErrorCheck=True, networked=False)
-        self.addPredictionField("stepSoundTime", float, noErrorCheck=True, networked=False)
 
         self.ivPunchAngle = InterpolatedVec3()
         self.ivPunchAngle.setAngles(True)
@@ -117,8 +105,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.ivPunchAngleVel = InterpolatedVec3()
         self.ivPunchAngleVel.setAngles(True)
         self.addInterpolatedVar(self.ivPunchAngleVel, self.getPunchAngleVel, self.setPunchAngleVel)
-        self.addPredictionField("punchAngle", Vec3, getter=self.getPunchAngle, setter=self.setPunchAngle, tolerance=0.125)
-        self.addPredictionField("punchAngleVel", Vec3, getter=self.getPunchAngleVel, setter=self.setPunchAngleVel, tolerance=0.125)
 
         self.observerChaseDistance = 0
         self.freezeFrameStart = Point3()
@@ -131,6 +117,93 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.killedByLabel = None
 
         self.objectPanels = {}
+
+    def doTeleport(self, heading, fovDuration, fovStart):
+        # Slam exit direction onto view angles heading.
+        self.viewAngles[0] = heading
+
+        # Perform the FOV lerp.
+        fovStart = fovStart / (4./3.)
+        origFov = base.config.GetInt("fov", 75) / (4./3.)
+        origVMFov = base.config.GetInt("viewmodel-fov", 54) / (4./3.)
+
+        # Create a flash effect.
+        cm = CardMaker('teleFlash')
+        cm.setFrameFullscreenQuad()
+        cmnp = base.render2d.attachNewNode(cm.generate())
+        # Ensure flash quad renders behind all other 2D elements.
+        cmnp.setBin('background', -1000)
+        cmnp.setTransparency(True)
+
+        r = 1.0
+        g = 1.0
+        b = 1.0
+        cmnp.setColorScale(r, g, b, 0.5)
+
+        from direct.interval.IntervalGlobal import LerpFunc, Sequence, LerpColorScaleInterval, Func, Parallel
+        track = Parallel()
+        track.append(LerpFunc(base.camLens.setMinFov, fovDuration, fovStart, origFov, blendType='easeOut'))
+        track.append(LerpFunc(base.vmLens.setMinFov, fovDuration, fovStart, origVMFov, blendType='easeOut'))
+        track.append(
+            Sequence(
+                LerpColorScaleInterval(cmnp, 0.6, (r, g, b, 0), (r, g, b, 0.5), blendType='easeOut'),
+                Func(cmnp.removeNode))
+        )
+        track.start()
+
+        if self.viewModel:
+            self.viewModel.ivLagAngles.clearHistory()
+
+    def shouldSpatializeAnimEventSounds(self):
+        return False
+
+    def addPredictionFields(self):
+        """
+        Called when initializing an entity for prediction.
+
+        This method should define fields that should be predicted
+        for this entity.
+        """
+
+        DistributedTFPlayer.addPredictionFields(self)
+
+        # Add fields predicted by the local player.
+        self.addPredictionField("tickBase", int)
+        self.addPredictionField("lastActiveWeapon", int)
+        self.addPredictionField("activeWeapon", int, getter=self.getActiveWeapon, setter=self.setActiveWeapon)
+        self.addPredictionField("onGround", bool)
+        self.addPredictionField("condition", int)
+        self.addPredictionField("airDashing", bool, noErrorCheck=True, networked=False)
+        self.addPredictionField("buttons", int, noErrorCheck=False, networked=True)
+        self.addPredictionField("lastButtons", int, noErrorCheck=False, networked=True)
+        self.addPredictionField("buttonsPressed", int, noErrorCheck=True, networked=False)
+        self.addPredictionField("buttonsReleased", int, noErrorCheck=True, networked=False)
+        self.addPredictionField("stepSoundTime", float, noErrorCheck=True, networked=False)
+        self.addPredictionField("punchAngle", Vec3, getter=self.getPunchAngle, setter=self.setPunchAngle, tolerance=0.125)
+        self.addPredictionField("punchAngleVel", Vec3, getter=self.getPunchAngleVel, setter=self.setPunchAngleVel, tolerance=0.125)
+        # We predict changes to max speed when winding up the heavy's minigun
+        # or zooming in with the sniper rifle.
+        self.addPredictionField("maxSpeed", float, tolerance=0.5)
+
+    def setActiveWeapon(self, index):
+        if self.activeWeapon == index:
+            return
+
+        self.lastActiveWeapon = self.activeWeapon
+        DistributedTFPlayer.setActiveWeapon(self, index)
+
+    def setObject(self, objectType, doId):
+        DistributedTFPlayer.setObject(self, objectType, doId)
+        messenger.send('localPlayerObjectsChanged')
+
+    def removeObject(self, objectType):
+        DistributedTFPlayer.removeObject(self, objectType)
+        messenger.send('localPlayerObjectsChanged')
+
+    def RecvProxy_metal(self, metal):
+        if self.metal != metal:
+            self.metal = metal
+            messenger.send('localPlayerMetalChanged')
 
     def d_changeClass(self, clsId):
         self.sendUpdate('changeClass', [clsId])
@@ -212,6 +285,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         origin = self.getEyePosition()
         if self.ragdoll:
             origin = Point3(self.ragdoll[1].getRagdollPosition())
+            origin.z += 40
+        elif self.gibs:
+            origin = Point3(self.gibs.getHeadPosition())
             origin.z += 40
 
         if killer and killer != self:
@@ -326,11 +402,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if curTime >= spec_freeze_traveltime.getValue() and not self.sentFreezeFrame:
             # Freeze the frame.
             base.postProcess.freezeFrame.freezeFrame(spec_freeze_time.getValue())
+            # Hide the scene.  However, it needs to be done *next* frame, after the freeze
+            # frame has been taken, so we add it as a task with a delay of 0, which achieves
+            # that.
+            base.taskMgr.doMethodLater(0.0, self.__hideSceneFreezeFrame, 'hideSceneFreezeFrame')
             #for mgr in base.sfxManagerList:
             #    mgr.setVolume(0.0)
             if self.killedByLabel:
                 self.killedByLabel.destroy()
-            if target.__class__.__name__ == 'SentryGun':
+            if target.isObject():
                 text = "You were killed by the "
                 if target.health <= 0:
                     text += "late "
@@ -352,6 +432,17 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
                                               font = TFGlobals.getTF2SecondaryFont())
             self.sentFreezeFrame = True
 
+    def __hideSceneFreezeFrame(self, task):
+        base.render.hide()
+        base.sky3DTop.hide()
+        base.vmRender.hide()
+        return task.done
+
+    def __showSceneFreezeFrame(self):
+        base.render.show()
+        base.sky3DTop.show()
+        base.vmRender.show()
+
     def respawn(self):
         DistributedTFPlayer.respawn(self)
         self.hide()
@@ -371,19 +462,30 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.viewModel.hide()
         self.hud.hideHud()
 
+    def gib(self):
+        DistributedTFPlayer.gib(self)
+        self.viewModel.hide()
+        self.hud.hideHud()
+
     def RecvProxy_weapons(self, weapons):
         changed = weapons != self.weapons
+        #print(weapons, self.weapons)
         self.weapons = weapons
         if changed:
+            #print("rebuild wpn list")
             self.wpnSelect.rebuildWeaponList()
 
     def RecvProxy_health(self, hp):
+        changed = hp != self.health
         self.health = hp
-        self.hud.updateHealthLabel()
+        if changed:
+            self.hud.updateHealthLabel()
 
     def RecvProxy_maxHealth(self, maxHp):
+        changed = maxHp != self.maxHealth
         self.maxHealth = maxHp
-        self.hud.updateHealthLabel()
+        if changed:
+            self.hud.updateHealthLabel()
 
     def getNextCommandNumber(self):
         return self.lastOutgoingCommand + self.chokedCommands + 1
@@ -499,6 +601,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.simTaskMgr.remove('runControls')
         base.taskMgr.remove('calcView')
         base.taskMgr.remove('mouseMovement')
+        base.taskMgr.remove('hideSceneFreezeFrame')
 
         del base.localAvatar
         del base.localAvatarId
@@ -519,6 +622,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.attack1 = inputState.watchWithModifiers("attack1", "mouse1", inputSource = inputState.Mouse)
         self.reload = inputState.watchWithModifiers("reload", "r", inputSource = inputState.Keyboard)
         self.attack2 = inputState.watchWithModifiers("attack2", "mouse3", inputSource = inputState.Mouse)
+        self.lastWeapon = inputState.watchWithModifiers("lastweapon", "q", inputSource = inputState.Keyboard)
 
         self.accept('wheel_up', self.wpnSelect.hoverPrevWeapon)
         self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
@@ -649,6 +753,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
                     self.wpnSelect.hide()
                 else:
                     cmd.buttons |= InputFlag.Attack1
+
+            if inputState.isSet("lastweapon"):
+                if not self.wasLastWeaponSwitchPressed:
+                    if self.lastActiveWeapon >= 0 and self.lastActiveWeapon < len(self.weapons):
+                        cmd.weaponSelect = self.lastActiveWeapon
+                    self.wasLastWeaponSwitchPressed = True
+            else:
+                self.wasLastWeaponSwitchPressed = False
+
             if inputState.isSet("attack2"):
                 cmd.buttons |= InputFlag.Attack2
             if inputState.isSet("reload"):
@@ -706,6 +819,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             # Start rendering to the 3D output display region again.  Turns off
             # the freeze frame.
             base.postProcess.freezeFrame.freezeFrame(0.0)
+            base.taskMgr.remove('hideSceneFreezeFrame')
+            self.__showSceneFreezeFrame()
             #for mgr in base.sfxManagerList:
             #    mgr.setVolume(base.config.GetFloat('sfx-volume', 1))
             if self.killedByLabel:

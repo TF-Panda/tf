@@ -36,6 +36,10 @@ class TFServerBase(HostBase):
         else:
             loadPrcFileData("", "phys-enable-pvd 0")
 
+        # Don't read fat texture data on the server.  Saves memory.
+        loadPrcFileData("", "textures-header-only 1")
+        loadPrcFileData("", "is-server 1")
+
         PhysSystem.ptr().initialize()
         self.physicsWorld = PhysScene()
         self.physicsWorld.setGravity((0, 0, -800)) # 9.81 m/s as inches
@@ -56,31 +60,8 @@ class TFServerBase(HostBase):
         self.net = self.sv
         self.sv.game.changeLevel("tr_target")
 
-        precacheList = [
-            "models/buildables/sentry1",
-            "models/char/engineer",
-            "models/char/c_engineer_arms",
-            "models/char/soldier",
-            "models/char/c_soldier_arms",
-            "models/weapons/c_rocketlauncher",
-            "models/weapons/c_shotgun",
-            "models/weapons/c_pistol",
-            "models/weapons/c_wrench",
-            "models/buildables/sentry2_heavy",
-            "models/buildables/sentry2",
-            "models/buildables/sentry1_gib1",
-            "models/buildables/sentry1_gib2",
-            "models/buildables/sentry1_gib3",
-            "models/buildables/sentry1_gib4",
-            "models/weapons/w_rocket",
-            "models/char/demo",
-            "models/char/c_demo_arms",
-            "models/weapons/c_bottle",
-            "models/weapons/c_shovel",
-            "models/char/heavy"
-        ]
         self.precache = []
-        for pc in precacheList:
+        for pc in TFGlobals.ModelPrecacheList:
             self.precache.append(loader.loadModel(pc))
 
     def restart(self):
@@ -95,17 +76,17 @@ class TFServerBase(HostBase):
 
     def postRunFrame(self):
         HostBase.postRunFrame(self)
-        #elapsed = self.globalClock.getRealTime() - self.frameTime
+        elapsed = self.globalClock.getRealTime() - self.frameTime
         # Sleep for a fraction of the simulation tick interval.  The server
         # only does stuff on simulation ticks.
-        #minDt = self.intervalPerTick * 0.1
-        #if elapsed < minDt:
-        #    Thread.sleep(minDt - elapsed)
+        minDt = self.intervalPerTick * 0.1
+        if elapsed < minDt:
+            Thread.sleep(minDt - elapsed)
 
     def __physicsUpdate(self, task):
-        dt = globalClock.getDt()
+        self.physicsWorld.simulate(self.clock.getFrameTime())
 
-        self.physicsWorld.simulate(dt)
+        chan = Sounds.Channel.CHAN_STATIC
 
         # Process global contact events, play sounds.
         while self.physicsWorld.hasContactEvent():
@@ -159,13 +140,13 @@ class TFServerBase(HostBase):
 
             if speed >= 500:
                 if surfDefA:
-                    base.world.emitSoundSpatial(surfDefA.impactHard, position, volume)
+                    base.world.emitSoundSpatial(surfDefA.impactHard, position, volume, chan=chan)
                 if surfDefB:
-                    base.world.emitSoundSpatial(surfDefB.impactHard, position, volume)
+                    base.world.emitSoundSpatial(surfDefB.impactHard, position, volume, chan=chan)
             elif speed >= 100:
                 if surfDefA:
-                    base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume)
+                    base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume, chan=chan)
                 if surfDefB:
-                    base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume)
+                    base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume, chan=chan)
 
         return task.cont

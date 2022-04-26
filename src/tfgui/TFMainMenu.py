@@ -33,6 +33,17 @@ class TFMainMenu(StateData):
     BgsWidescreen = ["maps/background01_widescreen.txo", "maps/background02_widescreen.txo"]
     Bgs = ["maps/background01.txo", "maps/background02.txo"]
 
+    @staticmethod
+    def pickMenuSong():
+        # Small random chance of playing the Toontown theme on initial
+        # startup as a nod to Panda's origins.
+        ttChance = random.random()
+        ttChanceThreshold = 0.5#0.05
+        if ttChance < ttChanceThreshold:
+            return random.choice(["audio/bgm/tt_theme.mid", "audio/bgm/create_a_toon.mid"])
+        else:
+            return random.choice(TFMainMenu.MenuSongs)
+
     def __init__(self):
         StateData.__init__(self, 'MainMenuDone')
         self.buttons = []
@@ -60,7 +71,12 @@ class TFMainMenu(StateData):
         self.availableSongs = list(self.songs)
         self.addMenuButton(TFLocalizer.MainMenuStartPlaying, (0.15, 0, 0), self.__playGame)
         self.addMenuButton(TFLocalizer.Quit, (0.15, 0, -0.05), sys.exit)
-        self.bg = OnscreenImage(image = random.choice(self.BgsWidescreen), parent = hidden)
+        aspectRatio = base.win.getXSize() / base.win.getYSize()
+        if aspectRatio <= (4./3.):
+            image = random.choice(self.Bgs)
+        else:
+            image = random.choice(self.BgsWidescreen)
+        self.bg = OnscreenImage(image = image, parent = hidden)
         #self.bg.setSx(1.77777)
         self.bg.setBin('background', 0)
         #self.bg = loader.loadModel("models/gui/title_team_widescreen")

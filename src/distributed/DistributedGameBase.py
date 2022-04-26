@@ -15,6 +15,15 @@ class DistributedGameBase:
         self.lvlData = None
         self.propPhysRoot = None
 
+    def flatten(self, np):
+        # Does a flatten even stronger than NodePath.flattenStrong()
+        gr = SceneGraphReducer()
+        gr.applyAttribs(np.node())
+        gr.flatten(np.node(), ~0)
+        gr.makeCompatibleState(np.node())
+        gr.collectVertexData(np.node(), 0)
+        gr.unify(np.node(), False)
+
     def loadLevelProps(self):
         # Create a dedicated DynamicVisNode for culling static props.
         # We have one node dedicated to culling static props and another
@@ -23,9 +32,15 @@ class DistributedGameBase:
         # of base.dynRender.  If static props and dynamic entities are
         # parented to the same node, we have a lot more nodes to union.
         # And since static props never move, that would be a waste.
-        propRoot = self.lvl.attachNewNode(DynamicVisNode("props"))
+
+        tree = self.lvlData.getAreaClusterTree()
+
+        propRoot = self.lvl.attachNewNode(StaticPartitionedObjectNode("props"))
+        propRoot.showThrough(DirectRender.ShadowCameraBitmask)
         propPhysRoot = NodePath("propPhysRoot")
-        propRoot.node().levelInit(self.lvlData.getNumClusters())
+        propPhysRoot.hide()
+        #propRoot.node().levelInit(self.lvlData.getNumClusters())
+        lightNodes = []
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
             if ent.getClassName() != "prop_static":
@@ -33,7 +48,14 @@ class DistributedGameBase:
 
             props = ent.getProperties()
 
-            modelFilename = Filename.fromOsSpecific(props.getAttributeValue("model").getString().replace(".mdl", ".bam"))
+            if not props.hasAttribute("model"):
+                continue
+
+            modelVal = props.getAttributeValue("model")
+            if not modelVal.isString():
+                continue
+
+            modelFilename = Filename.fromOsSpecific(modelVal.getString().replace(".mdl", ".bam"))
             propModel = loader.loadModel(modelFilename, okMissing=True)
             if not propModel or propModel.isEmpty():
                 continue
@@ -43,8 +65,8 @@ class DistributedGameBase:
                 if skin >= 0 and skin < propModel.node().getNumMaterialGroups():
                     propModel.node().setActiveMaterialGroup(skin)
 
+            pos = Point3()
             if props.hasAttribute("origin"):
-                pos = Point3()
                 props.getAttributeValue("origin").toVec3(pos)
                 propModel.setPos(pos)
 
@@ -83,22 +105,63 @@ class DistributedGameBase:
                     cnode.setContentsMask(Contents.Solid)
                     cnode.setPythonTag("entity", base.world)
 
-            propModel.reparentTo(propRoot)
-            propModel.clearModelNodes()
             propModel.flattenStrong()
-            #lodNode = propModel.find("**/+LODNode")
-            #if not lodNode.isEmpty():
+            lodNode = propModel.find("**/+LODNode")
+            if not lodNode.isEmpty():
                 # Grab the first LOD and throw away the rest so we can flatten.
-            #    highestLod = lodNode.getChild(0)
-            #    highestLod.reparentTo(lodNode.getParent())
-            #    lodNode.removeNode()
+                propModel = lodNode.getChild(0)
+
+            propModel.flattenStrong()
+
+            if propModel.getNumChildren() == 1:
+                # If there's just one GeomNode under the ModelRoot, we can throw
+                # away the model root.
+                propModel = propModel.getChild(0)
+
+            propModel.reparentTo(propRoot)
+            in3DSky = False
+            if IS_CLIENT:
+                # If the prop is positioned in the 3-D skybox, it needs to be
+                # parented into the 3-D skybox scene graph.
+                leaf = tree.getLeafValueFromPoint(pos)
+                if leaf >= 0:
+                    pvs = self.lvlData.getClusterPvs(leaf)
+                    if pvs.is3dSkyCluster():
+                        propModel.reparentTo(base.sky3DRoot)
+                        in3DSky = True
+
+                propModel.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
+                lightNodes.append(propModel)
+
             propModel.node().setFinal(True)
-            propModel.showThrough(DirectRender.ShadowCameraBitmask)
-            # Static props don't have precomputed lighting yet, so treat them
-            # as dynamic models for lighting purposes.
-            propModel.setEffect(MapLightingEffect.make())
+            if not in3DSky:
+                propModel.showThrough(DirectRender.ShadowCameraBitmask)
+
             if cnode:
                 cnode.syncTransform()
+
+        # Now flatten all props together.
+        #propRoot.clearModelNodes()
+        #propRoot.flattenStrong()
+
+        self.flatten(propRoot)
+
+        for propModel in lightNodes:
+            # Also, we can flatten better by pre-computing the lighting state once.
+            lightEffect = propModel.getEffect(MapLightingEffect.getClassType())
+            lightEffect.computeLighting(propModel.getNetTransform(), self.lvlData,
+                                        propModel.getBounds(), propModel.getParent().getNetTransform())
+            state = propModel.getState()
+            state = state.compose(lightEffect.getCurrentLightingState())
+            propModel.setState(state)
+            propModel.clearEffect(MapLightingEffect.getClassType())
+            propModel.flattenLight()
+
+        for child in propRoot.getChildren():
+            propRoot.node().addObject(child.node())
+        propRoot.node().removeAllChildren()
+
+        propRoot.node().partitionObjects(self.lvlData.getNumClusters(), self.lvlData.getAreaClusterTree())
 
         self.propPhysRoot = propPhysRoot
 
@@ -112,6 +175,9 @@ class DistributedGameBase:
         self.lvlData = None
         self.levelName = None
 
+    def preFlattenLevel(self):
+        pass
+
     def changeLevel(self, lvlName):
         self.unloadLevel()
 
@@ -121,13 +187,22 @@ class DistributedGameBase:
         self.lvl.reparentTo(base.render)
         lvlRoot = self.lvl.find("**/+MapRoot")
         lvlRoot.setLightOff(-1)
-        self.lvl.showThrough(DirectRender.ShadowCameraBitmask)
-        # Make sure all the RAM copies of lightmaps get thrown away when they
-        # get uploaded to the graphics card.  They take up a lot of memory.
-        for tex in lvlRoot.findAllTextures():
-            tex.setKeepRamImage(False)
+        #self.lvl.showThrough(DirectRender.ShadowCameraBitmask)
         data = lvlRoot.node().getData()
         self.lvlData = data
+
+        # Make sure all the RAM copies of lightmaps and cube maps get thrown away when they
+        # get uploaded to the graphics card.  They take up a lot of memory.
+        for tex in self.lvl.findAllTextures():
+            tex.setKeepRamImage(False)
+        for i in range(self.lvlData.getNumCubeMaps()):
+            mcm = self.lvlData.getCubeMap(i)
+            tex = mcm.getTexture()
+            if tex:
+                tex.setKeepRamImage(False)
+                tex.setMinfilter(SamplerState.FTLinear)
+                tex.setMagfilter(SamplerState.FTLinear)
+                tex.clearRamMipmapImages()
 
         dummyRoot = PandaNode("mapRoot")
         dummyRoot.replaceNode(lvlRoot.node())
@@ -146,12 +221,15 @@ class DistributedGameBase:
                     if mat and isinstance(mat, SkyBoxMaterial):
                         gnp.node().removeGeom(i)
 
+        self.preFlattenLevel()
+
         self.lvl.clearModelNodes()
-        self.lvl.flattenStrong()
+        self.flatten(self.lvl)
+        #self.lvl.flattenStrong()
 
         self.loadLevelProps()
 
-        physRoot = self.lvl.attachNewNode("physRoot")
+        #physRoot = self.lvl.attachNewNode("physRoot")
         for i in range(data.getNumModelPhysDatas()):
             mapModelPhysData = data.getModelPhysData(i)
             meshBuffer = mapModelPhysData._phys_mesh_data
@@ -176,8 +254,8 @@ class DistributedGameBase:
             body.setContentsMask(Contents.Solid)
             body.addToScene(base.physicsWorld)
             body.setPythonTag("entity", base.world)
-            physRoot.attachNewNode(body)
+            self.propPhysRoot.attachNewNode(body)
         self.propPhysRoot.reparentTo(self.lvl)
 
-        self.lvl.ls()
-        self.lvl.analyze()
+        #self.lvl.ls()
+        #self.lvl.analyze()

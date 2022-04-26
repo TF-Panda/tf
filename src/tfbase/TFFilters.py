@@ -37,8 +37,7 @@ def ignorePlayers(actor, mask, entity, source):
     """
     Ignores actors that are attached to players.
     """
-    from tf.player.DistributedTFPlayerShared import DistributedTFPlayerShared
-    if isinstance(entity, DistributedTFPlayerShared):
+    if entity.isPlayer():
         return 0
     return 1
 
@@ -56,8 +55,7 @@ def ignoreEnemyPlayers(actor, mask, entity, source):
     Ignores players on the opposite team as the source.  Does not ignore
     enemy buildings.
     """
-    from tf.player.DistributedTFPlayerShared import DistributedTFPlayerShared
-    if (entity.team != source.team) and isinstance(entity, DistributedTFPlayerShared):
+    if (entity.team != source.team) and entity.isPlayer():
         return 0
     return 1
 
@@ -65,8 +63,7 @@ def ignoreEnemyBuildings(actor, mask, entity, source):
     """
     Ignores enemy buildings, but not players.
     """
-    from tf.object.BaseObject import BaseObject
-    if (entity.team != source.team) and isinstance(entity, BaseObject):
+    if (entity.team != source.team) and entity.isObject():
         return 0
     return 1
 
@@ -84,8 +81,7 @@ def ignoreTeammatePlayers(actor, mask, entity, source):
     Ignores other players that are on the same team as the source.
     Does not ignore buildings and other entities.
     """
-    from tf.player.DistributedTFPlayerShared import DistributedTFPlayerShared
-    if (entity.team == source.team) and isinstance(entity, DistributedTFPlayerShared):
+    if (entity.team == source.team) and entity.isPlayer():
         return 0
     return 1
 
@@ -93,8 +89,7 @@ def ignoreTeammateBuildings(actor, mask, entity, source):
     """
     Ignores only friendly buildings.
     """
-    from tf.object.BaseObject import BaseObject
-    if (entity.team == source.team) and isinstance(entity, BaseObject):
+    if (entity.team == source.team) and entity.isObject():
         return 0
     return 1
 

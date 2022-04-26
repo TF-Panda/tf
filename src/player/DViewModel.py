@@ -4,7 +4,6 @@ from tf.actor.DistributedChar import DistributedChar
 from .DViewModelShared import DViewModelShared
 
 from panda3d.core import *
-from panda3d.direct import InterpolatedQuat
 
 class ViewInfo:
     pass
@@ -35,10 +34,15 @@ class DViewModel(DistributedChar, DViewModelShared):
         self.accept('u', self.toggleAnimDebug)
 
         # We shouldn't attempt to predict the view model transform.
-        # Neither the server or client simulate it, and the view is
+        # Neither the server nor client simulate it, and the view is
         # setup before rendering.
         self.removePredictionField("pos")
         self.removePredictionField("hpr")
+        self.removeInterpolatedVar(self.ivPos)
+        self.removeInterpolatedVar(self.ivRot)
+
+    def shouldSpatializeAnimEventSounds(self):
+        return (self != base.localAvatar.viewModel)
 
     def RecvProxy_pos(self, x, y, z):
         pass

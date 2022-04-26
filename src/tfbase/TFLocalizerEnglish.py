@@ -59,6 +59,7 @@ Building = 'Building...'
 Shells = 'Shells'
 Rockets = 'Rockets'
 Upgrade = 'Upgrade'
+Toolbox = 'Toolbox'
 SentryKillsText = 'Kills: %i (%i)'
 TFDisclaimer = 'Team Fortress and the Team Fortress logo are registered trademarks of Valve Corporation.  ' \
                'Team Fortress 2 Panda is not affiliated with Valve Corporation.  ' \

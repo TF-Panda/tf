@@ -52,6 +52,25 @@ class Expressions:
         self.expressions = None
         self.character = None
 
+    def clearExpression(self, name):
+        self.expressionList = [exp for exp in self.expressionList if exp.name != name]
+
+    def resetExpressions(self):
+        """
+        Sets all sliders used by each expression to zero.
+        """
+        for sliderNameList in self.expressions.values():
+            for sliderName in sliderNameList:
+                slider = self.character.findSlider(sliderName)
+                if slider >= 0:
+                    self.character.setSliderValue(slider, 0.0)
+        self.expressionList = []
+
+    def clearNonBaseExpressions(self):
+        if len(self.expressionList) == 0:
+            return
+        self.expressionList = [self.expressionList[0]]
+
     def pushExpression(self, name, maxWeight, duration = -1, oscillation = 0.0, oscillationSpeed = 0.0):
         self.expressionList.append(Expression(name, globalClock.getFrameTime(), maxWeight, duration, oscillation, oscillationSpeed))
 

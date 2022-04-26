@@ -7,13 +7,13 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, Parallel, LerpPosInterval, LerpScaleInterval
-from direct.directbase import DirectRender
 
 from tf.tfbase import Sounds
 
 from .DistributedGameBase import DistributedGameBase
 from .FogManager import FogManager
 from .SkyBox import SkyBox
+from tf.tfbase.Soundscapes import SoundscapeManager
 
 play_sound_coll = PStatCollector("App:Sounds:PlaySound")
 
@@ -33,6 +33,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def __init__(self):
         DistributedObject.__init__(self)
         DistributedGameBase.__init__(self)
+
+        self.ssMgr = SoundscapeManager()
 
         self.sky = None
         self.visDebug = False
@@ -142,13 +144,110 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
-        base.dynRender.node().levelShutdown()
+
+        self.ssMgr.destroySoundscapes()
+
+        # Clear out 3-D skybox.
+        base.sky3DRoot.node().removeAllChildren()
+
+        #base.dynRender.node().levelShutdown()
         if self.sky:
             self.sky.destroy()
             self.sky = None
 
+    def preFlattenLevel(self):
+        lvlData = self.lvlData
+        lvlRoot = self.lvl.find("**/mapRoot")
+
+        sky3dNodes = []
+        # Extract 3-D skybox mesh groups.
+        for i in range(self.lvlData.getNumMeshGroups()):
+            group = self.lvlData.getMeshGroup(i)
+            if group.isIn3dSkybox():
+                sky3dNodes.append(lvlRoot.getChild(i))
+
+        for np in sky3dNodes:
+            np.reparentTo(base.sky3DRoot)
+
+        skyCamera = None
+        for i in range(lvlData.getNumEntities()):
+            ent = lvlData.getEntity(i)
+            if ent.getClassName() == "sky_camera":
+                skyCamera = ent
+                break
+        if skyCamera is None:
+            return
+
+        props = skyCamera.getProperties()
+
+        skyCamOrigin = Point3()
+        props.getAttributeValue("origin").toVec3(skyCamOrigin)
+
+        #skyCamAngles = Vec3()
+        #if props.hasAttribute("use_angles") and props.getAttributeValue("use_angles").getBool():
+        #    phr = Vec3()
+        #    props.getAttributeValue("angles").toVec3(phr)
+        #    skyCamAngles = Vec3(phr[1] - 90, -phr[0], phr[2])
+
+        scale = 1.0 / 16.0
+        if props.hasAttribute("scale"):
+            scale = 1.0 / props.getAttributeValue("scale").getFloat()
+
+        # Build skybox matrix.
+        skyMat = LMatrix4.scaleMat((scale, scale, scale))
+        skyMat.setRow(3, skyCamOrigin)
+        base.sky3DMat = skyMat
+
+        # Setup sky fog.
+        fogMgr = FogManager(base.sky3DRoot)
+
+        if props.hasAttribute("fogstart"):
+            fogMgr.fogStart = props.getAttributeValue("fogstart").getFloat()
+        if props.hasAttribute("fogend"):
+            fogMgr.fogEnd = props.getAttributeValue("fogend").getFloat()
+        if props.hasAttribute("fogdir"):
+            props.getAttributeValue("fogdir").toVec3(fogMgr.fogDir)
+            fogMgr.fogDir.normalize()
+        if props.hasAttribute("fogblend"):
+            fogMgr.fogBlend = props.getAttributeValue("fogblend").getInt() == 1
+        if props.hasAttribute("fogcolor"):
+            str_rgb = props.getAttributeValue("fogcolor").getString().split()
+            fogMgr.color[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
+            fogMgr.color[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
+            fogMgr.color[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+        if props.hasAttribute("fogcolor2"):
+            str_rgb = props.getAttributeValue("fogcolor2").getString().split()
+            fogMgr.color2[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
+            fogMgr.color2[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
+            fogMgr.color2[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+        if props.hasAttribute("fogenable"):
+            if props.getAttributeValue("fogenable").getBool():
+                fogMgr.enableFog()
+
+        if props.hasAttribute("use_angles") and props.getAttributeValue("use_angles").getBool():
+            # Use entity angles instead of fogdir property for directional
+            # blend.
+            phr = Vec3()
+            props.getAttributeValue("angles").toVec3(phr)
+            q = Quat()
+            q.setHpr((phr[1] - 90, -phr[0], phr[2]))
+            fogMgr.fogDir = q.getForward()
+
+        self.skyFogMgr = fogMgr
+
+        base.sky3DRoot.ls()
+        base.sky3DRoot.clearModelNodes()
+        self.flatten(base.sky3DRoot)
+        #base.sky3DRoot.flattenStrong()
+
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
+
+        #for i in range(self.lvlData.getNumAmbientProbes()):
+        #    probe = self.lvlData.getAmbientProbe(i)
+        #    print("Probe %i" % i)
+        #    for j in range(9):
+        #        print("\t%s" % repr(probe.getColor(j)))
 
         # Extract the skybox name.
         worldEnt = self.lvlData.getEntity(0)
@@ -157,7 +256,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #if worldData.hasAttribute("skyname"):
         #    skyName = worldData.getAttributeValue("skyname").getString()
         #    skyName += "_hdr"
-        print("skyname:", skyName)
+        #print("skyname:", skyName)
         self.sky = SkyBox(skyName)
 
         self.lvlData.setCam(base.cam)
@@ -167,7 +266,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if not clnp.isEmpty():
             cl = clnp.node()
             cl.setSceneCamera(base.cam)
-            cl.setShadowCaster(True, 4096, 4096)
+            cl.setSoftnessFactor(1.0)
+            cl.setShadowCaster(True, 2048, 2048)
             cl.setCameraMask(DirectRender.ShadowCameraBitmask)
             clnp.reparentTo(base.cam)
             clnp.setCompass()
@@ -179,7 +279,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         # Initialize the dynamic vis node to the number of visgroups in the
         # new level.
-        base.dynRender.node().levelInit(self.lvlData.getNumClusters())
+        #base.dynRender.node().levelInit(self.lvlData.getNumClusters())
 
         # Here we build up the scene graph visibility info from the map vis
         # info for culling scene graph nodes.
@@ -193,6 +293,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         vmTop = MapRender("vmTop")
         vmTop.replaceNode(base.vmRender.node())
         vmTop.setMapData(self.lvlData)
+
+        skyTop = MapRender("sky3DTop")
+        skyTop.replaceNode(base.sky3DTop.node())
+        skyTop.setMapData(self.lvlData)
 
         render.setAttrib(LightRampAttrib.makeHdr0())
 
@@ -212,7 +316,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
             if ent.getClassName() == "env_fog_controller":
                 if not self.fogMgr:
-                    self.fogMgr = FogManager()
+                    self.fogMgr = FogManager(base.render)
                     props = ent.getProperties()
 
                     if props.hasAttribute("fogstart"):
@@ -223,94 +327,39 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                         props.getAttributeValue("fogdir").toVec3(self.fogMgr.fogDir)
                         self.fogMgr.fogDir.normalize()
                     if props.hasAttribute("fogblend"):
-                        self.fogMgr.fogBlend = props.getAttributeValue("fogblend").getBool()
+                        self.fogMgr.fogBlend = props.getAttributeValue("fogblend").getInt() == 1
                     if props.hasAttribute("fogcolor"):
                         str_rgb = props.getAttributeValue("fogcolor").getString().split()
-                        self.fogMgr.color[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
-                        self.fogMgr.color[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
-                        self.fogMgr.color[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+                        self.fogMgr.color[0] = float(str_rgb[0]) / 255.0
+                        self.fogMgr.color[1] = float(str_rgb[1]) / 255.0
+                        self.fogMgr.color[2] = float(str_rgb[2]) / 255.0
                     if props.hasAttribute("fogcolor2"):
                         str_rgb = props.getAttributeValue("fogcolor2").getString().split()
-                        self.fogMgr.color2[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
-                        self.fogMgr.color2[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
-                        self.fogMgr.color2[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+                        self.fogMgr.color2[0] = float(str_rgb[0]) / 255.0
+                        self.fogMgr.color2[1] = float(str_rgb[1]) / 255.0
+                        self.fogMgr.color2[2] = float(str_rgb[2]) / 255.0
                     if props.hasAttribute("fogenable"):
-                        if props.getAttributeValue("fogenable").getBool():
+                        if props.getAttributeValue("fogenable").getInt() == 1:
                             #print("enable")
-                            #self.fogMgr.enableFog()
-                            pass
-            elif ent.getClassName() == "info_null":
-                pass
-                props = ent.getProperties()
-                origin = Vec3()
-                props.getAttributeValue("origin").toVec3(origin)
-                snd = base.loader.loadSfx(sounds[numSounds])
-                numSounds += 1
-                snd.set3dDistanceFactor(0.008)
-                snd.set3dAttributes(origin[0], origin[1], origin[2], 0.0, 0.0, 0.0)
-                sprops = SteamAudioProperties()
-                sprops._enable_occlusion = True
-                sprops._enable_transmission = True
-                sprops._enable_pathing = True
-                sprops._binaural_pathing = True
-                sprops._enable_distance_atten = True
-                sprops._enable_air_absorption = True
-                sprops._bilinear_hrtf = False
-                snd.applySteamAudioProperties(sprops)
-                snd.setLoop(True)
-                snd.play()
-                sm = loader.loadModel("models/misc/smiley")
-                sm.setPos(origin)
-                sm.reparentTo(base.dynRender)
-                sm.setTextureOff(1)
-                sm.setEffect(MapLightingEffect.make())
-                sm.setScale(8)
+                            self.fogMgr.updateParams()
+                            self.fogMgr.enableFog()
+                            #pass
 
-        self.snd1 = base.loader.loadSfx("ambient/indoors.wav")
-        self.snd1.setVolume(0.6)
-        self.snd1.setLoop(True)
-        #base.audio3ds[0].attachSoundToObject(self.snd1, base.cam)
-        #self.snd1.play()
-        self.snd2 = base.loader.loadSfx("ambient/lighthum.wav")
-        self.snd2.setVolume(0.05)
-        self.snd2.setLoop(True)
-        #base.audio3ds[0].attachSoundToObject(self.snd2, base.cam)
-        #self.snd2.play()
+        # Load up soundscapes.
+        self.ssMgr.createSoundscapesFromLevel(self.lvlData)
+        self.ssMgr.start()
 
-        #base.vmRender.hide()
-        #base.render2d.hide()
+        # Enable Z-prepass on the static brush geometry for the main pass.
+        geomNp = self.lvl.find("**/mapRoot")
+        geomNp.showThrough(DirectRender.ShadowCameraBitmask)
+        #geomNp.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask))
 
-        #smc = loader.loadModel("models/misc/smiley.bam")
+        #self.lvl.ls()
+        #self.lvl.analyze()
 
-        #smDebugVis = base.render.attachNewNode(DynamicVisNode("ambient-probe-debug"))
-        #smDebugVis.node().levelInit(self.lvlData.getNumClusters())
-        #print(self.lvlData.getNumAmbientProbes(), "ambient probes")
-        #for i in range(self.lvlData.getNumAmbientProbes()):
-        #    probe = self.lvlData.getAmbientProbe(i)
-        #    sm = smc.copyTo(smDebugVis)
-        #    sm.setScale(8)
-        #    sm.setPos(probe._pos)
-        #    sm.setTextureOff(1)
-        #    sm.reparentTo(smDebugVis)
-
-        # Pre-render the entire scene to get all data uploaded and shaders compiled.
-        print("Pre-rendering level...")
-        #root = self.lvl.find("**/+MapRoot")
-        #visNodes = base.render.findAllMatches("**/+DynamicVisNode")
-        base.render.node().setBounds(OmniBoundingVolume())
-        base.render.node().setFinal(True)
-        #root.node().setPvsCull(False)
-        #for node in visNodes:
-        #    node.node().setCullingEnabled(False)
-        # Pre-render now.
-        base.graphicsEngine.renderFrame()
-        base.graphicsEngine.renderFrame()
-        base.render.node().clearBounds()
-        base.render.node().setFinal(False)
-        #root.node().setPvsCull(True)
-        #for node in visNodes:
-        #    node.node().setCullingEnabled(True)
-        print("Pre-render finished.")
+        # Ensure all graphics objects are prepared ahead of time.
+        base.render.prepareScene(base.win.getGsg())
+        base.sky3DRoot.prepareScene(base.win.getGsg())
 
     def getTeamFormat(self, team):
         if team == 0:
@@ -321,9 +370,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def killEvent(self, killerDoId, assistDoId, weaponDoId, killedDoId):
         if not hasattr(base, 'localAvatar'):
             return
-
-        from tf.player.DistributedTFPlayer import DistributedTFPlayer
-        from tf.object.BaseObject import BaseObject
 
         killer = base.cr.doId2do.get(killerDoId)
         assist = base.cr.doId2do.get(assistDoId)
@@ -342,7 +388,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         else:
             # Someone killed someone else.
             text = ""
-            if isinstance(killer, BaseObject):
+            if killer.isObject():
                 text += self.getTeamFormat(killer.team) + "Sentry Gun"
                 builder = base.cr.doId2do.get(killer.builderDoId)
                 if builder:
@@ -355,7 +401,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                 if assist:
                     text += " + " + self.getTeamFormat(assist.team) + assist.playerName + "\2"
             text += " killed "
-            if isinstance(killed, BaseObject):
+            if killed.isObject():
                 text += self.getTeamFormat(killed.team) + "Sentry Gun"
                 builder = base.cr.doId2do.get(killed.builderDoId)
                 if builder:
@@ -375,7 +421,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
     def doExplosion(self, pos, scale):
         root = base.dynRender.attachNewNode("expl")
-        root.setEffect(MapLightingEffect.make())
+        root.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
         root.setPos(Vec3(*pos))
         root.setScale(Vec3(*scale))
         expl = base.loader.loadModel("models/effects/explosion")
@@ -424,6 +470,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         seq.append(Func(np.removeNode))
 
         seq.start()
+
+        from tf.weapon import WeaponEffects
+        WeaponEffects.tracerSound(start, end)
 
     def doTracers(self, origin, ends):
         if base.cr.prediction.inPrediction:

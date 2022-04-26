@@ -23,6 +23,10 @@ class TFClientRepository(ClientRepository, FSM):
 
         self.accept('connectionLost', self.handleConnectionLost)
 
+        self.loadingMusic = base.loader.loadMusic("misc/training_vid_ctf_2fort.mp3")
+        self.loadingMusic.play()
+        base.musicManager.update()
+
         self.request("Connect", info)
 
     def runPrediction(self):
@@ -133,6 +137,7 @@ class TFClientRepository(ClientRepository, FSM):
         del self.dialog
 
     def enterInGame(self):
+        self.loadingMusic.stop()
         # Interpolation is sort 30, so make sure prediction happens before interpolation.
         base.taskMgr.add(self.runPredictionTask, 'runPredictionTask', sort = 29)
 

@@ -11,7 +11,7 @@ from panda3d.pphysics import *
 from .TFClass import *
 from .InputButtons import *
 from .ObserverMode import ObserverMode
-from tf.tfbase import TFGlobals, TFFilters
+from tf.tfbase import TFGlobals, TFFilters, Sounds
 
 from tf.tfbase.TFGlobals import Contents, CollisionGroup
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
@@ -33,6 +33,7 @@ class DistributedTFPlayerShared:
     CondNone = 0
     CondAiming = 1 << 0
     CondTaunting = 1 << 1
+    CondSelectedToTeleport = 1 << 2
 
     def __init__(self):
         self.playerName = ""
@@ -55,6 +56,8 @@ class DistributedTFPlayerShared:
         self.vel = Vec3()
         self.controller = None
 
+        self.selectedBuilding = 0
+
         self.airDashing = False
 
         self.stepSoundTime = 0.0
@@ -69,6 +72,7 @@ class DistributedTFPlayerShared:
         self.buttonsReleased = InputFlag.Empty
 
         self.weapons = []
+        self.lastActiveWeapon = -1
         self.activeWeapon = -1
 
         # Variables used for GameMovement.
@@ -87,6 +91,23 @@ class DistributedTFPlayerShared:
 
         self.tickBase = 0
         self.deathTime = 0.0
+
+        self.objects = [-1, -1, -1, -1]
+
+        self.metal = 0
+        self.maxMetal = 200
+
+    def usesMetal(self):
+        return self.tfClass == Class.Engineer
+
+    def hasObject(self, objectType):
+        return self.objects[objectType] != -1
+
+    def setObject(self, objectType, doId):
+        self.objects[objectType] = doId
+
+    def removeObject(self, objectType):
+        self.objects[objectType] = -1
 
     def updateClassSpeed(self):
         maxSpeed = 300 * self.classInfo.ForwardFactor
@@ -170,7 +191,7 @@ class DistributedTFPlayerShared:
             # footstep sound doesn't follow the player.  Exclude the client
             # owner as they are predicting the sound and not spatializing it.
             base.world.emitSoundSpatial(stepSoundName, origin, volume=volume,
-                                        excludeClients=[self.owner])
+                                        excludeClients=[self.owner], chan=Sounds.Channel.CHAN_STATIC)
 
     def getPunchAngle(self):
         return self.punchAngle
@@ -223,6 +244,9 @@ class DistributedTFPlayerShared:
         base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
                                   BitMask32(Contents.HitBox | Contents.AnyTeam | Contents.Solid), BitMask32.allOff(),
                                   CollisionGroup.Empty, filter)
+
+        impactVol = 1.0 / info['shots']
+
         if result.hasBlock():
             # Bullet hit something!
             block = result.getBlock()
@@ -239,16 +263,6 @@ class DistributedTFPlayerShared:
                         # Fire tracers on first prediction only.
                         base.game.doTracer(info['tracerOrigin'], block.getPosition())
 
-            actor = block.getActor()
-            entity = actor.getPythonTag("entity")
-            if not entity:
-                # Didn't hit an entity.  Hmm.
-                return
-
-            if doEffects:
-                # TODO
-                pass
-
             # Play bullet impact sound for material we hit.
             if not IS_CLIENT:
                 # Don't send to client who predicted it.
@@ -260,14 +274,24 @@ class DistributedTFPlayerShared:
                 surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
                 if not surfaceDef:
                     surfaceDef = SurfaceProperties['default']
-                base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=exclude)
+                base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=exclude, volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
             else:
                 if base.cr.prediction.firstTimePredicted:
                     physMat = block.getMaterial()
                     surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
                     if not surfaceDef:
                         surfaceDef = SurfaceProperties['default']
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition())
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
+
+            actor = block.getActor()
+            entity = actor.getPythonTag("entity")
+            if not entity:
+                # Didn't hit an entity.  Hmm.
+                return
+
+            if doEffects:
+                # TODO
+                pass
 
             if not IS_CLIENT:
                 # Server-specific.
@@ -292,6 +316,9 @@ class DistributedTFPlayerShared:
 
     def getWeapons(self):
         return self.weapons
+
+    def getLastActiveWeapon(self):
+        return self.lastActiveWeapon
 
     def getActiveWeapon(self):
         return self.activeWeapon
@@ -404,3 +431,6 @@ class DistributedTFPlayerShared:
     def disable(self):
         self.controller = None
         self.viewModel = None
+        if self.animState:
+            self.animState.delete()
+            self.animState = None

@@ -129,7 +129,7 @@ class TFWeaponMelee(TFWeapon):
             block = result.getBlock()
             np = NodePath(block.getActor())
             ent = np.getNetPythonTag("entity")
-            if ent and ('TFPlayer' in ent.__class__.__name__):
+            if ent and ent.isPlayer():
                 self.playSound(self.getHitPlayerSound())
             else:
                 self.playSound(self.getHitWorldSound())

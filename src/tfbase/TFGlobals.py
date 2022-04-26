@@ -13,7 +13,7 @@ GameZone = 2
 ###############################################################################
 
 from enum import IntEnum, IntFlag
-from panda3d.core import BitMask32, Vec3
+from panda3d.core import BitMask32, Vec3, DynamicTextFont, SamplerState
 
 class CollisionGroup(IntEnum):
     Empty = 0
@@ -164,32 +164,63 @@ def approach(target, value, speed):
 
     return value
 
+def approachAngle(target, value, speed):
+    target = angleMod(target)
+    value = angleMod(value)
+
+    delta = target - value
+
+    if speed < 0:
+        speed = -speed
+
+    if delta < -180:
+        delta += 360
+    elif delta > 180:
+        delta -= 360
+
+    if delta > speed:
+        value += speed
+    elif delta < -speed:
+        value -= speed
+    else:
+        value = target
+
+    return value
+
 TF2Font = None
 def getTF2Font():
     global TF2Font
     if not TF2Font:
-        TF2Font = base.loader.loadFont("models/fonts/TF2.ttf")
+        TF2Font = DynamicTextFont("models/fonts/TF2.ttf")
+        TF2Font.setPixelsPerUnit(128)
     return TF2Font
 
 TF2BuildFont = None
 def getTF2BuildFont():
     global TF2BuildFont
     if not TF2BuildFont:
-        TF2BuildFont = base.loader.loadFont("models/fonts/tf2build.ttf")
+        TF2BuildFont = DynamicTextFont("models/fonts/tf2build.ttf")
+        TF2BuildFont.setPixelsPerUnit(128)
     return TF2BuildFont
 
 TF2SecondaryFont = None
 def getTF2SecondaryFont():
     global TF2SecondaryFont
     if not TF2SecondaryFont:
-        TF2SecondaryFont = base.loader.loadFont("models/fonts/TF2secondary.ttf")
+        TF2SecondaryFont = DynamicTextFont("models/fonts/TF2secondary.ttf")
+        TF2SecondaryFont.setPixelsPerUnit(48)
+        TF2SecondaryFont.setNativeAntialias(True)
+        #TF2SecondaryFont.setMinfilter(SamplerState.FTLinearMipmapLinear)
+        TF2SecondaryFont.setAnisotropicDegree(16)
+        TF2SecondaryFont.setTextureMargin(4)
     return TF2SecondaryFont
 
 TF2ProfessorFont = None
 def getTF2ProfessorFont():
     global TF2ProfessorFont
     if not TF2ProfessorFont:
-        TF2ProfessorFont = base.loader.loadFont("models/fonts/tf2professor.ttf")
+        TF2ProfessorFont = DynamicTextFont("models/fonts/tf2professor.ttf")
+        TF2ProfessorFont.setPixelsPerUnit(128)
     return TF2ProfessorFont
 
 # All classes use the same standing/ducking collision hulls.
@@ -202,3 +233,93 @@ VEC_DUCK_VIEW = Vec3(0, 0, 45)
 VEC_OBS_HULL_MIN = Vec3(-10, -10, -10)
 VEC_OBS_HULL_MAX = Vec3(10, 10, 10)
 VEC_DEAD_VIEWHEIGHT = Vec3(0, 0, 14)
+
+# List of models that we should preload at game launch.
+# Anything that could be used during the course of the game
+# that isn't tied to the map.
+ModelPrecacheList = [
+    "models/char/c_demo_arms",
+    "models/char/c_engineer_arms",
+    "models/char/c_heavy_arms",
+    "models/char/c_soldier_arms",
+    "models/char/demo",
+    "models/char/demogib001",
+    "models/char/demogib002",
+    "models/char/demogib003",
+    "models/char/demogib004",
+    "models/char/demogib005",
+    "models/char/demogib006",
+    "models/char/engineer",
+    "models/char/engineergib001",
+    "models/char/engineergib002",
+    "models/char/engineergib003",
+    "models/char/engineergib004",
+    "models/char/engineergib005",
+    "models/char/engineergib006",
+    "models/char/engineergib007",
+    "models/char/heavy",
+    "models/char/pyro",
+    "models/char/random_organ",
+    "models/char/scout",
+    "models/char/soldier",
+    "models/char/spy",
+
+    "models/buildables/sentry1",
+    "models/buildables/sentry1_blueprint",
+    "models/buildables/sentry1_gib1",
+    "models/buildables/sentry1_gib2",
+    "models/buildables/sentry1_gib3",
+    "models/buildables/sentry1_gib4",
+    "models/buildables/sentry2",
+    "models/buildables/sentry2_heavy",
+    "models/buildables/dispenser",
+    "models/buildables/dispenser_light",
+    "models/buildables/dispenser_blueprint",
+    "models/buildables/dispenser_gib1",
+    "models/buildables/dispenser_gib2",
+    "models/buildables/dispenser_gib3",
+    "models/buildables/dispenser_gib4",
+    "models/buildables/dispenser_gib5",
+
+    "models/effects/explosion",
+
+    "models/weapons/c_bat",
+    "models/weapons/c_bottle",
+    "models/weapons/c_flamethrower",
+    "models/weapons/c_flamethrower_pilotlight",
+    "models/weapons/c_grenadelauncher",
+    "models/weapons/c_minigun",
+    "models/weapons/c_pistol",
+    "models/weapons/c_rocketlauncher",
+    "models/weapons/c_shotgun",
+    "models/weapons/c_wrench",
+    "models/weapons/shell_shotgun",
+    "models/weapons/v_bat_scout",
+    "models/weapons/v_bottle_demoman",
+    "models/weapons/v_builder_engineer",
+    "models/weapons/v_fireaxe_pyro",
+    "models/weapons/v_fist_heavy",
+    "models/weapons/v_knife_spy",
+    "models/weapons/v_pda_engineer",
+    "models/weapons/v_pistol_engineer",
+    "models/weapons/v_pistol_scout",
+    "models/weapons/v_revolver_spy",
+    "models/weapons/v_rocketlauncher_soldier",
+    "models/weapons/v_scattergun_scout",
+    "models/weapons/v_shotgun_engineer",
+    "models/weapons/v_shotgun_heavy",
+    "models/weapons/v_shotgun_pyro",
+    "models/weapons/v_shotgun_soldier",
+    "models/weapons/v_shovel_soldier",
+    "models/weapons/v_toolbox_engineer",
+    "models/weapons/v_wrench_engineer",
+    "models/weapons/w_builder",
+    "models/weapons/w_fireaxe",
+    "models/weapons/w_grenade_grenadelauncher",
+    "models/weapons/w_knife",
+    "models/weapons/w_pda_engineer",
+    "models/weapons/w_revolver",
+    "models/weapons/w_rocket",
+    "models/weapons/w_scattergun",
+    "models/weapons/w_toolbox"
+]

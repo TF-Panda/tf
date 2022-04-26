@@ -63,11 +63,6 @@ class DMinigun(TFWeaponGun):
         })
         self.weaponReset()
 
-        if IS_CLIENT:
-            self.addPredictionField("weaponState", int)
-            self.addPredictionField("barrelTargetVelocity", float)
-            self.addPredictionField("barrelAccelSpeed", float)
-
     def getName(self):
         return TFLocalizer.Minigun
 
@@ -86,6 +81,21 @@ class DMinigun(TFWeaponGun):
         self.barrelControlJoints = []
 
     if IS_CLIENT:
+
+        def addPredictionFields(self):
+            """
+            Called when initializing an entity for prediction.
+
+            This method should define fields that should be predicted
+            for this entity.
+            """
+
+            TFWeaponGun.addPredictionFields(self)
+
+            self.addPredictionField("weaponState", int)
+            self.addPredictionField("barrelTargetVelocity", float)
+            self.addPredictionField("barrelAccelSpeed", float)
+
         def announceGenerate(self):
             TFWeaponGun.announceGenerate(self)
             self.addTask(self.__updateMinigunBarrel, "updateMinigunBarrel", sim = False, appendTask = True)
@@ -134,7 +144,6 @@ class DMinigun(TFWeaponGun):
         def stopWeaponSound(self):
             if self.currSound:
                 self.currSound.stop()
-                #base.audio3ds[self.currSound[1].channel].detachSound(self.currSound[0])
                 self.currSound = None
 
         def weaponSoundUpdate(self):

@@ -14,11 +14,11 @@ from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, Content
 from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
 from tf.tfbase import TFFilters, Sounds
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
+from tf.tfbase.SoundEmitter import SoundEmitter
 from direct.directbase import DirectRender
 
 if IS_CLIENT:
     from tf.player.Prediction import *
-    from panda3d.direct import InterpolatedVec3, InterpolatedQuat
 
 class DistributedEntity(BaseClass, NodePath):
 
@@ -74,15 +74,21 @@ class DistributedEntity(BaseClass, NodePath):
         self.triggerCallback = False
         self.contactCallback = False
         self.sleepCallback = False
-        self.hullMins = Point3()
-        self.hullMaxs = Point3()
+        self.hullMins = Point3(0)
+        self.hullMaxs = Point3(0)
+        self.triggerFudge = Vec3(0)
+
+        self.teleportParity = 0
 
         if IS_CLIENT:
             # Makes the node compute its lighting state from the lighting
             # information in the level when its rendered.
-            self.setEffect(MapLightingEffect.make())
+            self.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
             # And render into shadow maps.
             self.showThrough(DirectRender.ShadowCameraBitmask)
+
+            # Setting to 255 makes the entity teleport to initial transform.
+            self.lastTeleportParity = 255
 
             # Prediction-related variables.
             self.intermediateData = []
@@ -95,13 +101,6 @@ class DistributedEntity(BaseClass, NodePath):
             self.predictionInitialized = False
             self.simulationTick = -1
 
-            self.addPredictionField("velocity", Vec3, tolerance=0.5)
-            self.addPredictionField("team", int)
-            self.addPredictionField("pos", Point3, getter=self.getPos, setter=self.setPos, tolerance=0.02)
-            self.addPredictionField("hpr", Vec3, getter=self.getHpr, setter=self.setHpr, noErrorCheck=True)
-            self.addPredictionField("baseVelocity", Vec3, tolerance=0.5)
-            self.addPredictionField("gravity", float, networked=False)
-
             # Add interpolators for transform state of the entity/node.
             self.ivPos = InterpolatedVec3()
             self.addInterpolatedVar(self.ivPos, self.getPos, self.setPos)
@@ -110,9 +109,7 @@ class DistributedEntity(BaseClass, NodePath):
             self.ivScale = InterpolatedVec3()
             #self.addInterpolatedVar(self.ivScale, self.getScale, self.setScale)
 
-            # List of sounds being emitted from this entity and their offsets from
-            # the entity's position.
-            self.sounds = {}
+            self.soundEmitter = SoundEmitter(self)
 
         # Create a root node for all physics objects to live under, and hide
         # it.  This can improve cull traverser performance since it only has
@@ -126,6 +123,31 @@ class DistributedEntity(BaseClass, NodePath):
         self.setPythonTag("entity", self)
 
         self.reparentTo(self.parentEntity)
+
+    def generate(self):
+        BaseClass.generate(self)
+        # Make the node for this entity recognizable.  Assign the top-level class
+        # name followed by the doId.
+        self.node().setName(self.uniqueName(self.__class__.__name__))
+        # Don't let Actor override the name.
+        self.gotName = 1
+
+    def isPlayer(self):
+        """
+        Returns True if this entity is a player.  Overridden in
+        DistributedTFPlayer to return True.  Convenience method
+        to avoid having to check isinstance() or __class__.__name__.
+        """
+        return False
+
+    def isObject(self):
+        """
+        Returns True if this entity is a building, such as a Sentry
+        or Dispenser.  Overriden in BaseObject to return True.
+        Convenience method to avoid having to check isinstance() or
+        __class__.__name__.
+        """
+        return False
 
     def isDead(self):
         """
@@ -145,6 +167,13 @@ class DistributedEntity(BaseClass, NodePath):
         pass
 
     def __triggerCallback(self, cbdata):
+        # This hack checks that the DistributedObject hasn't been deleted
+        # before processing this callback.  There are cases where a physics
+        # callback results in the deletion of objects, but the callback may
+        # be triggered multiple times in the same physics update.
+        if self.isDODeleted():
+            return
+
         np = NodePath(cbdata.getOtherNode())
         entity = np.getPythonTag("entity")
         if not entity:
@@ -164,6 +193,13 @@ class DistributedEntity(BaseClass, NodePath):
         pass
 
     def __contactCallback(self, cbdata):
+        # This hack checks that the DistributedObject hasn't been deleted
+        # before processing this callback.  There are cases where a physics
+        # callback results in the deletion of objects, but the callback may
+        # be triggered multiple times in the same physics update.
+        if self.isDODeleted():
+            return
+
         other = cbdata.getActorA()
         otherIsB = False
         if other == self.node():
@@ -190,12 +226,19 @@ class DistributedEntity(BaseClass, NodePath):
         pass
 
     def __sleepCallback(self, cbdata):
+        # This hack checks that the DistributedObject hasn't been deleted
+        # before processing this callback.  There are cases where a physics
+        # callback results in the deletion of objects, but the callback may
+        # be triggered multiple times in the same physics update.
+        if self.isDODeleted():
+            return
+
         if cbdata.isAwake():
             self.onWake()
         else:
             self.onSleep()
 
-    def destroyCollisions(self):
+    def destroyCollisions(self, replaceWithNormalNode=True):
         if not self.hasCollisions or not isinstance(self.node(), PhysRigidActorNode):
             # There's no collisions.
             return
@@ -203,9 +246,10 @@ class DistributedEntity(BaseClass, NodePath):
         # Ensure it's not in any PhysScene.
         self.node().removeFromScene(base.physicsWorld)
 
-        # Replace the physics node with a regular PandaNode.
-        entNode = PandaNode("entity")
-        entNode.replaceNode(self.node())
+        if replaceWithNormalNode:
+            # Replace the physics node with a regular PandaNode.
+            entNode = PandaNode("entity")
+            entNode.replaceNode(self.node())
         self.hasCollisions = False
 
     def makeModelCollisionShape(self):
@@ -214,16 +258,23 @@ class DistributedEntity(BaseClass, NodePath):
     def getModelSurfaceProp(self):
         return "default"
 
-    def makeCollisionShape(self):
+    def makeCollisionShape(self, trigger=False):
         if self.solidShape == SolidShape.Model:
             return self.makeModelCollisionShape()
         elif self.solidShape == SolidShape.Box:
-            hx = (self.hullMaxs[0] - self.hullMins[0]) / 2
-            hy = (self.hullMaxs[1] - self.hullMins[1]) / 2
-            hz = (self.hullMaxs[2] - self.hullMins[2]) / 2
-            cx = (self.hullMins[0] + self.hullMaxs[0]) / 2
-            cy = (self.hullMins[1] + self.hullMaxs[1]) / 2
-            cz = (self.hullMins[2] + self.hullMaxs[2]) / 2
+            mins = Point3(self.hullMins)
+            maxs = Point3(self.hullMaxs)
+            if trigger:
+                # User can specify a fudge for the identical trigger
+                # shape so the solid shape doesn't block trigger entry.
+                mins -= self.triggerFudge
+                maxs += self.triggerFudge
+            hx = (maxs[0] - mins[0]) / 2
+            hy = (maxs[1] - mins[1]) / 2
+            hz = (maxs[2] - mins[2]) / 2
+            cx = (mins[0] + maxs[0]) / 2
+            cy = (mins[1] + maxs[1]) / 2
+            cz = (mins[2] + maxs[2]) / 2
             box = PhysBox(hx, hy, hz)
             mat = SurfaceProperties[self.getModelSurfaceProp()].getPhysMaterial()
             shape = PhysShape(box, mat)
@@ -297,7 +348,7 @@ class DistributedEntity(BaseClass, NodePath):
         if (self.solidFlags & SolidFlag.Tangible) and \
             (self.solidFlags & SolidFlag.Trigger):
             # Add an identical shape for trigger usage only.
-            tshape = self.makeCollisionShape()[0]
+            tshape = self.makeCollisionShape(trigger=True)[0]
             tshape.setSceneQueryShape(False)
             tshape.setSimulationShape(False)
             tshape.setTriggerShape(True)
@@ -375,10 +426,10 @@ class DistributedEntity(BaseClass, NodePath):
                 if entity.owner is not None:
                     # Make it non-spatialized for the client who got hit.
                     entity.emitSound(surfaceDef.bulletImpact, client=entity.owner)
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=[entity.owner])
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), chan=Sounds.Channel.CHAN_STATIC, excludeClients=[entity.owner])
                 else:
                     # Didn't hit a player entity, spatialize for all.
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition())
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), chan=Sounds.Channel.CHAN_STATIC)
 
             if not IS_CLIENT:
                 # Server-specific.
@@ -403,6 +454,21 @@ class DistributedEntity(BaseClass, NodePath):
         def shouldPredict(self):
             return False
 
+        def addPredictionFields(self):
+            """
+            Called when initializing an entity for prediction.
+
+            This method should define fields that should be predicted
+            for this entity.
+            """
+
+            self.addPredictionField("velocity", Vec3, tolerance=0.5)
+            self.addPredictionField("team", int)
+            self.addPredictionField("pos", Point3, getter=self.getPos, setter=self.setPos, tolerance=0.02)
+            self.addPredictionField("hpr", Vec3, getter=self.getHpr, setter=self.setHpr, noErrorCheck=True)
+            self.addPredictionField("baseVelocity", Vec3, tolerance=0.5)
+            self.addPredictionField("gravity", float, networked=False)
+
         def initPredictable(self):
             if self.predictionInitialized:
                 return
@@ -410,6 +476,12 @@ class DistributedEntity(BaseClass, NodePath):
             # Mark as predictable.
             self.setPredictable(True)
             base.net.prediction.addPredictable(self)
+
+            # Setup prediction fields.  Used to be in constructor,
+            # but now deferred to prediction initialization so
+            # non-predicted entities don't have to waste time setting
+            # up prediction fields.
+            self.addPredictionFields()
 
             # Initialize all the prediction data slots to default values.
             for fieldName, data in self.predictionFields.items():
@@ -556,8 +628,17 @@ class DistributedEntity(BaseClass, NodePath):
                 # Entity is no longer being predicted.
                 self.shutdownPredictable()
 
+            if self.teleportParity != self.lastTeleportParity:
+                # Teleport to new position and rotation.
+                self.ivPos.reset(self.getPos())
+                self.ivRot.reset(self.getQuat())
+                self.lastTeleportParity = self.teleportParity
+
     def getVelocity(self):
         return self.velocity
+
+    def setVelocity(self, vel):
+        self.velocity = vel
 
     def getPhysicsRoot(self):
         """
@@ -654,6 +735,14 @@ class DistributedEntity(BaseClass, NodePath):
         def SendProxy_scale(self):
             return self.getScale()
 
+        def teleport(self):
+            """
+            Makes the client teleport the entity to the current server position
+            the next time it receives a state update for this entity.
+            """
+            self.teleportParity += 1
+            self.teleportParity %= 256
+
     if not IS_CLIENT:
         def initFromLevel(self, properties):
             """
@@ -683,23 +772,33 @@ class DistributedEntity(BaseClass, NodePath):
                 # Apply the damage force to the physics-simulated body.
                 self.node().addForce(info.damageForce, self.node().FTImpulse)
 
-        def emitSound(self, soundName, volume=None, client=None, excludeClients=[]):
+        def emitSound(self, soundName, volume=None, loop=False, chan=None, client=None, excludeClients=[]):
             soundInfo = Sounds.createSoundServer(soundName)
             if soundInfo is None:
                 return
 
             if volume is not None:
+                # Overriding volume.
                 soundInfo[2] = volume
+
+            if chan is not None:
+                # Overriding sound channel.
+                soundInfo[4] = chan
+
+            soundInfo.append(loop)
 
             self.sendUpdate('emitSound_sv', soundInfo, client=client, excludeClients=excludeClients)
 
-        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, client=None, excludeClients=[]):
+        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, loop=False, chan=None, client=None, excludeClients=[]):
             soundInfo = Sounds.createSoundServer(soundName)
             if soundInfo is None:
                 return
             if volume is not None:
                 soundInfo[2] = volume
+            if chan is not None:
+                soundInfo[4] = chan
             soundInfo.append(offset)
+            soundInfo.append(loop)
             self.sendUpdate('emitSoundSpatial_sv', soundInfo, client=client, excludeClients=excludeClients)
 
         def isEntityVisible(self, entity, traceMask):
@@ -763,85 +862,66 @@ class DistributedEntity(BaseClass, NodePath):
         def onKillEntity(self, ent):
             pass
     else:
-        def announceGenerate(self):
-            BaseClass.announceGenerate(self)
-            self.addTask(self.__updateSounds, 'updateEntSounds', appendTask=True, sim=False, sort=49)
-
-        def disable(self):
-            self.removeTask('updateEntSounds')
-            BaseClass.disable(self)
 
         # IS_CLIENT
-        def emitSound_sv(self, soundIndex, waveIndex, volume, pitch):
+        def emitSound_sv(self, soundIndex, waveIndex, volume, pitch, chan, loop):
             sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch)
             if sound is not None:
+                self.soundEmitter.registerSound(sound, None if chan == Sounds.Channel.CHAN_STATIC else chan)
+                sound.setLoop(bool(loop))
                 sound.play()
 
-        def emitSoundSpatial_sv(self, soundIndex, waveIndex, volume, pitch, offset):
+        def emitSoundSpatial_sv(self, soundIndex, waveIndex, volume, pitch, chan, offset, loop):
             sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch, True)
             if sound is None:
                 return
 
-            self.registerSpatialSound(sound, offset)
+            self.soundEmitter.registerSound(sound,
+                None if chan == Sounds.Channel.CHAN_STATIC else chan,
+                True, offset)
+            sound.setLoop(bool(loop))
             sound.play()
 
-        def emitSound(self, soundName, loop=False, volume=None):
-            sound = Sounds.createSoundByName(soundName)
+        def emitSound(self, soundName, loop=False, volume=None, chan=None):
+            if isinstance(soundName, str):
+                sound, info = Sounds.createSoundByName(soundName, getInfo=True)
+            else:
+                sound, info = Sounds.createSoundByIndex(soundName, getInfo=True)
+
             if sound is not None:
+                if chan is None:
+                    chan = info.channel
+                self.soundEmitter.registerSound(sound, None if chan == Sounds.Channel.CHAN_STATIC else chan)
                 if volume is not None:
                     sound.setVolume(volume)
                 sound.setLoop(loop)
                 sound.play()
             return sound
 
-        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, loop=False):
-            sound = Sounds.createSoundByName(soundName, spatial=True)
+        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, loop=False, chan=None):
+            if isinstance(soundName, str):
+                sound, info = Sounds.createSoundByName(soundName, spatial=True, getInfo=True)
+            else:
+                sound, info = Sounds.createSoundByIndex(soundName, spatial=True, getInfo=True)
+
             if sound is None:
                 return None
             if volume is not None:
                 sound.setVolume(volume)
             sound.setLoop(loop)
-            self.registerSpatialSound(sound, offset)
+            if chan is None:
+                chan = info.channel
+            self.soundEmitter.registerSound(sound,
+                None if chan == Sounds.Channel.CHAN_STATIC else chan,
+                True, offset)
+            sound.play()
             return sound
-
-        def registerSpatialSound(self, sound, offset):
-            event = "sound-" + str(id(sound)) + "-finished"
-            sound.setFinishedEvent(event)
-            worldPos = self.getMat(base.render).xformPoint(offset)
-            sound.set3dAttributes(worldPos[0], worldPos[1], worldPos[2], 0.0, 0.0, 0.0)
-            self.sounds[sound] = [offset, worldPos]
-            self.acceptOnce(event, self.__onSoundFinished)
-
-        def __onSoundFinished(self, sound):
-            # Called when a spatial sound being emitted from this entity has
-            # finished playing.
-            if sound in self.sounds:
-                del self.sounds[sound]
 
         def getSpatialAudioCenter(self):
             # Returns the world-space center point for spatial audio
             # being emitted from this entity.  Spatial sounds can be
             # offset from this matrix.
             return self.getMat(base.render)
-
-        def __updateSounds(self, task):
-            """
-            Updates the 3-D position and velocity of spatial sounds being
-            emitted from this entity.
-            """
-
-            worldMat = self.getSpatialAudioCenter()
-            dt = globalClock.getDt()
-
-            for sound, data in self.sounds.items():
-                offset, lastPos = data
-                worldPos = worldMat.xformPoint(offset)
-                delta = worldPos - lastPos
-                vel = delta / dt
-                sound.set3dAttributes(worldPos[0], worldPos[1], worldPos[2], vel[0], vel[1], vel[2])
-                data[1] = worldPos
-
-            return task.cont
 
     def dispatchTraceAttack(self, info, dir, hit):
         # TODO: Damage filter?
@@ -859,10 +939,13 @@ class DistributedEntity(BaseClass, NodePath):
             self.ivHpr = None
             self.ivScale = None
             self.shutdownPredictable()
-        self.destroyCollisions()
+            self.soundEmitter.delete()
+            self.soundEmitter = None
+        # There's no point in replacing the physics node with a PandaNode
+        # since we're about to delete it anyway.  Saves a tiny bit of time.
+        self.destroyCollisions(replaceWithNormalNode=False)
         self.parentEntity = None
         self.physicsRoot = None
-        self.sounds = None
         if not self.isEmpty():
             self.removeNode()
         BaseClass.delete(self)

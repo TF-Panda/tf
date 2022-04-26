@@ -6,7 +6,8 @@ from panda3d.core import *
 
 class FogManager(DirectObject):
 
-    def __init__(self):
+    def __init__(self, scene):
+        self.scene = scene
         self.fogStart = 0
         self.fogEnd = 100
         self.color = Vec4(1)
@@ -16,16 +17,18 @@ class FogManager(DirectObject):
         self.fogMaxDensity = 1
         self.fogNode = Fog('fog')
         self.enabled = False
+        self.task = None
 
     def enableFog(self):
         self.enabled = True
-        render.setFog(self.fogNode)
-        taskMgr.add(self.__updateFog, 'updateFog', sort = 40)
+        self.scene.setFog(self.fogNode)
+        self.task = taskMgr.add(self.__updateFog, 'updateFog', sort = 40)
 
     def disableFog(self):
         self.enabled = False
-        render.clearFog(self.fogNode)
-        taskMgr.remove('updateFog')
+        self.scene.clearFog(self.fogNode)
+        self.task.remove()
+        self.task = None
 
     def __updateFog(self, task):
         self.updateParams()
@@ -33,6 +36,7 @@ class FogManager(DirectObject):
 
     def updateParams(self):
         # Updates the fog blending params.
+        #print(self.fogStart, self.fogEnd, self.fogBlend)
         self.fogNode.setLinearRange(self.fogStart, self.fogEnd)
         if self.fogBlend:
             q = base.camera.getQuat(render)
@@ -40,8 +44,10 @@ class FogManager(DirectObject):
             blendFactor = 0.5 * fwd.dot(self.fogDir) + 0.5
             blendColor = self.color * blendFactor + self.color2 * (1 - blendFactor)
             self.fogNode.setColor(blendColor)
+            #print("blend color", blendColor)
         else:
             self.fogNode.setColor(self.color)
+            #print("color", self.color)
 
 
 

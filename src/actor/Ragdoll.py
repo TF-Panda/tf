@@ -3,44 +3,10 @@ from panda3d.core import *
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 
-HardSounds = [
-    "sound/physics/body/body_medium_impact_hard1.wav",
-    "sound/physics/body/body_medium_impact_hard2.wav",
-    "sound/physics/body/body_medium_impact_hard3.wav",
-    "sound/physics/body/body_medium_impact_hard4.wav",
-    "sound/physics/body/body_medium_impact_hard5.wav",
-    "sound/physics/body/body_medium_impact_hard6.wav"
-]
-SoftSounds = [
-    "sound/physics/body/body_medium_impact_soft1.wav",
-    "sound/physics/body/body_medium_impact_soft2.wav",
-    "sound/physics/body/body_medium_impact_soft3.wav",
-    "sound/physics/body/body_medium_impact_soft4.wav",
-    "sound/physics/body/body_medium_impact_soft5.wav",
-    "sound/physics/body/body_medium_impact_soft6.wav",
-    "sound/physics/body/body_medium_impact_soft7.wav"
-]
-
 class Ragdoll(PhysRagdoll):
 
     def __init__(self, characterNp, collInfo):
         PhysRagdoll.__init__(self, characterNp)
-        props = SteamAudioProperties()
-        props._enable_occlusion = False
-        props._enable_transmission = False
-        props._enable_air_absorption = False
-        props._enable_reflections = False
-        props._bilinear_hrtf = False
-        for hard in HardSounds:
-            sound = base.audio3ds[0].loadSfx(hard)
-            sound.set3dDistanceFactor(0.07)
-            sound.applySteamAudioProperties(props)
-            self.addHardImpactSound(sound)
-        for soft in SoftSounds:
-            sound = base.audio3ds[0].loadSfx(soft)
-            sound.set3dDistanceFactor(0.07)
-            sound.applySteamAudioProperties(props)
-            self.addSoftImpactSound(sound)
         #self.setDebug(True, 4.0)
         self.task = None
         self.collInfo = collInfo
@@ -110,16 +76,19 @@ class Ragdoll(PhysRagdoll):
             else:
                 forceJoint = self.getJointActor(self.collInfo.root_part)
 
-            forceJoint.addForce(forceVector, forceJoint.FTImpulse)
-            forcePos = Point3(forceJoint.getTransform().getPos())
+            if (forceVector.lengthSquared() > 0.001):
 
-            if forcePos != Point3():
-                for i in range(self.getNumJoints()):
-                    joint = self.getJointActor(i)
-                    if joint == forceJoint:
-                        continue
-                    scale = joint.getMass() / self.collInfo.total_mass
-                    joint.addForceAtPos(forceVector * scale, forcePos, joint.FTImpulse)
+                forceJoint.addForce(forceVector, forceJoint.FTImpulse)
+                forcePos = Point3(forceJoint.getTransform().getPos())
+
+
+                if forcePos != Point3(0):
+                    for i in range(self.getNumJoints()):
+                        joint = self.getJointActor(i)
+                        if joint == forceJoint:
+                            continue
+                        scale = joint.getMass() / self.collInfo.total_mass
+                        joint.addForceAtPos(forceVector * scale, forcePos, joint.FTImpulse)
         else:
             self.stopRagdoll()
             if self.task:

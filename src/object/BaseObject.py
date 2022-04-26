@@ -12,6 +12,7 @@ from .ObjectState import ObjectState
 from tf.actor.Activity import Activity
 from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, CollisionGroup
 from tf.player.TFClass import Class
+from tf.tfbase import Sounds
 
 if not IS_CLIENT:
     from tf.weapon.DWeaponDrop import DWeaponDropAI
@@ -40,11 +41,28 @@ class BaseObject(BaseClass):
         self.repairerList = {}
         self.solidShape = SolidShape.Box
         self.solidFlags = SolidFlag.Tangible
+        self.kinematic = True
         self.metalToDropInGibs = 65
         self.explodeSound = "Building_Sentry.Explode"
 
-    def hasSapper(self):
-        return False
+        self.hasSapper = False
+        # DoId of the *player* that placed the sapper.
+        # Sapper itself is not an entity.
+        self.sapperDoId = 0
+        # The number of hits the engineer has made against the placed sapper.
+        self.sapperHits = 0
+
+    def isObject(self):
+        """
+        Returns True if this entity is a building, such as a Sentry
+        or Dispenser.  Overriden in BaseObject to return True.
+        Convenience method to avoid having to check isinstance() or
+        __class__.__name__.
+        """
+        return True
+
+    #def hasSapper(self):
+    #    return False
 
     def isUpgrading(self):
         return self.objectState == ObjectState.Upgrading
@@ -72,6 +90,16 @@ class BaseObject(BaseClass):
 
     if not IS_CLIENT:
 
+        def placeSapper(self, doId):
+            # Place a sapper from player `doId` onto the building.
+            if self.hasSapper:
+                return
+
+            self.hasSapper = True
+            self.sapperDoId = doId
+            self.sapperHits = 0
+            self.setObjectState(ObjectState.Disabled)
+
         def onTakeDamage(self, info):
             if self.health <= 0:
                 return
@@ -86,7 +114,7 @@ class BaseObject(BaseClass):
                 self.onKilled(info)
 
         def onKilled(self, info):
-            if info.inflictor and isinstance(info.inflictor, BaseObject):
+            if info.inflictor and info.inflictor.isObject():
                 killer = info.inflictor.doId
             else:
                 killer = info.attacker.doId
@@ -96,8 +124,9 @@ class BaseObject(BaseClass):
             base.net.deleteObject(self)
 
         def explode(self):
-            self.emitSoundSpatial(self.explodeSound)
-            base.game.d_doExplosion(self.getPos(), Vec3(7))
+            pos = self.getPos()
+            base.world.emitSoundSpatial(self.explodeSound, pos, chan=Sounds.Channel.CHAN_STATIC)
+            base.game.d_doExplosion(pos, Vec3(7))
             self.turnIntoGibs()
 
         def turnIntoGibs(self):
@@ -152,8 +181,10 @@ class BaseObject(BaseClass):
                 if speed > tf_obj_gib_maxspeed:
                     impulse *= tf_obj_gib_maxspeed / speed
 
-                ap.node().addForce(impulse, ap.node().FTImpulse)
-                ap.node().addTorque(angImpulse, ap.node().FTImpulse)
+                #ap.node().setLinearVelocity(impulse)
+                #ap.node().setAngularVelocity(angImpulse)
+                ap.node().addForce(impulse, ap.node().FTVelocityChange)
+                ap.node().addTorque(angImpulse, ap.node().FTVelocityChange)
 
                 base.net.generateObject(ap, self.zoneId)
 
@@ -162,7 +193,7 @@ class BaseObject(BaseClass):
 
             didWork = False
 
-            if self.hasSapper():
+            if self.hasSapper:
                 pass
             elif self.isUpgrading():
                 didWork = False
@@ -198,6 +229,11 @@ class BaseObject(BaseClass):
 
                 # TODO: take metal away
 
+                if repairCost > player.metal:
+                    repairCost = player.metal
+
+                player.metal -= repairCost
+
                 newHealth = min(self.maxHealth, self.health + (repairCost * 5))
                 self.health = newHealth
 
@@ -205,13 +241,13 @@ class BaseObject(BaseClass):
 
             # Don't put in upgrade metal until the object is fully healed.
             if not didWork and self.canBeUpgraded(player):
-                playerMetal = 200 # TODO
+                playerMetal = player.metal
                 amountToAdd = min(tf_object_upgrade_per_hit, playerMetal)
 
                 if amountToAdd > (self.upgradeMetalRequired - self.upgradeMetal):
                     amountToAdd = (self.upgradeMetalRequired - self.upgradeMetal)
 
-                # TODO: remove metal
+                player.metal -= amountToAdd
 
                 self.upgradeMetal += amountToAdd
 
@@ -263,6 +299,9 @@ class BaseObject(BaseClass):
             return mult
 
         def delete(self):
+            bldr = self.getBuilder()
+            if bldr:
+                bldr.removeObject(self.objectType)
             base.game.objectsByTeam[self.team].remove(self)
             BaseClass.delete(self)
 
@@ -326,23 +365,44 @@ class BaseObject(BaseClass):
 
         def generate(self):
             BaseClass.generate(self)
+
+            bldr = self.getBuilder()
+            if bldr:
+                bldr.setObject(self.objectType, self.doId)
+
+            self.health = 0
+            self.hpAccum = 0.0
+
             self.setObjectState(ObjectState.Constructing)
+
+        def determinePlaybackRate(self):
+            if self.isBuilding():
+                self.setPlayRate(self.getRepairMultiplier() * 0.5)
+            else:
+                self.setPlayRate(1.0)
 
         def simulate(self):
             BaseClass.simulate(self)
 
+            self.determinePlaybackRate()
+
             if self.objectState == ObjectState.Constructing:
-                self.setPlayRate(self.getRepairMultiplier() * 0.5)
-                self.health = self.maxHealth * self.getCycle()
+
+                hps = self.maxHealth / self.getDuration()
+                self.hpAccum += hps * globalClock.getDt()
+                if self.hpAccum >= 1.0:
+                    self.health += int(self.hpAccum)
+                    self.hpAccum -= int(self.hpAccum)
+
+                #self.health = self.maxHealth * self.getCycle()
                 if self.isCurrentChannelFinished():
-                    self.health = self.maxHealth
+                    #self.health = self.maxHealth
                     self.onFinishConstruction()
                     self.setObjectState(ObjectState.Active)
                 else:
                     self.simulateConstructing()
 
             elif self.objectState == ObjectState.Upgrading:
-                self.setPlayRate(1.0)
                 if self.isCurrentChannelFinished():
                     self.onFinishUpgrade()
                     self.setObjectState(ObjectState.Active)
@@ -350,8 +410,10 @@ class BaseObject(BaseClass):
                     self.simulateUpgrading()
 
             elif self.objectState == ObjectState.Active:
-                self.setPlayRate(1.0)
                 self.simulateActive()
+
+            elif self.objectState == ObjectState.Disabled:
+                self.simulateDisabled()
     else:
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
@@ -363,6 +425,11 @@ class BaseObject(BaseClass):
             self.node().setContentsMask(self.contentsMask)
 
             self.reparentTo(base.dynRender)
+
+            bldr = self.getBuilder()
+            if bldr:
+                bldr.setObject(self.objectType, self.doId)
+
             if self.isBuiltByLocalAvatar():
                 panel = base.localAvatar.objectPanels.get(self.objectType)
                 if panel:
@@ -373,6 +440,9 @@ class BaseObject(BaseClass):
                 panel = base.localAvatar.objectPanels.get(self.objectType)
                 if panel:
                     panel.setObject(None)
+            bldr = self.getBuilder()
+            if bldr:
+                bldr.removeObject(self.objectType)
             BaseClass.delete(self)
 
         def postDataUpdate(self):

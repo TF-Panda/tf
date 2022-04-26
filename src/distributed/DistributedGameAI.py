@@ -14,7 +14,7 @@ from tf.object.BaseObject import BaseObject
 import random
 import copy
 
-from panda3d.core import Vec3
+from panda3d.core import *
 from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
 
 from .DistributedGameBase import DistributedGameBase
@@ -64,6 +64,36 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
         self.collectTeamSpawns()
+
+        #
+        # Free up memory from the darn cube map textures embedded in the level.
+        # We ought to implement some way to just create dummy 1x1 textures on
+        # the server.
+        #
+
+        # This clears the lightmap textures and cube maps assigned to level
+        # geometry.
+        for tex in self.lvl.findAllTextures():
+            #print(tex, tex.getKeepRamImage())
+            tex.clearRamImage()
+
+        # Clear all the cube map textures.
+        for i in range(self.lvlData.getNumCubeMaps()):
+            mcm = self.lvlData.getCubeMap(i)
+            tex = mcm.getTexture()
+            if tex:
+                #print(tex, tex.getKeepRamImage())
+                tex.clearRamImage()
+
+        # Clear all material textures, such as albedos and normal maps.
+        for mat in self.lvl.findAllMaterials():
+            for i in range(mat.getNumParams()):
+                param = mat.getParam(i)
+                if isinstance(param, MaterialParamTexture):
+                    tex = param.getValue()
+                    if tex:
+                        #print(tex, tex.getKeepRamImage())
+                        tex.clearRamImage()
 
     def d_doExplosion(self, pos, scale):
         self.sendUpdate('doExplosion', [pos, scale])
@@ -130,7 +160,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             if inflictor and (do == inflictor.enemy):
                 # Full damage, we hit this entity directly
                 distToEnt = 0.0
-            elif isinstance(do, DistributedTFPlayerAI):
+            elif do.isPlayer():
                 # Use whichever is closer, getPos or world space center
                 toWorldSpaceCenter = (src - do.getWorldSpaceCenter()).length()
                 toOrigin = (src - do.getPos()).length()
@@ -217,7 +247,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.numRed += 1
         player.skin = player.team
         if self.numEngineer > self.numSoldier:
-            tfclass = Class.Soldier
+            tfclass = Class.Demo
             self.numSoldier += 1
         else:
             tfclass = Class.Engineer

@@ -88,7 +88,7 @@ class DistributedWrench(TFWeaponMelee):
             block = result.getBlock()
             ent = block.getActor().getPythonTag("entity")
 
-        if ent and isinstance(ent, BaseObject) and ent.team == self.player.team:
+        if ent and ent.isObject() and ent.team == self.player.team:
             if not IS_CLIENT:
                 # Hit a friendly building.
                 self.onFriendlyBuildingHit(ent)

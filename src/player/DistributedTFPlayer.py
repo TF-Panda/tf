@@ -9,6 +9,7 @@ from .TFPlayerAnimState import TFPlayerAnimState
 from tf.tfbase import Sounds
 from tf.actor.Eyes import Eyes
 from tf.actor.Expressions import Expressions
+from .PlayerGibs import PlayerGibs
 
 #from test_talker import Talker
 
@@ -59,8 +60,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.animState = TFPlayerAnimState(self)
 
-        self.lastActiveWeapon = -1
-
         self.talker = None
         self.eyes = None
         self.expressions = None
@@ -78,15 +77,39 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.ivEyeP.setLooping(True)
         self.addInterpolatedVar(self.ivEyeP, self.getEyeP, self.setEyeP, DistributedObject.SimulationVar)
 
+        self.ivVel = InterpolatedVec3()
+        self.addInterpolatedVar(self.ivVel, self.getVelocity, self.setVelocity, DistributedObject.SimulationVar)
+
         self.currentSpeech = None
 
-    def getSpatialAudioCenter(self):
-        # If we're ragdolling, position spatial audio relative to
-        # the root ragdoll joint.
-        if self.ragdoll:
-            return self.ragdoll[1].getRagdollMatrix()
+        self.gibs = None
 
-        return DistributedChar.getSpatialAudioCenter(self)
+    def isPlayer(self):
+        """
+        Returns True if this entity is a player.  Overridden in
+        DistributedTFPlayer to return True.  Convenience method
+        to avoid having to check isinstance() or __class__.__name__.
+        """
+        return True
+
+    def getSpatialAudioCenter(self):
+        if self.ragdoll:
+            # If we're ragdolling, position spatial audio relative to
+            # the ragdoll head.
+            return self.ragdoll[1].getJointActor("bip_head").getTransform().getMat()
+        elif self.gibs:
+            # Spatial sounds follow the head gib when gibbed.
+            return self.gibs.getHeadMatrix()
+
+        # Return world space transform of player + view offset.
+        # Assumes no pitch or roll in angles.  Proper way would
+        # be to put view offset in a translation matrix and multiply
+        # node transform by that.  But since we never have pitch
+        # or roll in player angles, it is faster to just add the
+        # view offset onto the translation component.
+        trans = self.getMat(base.render)
+        trans.setRow(3, trans.getRow3(3) + self.viewOffset)
+        return trans
 
     def RecvProxy_rot(self, r, i, j, k):
         # Ignoring this because the player angles are set in TFPlayerAnimState.
@@ -112,8 +135,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
     def setPos(self, *args, **kwargs):
         DistributedChar.setPos(self, *args, **kwargs)
-        # Keep controller in sync.
-        self.controller.setFootPosition(self.getPos(base.render))
+        if self.controller:
+            # Keep controller in sync.
+            self.controller.setFootPosition(self.getPos(base.render))
 
     def becomeRagdoll(self, *args, **kwargs):
         self.disableController()
@@ -123,23 +147,51 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             # Re-direct lip-sync to ragdoll.
             if self.talker:
                 self.talker.setCharacter(self.ragdoll[0].character)
+            if self.expressions:
+                self.expressions.character = self.ragdoll[0].character
+                # Remove idle expression so ragdoll goes to blank face after
+                # pain.
+                self.expressions.clearExpression('idle')
         if self.eyes:
             self.eyes.disable()
+
+    def gib(self):
+        self.disableController()
+        self.hide()
+        if self.gibs:
+            self.gibs.destroy()
+            self.gibs = None
+        cdata = self.modelNp.node().getCustomData()
+        if cdata.hasAttribute("gibs"):
+            gibInfo = cdata.getAttributeValue("gibs").getList()
+            self.gibs = PlayerGibs(self.getPos(base.render), self.getHpr(base.render), self.skin, gibInfo)
+            if self.eyes:
+                self.eyes.disable()
+
+    def isDead(self):
+        return (self.playerState == self.StateDead) or DistributedChar.isDead(self)
 
     def respawn(self):
         # Release reference to the ragdoll.
         if self.ragdoll:
             self.ragdoll[1].destroy()
-            self.ragdoll[0].clearModel()
-            self.ragdoll[0].cleanup()
+            self.ragdoll[0].delete()
             # Return lip-sync to actual model.
             if self.talker:
                 self.talker.setCharacter(self.character)
+            if self.expressions:
+                self.expressions.character = self.character
+        if self.gibs:
+            self.gibs.destroy()
+        self.gibs = None
         self.ragdoll = None
         self.show()
         self.enableController()
         if self.eyes:
             self.eyes.enable()
+        if self.expressions:
+            self.expressions.resetExpressions()
+            self.expressions.pushExpression('idle', 1.0, oscillation=0.4, oscillationSpeed=1.5)
 
     def RecvProxy_activeWeapon(self, index):
         self.setActiveWeapon(index)
@@ -166,20 +218,20 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if wpn:
             wpn.activate()
 
-    def getVelocity(self):
-        """
-        Returns the world-space linear velocity of the player.
-        """
+    #def getVelocity(self):
+    #    """
+    #    Returns the world-space linear velocity of the player.
+    #    """
 
-        ctx = InterpolationContext()
-        ctx.enableExtrapolation(False)
-        ctx.setLastTimestamp(base.cr.lastServerTickTime)
-        vel = Vec3()
-        self.ivPos.getDerivativeSmoothVelocity(vel, globalClock.getFrameTime())
-        q = self.getQuat(NodePath())
-        q.invertInPlace()
-        vel = q.xform(vel)
-        return -vel
+    #    ctx = InterpolationContext()
+    #    ctx.enableExtrapolation(False)
+    #    ctx.setLastTimestamp(base.cr.lastServerTickTime)
+    #    vel = Vec3()
+    #    self.ivPos.getDerivativeSmoothVelocity(vel, globalClock.getFrameTime())
+        #q = self.getQuat(NodePath())
+        #q.invertInPlace()
+        #vel = q.xform(vel)
+    #    return -vel
 
     def setLookPitch(self, pitch):
         self.lookPitch = pitch
@@ -209,13 +261,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def getMoveY(self):
         return self.moveY
 
-    def postDataUpdate(self):
-        DistributedChar.postDataUpdate(self)
-        self.updateClassSpeed()
-
-        if self.activeWeapon != self.lastActiveWeapon:
-            self.lastActiveWeapon = self.activeWeapon
-
     def update(self):
         DistributedChar.update(self)
         self.animState.update()
@@ -228,20 +273,25 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.currentSpeech = None
 
     def speak(self, soundIndex):
-        self.stopSpeech()
-
-        spatial = self != base.localAvatar
+        # This automatically stops the currently playing sound on the voice
+        # channel.
+        spatial = (self != base.localAvatar)
         info = Sounds.AllSounds[soundIndex]
         data = Sounds.createSound(info, spatial=spatial, getWave=True)
         if not data:
             return
         sound, wave = data
-        if spatial:
-            self.registerSpatialSound(sound, self.viewOffset)
+        self.soundEmitter.registerSound(sound, Sounds.Channel.CHAN_VOICE, spatial, self.viewOffset)
         self.currentSpeech = sound
         if self.talker:
             self.talker.speak(sound, sentences.getSentence(str(wave.filename)))
         sound.play()
+
+    def onModelChanged(self):
+        DistributedChar.onModelChanged(self)
+        if self.animState:
+            # Re-fetch pose parameters on new model.
+            self.animState.onPlayerModelChanged()
 
     def onTFClassChanged(self):
         self.stopSpeech()
@@ -276,14 +326,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.pushExpression('specialAction')
 
     def __updateTalker(self, task):
-        if self.ragdoll:
-            # Don't do this while ragdolling and the model is hidden.
-            return task.cont
+        #if self.ragdoll:
+        #    # Don't do this while ragdolling and the model is hidden.
+        #    return task.cont
 
-        if self.talker:
+        if self.talker and not self.gibs:
             self.talker.update()
 
-        if self.expressions:
+        if self.expressions and not self.gibs:
             self.expressions.update()
 
         return task.cont
@@ -306,6 +356,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.ivPos = None
         self.ivLookPitch = None
         self.ivLookYaw = None
+        self.ivVel = None
         self.removeTask("animUpdate")
         self.removeTask("talker")
         DistributedTFPlayerShared.disable(self)

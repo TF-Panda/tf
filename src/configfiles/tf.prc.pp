@@ -58,14 +58,14 @@ phys-panda-mass-unit kilograms
 phys-panda-length-unit inches
 phys-enable-pvd #f
 phys-enable-pvd-server #t
-phys-solver pgs
+phys-solver tgs
 phys-ragdoll-contact-distance-ratio 0.5
 phys-ragdoll-projection-angular-tolerance 15.0
 phys-ragdoll-projection-linear-tolerance 8.0
-phys-ragdoll-max-depenetration-vel 1000000.0
-phys-ragdoll-projection 1
-phys-ragdoll-pos-iterations 4
-phys-ragdoll-vel-iterations 2
+phys-ragdoll-max-depenetration-vel 5.0
+phys-ragdoll-projection 0
+phys-ragdoll-pos-iterations 8
+phys-ragdoll-vel-iterations 4
 
 framebuffer-srgb 1
 

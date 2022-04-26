@@ -24,7 +24,8 @@ class DistributedKnife(TFWeaponMelee):
         self.weaponData[TFWeaponMode.Primary]['timeFireDelay'] = 0.8
         self.weaponData[TFWeaponMode.Primary]['smackDelay'] = 0.1
         self.weaponData[TFWeaponMode.Primary]['timeIdle'] = 5.0
-        self.weaponData[TFWeaponMode.Secondary]['smackDelay'] = 0.6
+        self.weaponData[TFWeaponMode.Secondary]['smackDelay'] = 0.2
+        self.weaponData[TFWeaponMode.Secondary]['damage'] = 40
 
         self.backstabVictim = None
 
@@ -57,9 +58,9 @@ class DistributedKnife(TFWeaponMelee):
     def doViewModelAnimation(self):
         if self.weaponMode == TFWeaponMode.Secondary:
             # Raise up.
-            self.sendWeaponAnim(Activity.VM_Backstab_Up)
+            #self.sendWeaponAnim(Activity.VM_Backstab_Up)
             # Then stab.
-            self.setNextWeaponAnim(Activity.VM_Swing_Hard)
+            self.sendWeaponAnim(Activity.VM_Swing_Hard)
         else:
             self.sendWeaponAnim(Activity.VM_Fire)
 

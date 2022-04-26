@@ -31,7 +31,7 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     else:
         fireInfo['damage'] = int(damage)
     fireInfo['distance'] = weaponData.get('range', 1000000)
-    fireInfo['shots'] = 1
+    fireInfo['shots'] = weaponData.get('bulletsPerShot', 1)
     fireInfo['spread'] = Vec3(spread, spread, 0.0)
     fireInfo['ammoType'] = 0
     fireInfo['tracerOrigin'] = tracerOrigin

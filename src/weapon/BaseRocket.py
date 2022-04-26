@@ -10,7 +10,7 @@ from panda3d.pphysics import *
 
 from tf.tfbase.TFGlobals import Contents, SolidFlag, SolidShape, TakeDamage, DamageType, CollisionGroup
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, applyMultiDamage
-from tf.tfbase import TFFilters
+from tf.tfbase import TFFilters, Sounds
 
 TF_ROCKET_RADIUS = (110.0 * 1.1)
 
@@ -30,15 +30,11 @@ class BaseRocket(BaseClass):
             self.collideWithTeammates = False
             self.solidMask = Contents.Solid
             self.collisionGroup = CollisionGroup.Rockets
-            #self.solidFlags = SolidFlag.Tangible
-            #self.solidShape = SolidShape.Box
-            #self.triggerCallback = True
             self.enemy = None
             self.shooter = None
             self.damage = 100
             self.damageType = DamageType.Blast
             self.takeDamageMode = TakeDamage.No
-            self.enabled = False
             self.sweepGeometry = None
 
     def determineSolidMask(self):
@@ -96,18 +92,12 @@ class BaseRocket(BaseClass):
             self.setContentsMask(Contents.Solid | (Contents.RedTeam if self.team == 0 else Contents.BlueTeam))
             self.determineSolidMask()
 
-            #print("Create rocket at tick", base.tickCount)
-
-            #print("Start rocket at", self.getPos(), self.getHpr())
-
             # Build velocity vector from current rotation.
             self.velocity = self.getQuat().getForward()
             self.velocity *= 1100
             self.initialVel = self.velocity
 
             self.sweepGeometry = self.makeModelCollisionShape()[1]
-
-            #print("Vel is", self.velocity)
 
     if not IS_CLIENT:
         def delete(self):
@@ -117,25 +107,25 @@ class BaseRocket(BaseClass):
             BaseClass.delete(self)
 
         def explode(self, ent):
-            #print("Rocket explode")
             self.exploded = True
+
+            pos = self.getPos()
 
             # Save this enemy, they will take 100% damage.
             self.enemy = ent
-            self.emitSoundSpatial("BaseExplosionEffect.Sound")
-            base.game.d_doExplosion(self.getPos(), Vec3(7))
-
-            #print("pos", self.getPos())
+            # Emit explosion from the world at rocket's current position.
+            base.world.emitSoundSpatial("BaseExplosionEffect.Sound", pos, chan=Sounds.Channel.CHAN_STATIC)
+            base.game.d_doExplosion(pos, Vec3(7))
 
             info = TakeDamageInfo()
             info.inflictor = self
             info.attacker = self.shooter
-            info.damagePosition = self.getPos()
+            info.damagePosition = pos
             info.sourcePosition = self.shooter.getPos()
             info.damage = self.damage
             info.damageType = self.damageType
             radius = TF_ROCKET_RADIUS
-            base.game.radiusDamage(info, self.getPos(), radius, -1, None)
+            base.game.radiusDamage(info, pos, radius, -1, None)
 
             # Remove the rocket.
             base.net.deleteObject(self)
@@ -166,11 +156,13 @@ class BaseRocket(BaseClass):
                 np = NodePath(block.getActor())
                 ent = np.getNetPythonTag("entity")
                 if ent:
+                    self.setPos(block.getPosition())
                     self.explode(ent)
 
-            self.setPos(newPos)
-
-            self.enabled = True
+            # Don't do this if we just exploded, because the node has been
+            # deleted.
+            if not self.exploded:
+                self.setPos(newPos)
 
 if not IS_CLIENT:
     BaseRocketAI = BaseRocket

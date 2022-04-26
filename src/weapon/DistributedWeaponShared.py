@@ -19,6 +19,9 @@ class DistributedWeaponShared:
     UsesViewModel = False
     HideWeapon = False
 
+    actTable = {}
+    vmActTable = {}
+
     def __init__(self):
         self.ammo = 0
         self.ammo2 = 0
@@ -72,8 +75,6 @@ class DistributedWeaponShared:
         self.idealSequence = -1
         self.sequence = -1
         self.primaryAttackInterval = 1.0
-        self.actTable = {}
-        self.vmActTable = {}
 
     def syncAllHitBoxes(self):
         # Make sure all characters have their hit boxes synchronized.
@@ -140,15 +141,18 @@ class DistributedWeaponShared:
         self.idealSequence = self.viewModel.getChannelForActivity(self.idealActivity)
 
     def maintainIdealActivity(self):
-        if self.activity != self.idealActivity or self.idealSequence != self.sequence:
-            if self.viewModel.isCurrentChannelFinished():
-                # Play desired next activity.
-                self.playViewModelAnim(self.idealActivity, self.idealSequence)
-                self.setNextWeaponAnim(Activity.VM_Idle)
+        pass
+        #if self.activity != self.idealActivity or self.idealSequence != self.sequence:
+        #    if self.viewModel.isCurrentChannelFinished():
+        #        # Play desired next activity.
+        #        self.playViewModelAnim(self.idealActivity, self.idealSequence)
+        #        self.setNextWeaponAnim(Activity.VM_Idle)
 
     def playViewModelAnim(self, act, seq):
         self.activity = act
         self.sequence = seq
+        self.idealActivity = act
+        self.idealSequence = seq
 
         if seq < 0:
             return False
@@ -404,8 +408,9 @@ class DistributedWeaponShared:
                 self.weaponIdle()
 
     def setPlayerId(self, playerId):
-        self.playerId = playerId
-        self.updatePlayer()
+        if playerId != self.playerId:
+            self.playerId = playerId
+            self.updatePlayer()
 
     def updatePlayer(self):
         if self.playerId != -1:
@@ -425,7 +430,7 @@ class DistributedWeaponShared:
 
     def delete(self):
         if self.viewModelChar:
-            self.viewModelChar.clearModel()
+            self.viewModelChar.delete()
             self.viewModelChar = None
         self.player = None
         self.viewModel = None

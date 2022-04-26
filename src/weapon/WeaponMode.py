@@ -20,6 +20,7 @@ class TFWeaponType(IntEnum):
     PDA = 6
     Item1 = 7
     Item2 = 8
+    Building = 9
 
 class TFProjectileType(IntEnum):
     Invalid = -1
