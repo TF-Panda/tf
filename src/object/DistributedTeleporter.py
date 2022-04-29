@@ -66,6 +66,8 @@ class DistributedTeleporter(BaseObject):
             # For an entrance, this is set to the exit, and vice
             # versa for the exit.
             self.other = None
+
+            self.metalToDropInGibs = 25
         else:
             self.spinSound = None
             self.directionPP = None
@@ -154,7 +156,7 @@ class DistributedTeleporter(BaseObject):
 
         def generate(self):
             self.setModel("models/buildables/teleporter")
-            self.setContentsMask(TFGlobals.Contents.Solid | TFGlobals.Contents.RedTeam if (self.team == 0) else TFGlobals.Contents.BlueTeam)
+            self.setContentsMask(TFGlobals.Contents.Solid | (TFGlobals.Contents.RedTeam if (self.team == 0) else TFGlobals.Contents.BlueTeam))
             # This mask determines what can enter the trigger.  Our team only.
             self.setSolidMask(TFGlobals.Contents.RedTeam if (self.team == 0) else TFGlobals.Contents.BlueTeam)
             BaseObject.generate(self)
