@@ -20,6 +20,7 @@
 #include "frameSnapshot.h"
 #include "frameSnapshotEntry.h"
 #include "packedObject.h"
+#include "distributedEntityAI.h"
 
 /**
  *
@@ -41,4 +42,5 @@ init_ai_types() {
   PackedObject::init_type();
 
   DistributedGameAI::init_type();
+  DistributedEntityAI::init_type();
 }

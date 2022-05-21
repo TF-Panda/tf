@@ -64,83 +64,91 @@ NetworkField(const std::string &name, size_t offset,
  */
 void NetworkField::
 serialize(Datagram &dg, const unsigned char *base) const {
+  const unsigned char *data = base + _offset;
+
+  // The serialize func may return a pointer to the unserialized data
+  // for the field that we should serialize, or return nullptr with the
+  // field manually serialized.
   if (_serialize_func != nullptr) {
-    (*_serialize_func)(dg, base, this);
+    data = (const unsigned char *)((*_serialize_func)(dg, base, this));
+  }
 
-  } else if (_class != nullptr) {
-    for (int i = 0; i < _array_size; ++i) {
-      _class->serialize(dg, base + _offset + _class->get_class_stride() * i);
-    }
+  if (data != nullptr) {
+    if (_class != nullptr) {
+      for (int i = 0; i < _array_size; ++i) {
+        _class->serialize(dg, data + _class->get_class_stride() * i);
+      }
 
-  } else {
-    const unsigned char *data = base + _offset;
-    for (int i = 0; i < _array_size; ++i) {
-      switch (_native_data_type) {
-      case NDT_int:
-        {
-          int value = *((int *)data + i);
-          pack_numeric(dg, value);
+    } else {
+      for (int i = 0; i < _array_size; ++i) {
+        switch (_native_data_type) {
+        case NDT_int:
+          {
+            int value = *((int *)data + i);
+            pack_numeric(dg, value);
+          }
+          break;
+        case NDT_uint:
+          {
+            unsigned int value = *((unsigned int *)data + i);
+            pack_numeric(dg, value);
+          }
+          break;
+        case NDT_float:
+          {
+            float value = *((float *)data + i);
+            pack_numeric(dg, value);
+          }
+          break;
+        case NDT_double:
+          {
+            double value = *((double *)data + i);
+            pack_numeric(dg, value);
+          }
+          break;
+        case NDT_bool:
+          {
+            bool value = *((bool *)data + i);
+            pack_numeric(dg, value);
+          }
+          break;
+        case NDT_string:
+          {
+            const std::string &value = *((std::string *)data + i);
+            pack_string(dg, value);
+          }
+          break;
+        case NDT_vec2:
+          {
+            const LVecBase2f &value = *((LVecBase2f *)data + i);
+            pack_numeric(dg, value[0]);
+            pack_numeric(dg, value[1]);
+          }
+          break;
+        case NDT_vec3:
+          {
+            const LVecBase3f &value = *((LVecBase3f *)data + i);
+            pack_numeric(dg, value[0]);
+            pack_numeric(dg, value[1]);
+            pack_numeric(dg, value[2]);
+          }
+          break;
+        case NDT_vec4:
+          {
+            const LVecBase4f &value = *((LVecBase4f *)data + i);
+            pack_numeric(dg, value[0]);
+            pack_numeric(dg, value[1]);
+            pack_numeric(dg, value[2]);
+            pack_numeric(dg, value[3]);
+          }
+          break;
+        default:
+          break;
         }
-        break;
-      case NDT_uint:
-        {
-          unsigned int value = *((unsigned int *)data + i);
-          pack_numeric(dg, value);
-        }
-        break;
-      case NDT_float:
-        {
-          float value = *((float *)data + i);
-          pack_numeric(dg, value);
-        }
-        break;
-      case NDT_double:
-        {
-          double value = *((double *)data + i);
-          pack_numeric(dg, value);
-        }
-        break;
-      case NDT_bool:
-        {
-          bool value = *((bool *)data + i);
-          pack_numeric(dg, value);
-        }
-        break;
-      case NDT_string:
-        {
-          const std::string &value = *((std::string *)data + i);
-          pack_string(dg, value);
-        }
-        break;
-      case NDT_vec2:
-        {
-          const LVecBase2f &value = *((LVecBase2f *)data + i);
-          pack_numeric(dg, value[0]);
-          pack_numeric(dg, value[1]);
-        }
-        break;
-      case NDT_vec3:
-        {
-          const LVecBase3f &value = *((LVecBase3f *)data + i);
-          pack_numeric(dg, value[0]);
-          pack_numeric(dg, value[1]);
-          pack_numeric(dg, value[2]);
-        }
-        break;
-      case NDT_vec4:
-        {
-          const LVecBase4f &value = *((LVecBase4f *)data + i);
-          pack_numeric(dg, value[0]);
-          pack_numeric(dg, value[1]);
-          pack_numeric(dg, value[2]);
-          pack_numeric(dg, value[3]);
-        }
-        break;
-      default:
-        break;
       }
     }
   }
+
 }
 
 /**

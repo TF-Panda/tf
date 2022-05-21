@@ -15,6 +15,7 @@
 #include "networkedObjectRegistry.h"
 
 #include "distributedGameAI.h"
+#include "distributedEntityAI.h"
 
 /**
  *
@@ -28,6 +29,7 @@ init_ai_net_classes() {
   initialized = true;
 
   DistributedGameAI::init_network_class();
+  DistributedEntityAI::init_network_class();
 
   NetworkedObjectRegistry::get_global_ptr()->output(std::cout);
 }

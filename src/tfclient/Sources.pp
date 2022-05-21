@@ -7,6 +7,7 @@
   #define SOURCES \
     config_tfclient.h config_tfclient.cxx \
     clientRepository.h clientRepository.I clientRepository.cxx \
+    distributedEntity.h distributedEntity.cxx \
     distributedGame.h distributedGame.I distributedGame.cxx \
     distributedObject.h distributedObject.I distributedObject.cxx \
     gameLevel.h gameLevel.cxx \

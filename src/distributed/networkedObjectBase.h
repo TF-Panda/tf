@@ -24,12 +24,15 @@
 #include "stl_compares.h"
 #include "genericAsyncTask.h"
 
+#define _CONCAT(x, y) x##y
+#define CONCAT(x, y) _CONCAT(x, y)
+
 #define NET_CLASS_DECL(clsname) \
   public: \
     static NetworkClass *_network_class; \
     static void init_network_class(); \
     virtual NetworkClass *get_network_class() const override { return clsname::_network_class; } \
-    class clsname##_NetObjProxy : public NetworkedObjectProxy { \
+    class CONCAT(clsname, _NetObjProxy) : public NetworkedObjectProxy { \
       public: \
         virtual TypeHandle get_object_type() const override { return clsname::_type_handle; } \
         virtual NetworkedObjectBase *make_object() const override { return new clsname; } \
@@ -42,7 +45,7 @@
     baseclass::init_network_class(); \
     if (_network_class == nullptr) { \
       _network_class = new NetworkClass(#clsname, sizeof(clsname)); \
-      _network_class->set_linked_proxy(new clsname##_NetObjProxy); \
+      _network_class->set_linked_proxy(new CONCAT(clsname, _NetObjProxy)); \
       for (int i = 0; i < baseclass::_network_class->get_num_fields(); ++i) { \
         _network_class->add_field(baseclass::_network_class->get_field(i)); \
       }
@@ -52,7 +55,7 @@
   void clsname::init_network_class() { \
     if (_network_class == nullptr) { \
       _network_class = new NetworkClass(#clsname, sizeof(clsname)); \
-      _network_class->set_linked_proxy(new clsname##_NetObjProxy);
+      _network_class->set_linked_proxy(new CONCAT(clsname, _NetObjProxy));
 
 #define NET_CLASS_DEF_END() \
       NetworkedObjectRegistry::get_global_ptr()->register_class(_network_class); \

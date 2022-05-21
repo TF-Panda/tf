@@ -10,6 +10,7 @@
     clientFrameManager.h clientFrameManager.I clientFrameManager.cxx \
     clientInfo.h clientInfo.I clientInfo.cxx \
     config_tfai.h config_tfai.cxx \
+    distributedEntityAI.h distributedEntityAI.cxx \
     distributedGameAI.h distributedGameAI.I distributedGameAI.cxx \
     distributedObjectAI.h distributedObjectAI.cxx \
     frameSnapshot.h frameSnapshot.I frameSnapshot.cxx \
