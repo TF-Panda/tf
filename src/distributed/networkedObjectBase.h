@@ -23,6 +23,7 @@
 #include "pmap.h"
 #include "stl_compares.h"
 #include "genericAsyncTask.h"
+#include "string_utils.h"
 
 #define _CONCAT(x, y) x##y
 #define CONCAT(x, y) _CONCAT(x, y)
@@ -123,6 +124,8 @@ PUBLISHED:
   INLINE bool is_do_alive() const;
   INLINE bool is_do_disabled() const;
   INLINE bool is_do_deleted() const;
+
+  INLINE std::string unique_name(const std::string &prefix) const;
 
   virtual NetworkClass *get_network_class() const = 0;
 

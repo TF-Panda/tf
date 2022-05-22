@@ -17,9 +17,23 @@
 #include "tfbase.h"
 #include "bitMask.h"
 
-enum class TFTeam : uint8_t {
+enum class TFTeam : uint32_t {
+  none,
   red,
   blue,
+  COUNT,
+};
+
+enum class TFClass : uint32_t {
+  scout,
+  soldier,
+  pyro,
+  demo,
+  hwguy,
+  engineer,
+  sniper,
+  medic,
+  spy,
   COUNT,
 };
 

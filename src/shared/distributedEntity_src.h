@@ -16,6 +16,7 @@
 #include "datagram.h"
 #include "pointerTo.h"
 #include "interpolatedVariable.h"
+#include "tfGlobals.h"
 
 class NetworkField;
 
@@ -35,6 +36,7 @@ public:
   virtual void post_interpolate() override;
 #endif
 
+  virtual void generate() override;
   virtual void announce_generate() override;
   virtual void destroy() override;
 
@@ -46,7 +48,7 @@ protected:
   float _gravity;
   LVector3 _base_velocity;
 
-  int _team;
+  TFTeam _team;
 
   LPoint3 _pos;
 

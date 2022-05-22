@@ -112,3 +112,12 @@ INLINE bool NetworkedObjectBase::
 is_do_deleted() const {
   return _life_state == LS_deleted;
 }
+
+/**
+ * Returns the indicated string with the object's DO ID added to the end,
+ * guaranteeing the string to be unique among all DOs.
+ */
+INLINE std::string NetworkedObjectBase::
+unique_name(const std::string &prefix) const {
+  return prefix + "-" + format_string(get_do_id());
+}
