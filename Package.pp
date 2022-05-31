@@ -19,19 +19,19 @@
 #endif
 
 
-// Where should we find the PANDA source directory?
-#if $[PANDA_SOURCE]
-  #define PANDA_SOURCE $[unixfilename $[PANDA_SOURCE]]
-#elif $[or $[CTPROJS],$[PANDA]]
+// Where should we find the DIRECT source directory?
+#if $[DIRECT_SOURCE]
+  #define DIRECT_SOURCE $[unixfilename $[DIRECT_SOURCE]]
+#elif $[or $[CTPROJS],$[DIRECT]]
   // If we are presently attached, use the environment variable.
-  #define PANDA_SOURCE $[unixfilename $[PANDA]]
-  #if $[eq $[PANDA],]
-    #error You seem to be attached to some trees, but not PANDA!
+  #define DIRECT_SOURCE $[unixfilename $[DIRECT]]
+  #if $[eq $[DIRECT],]
+    #error You seem to be attached to some trees, but not DIRECT!
   #endif
 #else
   // Otherwise, if we are not attached, we guess that the source is a
   // sibling directory to this source root.
-  #define PANDA_SOURCE $[standardize $[TOPDIR]/../panda]
+  #define DIRECT_SOURCE $[standardize $[TOPDIR]/../direct]
 #endif
 
 // Where should we install TF?
@@ -47,14 +47,14 @@
   #defer TF_INSTALL $[unixfilename $[INSTALL_DIR]]
 #endif
 
-// Also get the PANDA Package file and everything that includes.
-#if $[not $[isfile $[PANDA_SOURCE]/Package.pp]]
-  #printvar PANDA_SOURCE
-  #error PANDA source directory not found from TF!  Are you attached properly?
+// Also get the DIRECT Package file and everything that includes.
+#if $[not $[isfile $[DIRECT_SOURCE]/Package.pp]]
+  #printvar DIRECT_SOURCE
+  #error DIRECT source directory not found from TF!  Are you attached properly?
 #endif
 
-#include $[PANDA_SOURCE]/Package.pp
+#include $[DIRECT_SOURCE]/Package.pp
 
 // Define the inter-tree dependencies.
-#define NEEDS_TREES panda $[NEEDS_TREES]
-#define DEPENDABLE_HEADER_DIRS $[DEPENDABLE_HEADER_DIRS] $[PANDA_INSTALL]/include
+#define NEEDS_TREES direct $[NEEDS_TREES]
+#define DEPENDABLE_HEADER_DIRS $[DEPENDABLE_HEADER_DIRS] $[DIRECT_INSTALL]/include

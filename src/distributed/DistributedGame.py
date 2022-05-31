@@ -1,0 +1,517 @@
+""" DistributedGame module: contains the DistributedGame class """
+
+from direct.distributed2.DistributedObject import DistributedObject
+from direct.directbase import DirectRender
+
+from panda3d.core import *
+from panda3d.pphysics import *
+
+from direct.gui.DirectGui import OnscreenText
+
+from direct.interval.IntervalGlobal import Sequence, Wait, Func, Parallel, LerpPosInterval, LerpScaleInterval
+
+from tf.tfbase import Sounds
+
+from .DistributedGameBase import DistributedGameBase
+from .FogManager import FogManager
+from .SkyBox import SkyBox
+from tf.tfbase.Soundscapes import SoundscapeManager
+
+play_sound_coll = PStatCollector("App:Sounds:PlaySound")
+
+ClusterColors = [
+    LColor(1.0, 0.5, 0.5, 1.0),
+    LColor(1.0, 1.0, 0.5, 1.0),
+    LColor(1.0, 0.5, 1.0, 1.0),
+    LColor(0.5, 1.0, 0.5, 1.0),
+    LColor(0.5, 1.0, 1.0, 1.0),
+    LColor(0.5, 0.5, 1.0, 1.0)
+]
+
+import random
+
+class DistributedGame(DistributedObject, DistributedGameBase):
+
+    def __init__(self):
+        DistributedObject.__init__(self)
+        DistributedGameBase.__init__(self)
+
+        self.roundNumber = 0
+        self.roundTimeRemaining = 0
+        self.roundState = 0
+
+        self.roundTimeText = OnscreenText("", pos=(0, 0.85), fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), align=TextNode.ACenter)
+
+        self.ssMgr = SoundscapeManager()
+
+        self.sky = None
+        self.visDebug = False
+        self.loadedVisBoxes = False
+        self.clusterNodes = None
+        self.currentCluster = -1
+        self.fogMgr = None
+
+        self.accept('shift-v', self.toggleVisDebug)
+
+    def RecvProxy_roundTimeRemaining(self, time):
+        if time != self.roundTimeRemaining:
+            self.roundTimeRemaining = time
+            self.updateRoundTimer()
+
+    def updateRoundTimer(self):
+        minutes = self.roundTimeRemaining // 60
+        seconds = self.roundTimeRemaining % 60
+
+        self.roundTimeText.setText(str(minutes) + ":" + str(seconds))
+
+    def toggleVisDebug(self):
+        self.visDebug = not self.visDebug
+        if self.visDebug:
+            self.visDebugEnable()
+        else:
+            self.visDebugDisable()
+
+    def updateVisDebug(self, task):
+        # If the cluster changes we have to do work.
+        tree = self.lvlData.getAreaClusterTree()
+        cluster = tree.getLeafValueFromPoint(base.camera.getPos(render))
+        if cluster == self.currentCluster:
+            return task.cont
+
+        # Hide everything first, then just show the PVS clusters.
+        self.clusterNodes.hide()
+
+        # If we had a previous cluster, remove its color and bin that indicates
+        # it's the active one.
+        if self.currentCluster != -1:
+            self.clusterNodes[self.currentCluster].clearColor()
+            self.clusterNodes[self.currentCluster].setBin('fixed', 0)
+
+        if cluster != -1:
+            self.clusterNodes[cluster].setColor((1, 0, 0, 1), 1)
+            self.clusterNodes[cluster].setBin('fixed', 1)
+
+        self.currentCluster = cluster
+
+        if cluster == -1:
+            return task.cont
+
+        # Show ourselves and the visible clusters.
+        pvs = self.lvlData.getClusterPvs(cluster)
+        self.clusterNodes[cluster].show()
+        for i in range(pvs.getNumVisibleClusters()):
+            self.clusterNodes[pvs.getVisibleCluster(i)].show()
+
+        return task.cont
+
+    def visDebugEnable(self):
+        # Make sure we've loaded the debug geometry for each visgroup.
+        if not self.loadedVisBoxes:
+            self.loadVisDebugGeometry()
+
+        base.taskMgr.add(self.updateVisDebug, 'visDebug', sort=48)
+
+    def visDebugDisable(self):
+        if self.clusterNodes:
+            self.clusterNodes.hide()
+        base.taskMgr.remove('visDebug')
+
+    def loadVisDebugGeometry(self):
+        self.loadedVisBoxes = True
+        self.clusterNodes = NodePathCollection()
+        for i in range(self.lvlData.getNumClusters()):
+            clusterData = self.lvlData.getClusterPvs(i)
+            lines = LineSegs('cluster-' + str(i))
+            lines.setColor(ClusterColors[i % len(ClusterColors)])
+            for j in range(clusterData.getNumBoxes()):
+                mins = LPoint3()
+                maxs = LPoint3()
+                clusterData.getBoxBounds(j, mins, maxs)
+                lines.move_to(mins)
+                lines.draw_to(LPoint3(mins.get_x(), mins.get_y(), maxs.get_z()))
+                lines.draw_to(LPoint3(mins.get_x(), maxs.get_y(), maxs.get_z()))
+                lines.draw_to(LPoint3(mins.get_x(), maxs.get_y(), mins.get_z()))
+                lines.draw_to(mins)
+                lines.draw_to(LPoint3(maxs.get_x(), mins.get_y(), mins.get_z()))
+                lines.draw_to(LPoint3(maxs.get_x(), mins.get_y(), maxs.get_z()))
+                lines.draw_to(LPoint3(mins.get_x(), mins.get_y(), maxs.get_z()))
+                lines.move_to(LPoint3(maxs.get_x(), mins.get_y(), maxs.get_z()))
+                lines.draw_to(maxs)
+                lines.draw_to(LPoint3(mins.get_x(), maxs.get_y(), maxs.get_z()))
+                lines.move_to(maxs)
+                lines.draw_to(LPoint3(maxs.get_x(), maxs.get_y(), mins.get_z()))
+                lines.draw_to(LPoint3(mins.get_x(), maxs.get_y(), mins.get_z()))
+                lines.move_to(LPoint3(maxs.get_x(), maxs.get_y(), mins.get_z()))
+                lines.draw_to(LPoint3(maxs.get_x(), mins.get_y(), mins.get_z()))
+            np = self.lvl.attachNewNode(lines.create())
+            np.setDepthWrite(False)
+            np.setDepthTest(False)
+            np.setBin('fixed', 0)
+            self.clusterNodes.addPath(np)
+
+    def worldLoaded(self):
+        """
+        Called by the world when its DO has been generated.  We can now load
+        the level and notify the server we have joined the game.
+        """
+        self.changeLevel(self.levelName)
+        self.sendUpdate("joinGame", ['Brian'])
+
+    def joinGameResp(self, tickCount):
+        base.setTickCount(tickCount)
+        base.realFrameTime = base.ticksToTime(tickCount)
+        base.frameTime = base.ticksToTime(tickCount)
+        base.realDeltaTime = base.intervalPerTick
+        base.remainder = 0.0
+        globalClock.real_time = base.frameTime
+        globalClock.frame_time = base.frameTime
+        base.cr.clockDriftMgr.setServerTick(base.tickCount)
+
+    def announceGenerate(self):
+        DistributedObject.announceGenerate(self)
+        base.game = self
+
+    def unloadLevel(self):
+        DistributedGameBase.unloadLevel(self)
+
+        self.ssMgr.destroySoundscapes()
+
+        # Clear out 3-D skybox.
+        base.sky3DRoot.node().removeAllChildren()
+
+        base.dynRender.node().levelShutdown()
+        if self.sky:
+            self.sky.destroy()
+            self.sky = None
+
+    def preFlattenLevel(self):
+        lvlData = self.lvlData
+        lvlRoot = self.lvl.find("**/mapRoot")
+
+        sky3dNodes = []
+        # Extract 3-D skybox mesh groups.
+        for i in range(self.lvlData.getNumMeshGroups()):
+            group = self.lvlData.getMeshGroup(i)
+            if group.isIn3dSkybox():
+                sky3dNodes.append(lvlRoot.getChild(i))
+
+        for np in sky3dNodes:
+            np.reparentTo(base.sky3DRoot)
+
+        skyCamera = None
+        for i in range(lvlData.getNumEntities()):
+            ent = lvlData.getEntity(i)
+            if ent.getClassName() == "sky_camera":
+                skyCamera = ent
+                break
+        if skyCamera is None:
+            return
+
+        props = skyCamera.getProperties()
+
+        skyCamOrigin = Point3()
+        props.getAttributeValue("origin").toVec3(skyCamOrigin)
+
+        #skyCamAngles = Vec3()
+        #if props.hasAttribute("use_angles") and props.getAttributeValue("use_angles").getBool():
+        #    phr = Vec3()
+        #    props.getAttributeValue("angles").toVec3(phr)
+        #    skyCamAngles = Vec3(phr[1] - 90, -phr[0], phr[2])
+
+        scale = 1.0 / 16.0
+        if props.hasAttribute("scale"):
+            scale = 1.0 / props.getAttributeValue("scale").getFloat()
+
+        # Build skybox matrix.
+        skyMat = LMatrix4.scaleMat((scale, scale, scale))
+        skyMat.setRow(3, skyCamOrigin)
+        base.sky3DMat = skyMat
+
+        # Setup sky fog.
+        fogMgr = FogManager(base.sky3DRoot)
+
+        if props.hasAttribute("fogstart"):
+            fogMgr.fogStart = props.getAttributeValue("fogstart").getFloat()
+        if props.hasAttribute("fogend"):
+            fogMgr.fogEnd = props.getAttributeValue("fogend").getFloat()
+        if props.hasAttribute("fogdir"):
+            props.getAttributeValue("fogdir").toVec3(fogMgr.fogDir)
+            fogMgr.fogDir.normalize()
+        if props.hasAttribute("fogblend"):
+            fogMgr.fogBlend = props.getAttributeValue("fogblend").getInt() == 1
+        if props.hasAttribute("fogcolor"):
+            str_rgb = props.getAttributeValue("fogcolor").getString().split()
+            fogMgr.color[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
+            fogMgr.color[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
+            fogMgr.color[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+        if props.hasAttribute("fogcolor2"):
+            str_rgb = props.getAttributeValue("fogcolor2").getString().split()
+            fogMgr.color2[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
+            fogMgr.color2[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
+            fogMgr.color2[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+        if props.hasAttribute("fogenable"):
+            if props.getAttributeValue("fogenable").getBool():
+                fogMgr.enableFog()
+
+        if props.hasAttribute("use_angles") and props.getAttributeValue("use_angles").getBool():
+            # Use entity angles instead of fogdir property for directional
+            # blend.
+            phr = Vec3()
+            props.getAttributeValue("angles").toVec3(phr)
+            q = Quat()
+            q.setHpr((phr[1] - 90, -phr[0], phr[2]))
+            fogMgr.fogDir = q.getForward()
+
+        self.skyFogMgr = fogMgr
+
+        base.sky3DRoot.ls()
+        base.sky3DRoot.clearModelNodes()
+        self.flatten(base.sky3DRoot)
+        #base.sky3DRoot.flattenStrong()
+
+    def changeLevel(self, lvlName):
+        DistributedGameBase.changeLevel(self, lvlName)
+
+        #for i in range(self.lvlData.getNumAmbientProbes()):
+        #    probe = self.lvlData.getAmbientProbe(i)
+        #    print("Probe %i" % i)
+        #    for j in range(9):
+        #        print("\t%s" % repr(probe.getColor(j)))
+
+        # Extract the skybox name.
+        worldEnt = self.lvlData.getEntity(0)
+        worldData = worldEnt.getProperties()
+        skyName = "sky_upward_hdr"
+        if worldData.hasAttribute("skyname"):
+            skyName = worldData.getAttributeValue("skyname").getString()
+            skyName += "_hdr"
+        print("skyname:", skyName)
+        self.sky = SkyBox(skyName)
+
+        self.lvlData.setCam(base.cam)
+        self.lvlData.buildTraceScene()
+
+        clnp = self.lvlData.getDirLight()
+        if not clnp.isEmpty():
+            cl = clnp.node()
+            cl.setSceneCamera(base.cam)
+            cl.setSoftnessFactor(1.0)
+            cl.setShadowCaster(True, 2048, 2048)
+            cl.setCameraMask(DirectRender.ShadowCameraBitmask)
+            clnp.reparentTo(base.cam)
+            clnp.setCompass()
+        #base.csmDebug.setShaderInput("cascadeSampler", cl.getShadowMap())
+
+        saData = self.lvlData.getSteamAudioSceneData()
+        base.sfxManagerList[0].loadSteamAudioScene(saData.verts, saData.tris, saData.tri_materials, saData.materials)
+        base.sfxManagerList[0].loadSteamAudioReflectionProbeBatch(self.lvlData.getSteamAudioProbeData())
+
+        # Initialize the dynamic vis node to the number of visgroups in the
+        # new level.
+        base.dynRender.node().levelInit(self.lvlData.getNumClusters())
+
+        # Here we build up the scene graph visibility info from the map vis
+        # info for culling scene graph nodes.
+
+        sceneTop = MapRender("top")
+        sceneTop.replaceNode(base.render.node())
+        sceneTop.setMapData(self.lvlData)
+
+        # We need an idential MapRender for the top node of the viewmodel
+        # scene graph.  Allows MapLightingEffect to work on viewmodels.
+        vmTop = MapRender("vmTop")
+        vmTop.replaceNode(base.vmRender.node())
+        vmTop.setMapData(self.lvlData)
+
+        skyTop = MapRender("sky3DTop")
+        skyTop.replaceNode(base.sky3DTop.node())
+        skyTop.setMapData(self.lvlData)
+
+        render.setAttrib(LightRampAttrib.makeHdr0())
+
+        numSounds = 0
+        sounds = [
+            "/c/Users/brian/Desktop/Scott-joplin-maple-leaf-rag.mp3",
+            "tfmodels/built_src/sound/ambient/computer_working.wav",
+            "tfmodels/built_src/sound/ambient/computer_tape.wav",
+            "tfmodels/built_src/sound/ambient/machines/wall_loop1.wav",
+            "tfmodels/built_src/sound/ambient/engine_idle.wav",
+            "tfmodels/built_src/sound/ambient/printer.wav"
+        ]
+
+        # Check for a fog controller.
+        for i in range(self.lvlData.getNumEntities()):
+            ent = self.lvlData.getEntity(i)
+
+            if ent.getClassName() == "env_fog_controller":
+                if not self.fogMgr:
+                    self.fogMgr = FogManager(base.render)
+                    props = ent.getProperties()
+
+                    if props.hasAttribute("fogstart"):
+                        self.fogMgr.fogStart = props.getAttributeValue("fogstart").getFloat()
+                    if props.hasAttribute("fogend"):
+                        self.fogMgr.fogEnd = props.getAttributeValue("fogend").getFloat()
+                    if props.hasAttribute("fogdir"):
+                        props.getAttributeValue("fogdir").toVec3(self.fogMgr.fogDir)
+                        self.fogMgr.fogDir.normalize()
+                    if props.hasAttribute("fogblend"):
+                        self.fogMgr.fogBlend = props.getAttributeValue("fogblend").getInt() == 1
+                    if props.hasAttribute("fogcolor"):
+                        str_rgb = props.getAttributeValue("fogcolor").getString().split()
+                        self.fogMgr.color[0] = float(str_rgb[0]) / 255.0
+                        self.fogMgr.color[1] = float(str_rgb[1]) / 255.0
+                        self.fogMgr.color[2] = float(str_rgb[2]) / 255.0
+                    if props.hasAttribute("fogcolor2"):
+                        str_rgb = props.getAttributeValue("fogcolor2").getString().split()
+                        self.fogMgr.color2[0] = float(str_rgb[0]) / 255.0
+                        self.fogMgr.color2[1] = float(str_rgb[1]) / 255.0
+                        self.fogMgr.color2[2] = float(str_rgb[2]) / 255.0
+                    if props.hasAttribute("fogenable"):
+                        if props.getAttributeValue("fogenable").getInt() == 1:
+                            #print("enable")
+                            self.fogMgr.updateParams()
+                            self.fogMgr.enableFog()
+                            #pass
+
+        # Load up soundscapes.
+        self.ssMgr.createSoundscapesFromLevel(self.lvlData)
+        self.ssMgr.start()
+
+        # Enable Z-prepass on the static brush geometry for the main pass.
+        geomNp = self.lvl.find("**/mapRoot")
+        geomNp.showThrough(DirectRender.ShadowCameraBitmask)
+        #geomNp.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask))
+
+        #self.lvl.ls()
+        #self.lvl.analyze()
+
+        # Ensure all graphics objects are prepared ahead of time.
+        base.render.prepareScene(base.win.getGsg())
+        base.sky3DRoot.prepareScene(base.win.getGsg())
+
+    def getTeamFormat(self, team):
+        if team == 0:
+            return "\1redteam\1"
+        else:
+            return "\1blueteam\1"
+
+    def killEvent(self, killerDoId, assistDoId, weaponDoId, killedDoId):
+        if not hasattr(base, 'localAvatar'):
+            return
+
+        killer = base.cr.doId2do.get(killerDoId)
+        assist = base.cr.doId2do.get(assistDoId)
+        weapon = base.cr.doId2do.get(weaponDoId)
+        killed = base.cr.doId2do.get(killedDoId)
+
+        suicide = killer is not None and killed is not None and killer == killed
+
+        priority = killer == base.localAvatar or assist == base.localAvatar or killed == base.localAvatar
+        if suicide:
+            # Someone killed themselves.
+            if assist:
+                text = self.getTeamFormat(assist.team) + killer.playerName + "\2 finished off " + self.getTeamFormat(killed.team) + killed.playerName + "\2"
+            else:
+                text = self.getTeamFormat(killed.team) + killed.playerName + "\2 bid farewell, cruel world!"
+        else:
+            # Someone killed someone else.
+            text = ""
+            if killer.isObject():
+                text += self.getTeamFormat(killer.team) + "Sentry Gun"
+                builder = base.cr.doId2do.get(killer.builderDoId)
+                if builder:
+                    if builder == base.localAvatar:
+                        priority = True
+                    text += " (" + builder.playerName + ")"
+                text += "\2"
+            else:
+                text += self.getTeamFormat(killer.team) + killer.playerName + "\2"
+                if assist:
+                    text += " + " + self.getTeamFormat(assist.team) + assist.playerName + "\2"
+            text += " killed "
+            if killed.isObject():
+                text += self.getTeamFormat(killed.team) + "Sentry Gun"
+                builder = base.cr.doId2do.get(killed.builderDoId)
+                if builder:
+                    if builder == base.localAvatar:
+                        priority = True
+                    text += " (" + builder.playerName + ")"
+                text += "\2"
+            else:
+                text += self.getTeamFormat(killed.team) + killed.playerName + "\2"
+
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
+    def delete(self):
+        del base.game
+        DistributedObject.delete(self)
+        DistributedGameBase.delete(self)
+
+    def doExplosion(self, pos, scale):
+        root = base.dynRender.attachNewNode("expl")
+        root.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
+        root.setPos(Vec3(*pos))
+        root.setScale(Vec3(*scale))
+        expl = base.loader.loadModel("models/effects/explosion")
+        expl.setZ(8)
+        expl.hide(DirectRender.ShadowCameraBitmask)
+        seqn = expl.find("**/+SequenceNode").node()
+        seqn.play()
+        expl.reparentTo(root)
+        expl.setBillboardPointEye()
+        seq = Sequence(Wait(seqn.getNumFrames() / seqn.getFrameRate()), Func(root.removeNode))
+        seq.start()
+
+    def doTracer(self, start, end):
+        #print("tracer", start, end)
+        start = Point3(start[0], start[1], start[2])
+        end = Point3(end[0], end[1], end[2])
+        speed = 5000
+        color = Vec4(1.0, 0.85, 0.5, 1)
+        traceDir = end - start
+        traceLen = traceDir.length()
+        traceDir /= traceLen
+        length = traceLen / speed
+        segs = LineSegs('segs')
+        segs.setColor(color)
+        segs.moveTo(Point3(0))
+        segs.drawTo(Vec3(0, -1, 0))
+        segs.setThickness(2)
+        np = base.dynRender.attachNewNode(segs.create())
+        np.setLightOff(1)
+        np.lookAt(traceDir)
+        np.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
+        segs.setVertexColor(1, Vec4(0.0))
+
+        tracerScale = min(64, traceLen)
+
+        seq = Sequence()
+
+        p1 = Parallel()
+        p1.append(LerpPosInterval(np, length, end, start))
+        p1.append(LerpScaleInterval(np, tracerScale / speed, (1, tracerScale, 1), (1, 0.01, 1)))
+        p2 = Parallel()
+        p2.append(LerpScaleInterval(np, tracerScale / speed, (1, 0.01, 1), (1, tracerScale, 1)))
+
+        seq.append(p1)
+        seq.append(p2)
+        seq.append(Func(np.removeNode))
+
+        seq.start()
+
+        from tf.weapon import WeaponEffects
+        WeaponEffects.tracerSound(start, end)
+
+    def doTracers(self, origin, ends):
+        if base.cr.prediction.inPrediction:
+            saveFrameTime = float(base.frameTime)
+            base.setFrameTime(base.getRenderTime())
+
+        for i in range(len(ends)):
+            self.doTracer(origin, ends[i])
+
+        if base.cr.prediction.inPrediction:
+            base.setFrameTime(saveFrameTime)
+
+

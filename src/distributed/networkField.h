@@ -28,8 +28,8 @@ class NetworkClass;
  */
 class EXPCL_TF_DISTRIBUTED NetworkField : public Namable {
 public:
-  typedef const void *SerializeFunc(Datagram &dg, const unsigned char *data, const NetworkField *field);
-  typedef void *UnserializeFunc(DatagramIterator &scan, unsigned char *data, const NetworkField *field);
+  typedef void SerializeFunc(Datagram &dg, const unsigned char *data, const NetworkField *field);
+  typedef void UnserializeFunc(DatagramIterator &scan, unsigned char *data, const NetworkField *field);
 
   // The serialized data type.
   enum DataType {

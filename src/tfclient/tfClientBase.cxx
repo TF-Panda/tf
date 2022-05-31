@@ -28,7 +28,6 @@
 #include "event.h"
 #include "simulationManager.h"
 #include "pStatClient.h"
-#include "tfGlobals.h"
 
 TFClientBase *cbase = nullptr;
 
@@ -133,13 +132,11 @@ init_display() {
 
   PT(Camera) cam_3d = new Camera("cam");
   cam_3d->set_lens(_lens_3d);
-  cam_3d->set_camera_mask(CamBits::main);
   _camera = _render.attach_new_node("camera");
   _cam = _camera.attach_new_node(cam_3d);
 
   PT(Camera) cam_sky3d = new Camera("sky3d-camera");
   cam_sky3d->set_lens(_lens_3d);
-  cam_sky3d->set_camera_mask(CamBits::main);
   _cam_sky3d = _render_sky3d.attach_new_node(cam_sky3d);
 
   _lens_viewmodel = new PerspectiveLens;
@@ -147,7 +144,6 @@ init_display() {
 
   PT(Camera) cam_viewmodel = new Camera("viewmodel-camera");
   cam_viewmodel->set_lens(_lens_viewmodel);
-  cam_viewmodel->set_camera_mask(CamBits::main);
   _cam_viewmodel = _render_viewmodel.attach_new_node(cam_viewmodel);
 
   _display_region_sky3d->set_camera(_cam_sky3d);

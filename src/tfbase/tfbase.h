@@ -8,13 +8,13 @@
  *
  * @file tfbase.h
  * @author brian
- * @date 2022-05-10
+ * @date 2022-05-23
  */
 
 #ifndef TFBASE_H
 #define TFBASE_H
 
-#include "pandabase.h"
+#include "directbase.h"
 #include "tfsymbols.h"
 
 #endif // TFBASE_H

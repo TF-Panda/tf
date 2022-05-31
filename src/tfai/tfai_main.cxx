@@ -17,7 +17,6 @@
 #include "tfai_netclasses.h"
 
 #include "distributedGameAI.h"
-#include "distributedEntityAI.h"
 
 /**
  *
@@ -34,10 +33,6 @@ main(int argc, char *argv[]) {
 
   DistributedGameAI *game = new DistributedGameAI;
   tbase.get_air()->generate_object(game, 0);
-
-  PT(DistributedEntityAI) ent = new DistributedEntityAI;
-  ent->set_pos(LPoint3(0, -950, 64));
-  tbase.get_air()->generate_object(ent, 0);
 
   tbase.run();
 

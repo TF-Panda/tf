@@ -15,7 +15,6 @@
 #include "clientRepository.h"
 #include "distributedObject.h"
 #include "distributedGame.h"
-#include "distributedEntity.h"
 
 /**
  *
@@ -31,8 +30,6 @@ init_tfclient_types() {
   ClientRepository::init_type();
   DistributedObject::init_type();
   DistributedGame::init_type();
-  DistributedEntity::init_type();
 
   DistributedGame::init_network_class();
-  DistributedEntity::init_network_class();
 }
