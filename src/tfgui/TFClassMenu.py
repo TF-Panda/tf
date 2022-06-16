@@ -11,16 +11,16 @@ from tf.tfbase.SoundEmitter import SoundEmitter
 from direct.interval.IntervalGlobal import Sequence, Wait, Func
 from direct.interval.ActorInterval import ActorInterval
 
-from tf.actor.Char import Char
+from tf.actor.Actor import Actor
 
 def lightColor(light, temp, intensity):
     light.setColorTemperature(temp)
     light.setColor(Vec4(light.getColor().getXyz() * intensity, 1.0))
 
-class MenuChar(Char):
+class MenuChar(Actor):
 
     def __init__(self):
-        Char.__init__(self)
+        Actor.__init__(self)
         self.soundEmitter = SoundEmitter(self)
 
     def doAnimEventSound(self, soundName):
@@ -30,10 +30,10 @@ class MenuChar(Char):
         self.soundEmitter.registerSound(sound, None if info.channel == Sounds.Channel.CHAN_STATIC else info.channel)
         sound.play()
 
-    def delete(self):
+    def cleanup(self):
         self.soundEmitter.delete()
         self.soundEmitter = None
-        Char.delete(self)
+        Actor.cleanup(self)
 
 class TFClassMenu:
 
@@ -138,9 +138,9 @@ class TFClassMenu:
             self.toIdleSeq.finish()
         del self.toIdleSeq
         for char in self.weaponChars:
-            char.delete()
+            char.cleanup()
         del self.weaponChars
-        self.classChar.delete()
+        self.classChar.cleanup()
         del self.classChar
         self.modelQuad.removeNode()
         del self.modelQuad
@@ -181,24 +181,24 @@ class TFClassMenu:
             self.toIdleSeq = None
 
         for char in self.weaponChars:
-            char.delete()
+            char.cleanup()
         self.weaponChars = []
 
         info = ClassInfos[classId]
         self.classChar.loadModel(info.PlayerModel)
         self.classChar.setSkin(base.localAvatar.team)
-        self.classChar.reparentTo(self.classRoot)
+        self.classChar.modelNp.reparentTo(self.classRoot)
         #self.classChar.modelNp.setScale(0.01)
-        self.classChar.setPos(30, 170, -48)
-        self.classChar.headsUp(self.classCam)
+        self.classChar.modelNp.setPos(30, 170, -48)
+        self.classChar.modelNp.headsUp(self.classCam)
         #self.classChar.setH(self.classChar, 180)
 
-        for eyeNp in self.classChar.findAllMatches("**/+EyeballNode"):
+        for eyeNp in self.classChar.modelNp.findAllMatches("**/+EyeballNode"):
             eyeNp.node().setViewTarget(self.classCam, Point3())
 
-        self.toIdleSeq = Sequence(Func(self.classChar.play, "SelectionMenu_Anim01"),
-                                  Wait(self.classChar.getDuration("SelectionMenu_Anim01")),
-                                  Func(self.classChar.loop, "SelectionMenu_Idle"))
+        self.toIdleSeq = Sequence(Func(self.classChar.setAnim, "SelectionMenu_Anim01"),
+                                  Wait(self.classChar.getAnimLength("SelectionMenu_Anim01")),
+                                  Func(self.classChar.setAnim, "SelectionMenu_Idle", loop=True))
         self.toIdleSeq.start()
 
         if info.MenuWeapon:
@@ -206,9 +206,9 @@ class TFClassMenu:
             if not isinstance(info.MenuWeapon, list):
                 wpns = [info.MenuWeapon]
             for wpn in wpns:
-                char = Char()
+                char = Actor()
                 char.loadModel(wpn)
-                char.reparentTo(self.classChar)
+                char.modelNp.reparentTo(self.classChar.modelNp)
                 char.setJointMergeCharacter(self.classChar.character)
                 char.setSkin(base.localAvatar.team)
                 self.weaponChars.append(char)

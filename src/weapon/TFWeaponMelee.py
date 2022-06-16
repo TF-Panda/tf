@@ -7,7 +7,6 @@ from .TFWeapon import TFWeapon
 from .WeaponMode import TFWeaponMode
 from .TakeDamageInfo import TakeDamageInfo, applyMultiDamage, clearMultiDamage, calculateMeleeDamageForce
 from tf.actor.Activity import Activity
-from tf.actor.Char import Char
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, DamageType
 from tf.tfbase import TFFilters

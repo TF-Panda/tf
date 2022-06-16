@@ -2,6 +2,7 @@ from panda3d.pphysics import *
 from panda3d.core import *
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties
+from tf.tfbase.TFGlobals import CollisionGroup
 
 class Ragdoll(PhysRagdoll):
 
@@ -67,6 +68,11 @@ class Ragdoll(PhysRagdoll):
     def setEnabled(self, enable, forceJointName, forceVector, forcePos):
         if enable:
             self.startRagdoll(base.physicsWorld, base.dynRender)
+
+            for i in range(self.getNumJoints()):
+                actor = self.getJointActor(i)
+                actor.setCollisionGroup(CollisionGroup.Debris)
+
             if self.task:
                 self.task.remove()
             self.task = base.taskMgr.add(self.__update, 'ragdollUpdate', sort = 35)

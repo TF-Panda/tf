@@ -467,7 +467,7 @@ class Char(Actor):
             mesh = PhysConvexMesh(mdata)
         mat = SurfaceProperties[surfaceProp].getPhysMaterial()
         shape = PhysShape(mesh, mat)
-        return (shape, mesh)
+        return ((shape, mesh),)
 
     def loadModel(self, model, loadHitBoxes=True):
         if self.model == model:

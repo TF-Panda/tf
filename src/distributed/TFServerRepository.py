@@ -20,9 +20,6 @@ class TFServerRepository(ServerRepository):
         base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)
 
-        self.world = WorldAI()
-        self.generateObject(self.world, TFGlobals.UberZone)
-
     def addSnapshotHeaderData(self, dg, client):
         if not hasattr(client, 'player') or not client.player:
             dg.addUint32(0)

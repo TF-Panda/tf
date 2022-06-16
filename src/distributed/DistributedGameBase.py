@@ -15,6 +15,7 @@ class DistributedGameBase:
         self.levelName = ""
         self.lvl = None
         self.lvlData = None
+        self.propRoot = None
         self.propPhysRoot = None
         self.gameMode = GameMode.Arena
 
@@ -38,11 +39,11 @@ class DistributedGameBase:
 
         tree = self.lvlData.getAreaClusterTree()
 
-        propRoot = self.lvl.attachNewNode(StaticPartitionedObjectNode("props"))
+        propRoot = base.render.attachNewNode(StaticPartitionedObjectNode("props"))
+        self.propRoot = propRoot
         propRoot.showThrough(DirectRender.ShadowCameraBitmask)
         propPhysRoot = NodePath("propPhysRoot")
         propPhysRoot.hide()
-        #propRoot.node().levelInit(self.lvlData.getNumClusters())
         lightNodes = []
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
@@ -109,7 +110,7 @@ class DistributedGameBase:
                     cnp = propPhysRoot.attachNewNode(cnode)
                     cnp.setTransform(NodePath(), propModel.getTransform(NodePath()))
                     cnode.setContentsMask(Contents.Solid)
-                    cnode.setPythonTag("entity", base.world)
+                    #cnode.setPythonTag("entity", base.world)
 
             propModel.flattenStrong()
             lodNode = propModel.find("**/+LODNode")
@@ -146,10 +147,6 @@ class DistributedGameBase:
             if cnode:
                 cnode.syncTransform()
 
-        # Now flatten all props together.
-        #propRoot.clearModelNodes()
-        #propRoot.flattenStrong()
-
         self.flatten(propRoot)
 
         for propModel in lightNodes:
@@ -175,6 +172,9 @@ class DistributedGameBase:
         self.unloadLevel()
 
     def unloadLevel(self):
+        if self.propRoot:
+            self.propRoot.removeNode()
+            self.propRoot = None
         if self.lvl:
             self.lvl.removeNode()
             self.lvl = None
@@ -190,10 +190,9 @@ class DistributedGameBase:
         self.levelName = lvlName
 
         self.lvl = loader.loadModel(lvlName)
-        self.lvl.reparentTo(base.render)
+        #self.lvl.reparentTo(base.render)
         lvlRoot = self.lvl.find("**/+MapRoot")
         lvlRoot.setLightOff(-1)
-        #self.lvl.showThrough(DirectRender.ShadowCameraBitmask)
         data = lvlRoot.node().getData()
         self.lvlData = data
 
@@ -213,55 +212,22 @@ class DistributedGameBase:
         dummyRoot = PandaNode("mapRoot")
         dummyRoot.replaceNode(lvlRoot.node())
 
-        for gnp in self.lvl.findAllMatches("**/+GeomNode"):
-            #gnp.node().setFinal(True)
-
-            # Delete skybox faces so we can do the actual source engine
-            # skybox rendering.
-            for i in reversed(range(gnp.node().getNumGeoms())):
-                geom = gnp.node().getGeom(i)
-                state = gnp.node().getGeomState(i)
+        for i in range(self.lvlData.getNumModels()):
+            mdl = self.lvlData.getModel(i)
+            gn = mdl.getGeomNode()
+            for i in reversed(range(gn.getNumGeoms())):
+                geom = gn.getGeom(i)
+                state = gn.getGeomState(i)
                 if state.hasAttrib(MaterialAttrib):
                     mattr = state.getAttrib(MaterialAttrib)
                     mat = mattr.getMaterial()
                     if mat and isinstance(mat, SkyBoxMaterial):
-                        gnp.node().removeGeom(i)
+                        gn.removeGeom(i)
 
         self.preFlattenLevel()
 
-        self.lvl.clearModelNodes()
-        self.flatten(self.lvl)
-        #self.lvl.flattenStrong()
-
         self.loadLevelProps()
 
-        #physRoot = self.lvl.attachNewNode("physRoot")
-        for i in range(data.getNumModelPhysDatas()):
-            mapModelPhysData = data.getModelPhysData(i)
-            meshBuffer = mapModelPhysData._phys_mesh_data
-            if len(meshBuffer) == 0:
-                continue
-            meshData = PhysTriangleMeshData(meshBuffer)
-            geom = PhysTriangleMesh(meshData)
-
-            materials = []
-            for j in range(mapModelPhysData.getNumSurfaceProps()):
-                materials.append(SurfaceProperties[mapModelPhysData.getSurfaceProp(j).lower()].getPhysMaterial())
-
-            shape = PhysShape(geom, materials[0])
-
-            # Append remaining materials if there are multiple.
-            if len(materials) > 1:
-                for j in range(1, len(materials)):
-                    shape.addMaterial(materials[j])
-
-            body = PhysRigidStaticNode("model-phys-%i" % i)
-            body.addShape(shape)
-            body.setContentsMask(Contents.Solid)
-            body.addToScene(base.physicsWorld)
-            body.setPythonTag("entity", base.world)
-            self.propPhysRoot.attachNewNode(body)
         self.propPhysRoot.reparentTo(self.lvl)
 
         #self.lvl.ls()
-        #self.lvl.analyze()

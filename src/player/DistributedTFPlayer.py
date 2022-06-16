@@ -93,13 +93,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         return True
 
     def getSpatialAudioCenter(self):
-        if self.ragdoll:
-            # If we're ragdolling, position spatial audio relative to
-            # the ragdoll head.
-            return self.ragdoll[1].getJointActor("bip_head").getTransform().getMat()
-        elif self.gibs:
-            # Spatial sounds follow the head gib when gibbed.
-            return self.gibs.getHeadMatrix()
+        if self.isDead():
+            if self.ragdoll:
+                # If we're ragdolling, position spatial audio relative to
+                # the ragdoll head.
+                return self.ragdoll[1].getJointActor("bip_head").getTransform().getMat()
+            elif self.gibs:
+                # Spatial sounds follow the head gib when gibbed.
+                return self.gibs.getHeadMatrix()
 
         # Return world space transform of player + view offset.
         # Assumes no pitch or roll in angles.  Proper way would
@@ -142,8 +143,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def becomeRagdoll(self, *args, **kwargs):
         self.disableController()
         DistributedChar.becomeRagdoll(self, *args, **kwargs)
+        self.hide()
         if self.ragdoll:
-            self.ragdoll[0].showThrough(DirectRender.ShadowCameraBitmask)
+            self.ragdoll[0].modelNp.showThrough(DirectRender.ShadowCameraBitmask)
             # Re-direct lip-sync to ragdoll.
             if self.talker:
                 self.talker.setCharacter(self.ragdoll[0].character)
@@ -172,10 +174,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         return (self.playerState == self.StateDead) or DistributedChar.isDead(self)
 
     def respawn(self):
-        # Release reference to the ragdoll.
         if self.ragdoll:
-            self.ragdoll[1].destroy()
-            self.ragdoll[0].delete()
             # Return lip-sync to actual model.
             if self.talker:
                 self.talker.setCharacter(self.character)
@@ -184,7 +183,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if self.gibs:
             self.gibs.destroy()
         self.gibs = None
-        self.ragdoll = None
         self.show()
         self.enableController()
         if self.eyes:
@@ -348,7 +346,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
     def announceGenerate(self):
         DistributedChar.announceGenerate(self)
         DistributedTFPlayerShared.announceGenerate(self)
-        self.reparentTo(base.dynRender)
         self.addTask(self.__updateTalker, 'talker', appendTask=True, sim=False)
         self.addTask(self.__updateAnimState, 'playerAnimState', appendTask=True, sort=31, sim=False)
 

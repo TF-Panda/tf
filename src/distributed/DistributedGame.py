@@ -17,6 +17,8 @@ from .FogManager import FogManager
 from .SkyBox import SkyBox
 from tf.tfbase.Soundscapes import SoundscapeManager
 
+from .CubemapRendering import CubemapRendering
+
 play_sound_coll = PStatCollector("App:Sounds:PlaySound")
 
 ClusterColors = [
@@ -52,6 +54,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.fogMgr = None
 
         self.accept('shift-v', self.toggleVisDebug)
+        self.accept('c', self.renderCubeMaps)
+
+    def renderCubeMaps(self):
+        print("Rendering cube maps...")
+        r = CubemapRendering()
+        r.renderCubemaps(self.lvlData)
 
     def RecvProxy_roundTimeRemaining(self, time):
         if time != self.roundTimeRemaining:
@@ -154,7 +162,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         Called by the world when its DO has been generated.  We can now load
         the level and notify the server we have joined the game.
         """
-        self.changeLevel(self.levelName)
         self.sendUpdate("joinGame", ['Brian'])
 
     def joinGameResp(self, tickCount):
@@ -170,6 +177,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def announceGenerate(self):
         DistributedObject.announceGenerate(self)
         base.game = self
+        self.changeLevel(self.levelName)
+        self.worldLoaded()
 
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
@@ -190,12 +199,13 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         sky3dNodes = []
         # Extract 3-D skybox mesh groups.
-        for i in range(self.lvlData.getNumMeshGroups()):
-            group = self.lvlData.getMeshGroup(i)
-            if group.isIn3dSkybox():
-                sky3dNodes.append(lvlRoot.getChild(i))
+        idx = lvlData.get3dSkyModelIndex()
+        if idx != -1:
+            sky3dNodes.append(NodePath(lvlData.getModel(idx).getGeomNode()))
 
         for np in sky3dNodes:
+            if not lvlData.getDirLight().isEmpty():
+                np.setLight(lvlData.getDirLight())
             np.reparentTo(base.sky3DRoot)
 
         skyCamera = None
@@ -225,9 +235,13 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         # Build skybox matrix.
         skyMat = LMatrix4.scaleMat((scale, scale, scale))
         skyMat.setRow(3, skyCamOrigin)
-        base.sky3DMat = skyMat
+        skyMat.invertInPlace()
+        base.sky3DRoot.setMat(skyMat)
+
+        #base.sky3DMat = skyMat
 
         # Setup sky fog.
+        """
         fogMgr = FogManager(base.sky3DRoot)
 
         if props.hasAttribute("fogstart"):
@@ -263,10 +277,11 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             fogMgr.fogDir = q.getForward()
 
         self.skyFogMgr = fogMgr
+        """
 
-        base.sky3DRoot.ls()
-        base.sky3DRoot.clearModelNodes()
-        self.flatten(base.sky3DRoot)
+        #base.sky3DRoot.ls()
+        #base.sky3DRoot.clearModelNodes()
+        #self.flatten(base.sky3DRoot)
         #base.sky3DRoot.flattenStrong()
 
     def changeLevel(self, lvlName):
@@ -323,9 +338,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         vmTop.replaceNode(base.vmRender.node())
         vmTop.setMapData(self.lvlData)
 
-        skyTop = MapRender("sky3DTop")
-        skyTop.replaceNode(base.sky3DTop.node())
-        skyTop.setMapData(self.lvlData)
+        #skyTop = MapRender("sky3DTop")
+        #skyTop.replaceNode(base.sky3DTop.node())
+        #skyTop.setMapData(self.lvlData)
 
         render.setAttrib(LightRampAttrib.makeHdr0())
 
@@ -388,7 +403,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         # Ensure all graphics objects are prepared ahead of time.
         base.render.prepareScene(base.win.getGsg())
-        base.sky3DRoot.prepareScene(base.win.getGsg())
+        #base.sky3DRoot.prepareScene(base.win.getGsg())
 
     def getTeamFormat(self, team):
         if team == 0:

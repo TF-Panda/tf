@@ -4,6 +4,33 @@ from panda3d.core import *
 from tf.actor.Activity import Activity
 from tf.tfbase import TFLocalizer
 
+class VoiceCommand:
+    Medic = 0
+    Help = 1
+    Thanks = 2
+    BattleCry = 3
+    Incoming = 4
+    GoodJob = 5
+    NiceShot = 6
+    Cheers = 7
+    Positive = 8
+    Jeers = 9
+    Negative = 10
+    SentryHere = 11
+    TeleporterHere = 12
+    DispenserHere = 13
+    SentryAhead = 14
+    ChargeReady = 15
+    ActivateCharge = 16
+    Yes = 17
+    No = 18
+    Go = 19
+    MoveUp = 20
+    GoLeft = 21
+    GoRight = 22
+    Spy = 23
+
+
 class Class:
     Invalid   = -1
     Scout     = 0
@@ -96,6 +123,14 @@ class EngineerInfo:
         "Engineer.ThanksForTheTeleporter02"
     ]
 
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Engineer.Medic01",
+            "Engineer.Medic02",
+            "Engineer.Medic03"
+        ]
+    }
+
     Weapons = [Weapon.ShotgunEngineer, Weapon.PistolEngineer, Weapon.Wrench, Weapon.ConstructionPDA, Weapon.DestructionPDA, Weapon.Toolbox]
 
 class SoldierInfo:
@@ -152,6 +187,14 @@ class SoldierInfo:
         "Soldier.ThanksForTheTeleporter03"
     ]
 
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Soldier.Medic01",
+            "Soldier.Medic02",
+            "Soldier.Medic03"
+        ]
+    }
+
     Weapons = [Weapon.RocketLauncher,
                Weapon.ShotgunSoldier,
                Weapon.Shovel]
@@ -207,6 +250,14 @@ class DemoInfo:
         "Demoman.ThanksForTheTeleporter02"
     ]
 
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Demoman.Medic01",
+            "Demoman.Medic02",
+            "Demoman.Medic03"
+        ]
+    }
+
     Weapons = [Weapon.GrenadeLauncher, Weapon.Bottle]
 
 class HeavyInfo:
@@ -254,6 +305,14 @@ class HeavyInfo:
         "Heavy.ThanksForTheTeleporter02",
         "Heavy.ThanksForTheTeleporter03"
     ]
+
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Heavy.Medic01",
+            "Heavy.Medic02",
+            "Heavy.Medic03"
+        ]
+    }
 
     Weapons = [Weapon.Minigun, Weapon.ShotgunHeavy, Weapon.Fists]
 
@@ -305,6 +364,13 @@ class ScoutInfo:
         "Scout.ThanksForTheTeleporter02",
         "Scout.ThanksForTheTeleporter03"
     ]
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Scout.Medic01",
+            "Scout.Medic02",
+            "Scout.Medic03"
+        ]
+    }
 
     Weapons = [Weapon.Scattergun, Weapon.PistolScout, Weapon.Bat]
 
@@ -349,6 +415,11 @@ class PyroInfo:
     TeleporterThanks = [
         "Pyro.ThanksForTheTeleporter01"
     ]
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Pyro.Medic01"
+        ]
+    }
 
     Weapons = [Weapon.ShotgunPyro, Weapon.FireAxe]
 
@@ -395,6 +466,13 @@ class SpyInfo:
         "Spy.ThanksForTheTeleporter02",
         "Spy.ThanksForTheTeleporter03"
     ]
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Spy.Medic01",
+            "Spy.Medic02",
+            "Spy.Medic03"
+        ]
+    }
 
     Weapons = [Weapon.Revolver, Weapon.Knife]
 

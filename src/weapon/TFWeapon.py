@@ -405,7 +405,7 @@ class TFWeapon(BaseClass):
 
         if self.reloadMode == TFReloadMode.Start:
             if self.sendWeaponAnim(Activity.VM_Reload_Start):
-                self.setReloadTimer(self.viewModel.getChannelLength(self.viewModel.getCurrentChannel()))
+                self.setReloadTimer(self.viewModel.getAnimLength(self.viewModel.getCurrentAnim()))
             else:
                 self.updateReloadTimers(True)
 
@@ -427,7 +427,7 @@ class TFWeapon(BaseClass):
             self.reloadedThroughAnimEvent = False
 
             if self.sendWeaponAnim(Activity.VM_Reload):
-                self.setReloadTimer(self.viewModel.getDuration())
+                self.setReloadTimer(self.viewModel.getCurrentAnimLength())
             else:
                 self.updateReloadTimers(False)
 
@@ -502,7 +502,7 @@ class TFWeapon(BaseClass):
 
         reloadTime = 0.0
         if self.sendWeaponAnim(activity):
-            reloadTime = self.viewModel.getDuration()
+            reloadTime = self.viewModel.getCurrentAnimLength()
         else:
             # No reload animation. Use the script time.
             if reloadPrimary:
@@ -595,7 +595,7 @@ class TFWeapon(BaseClass):
         if self.hasWeaponIdleTimeElapsed():
             if not (self.reloadsSingly and self.reloadMode != TFReloadMode.Start):
                 self.sendWeaponAnim(Activity.VM_Idle)
-                self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getDuration()
+                self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
 
     if not IS_CLIENT:
         def dropAsAmmoPack(self):

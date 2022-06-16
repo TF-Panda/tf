@@ -1,16 +1,16 @@
 
 from tf.entity.DistributedEntity import DistributedEntity
-from .Char import Char
+from .Actor import Actor
 
 from tf.tfbase.TFGlobals import SolidShape
 
 from panda3d.core import *
 from panda3d.direct import *
 
-class DistributedChar(Char, DistributedEntity):
+class DistributedChar(Actor, DistributedEntity):
 
     def __init__(self):
-        Char.__init__(self)
+        Actor.__init__(self)
         DistributedEntity.__init__(self)
 
         # Client-side ragdoll associated with this entity.
@@ -32,9 +32,7 @@ class DistributedChar(Char, DistributedEntity):
             self.emitSound(soundName)
 
     def loadModelBBoxIntoHull(self):
-        if not self.modelNp:
-            return
-        data = self.modelNp.node().getCustomData()
+        data = self.modelData
         if not data:
             return
         if not data.hasAttribute("bbox"):
@@ -48,12 +46,14 @@ class DistributedChar(Char, DistributedEntity):
 
     def initializeCollisions(self):
         if self.solidShape == SolidShape.Model:
-            assert self.modelNp
-            cinfo = self.modelNp.node().getCollisionInfo().getPart(0)
-            assert cinfo
-            self.mass = cinfo.mass
-            self.damping = cinfo.damping
-            self.rotDamping = cinfo.rot_damping
+            assert self.modelNode
+            cinfo = self.modelNode.getCollisionInfo()
+            if cinfo:
+                cinfo = cinfo.getPart(0)
+                assert cinfo
+                self.mass = cinfo.mass
+                self.damping = cinfo.damping
+                self.rotDamping = cinfo.rot_damping
 
         elif self.solidShape == SolidShape.Box:
             self.loadModelBBoxIntoHull()
@@ -61,14 +61,24 @@ class DistributedChar(Char, DistributedEntity):
         DistributedEntity.initializeCollisions(self)
 
     def makeModelCollisionShape(self):
-        return Char.makeModelCollisionShape(self)
+        return Actor.makeModelCollisionShape(self)
 
     def onModelChanged(self):
         self.initializeCollisions()
-        Char.onModelChanged(self)
+        if self.modelNp:
+            # Parent model to entity.
+            self.modelNp.reparentTo(self)
+        Actor.onModelChanged(self)
 
     def becomeRagdoll(self, forceJoint, forcePosition, forceVector):
-        self.ragdoll = Char.becomeRagdoll(self, forceJoint, forcePosition, forceVector)
+        if self.ragdoll:
+            # Remove existing ragdoll.
+            self.ragdoll[0].cleanup()
+            self.ragdoll[1].destroy()
+            self.ragdoll = None
+
+        self.ragdoll = self.makeRagdoll(forceJoint, forcePosition, forceVector)
+
         return self.ragdoll
 
     def postInterpolate(self):
@@ -81,11 +91,11 @@ class DistributedChar(Char, DistributedEntity):
 
     def disable(self):
         if self.ragdoll:
+            self.ragdoll[0].cleanup()
             self.ragdoll[1].destroy()
-            self.ragdoll[0].delete()
         self.ragdoll = None
         DistributedEntity.disable(self)
 
     def delete(self):
-        Char.delete(self, removeNode=False)
+        self.cleanup()
         DistributedEntity.delete(self)

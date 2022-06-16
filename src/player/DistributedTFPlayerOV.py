@@ -12,7 +12,6 @@ from .TFClass import *
 from .ObserverMode import ObserverMode
 from tf.object.ObjectType import ObjectType
 
-from tf.actor.Char import Char
 from tf.tfgui.TFHud import TFHud
 from tf.tfgui.KillFeed import KillFeed
 from tf.tfgui.TFWeaponSelection import TFWeaponSelection
@@ -167,6 +166,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         DistributedTFPlayer.addPredictionFields(self)
 
+        self.removePredictionField("hpr")
+
         # Add fields predicted by the local player.
         self.addPredictionField("tickBase", int)
         self.addPredictionField("lastActiveWeapon", int)
@@ -283,12 +284,13 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         qForward = Quat()
         qForward.setHpr(aForward)
         origin = self.getEyePosition()
-        if self.ragdoll:
-            origin = Point3(self.ragdoll[1].getRagdollPosition())
-            origin.z += 40
-        elif self.gibs:
-            origin = Point3(self.gibs.getHeadPosition())
-            origin.z += 40
+        if self.isDead():
+            if self.ragdoll:
+                origin = Point3(self.ragdoll[1].getRagdollPosition())
+                origin.z += 40
+            elif self.gibs:
+                origin = Point3(self.gibs.getHeadPosition())
+                origin.z += 40
 
         if killer and killer != self:
             # Compute angles to look at killer.
@@ -329,7 +331,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         blendPerc = max(0, min(1, curTime / spec_freeze_traveltime.getValue()))
         blendPerc = TFGlobals.simpleSpline(blendPerc)
 
-        if target.ragdoll:
+        if target.isDead() and target.ragdoll:
             camDesired = Point3(target.ragdoll[1].getRagdollPosition())
         else:
             camDesired = target.getPos()
@@ -627,6 +629,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.accept('wheel_up', self.wpnSelect.hoverPrevWeapon)
         self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
         self.accept(',', self.doChangeClass)
+
+        self.accept('e', self.sendUpdate, ['voiceCommand', [VoiceCommand.Medic]])
 
         base.taskMgr.add(self.mouseMovement, 'mouseMovement')
         base.taskMgr.add(self.calcViewTask, 'calcView', sort = 38)

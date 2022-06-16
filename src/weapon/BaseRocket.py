@@ -82,8 +82,6 @@ class BaseRocket(BaseClass):
             # Don't render for first 0.2 seconds of being alive.
             self.hide()
             self.addTask(self.__unhideRocket, 'unhideRocket', delay = 0.2, sim = False, appendTask = True)
-
-            self.reparentTo(base.dynRender)
         else:
             # Don't collide with players on the owner's team for the first bit of life.
             self.collideWithTeammatesTime = globalClock.frame_time + 0.25
@@ -97,7 +95,7 @@ class BaseRocket(BaseClass):
             self.velocity *= 1100
             self.initialVel = self.velocity
 
-            self.sweepGeometry = self.makeModelCollisionShape()[1]
+            self.sweepGeometry = self.makeModelCollisionShape()[0][1]
 
     if not IS_CLIENT:
         def delete(self):
@@ -156,7 +154,7 @@ class BaseRocket(BaseClass):
                 np = NodePath(block.getActor())
                 ent = np.getNetPythonTag("entity")
                 if ent:
-                    self.setPos(block.getPosition())
+                    self.setPos(block.getPosition() - (sweepDir * 0.01))
                     self.explode(ent)
 
             # Don't do this if we just exploded, because the node has been

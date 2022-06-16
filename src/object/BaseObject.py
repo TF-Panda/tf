@@ -281,7 +281,7 @@ class BaseObject(BaseClass):
             self.objectState = ObjectState.Upgrading
 
             # Start the upgrade anim channel.
-            self.startChannel(act = Activity.Object_Upgrade)
+            self.setAnim(activity = Activity.Object_Upgrade)
 
         def onUpgrade(self):
             pass
@@ -337,7 +337,7 @@ class BaseObject(BaseClass):
 
             if state == ObjectState.Constructing:
                 # Start building
-                self.startChannel(act=Activity.Object_Build)
+                self.setAnim(activity=Activity.Object_Build)
                 self.startBuildTime = globalClock.frame_time
                 self.onStartConstruction()
 
@@ -345,7 +345,7 @@ class BaseObject(BaseClass):
                 self.startUpgrading()
 
             elif state == ObjectState.Active:
-                self.startChannel(act=Activity.Object_Idle)
+                self.setAnim(activity=Activity.Object_Idle)
                 self.onBecomeActive()
 
         def onStartConstruction(self):
@@ -399,14 +399,14 @@ class BaseObject(BaseClass):
 
             if self.objectState == ObjectState.Constructing:
 
-                hps = self.maxHealth / self.getDuration()
+                hps = self.maxHealth / self.getCurrentAnimLength()
                 self.hpAccum += hps * globalClock.dt
                 if self.hpAccum >= 1.0:
                     self.health += int(self.hpAccum)
                     self.hpAccum -= int(self.hpAccum)
 
                 #self.health = self.maxHealth * self.getCycle()
-                if self.isCurrentChannelFinished():
+                if self.isAnimFinished():
                     #self.health = self.maxHealth
                     self.onFinishConstruction()
                     self.setObjectState(ObjectState.Active)
@@ -414,7 +414,7 @@ class BaseObject(BaseClass):
                     self.simulateConstructing()
 
             elif self.objectState == ObjectState.Upgrading:
-                if self.isCurrentChannelFinished():
+                if self.isAnimFinished():
                     self.onFinishUpgrade()
                     self.setObjectState(ObjectState.Active)
                 else:
@@ -441,12 +441,12 @@ class BaseObject(BaseClass):
 
         def updateObjectAnimState(self):
             if self.objectState == ObjectState.Constructing:
-                self.startChannel(act = Activity.Object_Build)
+                self.setAnim(activity = Activity.Object_Build)
                 self.updateObjectPlayRate()
             elif self.objectState == ObjectState.Active:
-                self.startChannel(act = Activity.Object_Idle)
+                self.setAnim(activity = Activity.Object_Idle)
             elif self.objectState == ObjectState.Upgrading:
-                self.startChannel(act = Activity.Object_Upgrade)
+                self.setAnim(activity = Activity.Object_Upgrade)
 
         def updateObjectPlayRate(self):
             if self.objectState == ObjectState.Constructing:
@@ -464,8 +464,6 @@ class BaseObject(BaseClass):
             else:
                 self.contentsMask = Contents.BlueTeam
             self.node().setContentsMask(self.contentsMask)
-
-            self.reparentTo(base.dynRender)
 
             bldr = self.getBuilder()
             if bldr:

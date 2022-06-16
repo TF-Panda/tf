@@ -1,27 +1,37 @@
-from tf.entity.DistributedEntity import DistributedEntity
+from tf.entity.DistributedSolidEntity import DistributedSolidEntity
 
 from panda3d.core import *
 from panda3d.pphysics import *
 
 from direct.directbase import DirectRender
-from tf.tfbase.TFGlobals import Contents, TakeDamage
+from tf.tfbase.TFGlobals import Contents, TakeDamage, SolidShape, SolidFlag, WorldParent
 
-from math import pow
-
-class World(DistributedEntity):
+class World(DistributedSolidEntity):
 
     def __init__(self):
-        DistributedEntity.__init__(self)
+        DistributedSolidEntity.__init__(self)
         self.takeDamageMode = TakeDamage.No
 
+        self.solidShape = SolidShape.Model
+        self.solidFlags = SolidFlag.Tangible
+        self.physType = self.PTTriangles
+        self.parentEntityId = WorldParent.Render
+
     def generate(self):
-        DistributedEntity.generate(self)
+        DistributedSolidEntity.generate(self)
         base.world = self
 
+        # Link static prop physics to world entity.
+        for np in base.game.propPhysRoot.findAllMatches("**/+PhysRigidActorNode"):
+            np.setPythonTag("entity", self)
+
     def announceGenerate(self):
-        DistributedEntity.announceGenerate(self)
-        if IS_CLIENT:
-            base.game.worldLoaded()
+        DistributedSolidEntity.announceGenerate(self)
+        self.initializeCollisions()
+
+    def delete(self):
+        base.world = None
+        DistributedSolidEntity.delete(self)
 
 if not IS_CLIENT:
     WorldAI = World

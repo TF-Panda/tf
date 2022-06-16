@@ -6,6 +6,8 @@ from panda3d.tf import PredictionCopy
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.showbase.DirectObject import DirectObject
 
+from tf.actor.Actor import Actor
+
 import copy
 
 from tf.movement.GameMovement import g_game_movement
@@ -137,7 +139,7 @@ class Prediction(DirectObject):
             # Transfer intermediate data from other predictables.
             for p in self.predictables:
                 if p.predictable:
-                    if p.pred.postNetworkDataReceived(self.numServerCommandsAcknowledged):
+                    if p.pred.postNetworkDataReceived(self.numServerCommandsAcknowledged, self.currentCommandReference):
                         self.previousAckHadErrors = True
 
             #if errorCheck:
@@ -379,7 +381,7 @@ class Prediction(DirectObject):
         move.player = avatar
         move.velocity = Vec3(avatar.velocity[0], avatar.velocity[1], avatar.velocity[2])
         #print("IN velocity", move.velocity)
-        move.origin = avatar.getPos()
+        move.origin = avatar.controller.foot_position
         move.oldAngles = Vec3(move.angles)
         move.oldButtons = avatar.lastButtons
         move.clientMaxSpeed = avatar.maxSpeed
@@ -431,17 +433,17 @@ class Prediction(DirectObject):
 
         # Get the active weapon
         wpn = None
-        if avatar.activeWeapon != -1:
+        if avatar.activeWeapon != -1 and avatar.activeWeapon < len(avatar.weapons):
             wpnId = avatar.weapons[avatar.activeWeapon]
             wpn = base.net.doId2do.get(wpnId)
 
         if wpn:
             wpn.itemPreFrame()
 
+        avatar.controller.foot_position = avatar.getPos()
+
         # Setup input.
         self.setupMove(avatar, cmd)
-
-        avatar.controller.foot_position = avatar.getPos()
 
         g_game_movement.processMovement(avatar, avatar.moveData)
 
@@ -464,11 +466,13 @@ class Prediction(DirectObject):
     def startCommand(self, avatar, cmd):
         avatar.currentCommand = cmd
         base.net.predictionRandomSeed = cmd.randomSeed
+        Actor.GlobalActivitySeed = cmd.randomSeed
         base.net.predictionPlayer = avatar
 
     def finishCommand(self, avatar):
         avatar.currentCommand = None
         base.net.predictionRandomSeed = 0
+        Actor.GlobalActivitySeed = 0
         base.net.predictionPlayer = None
 
     def update(self, startFrame, validFrame, incomingAcknowledged, outgoingCommand):

@@ -17,7 +17,7 @@ from .WeaponEffects import makeMuzzleFlash
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
 from tf.tfbase import TFFilters
 
-from tf.actor.Char import Char
+from tf.actor.Actor import Actor
 
 if not IS_CLIENT:
     from .RocketProjectile import RocketProjectileAI
@@ -115,7 +115,7 @@ class TFWeaponGun(BaseClass):
                 if self.UsesViewModel:
                     muzzle = self.player.viewModel.find("**/muzzle")
                 else:
-                    muzzle = self.viewModelChar.find("**/muzzle")
+                    muzzle = self.viewModelChar.modelNp.find("**/muzzle")
                 size = 0.5
             else:
                 # World model.
@@ -255,9 +255,9 @@ class TFWeaponGun(BaseClass):
                 tracerOrigin = char.getAttachmentTransform(muzzleAttachment).getPos()
                 tracerOrigin = charNP.getMat(NodePath()).xformPoint(tracerOrigin)
 
-                print("VM origin is", self.player.viewModel.getNetTransform())
+                #print("VM origin is", self.player.viewModel.getNetTransform())
 
-        print("tracer origin", tracerOrigin)
+        #print("tracer origin", tracerOrigin)
 
         fireBullets(self.player, origin, angles, self,
                     self.weaponMode,

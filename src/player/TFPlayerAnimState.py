@@ -58,10 +58,10 @@ class TFPlayerAnimState:
         self.gotPoseParameters = True
 
     def isGestureSlotPlaying(self, slot, activity):
-        return (not self.player.isCurrentChannelFinished(layer=slot)) and (self.player.getCurrentActivity(layer=slot) == activity)
+        return (not self.player.isAnimFinished(slot)) and (self.player.getCurrentAnimActivity(slot) == activity)
 
     def restartGesture(self, slot, activity, autoKill = True, blendIn = 0.1, blendOut = 0.1):
-        self.player.startChannel(act = self.translateActivity(activity, slot),
+        self.player.setAnim(activity = self.translateActivity(activity, slot),
                                  autoKill = autoKill, blendIn = blendIn, blendOut = blendOut,
                                  layer = slot)
 
@@ -93,7 +93,7 @@ class TFPlayerAnimState:
             # TODO: crouching, swimming
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_End, blendIn=0.0)
         elif event == PlayerAnimEvent.Flinch:
-            if not self.player.isChannelPlaying(layer=GestureSlot.Flinch):
+            if not self.player.isAnimPlaying(GestureSlot.Flinch):
                 self.restartGesture(GestureSlot.Flinch, self.translateActivity(Activity.Gesture_Flinch, GestureSlot.Flinch))
         elif event == PlayerAnimEvent.Jump:
             self.jumping = True
@@ -292,24 +292,24 @@ class TFPlayerAnimState:
         self.currentMainSequenceActivity = idealActivity
 
         if self.specificMainSequence >= 0:
-            if self.player.getCurrentChannel() != self.specificMainSequence:
-                self.player.startChannel(self.specificMainSequence)
+            if self.player.getCurrentAnim() != self.specificMainSequence:
+                self.player.setAnim(self.specificMainSequence)
                 return
 
-            if not self.player.isChannelFinished():
+            if not self.player.isAnimFinished():
                 return
 
             self.specificMainSequence = -1
             self.restartMainSequence()
 
         animDesired = self.player.getChannelForActivity(self.translateActivity(idealActivity))
-        if self.player.getChannelActivity(self.player.getCurrentChannel()) == self.player.getChannelActivity(animDesired):
+        if self.player.getAnimActivity(self.player.getCurrentAnim()) == self.player.getAnimActivity(animDesired):
             return
 
         if animDesired < 0:
             animDesired = 0
 
-        self.player.startChannel(animDesired)
+        self.player.setAnim(animDesired)
 
     def computeMovePoseParam(self):
         self.estimateYaw()

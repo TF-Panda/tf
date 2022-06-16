@@ -1,6 +1,9 @@
 """Model module: contains the Model class."""
 
-from panda3d.core import NodePathCollection
+from panda3d.core import *
+from panda3d.pphysics import *
+
+from tf.tfbase.SurfaceProperties import SurfaceProperties
 
 from direct.showbase.DirectObject import DirectObject
 from direct.directnotify.DirectNotifyGlobal import directNotify
@@ -18,6 +21,8 @@ class Model(DirectObject):
         # NodePath of ModelRoot, the top level node in the loaded model.
         self.modelNp = None
         self.modelNode = None
+        self.modelData = None
+        self.model = ""
         # Current model material group/skin.  Saved here so if we change
         # models the active skin is carried over to the new model.
         self.skin = 0
@@ -27,8 +32,9 @@ class Model(DirectObject):
         """
         Sets the active material group of the actor to the specified index.
         """
-        self.skin = skin
-        self.updateSkin()
+        if skin != self.skin or (self.modelNode and self.modelNode.getActiveMaterialGroup() != skin):
+            self.skin = skin
+            self.updateSkin()
 
     def updateSkin(self):
         """
@@ -38,6 +44,12 @@ class Model(DirectObject):
             if self.skin >= 0 and self.skin < self.modelNode.getNumMaterialGroups():
                 self.modelNode.setActiveMaterialGroup(self.skin)
 
+    def cleanup(self):
+        self.unloadModel()
+        self.bodygroups = None
+        self.skin = None
+        self.model = None
+
     def unloadModel(self):
         """
         Removes the current model from the scene graph and all related data.
@@ -46,6 +58,8 @@ class Model(DirectObject):
             self.modelNp.removeNode()
             self.modelNp = None
         self.modelNode = None
+        self.modelData = None
+        self.model = ""
         self.bodygroups = {}
 
     def loadBodygroups(self):
@@ -99,6 +113,72 @@ class Model(DirectObject):
             else:
                 body.hide()
 
+    def getBodygroupNodes(self, group, value):
+        """
+        Returns the set of NodePaths that are turned on by the given bodygroup
+        value.
+        """
+
+        bg = self.bodygroups.get(group)
+        if not bg:
+            return NodePathCollection()
+
+        if value < 0 or value >= len(bg):
+            return NodePathCollection()
+
+        return bg[value]
+
+    def resetBodygroup(self, group):
+        """
+        Resets the bodygroup with the indicated name to the default variant.
+        """
+        self.setBodygroupValue(group, 0)
+
+    def resetBodygroups(self):
+        """
+        Resets all bodygroups to their defaults.
+        """
+        for bg in self.bodygroups.values():
+            bg[0].show()
+            for i in range(1, len(bg)):
+                bg[i].hide()
+
+    def getModelSurfaceProp(self):
+        surfaceProp = "default"
+        data = self.modelData
+        if data:
+            if data.hasAttribute("surfaceprop"):
+                surfaceProp = data.getAttributeValue("surfaceprop").getString().lower()
+        return surfaceProp
+
+    def makeModelCollisionShape(self):
+        cinfo = self.modelNode.getCollisionInfo()
+        if not cinfo:
+            return None
+        part = cinfo.getPart(0)
+
+        surfaceProp = self.getModelSurfaceProp()
+
+        if part.concave:
+            mdata = PhysTriangleMeshData(part.mesh_data)
+        else:
+            mdata = PhysConvexMeshData(part.mesh_data)
+        if not mdata.generateMesh():
+            return None
+        if part.concave:
+            mesh = PhysTriangleMesh(mdata)
+        else:
+            mesh = PhysConvexMesh(mdata)
+        mat = SurfaceProperties[surfaceProp].getPhysMaterial()
+        shape = PhysShape(mesh, mat)
+        return ((shape, mesh),)
+
+    def onModelChanged(self):
+        """
+        Called when a new model has been loaded.
+        """
+        pass
+
     def loadModel(self, filename):
         """
         Loads up a model from the indicated model filename.  The existing
@@ -107,7 +187,17 @@ class Model(DirectObject):
         Returns true if the model was loaded successfully, false otherwise.
         """
 
+        if self.model == filename:
+            return False
+
+        # Different model, unload existing.
         self.unloadModel()
+
+        self.model = filename
+
+        if len(filename) == 0:
+            # No model.
+            return False
 
         self.modelNp = base.loader.loadModel(filename)
         if not self.modelNp or self.modelNp.isEmpty():
@@ -116,11 +206,30 @@ class Model(DirectObject):
         self.modelNode = self.modelNp.node()
         # Cull the model's subgraph as a single unit.
         self.modelNode.setFinal(True)
+        self.modelData = self.modelNode.getCustomData()
+
+        modelNode = self.modelNode
+        cdata = self.modelData
+        if cdata:
+            if cdata.hasAttribute("omni") and cdata.getAttributeValue("omni").getBool():
+                modelNode.setBounds(OmniBoundingVolume())
+            if cdata.hasAttribute("bbox"):
+                # Model specifies a user bounding volume.
+                # Note that this doesn't override the bounds of the geometry
+                # of the model, it just unions with it.
+                mins = Point3()
+                maxs = Point3()
+                bbox = cdata.getAttributeValue("bbox").getElement()
+                bbox.getAttributeValue("mins").toVec3(mins)
+                bbox.getAttributeValue("maxs").toVec3(maxs)
+                modelNode.setBounds(BoundingBox(mins, maxs))
 
         # Collect all bodygroups and toggle the default ones.
         self.loadBodygroups()
 
         # Apply the currently specified skin.
         self.updateSkin()
+
+        self.onModelChanged()
 
         return True

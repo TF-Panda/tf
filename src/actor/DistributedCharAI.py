@@ -1,31 +1,32 @@
 
 from tf.entity.DistributedEntity import DistributedEntityAI
-from .Char import Char
+from .Actor import Actor
 
 from tf.tfbase.TFGlobals import SolidShape
 
 from .AnimEvents import AnimEventType
 
-class DistributedCharAI(Char, DistributedEntityAI):
+class DistributedCharAI(Actor, DistributedEntityAI):
 
     def __init__(self):
-        Char.__init__(self)
+        Actor.__init__(self)
         DistributedEntityAI.__init__(self)
 
         self.lastEventCheck = 0.0
 
     def delete(self):
-        Char.delete(self, removeNode=False)
+        self.cleanup()
         DistributedEntityAI.delete(self)
 
     def onModelChanged(self):
         self.initializeCollisions()
-        Char.onModelChanged(self)
+        if self.modelNp:
+            # Parent model to entity.
+            self.modelNp.reparentTo(self)
+        Actor.onModelChanged(self)
 
     def loadModelBBoxIntoHull(self):
-        if not self.modelNp:
-            return
-        data = self.modelNp.node().getCustomData()
+        data = self.modelData
         if not data:
             return
         if not data.hasAttribute("bbox"):
@@ -39,12 +40,14 @@ class DistributedCharAI(Char, DistributedEntityAI):
 
     def initializeCollisions(self):
         if self.solidShape == SolidShape.Model:
-            assert self.modelNp
-            cinfo = self.modelNp.node().getCollisionInfo().getPart(0)
-            assert cinfo
-            self.mass = cinfo.mass
-            self.damping = cinfo.damping
-            self.rotDamping = cinfo.rot_damping
+            assert self.modelNode
+            cinfo = self.modelNode.getCollisionInfo()
+            if cinfo:
+                cinfo = cinfo.getPart(0)
+                assert cinfo
+                self.mass = cinfo.mass
+                self.damping = cinfo.damping
+                self.rotDamping = cinfo.rot_damping
 
         elif self.solidShape == SolidShape.Box:
             self.loadModelBBoxIntoHull()
@@ -52,9 +55,12 @@ class DistributedCharAI(Char, DistributedEntityAI):
         DistributedEntityAI.initializeCollisions(self)
 
     def makeModelCollisionShape(self):
-        return Char.makeModelCollisionShape(self)
+        return Actor.makeModelCollisionShape(self)
 
     def dispatchAnimEvents(self, handler):
+        if not self.character:
+            return
+
         queue = AnimEventQueue()
         self.character.getEvents(queue, AnimEventType.Server)
 
@@ -79,9 +85,11 @@ class DistributedCharAI(Char, DistributedEntityAI):
         return self.skin
 
     def loadModel(self, model):
-        Char.loadModel(self, model)
-        # The server doesn't blend sequence transitions.
-        self.setBlend(transitionBlend=False)
+        Actor.loadModel(self, model)
+        # The server doesn't blend sequence transitions or interpolate
+        # animation frames.
+        self.setChannelTransition(False)
+        self.setFrameBlend(False)
 
     def simulate(self):
         DistributedEntityAI.simulate(self)

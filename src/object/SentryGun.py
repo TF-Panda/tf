@@ -356,7 +356,7 @@ class SentryGun(BaseObject):
 
             # All turrets fire shells
             if self.ammoShells > 0:
-                self.startChannel(act = Activity.Object_Fire, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
+                self.setAnim(activity = Activity.Object_Fire, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
                 self.firingState = SG_FS_FIRING
 
                 if self.level > 1 and (self.ammoShells & 1):
@@ -400,7 +400,7 @@ class SentryGun(BaseObject):
 
                 self.sendUpdate('muzzleFlash', [muzzleNum])
             else:
-                self.startChannel(act = Activity.Object_Fire_Empty,
+                self.setAnim(activity = Activity.Object_Fire_Empty,
                                   layer = SENTRYGUN_BULLET_ANIM_LAYER,
                                   restart = False)
                 self.firingState = SG_FS_FIRING_EMPTY
@@ -486,7 +486,7 @@ class SentryGun(BaseObject):
         def sentryRotate(self):
             # Stop the bullet firing animation channel.
             if self.firingState != SG_FS_NOT_FIRING:
-                self.stop(layer = SENTRYGUN_BULLET_ANIM_LAYER, kill = False)
+                self.stopAnim(layer = SENTRYGUN_BULLET_ANIM_LAYER, kill = False)
                 self.firingState = SG_FS_NOT_FIRING
 
             # Animate
@@ -530,11 +530,11 @@ class SentryGun(BaseObject):
         def updateFiringAnim(self):
             state = self.firingState
             if state == SG_FS_NOT_FIRING:
-                self.stop(layer = SENTRYGUN_BULLET_ANIM_LAYER)
+                self.stopAnim(layer = SENTRYGUN_BULLET_ANIM_LAYER)
             elif state == SG_FS_FIRING:
-                self.startChannel(act = Activity.Object_Fire, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
+                self.setAnim(activity = Activity.Object_Fire, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
             elif state == SG_FS_FIRING_EMPTY:
-                self.startChannel(act = Activity.Object_Fire_Empty, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
+                self.setAnim(activity = Activity.Object_Fire_Empty, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
 
         def delete(self):
             self.ivYaw = None

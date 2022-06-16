@@ -10,7 +10,7 @@ from panda3d.core import *
 from panda3d.pphysics import *
 from panda3d.tf import PredictedObject, PredictionField, PredictionCopy
 
-from tf.actor.Char import Char
+from tf.actor.Actor import Actor
 from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, Contents, CollisionGroup, SolidShape, SolidFlag, angleMod
 from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
 from tf.tfbase import TFFilters, Sounds
@@ -20,6 +20,8 @@ from direct.directbase import DirectRender
 
 if IS_CLIENT:
     from tf.player.Prediction import *
+else:
+    from .EntityConnectionManager import EntityConnectionManager, OutputConnection
 
 class DistributedEntity(BaseClass, NodePath):
 
@@ -55,7 +57,7 @@ class DistributedEntity(BaseClass, NodePath):
         # DoId of our parent entity, or world parent code.  >= 0 is a parent
         # entity doId, < 0 is a world parent code.  A world parent is a scene
         # node instead of an entity (like render or camera).
-        self.parentEntityId = -1
+        self.parentEntityId = WorldParent.DynRender
         # Handle to the actual parent entity or node.
         self.parentEntity = base.hidden
 
@@ -80,6 +82,9 @@ class DistributedEntity(BaseClass, NodePath):
         self.triggerFudge = Vec3(0)
 
         self.teleportParity = 0
+
+        self.className = ""
+        self.targetName = ""
 
         if IS_CLIENT:
             # Makes the node compute its lighting state from the lighting
@@ -106,6 +111,10 @@ class DistributedEntity(BaseClass, NodePath):
 
             self.soundEmitter = SoundEmitter(self)
 
+        else:
+            self.connMgr = EntityConnectionManager(self)
+            self.parentEntityName = ""
+
         # Create a root node for all physics objects to live under, and hide
         # it.  This can improve cull traverser performance since it only has
         # to consider visiting the root node instead of every individual
@@ -118,6 +127,20 @@ class DistributedEntity(BaseClass, NodePath):
         self.setPythonTag("entity", self)
 
         self.reparentTo(self.parentEntity)
+
+    def announceGenerate(self):
+        BaseClass.announceGenerate(self)
+        if IS_CLIENT:
+            self.updateParentEntity()
+        else:
+            if self.parentEntityName:
+                print("parent entity name", self.parentEntityName)
+                parentEnt = base.entMgr.targetName2ent.get(self.parentEntityName)
+                print(parentEnt)
+                print(bool(parentEnt))
+                if parentEnt is not None:
+                    self.setParentEntityId(parentEnt.doId)
+
 
     def generate(self):
         BaseClass.generate(self)
@@ -274,7 +297,7 @@ class DistributedEntity(BaseClass, NodePath):
             mat = SurfaceProperties[self.getModelSurfaceProp()].getPhysMaterial()
             shape = PhysShape(box, mat)
             shape.setLocalPos((cx, cy, cz))
-            return (shape, box)
+            return ((shape, box),)
         else:
             return None
 
@@ -311,27 +334,28 @@ class DistributedEntity(BaseClass, NodePath):
         if self.solidShape == SolidShape.Empty:
             return
 
-        body = PhysRigidDynamicNode("coll")
+        body = PhysRigidDynamicNode(self.node().getName())
         body.setCollisionGroup(self.collisionGroup)
         body.setContentsMask(self.contentsMask)
         body.setSolidMask(self.solidMask)
+        body.setKinematic(self.kinematic)
 
-        shapeData = self.makeCollisionShape()
-        if not shapeData:
+        shapeDatas = self.makeCollisionShape()
+        if not shapeDatas:
             return
-        shape = shapeData[0]
-        shape.setSceneQueryShape(True)
-        if self.solidFlags & SolidFlag.Tangible:
-            shape.setSimulationShape(True)
-            shape.setTriggerShape(False)
-        elif self.solidFlags & SolidFlag.Trigger:
-            shape.setSimulationShape(False)
-            shape.setSceneQueryShape(False)
-            shape.setTriggerShape(True)
-        else:
-            shape.setSimulationShape(False)
-            shape.setTriggerShape(False)
-        body.addShape(shape)
+        for shape, _ in shapeDatas:
+            shape.setSceneQueryShape(True)
+            if self.solidFlags & SolidFlag.Tangible:
+                shape.setSimulationShape(True)
+                shape.setTriggerShape(False)
+            elif self.solidFlags & SolidFlag.Trigger:
+                shape.setSimulationShape(False)
+                shape.setSceneQueryShape(False)
+                shape.setTriggerShape(True)
+            else:
+                shape.setSimulationShape(False)
+                shape.setTriggerShape(False)
+            body.addShape(shape)
 
         #body.computeMassProperties()
 
@@ -343,11 +367,12 @@ class DistributedEntity(BaseClass, NodePath):
         if (self.solidFlags & SolidFlag.Tangible) and \
             (self.solidFlags & SolidFlag.Trigger):
             # Add an identical shape for trigger usage only.
-            tshape = self.makeCollisionShape(trigger=True)[0]
-            tshape.setSceneQueryShape(False)
-            tshape.setSimulationShape(False)
-            tshape.setTriggerShape(True)
-            body.addShape(tshape)
+            tshapeDatas = self.makeCollisionShape(trigger=True)
+            for tshape, _ in tshapeDatas:
+                tshape.setSceneQueryShape(False)
+                tshape.setSimulationShape(False)
+                tshape.setTriggerShape(True)
+                body.addShape(tshape)
 
         if (self.solidFlags & SolidFlag.Trigger) and self.triggerCallback:
             body.setTriggerCallback(CallbackObject.make(self.__triggerCallback))
@@ -360,7 +385,6 @@ class DistributedEntity(BaseClass, NodePath):
             body.setWakeCallback(clbk)
             body.setSleepCallback(clbk)
 
-        body.setKinematic(self.kinematic)
         body.addToScene(base.physicsWorld)
         # Make this the node that represents the entity.
         body.replaceNode(self.node())
@@ -376,8 +400,9 @@ class DistributedEntity(BaseClass, NodePath):
     def fireBullets(self, info):
         clearMultiDamage()
 
+        # FIXME: horrible
         for do in base.net.doId2do.values():
-            if isinstance(do, Char):
+            if isinstance(do, Actor):
                 do.syncHitBoxes()
 
         # Fire a bullet (ignoring the shooter).
@@ -482,7 +507,7 @@ class DistributedEntity(BaseClass, NodePath):
 
             self.pred.calcBufferSize()
 
-            self.pred.postNetworkDataReceived(0)
+            self.pred.postNetworkDataReceived(0, 0)
 
             for i in range(PREDICTION_DATA_SLOTS):
                 # Now fill everything
@@ -593,6 +618,28 @@ class DistributedEntity(BaseClass, NodePath):
         """
         pass
 
+    def updateParentEntity(self):
+        parentId = self.parentEntityId
+        if parentId < 0:
+            # It's a world parent.
+            parentNode = getWorldParent(parentId)
+            # If the world parent is None, don't change the current
+            # parent.
+            if parentNode is not None:
+                self.wrtReparentTo(parentNode)
+            self.parentEntity = parentNode
+        else:
+            # Should be an entity parent.
+            parentEntity = base.net.doId2do.get(parentId)
+            if parentEntity is not None:
+                self.wrtReparentTo(parentEntity)
+            else:
+                # If parent entity not found, parent to hidden.  Better
+                # idea than parenting to render and having the model
+                # just float in space or something.
+                self.wrtReparentTo(base.hidden)
+            self.parentEntity = parentEntity
+
     def setParentEntityId(self, parentId):
         """
         Sets the parent of this entity.  Parent is referred to by doId.  Can
@@ -601,27 +648,9 @@ class DistributedEntity(BaseClass, NodePath):
         """
 
         if parentId != self.parentEntityId:
-            if parentId < 0:
-                # It's a world parent.
-                parentNode = getWorldParent(parentId)
-                # If the world parent is None, don't change the current
-                # parent.
-                if parentNode is not None:
-                    self.reparentTo(parentNode)
-                self.parentEntity = parentNode
-            else:
-                # Should be an entity parent.
-                parentEntity = base.net.doId2do.get(parentId)
-                if parentEntity is not None:
-                    self.reparentTo(parentEntity)
-                else:
-                    # If parent entity not found, parent to hidden.  Better
-                    # idea than parenting to render and having the model
-                    # just float in space or something.
-                    self.reparentTo(base.hidden)
-                self.parentEntity = parentEntity
+            self.parentEntityId = parentId
+            self.updateParentEntity()
             self.parentChanged()
-        self.parentEntityId = parentId
 
     if IS_CLIENT:
         ###########################################################################
@@ -641,9 +670,9 @@ class DistributedEntity(BaseClass, NodePath):
             # If the parent changed, reset our transform interp vars.
             if parentId != self.parentEntityId:
                 self.ivPos.reset(self.getPos())
-                self.ivHpr.reset(self.getHpr())
+                self.ivRot.reset(self.getQuat())
                 self.ivScale.reset(self.getScale())
-                self.setParentEntity(parentId)
+                self.setParentEntityId(parentId)
 
         def RecvProxy_velocity(self, x, y, z):
             self.velocity = Vec3(x, y, z)
@@ -669,11 +698,12 @@ class DistributedEntity(BaseClass, NodePath):
             self.teleportParity %= 256
 
     if not IS_CLIENT:
-        def initFromLevel(self, properties):
+        def initFromLevel(self, ent, properties):
             """
             Called to initialize the level entity from the given property
             structure.
             """
+            self.className = ent.getClassName()
             if properties.hasAttribute("origin"):
                 origin = Vec3()
                 properties.getAttributeValue("origin").toVec3(origin)
@@ -682,6 +712,29 @@ class DistributedEntity(BaseClass, NodePath):
                 angles = Vec3()
                 properties.getAttributeValue("angles").toVec3(angles)
                 self.setHpr(angles[1] - 90, -angles[0], angles[2])
+            if properties.hasAttribute("targetname"):
+                self.targetName = properties.getAttributeValue("targetname").getString()
+                if self.targetName:
+                    base.entMgr.registerEntity(self)
+            if properties.hasAttribute("TeamNum"):
+                self.team = properties.getAttributeValue("TeamNum").getInt() - 2
+            if properties.hasAttribute("parentname"):
+                self.parentEntityName = properties.getAttributeValue("parentname").getString()
+
+            for i in range(ent.getNumConnections()):
+                conn = ent.getConnection(i)
+                oconn = OutputConnection()
+                # Convert wildcards to python regex wildcard.
+                oconn.targetEntityName = conn.getTargetName().replace("*", ".+")
+                oconn.inputName = conn.getInputName()
+                oconn.once = conn.getRepeat()
+                oconn.delay = conn.getDelay()
+                for j in range(conn.getNumParameters()):
+                    param = conn.getParameter(j)
+                    if param:
+                        oconn.parameters.append(param)
+                print(oconn.parameters)
+                self.connMgr.addConnection(conn.getOutputName(), oconn)
 
         def takeDamage(self, info):
 
@@ -861,11 +914,15 @@ class DistributedEntity(BaseClass, NodePath):
     def delete(self):
         if IS_CLIENT:
             self.ivPos = None
-            self.ivHpr = None
+            self.ivRot = None
             self.ivScale = None
             self.shutdownPredictable()
             self.soundEmitter.delete()
             self.soundEmitter = None
+        else:
+            self.connMgr.cleanup()
+            self.connMgr = None
+            base.entMgr.removeEntity(self)
         # There's no point in replacing the physics node with a PandaNode
         # since we're about to delete it anyway.  Saves a tiny bit of time.
         self.destroyCollisions(replaceWithNormalNode=False)

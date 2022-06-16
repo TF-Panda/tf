@@ -27,6 +27,9 @@
 #include "namable.h"
 #include "referenceCount.h"
 #include "pointerTo.h"
+#include "notifyCategoryProxy.h"
+
+NotifyCategoryDeclNoExport(prediction);
 
 #ifdef CPPPARSER
 class Dtool_PyTypedObject;
@@ -127,7 +130,7 @@ PUBLISHED:
                         PTA_uchar src_dict, bool count_errors = false,
                         bool report_errors = false, bool perform_copy = true);
 
-  int transfer_data();
+  int transfer_data(int current_command_reference = -1, int dest_slot = -1);
   DiffType transfer_field(const PredictionField *field, size_t pos);
 
   //
@@ -158,6 +161,11 @@ PUBLISHED:
   template<class Type>
   INLINE DiffType compare_vecs(const Type &a, const Type &b, float tolerance);
 
+  template<class Type>
+  INLINE void report_error_delta(const PredictionField *field, int cmd, const Type &predicted_value, const Type &received_value);
+  template<class Type>
+  INLINE void report_error(const PredictionField *field, int cmd, const Type &predicted, const Type &received);
+
   INLINE PyObject *get_field_py_obj(const PredictionField *field);
   INLINE void set_field_py_obj(const PredictionField *field, PyObject *obj);
 
@@ -173,6 +181,11 @@ public:
 
   bool _error_check;
   bool _perform_copy;
+  bool _report_errors;
+
+  int _dest_slot;
+  int _current_command_reference;
+  int _cmd_num;
 
   int _error_count;
 
@@ -198,7 +211,7 @@ PUBLISHED:
   void shift_intermediate_data_forward(int slots_to_remove, int num_cmds_run);
   void pre_entity_packet_received(int commands_acked);
   void post_entity_packet_received();
-  bool post_network_data_received(int commands_acked);
+  bool post_network_data_received(int commands_acked, int curr_reference);
 
   PTA_uchar alloc_slot(int slot);
   void calc_buffer_size();

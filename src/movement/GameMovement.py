@@ -340,7 +340,7 @@ class GameMovement:
         vel[2] = -2 # To detect if we're on the ground.
 
         self.mv.oldOrigin = self.mv.origin
-        flags = self.player.controller.move(globalClock.dt, vel, 0.1)
+        flags = self.player.controller.move(globalClock.dt, vel, 0.0)
         self.mv.origin = self.player.controller.foot_position
 
         self.mv.outWishVel += wishDirection * wishSpeed

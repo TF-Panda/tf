@@ -81,8 +81,24 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.viewModel.player = self
 
         self.lastPainTime = 0.0
+        self.lastVoiceCmdTime = 0.0
 
         self.clientSideAnimation = True
+
+    def voiceCommand(self, cmd):
+        now = globalClock.frame_time
+        if self.isDead() or (now - self.lastVoiceCmdTime) < 1.5:
+            return
+
+        voiceLineList = self.classInfo.VoiceCommands.get(cmd)
+        if not voiceLineList:
+            return
+
+        voiceLine = random.choice(voiceLineList)
+        self.d_speak(voiceLine, excludeClients=[self.owner])
+        self.d_speak(voiceLine, client=self.owner)
+
+        self.lastVoiceCmdTime = now
 
     def d_setViewAngles(self, hpr):
         """
@@ -648,7 +664,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def announceGenerate(self):
         DistributedCharAI.announceGenerate(self)
         DistributedTFPlayerShared.announceGenerate(self)
-        self.reparentTo(base.dynRender)
 
     def generate(self):
         DistributedCharAI.generate(self)

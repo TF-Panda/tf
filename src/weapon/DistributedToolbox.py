@@ -9,11 +9,11 @@ from .WeaponMode import TFWeaponType, TFWeaponMode
 from tf.tfbase import TFLocalizer, TFGlobals
 from direct.gui.DirectGui import *
 from tf.actor.Activity import Activity
+from tf.actor.Actor import Actor
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.player.InputButtons import InputFlag
 
 from direct.directbase import DirectRender
-from direct.actor.Actor import Actor
 
 from panda3d.core import *
 
@@ -83,14 +83,12 @@ class DistributedToolbox(TFWeapon):
             if self.blueprint:
                 self.blueprint.removeNode()
             self.blueprint = Actor()
-            self.blueprint.loadModel(self.Blueprints[self.player.selectedBuilding], keepModel=True)
-            modelNode = self.blueprint.getPartModel().node()
-            if self.player.team < modelNode.getNumMaterialGroups():
-                modelNode.setActiveMaterialGroup(self.player.team)
-            self.blueprint.loop('idle')
-            self.blueprint.reparentTo(self.blueprintRoot)
-            self.blueprint.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
-            self.blueprint.showThrough(DirectRender.ShadowCameraBitmask)
+            self.blueprint.loadModel(self.Blueprints[self.player.selectedBuilding])
+            self.blueprint.setSkin(self.player.team)
+            self.blueprint.setAnim('idle', loop=True)
+            self.blueprint.modelNp.reparentTo(self.blueprintRoot)
+            self.blueprint.modelNp.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
+            self.blueprint.modelNp.showThrough(DirectRender.ShadowCameraBitmask)
             self.blueprintRoot.reparentTo(base.render)
 
             self.addTask(self.updateRotation, 'updateBlueprintRotation', appendTask=True, sim=False, sort=49)
@@ -98,7 +96,7 @@ class DistributedToolbox(TFWeapon):
     def deactivate(self):
         if IS_CLIENT and self.isOwnedByLocalPlayer():
             if self.blueprint:
-                self.blueprint.delete()
+                self.blueprint.cleanup()
                 self.blueprint = None
             self.blueprintRoot.reparentTo(base.hidden)
             self.removeTask('updateBlueprintRotation')
@@ -122,7 +120,7 @@ class DistributedToolbox(TFWeapon):
             #print("target", self.rotation * 90.0, "current", self.currentRotation)
 
             if self.blueprint:
-                self.blueprint.setH(self.currentRotation)
+                self.blueprint.modelNp.setH(self.currentRotation)
 
             return task.cont
 

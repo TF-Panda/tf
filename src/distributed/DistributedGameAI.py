@@ -21,6 +21,7 @@ from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
 from .DistributedGameBase import DistributedGameBase
 from .GameMode import *
 from .GameModeCTF import GameModeCTF
+from .GameModeTraining import GameModeTraining
 from .RoundState import *
 
 class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
@@ -49,7 +50,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.winningScore = 3
 
         self.numBlue = 0
-        self.numRed = 0
+        self.numRed = 1
         self.numSoldier = 0
         self.numEngineer = 1
         self.numDemo = 0
@@ -197,6 +198,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.teamSpawns = {0: [], 1: []}
 
+        levelEnts = []
+
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
 
@@ -204,8 +207,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             if entCls:
                 print("Generating a", ent.getClassName())
                 entObj = entCls()
-                entObj.initFromLevel(ent.getProperties())
-                base.air.generateObject(entObj, GameZone)
+                entObj.initFromLevel(ent, ent.getProperties())
+                base.air.generateObject(entObj, GameZone, announce=False)
+                levelEnts.append(entObj)
             else:
                 if ent.getClassName() != "info_player_teamspawn":
                     continue
@@ -218,16 +222,23 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 if team >= 0 and team <= 1:
                     self.teamSpawns[team].append((origin, angles))
 
+        for entObj in levelEnts:
+            entObj.announceGenerate()
+            assert entObj.isDOAlive()
+
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
+
         self.collectTeamSpawns()
 
         pfx = lvlName.split('_')[0]
-        self.gameMode = MapPrefixToGameMode.get(pfx)
+        self.gameMode = MapPrefixToGameMode.get(pfx, GameMode.Training)
         assert pfx is not None
         self.notify.info("Game mode is %s" % pfx)
         if self.gameMode == GameMode.CTF:
             self.gameModeImpl = GameModeCTF(self)
+        elif self.gameMode == GameMode.Training:
+            self.gameModeImpl = GameModeTraining(self)
 
         #
         # Free up memory from the darn cube map textures embedded in the level.

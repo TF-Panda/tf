@@ -135,7 +135,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
             if self.isActiveLocalPlayerWeapon() and self.player.viewModel and self.viewModelChar:
                 # Parent the view model to the player's view model.
-                self.viewModelChar.reparentTo(self.player.viewModel)
+                self.viewModelChar.modelNp.reparentTo(self.player.viewModel)
                 self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
                 self.viewModelChar.setSkin(self.player.skin)
 
@@ -161,7 +161,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
         if self.viewModelChar:
             # Parent the c-model weapon to the player's view model.
-            self.viewModelChar.reparentTo(self.player.viewModel)
+            self.viewModelChar.modelNp.reparentTo(self.player.viewModel)
             self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
 
         if self.isActiveLocalPlayerWeapon():
@@ -177,7 +177,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
         self.reparentTo(hidden)
         if self.viewModelChar:
-            self.viewModelChar.reparentTo(hidden)
+            self.viewModelChar.modelNp.reparentTo(hidden)
         else:
             self.player.viewModel.loadModel(self.player.classInfo.ViewModel)
 

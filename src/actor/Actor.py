@@ -1,10 +1,19 @@
 """Actor module: contains the Actor class."""
 
 from panda3d.core import *
+from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.directbase import DirectRender
 
 from .Model import Model
+from tf.tfbase.SurfaceProperties import SurfaceProperties
+from tf.tfbase.TFGlobals import Contents
+from .HitBox import HitBox
+from .Ragdoll import Ragdoll
+
+from .Activity import Activity
+from .AnimEvents import AnimEventType, AnimEvent
 
 class Actor(Model):
     """
@@ -33,6 +42,12 @@ class Actor(Model):
         self.characterNp = None
         self.channelsByName = {}
 
+        # Boxes parented to joints for hit detection.
+        # TODO: Use an aggregate.
+        self.hitBoxes = []
+        self.hitBoxRoot = None
+        self.lastHitBoxSyncTime = 0.0
+
     @staticmethod
     def setGlobalActivitySeed(seed):
         """
@@ -56,6 +71,75 @@ class Actor(Model):
         methods check that the model is animated before doing anything.
         """
         return self.character is not None
+
+    def makeRagdoll(self, forceJoint, forcePosition, forceVector):
+
+        collInfo = self.modelNode.getCollisionInfo()
+        if not collInfo or (collInfo.getNumParts() < 2):
+            # No ragdoll for this actor.
+            return None
+
+        forceVector = Vec3(forceVector[0], forceVector[1], forceVector[2])
+        forcePosition = Point3(forcePosition[0], forcePosition[1], forcePosition[2])
+
+        # Make sure the joints reflect the current animation in case we were
+        # hidden or off-screen.
+        self.updateAnimation()
+
+        ragdollActor = Actor()
+        ragdollActor.setSkin(self.skin)
+        ragdollActor.loadModel(self.model, hitboxes=False)
+        ragdollActor.modelNp.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
+        # Copy the current joint positions of our character to the ragdoll
+        # version.
+        for i in range(self.character.getNumJoints()):
+            ragdollActor.character.setJointForcedValue(i, self.character.getJointValue(i))
+        ragdollActor.modelNp.reparentTo(base.dynRender)
+        ragdollActor.modelNp.setTransform(self.modelNp.getNetTransform())
+
+        # Create the ragdoll using the model's collision info.
+        rd = Ragdoll(ragdollActor.modelNp, collInfo)
+        rd.setup()
+        if forceJoint == -1:
+            rd.setEnabled(True, None, forceVector, forcePosition)
+        else:
+            # Find the closest joint to apply the force to.
+            joint = forceJoint
+            jointName = ""
+            foundJoint = False
+            while not foundJoint and joint != -1:
+                jointName = ragdollActor.character.getJointName(joint)
+                if rd.getJointByName(jointName):
+                    foundJoint = True
+                    break
+                else:
+                    joint = ragdollActor.character.getJointParent(joint)
+
+            if foundJoint:
+                rd.setEnabled(True, jointName, forceVector, forcePosition)
+            else:
+                rd.setEnabled(True, None, forceVector, forcePosition)
+
+        return (ragdollActor, rd)
+
+    def setChannelTransition(self, flag):
+        if self.character:
+            self.character.setChannelTransitionFlag(flag)
+
+    def setAutoAdvance(self, flag):
+        if self.character:
+            self.character.setAutoAdvanceFlag(flag)
+
+    def setFrameBlend(self, flag):
+        if self.character:
+            self.character.setFrameBlendFlag(flag)
+
+    def getChannelForActivity(self, activity, layer=0):
+        if not self.character:
+            return -1
+
+        return self.character.getChannelForActivity(activity, self.getCurrentAnim(layer),
+            Actor.GlobalActivitySeed)
 
     def setAnim(self, anim = None, activity = None, playRate = 1.0, layer = 0,
                 blendIn = 0.0, blendOut = 0.0, autoKill = False,
@@ -138,7 +222,7 @@ class Actor(Model):
 
         if not self.character:
             return -1
-        elif layer < 0 or layer >= self.character.getNumAnimLayers():
+        elif not self.character.isValidLayerIndex(layer):
             return -1
 
         animLayer = self.character.getAnimLayer(layer)
@@ -146,6 +230,23 @@ class Actor(Model):
             return -1
 
         return animLayer._sequence
+
+    def getCurrentAnimChannel(self, layer=0):
+        """
+        Returns the AnimChannel currently playing on the indicated animation
+        layer, or None if no animation is playing (or the model is not animated).
+        """
+
+        if not self.character:
+            return None
+        elif layer < 0 or layer >= self.character.getNumAnimLayers():
+            return None
+
+        animLayer = self.character.getAnimLayer(layer)
+        if not animLayer.isPlaying():
+            return None
+
+        return self.character.getChannel(animLayer._sequence)
 
     def getCurrentAnimActivity(self, layer = 0):
         """
@@ -167,6 +268,57 @@ class Actor(Model):
 
         return animLayer._activity
 
+    def getCurrentAnimLength(self, layer=0):
+        """
+        Returns the length in seconds of the animation currently playing on
+        the indicated layer, factoring in play rate.
+        """
+        if not self.character:
+            return 0.1
+
+        if not self.character.isValidLayerIndex(layer):
+            return 0.1
+
+        alayer = self.character.getAnimLayer(layer)
+        if not self.character.isValidChannelIndex(alayer._sequence):
+            return 0.1
+
+        chan = self.character.getChannel(alayer._sequence)
+        playRate = alayer._play_rate
+
+        return chan.getLength(self.character) / playRate
+
+    def getAnimActivity(self, anim, index=0):
+        """
+        Returns the activity associated with the indicated animation channel,
+        by name or index.
+        """
+        if not self.character:
+            return -1
+        if isinstance(anim, str):
+            anim = self.channelsByName.get(anim, -1)
+
+        if not self.character.isValidChannelIndex(anim):
+            return -1
+
+        chan = self.character.getChannel(anim)
+        if chan.getNumActivities() == 0:
+            return -1
+        return chan.getActivity(index)
+
+    def getAnimLength(self, anim):
+        if not self.character:
+            return 0.01
+
+        if isinstance(anim, str):
+            anim = self.channelsByName.get(anim, -1)
+
+        if not self.character.isValidChannelIndex(anim):
+            return 0.01
+
+        chan = self.character.getChannel(anim)
+        return chan.getLength(self.character)
+
     def isAnimFinished(self, layer = 0):
         """
         Returns True if the animation channel playing on the indicated layer
@@ -176,6 +328,50 @@ class Actor(Model):
         finished.
         """
         return self.getCurrentAnim(layer) == -1
+
+    def isAnimPlaying(self, layer = 0):
+        """
+        Returns True if an animation is currently playing on the indicated
+        layer.
+        """
+
+        if not self.character:
+            return False
+        elif not self.character.isValidLayerIndex(layer):
+            return False
+
+        animLayer = self.character.getAnimLayer(layer)
+        return animLayer.isPlaying()
+
+    def setCycle(self, cycle, layer=0):
+        """
+        Overrides the cycle of whatever animation is currently playing
+        on the indicated layer.
+        """
+        if not self.character:
+            return
+
+        if not self.character.isValidLayerIndex(layer):
+            return
+
+        animLayer = self.character.getAnimLayer(layer)
+        if self.character.getAutoAdvanceFlag():
+            # If we're auto advancing (client-side animation),
+            # the cycle is computed from the unclamped cycle.
+            animLayer._unclamped_cycle = cycle
+        else:
+            # Without auto advance, we control the cycle directly.
+            animLayer._cycle = cycle
+
+    def getCycle(self, layer=0):
+        if not self.character:
+            return 0.0
+
+        if not self.character.isValidLayerIndex(layer):
+            return 0.0
+
+        animLayer = self.character.getAnimLayer(layer)
+        return animLayer._cycle
 
     def setPlayRate(self, rate, layer = 0):
         """
@@ -304,18 +500,28 @@ class Actor(Model):
         for i in range(self.character.getNumChannels()):
             self.channelsByName[self.character.getChannel(i).getName()] = i
 
+    def cleanup(self):
+        Model.cleanup(self)
+        self.channelsByName = None
+        self.lastHitBoxSyncTime = None
+        self.hitBoxes = None
+
     def unloadModel(self):
         """
         Removes the current model from the scene graph and all related data.
         """
-        if self.characterNp:
-            self.characterNp.removeNode()
-            self.characterNp = None
+        self.characterNp = None
         self.character = None
         self.channelsByName = {}
+        # Remove hitboxes from physics scene and release references.
+        for hbox in self.hitBoxes:
+            hbox.body.removeFromScene(base.physicsWorld)
+            hbox.body = None
+        self.hitBoxes = []
+        self.hitBoxRoot = None
         Model.unloadModel(self)
 
-    def loadModel(self, filename):
+    def loadModel(self, filename, hitboxes=True):
         """
         Loads up a model from the indicated model filename.  The existing
         model is unloaded.
@@ -335,4 +541,159 @@ class Actor(Model):
             self.character = self.characterNp.node().getCharacter()
             self.buildAnimTable()
 
+            if hitboxes:
+                self.setupHitBoxes()
+
         return True
+
+    def setupHitBoxes(self):
+        """
+        Creates hit-boxes for the model using the info from the model's custom
+        data structure.
+        """
+
+        data = self.modelData
+        if not data or not data.hasAttribute("hit_boxes"):
+            return
+
+        hitBoxes = data.getAttributeValue("hit_boxes").getList()
+
+        # Create a single root node for all hitbox nodes to be parented under,
+        # and hide it from rendering.  This way the Cull traversal only has
+        # to consider the root node, and not all the individual hitbox nodes.
+        if len(hitBoxes) > 0:
+            self.hitBoxRoot = self.characterNp.attachNewNode("hitBoxRoot")
+            self.hitBoxRoot.node().setOverallHidden(True)
+
+        assert self.characterNp
+
+        for i in range(len(hitBoxes)):
+            hitBox = hitBoxes.get(i).getElement()
+            mins = hitBox.getAttributeValue("mins").getList()
+            maxs = hitBox.getAttributeValue("maxs").getList()
+            self.addHitBox(hitBox.getAttributeValue("group").getInt(),
+                           hitBox.getAttributeValue("joint").getString(),
+                           (mins.get(0).getFloat(), mins.get(1).getFloat(), mins.get(2).getFloat()),
+                           (maxs.get(0).getFloat(), maxs.get(1).getFloat(), maxs.get(2).getFloat()))
+
+    def addHitBox(self, group, jointName, mins, maxs):
+        joint = self.character.findJoint(jointName)
+        if joint == -1:
+            self.notify.warning(f"addHitBox(): joint {jointName} not found on character {self.character.getName()}")
+            return
+
+        hX = (maxs[0] - mins[0]) / 2
+        hY = (maxs[1] - mins[1]) / 2
+        hZ = (maxs[2] - mins[2]) / 2
+        cX = (maxs[0] + mins[0]) / 2
+        cY = (maxs[1] + mins[1]) / 2
+        cZ = (maxs[2] + mins[2]) / 2
+        box = PhysBox(hX, hY, hZ)
+        # Even though hit boxes are scene query shapes, they still need a
+        # material.  Just give it a bogus one.
+        mat = SurfaceProperties[self.getModelSurfaceProp()].getPhysMaterial()
+        shape = PhysShape(box, mat)
+        shape.setLocalPos((cX, cY, cZ))
+        shape.setSimulationShape(False)
+        shape.setTriggerShape(False)
+        shape.setSceneQueryShape(True)
+        body = PhysRigidDynamicNode("hbox_" + self.character.getName() + "_" + jointName)
+        body.setContentsMask(Contents.HitBox)
+        body.addShape(shape)
+        body.setKinematic(True)
+        body.addToScene(base.physicsWorld)
+        body.setOverallHidden(True)
+        hbox = HitBox(group, body, joint)
+        # Add a link to ourself so traces know who they hit.
+        body.setPythonTag("hitbox", (self, hbox))
+        body.setPythonTag("entity", self)
+        self.hitBoxes.append(hbox)
+        assert self.hitBoxRoot
+        self.hitBoxRoot.attachNewNode(body)
+
+    def syncHitBoxes(self):
+        """
+        Synchronizes the physics bodies of character's hit boxes with the
+        current world-space transform of the associated joints.
+        """
+
+        if not self.hitBoxes:
+            return
+
+        now = globalClock.frame_time
+        if now == self.lastHitBoxSyncTime:
+            # We're already synchronized with the current point in time.
+            return
+
+        self.lastHitBoxSyncTime = now
+
+        for hbox in self.hitBoxes:
+            hbox.body.setTransform(
+                TransformState.makeMat(self.character.getJointNetTransform(hbox.joint)))
+
+    def doAnimationEvents(self, eventType=AnimEventType.Client):
+        if not self.character:
+            return
+
+        assert self.modelNp
+        if (base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted) or \
+           (self.modelNp.getTop() in (base.hidden, NodePath()) or self.modelNp.isHidden()):
+            return
+
+        queue = AnimEventQueue()
+        self.character.getEvents(queue, eventType)
+
+        if not queue.hasEvent():
+            return
+
+        while queue.hasEvent():
+            info = queue.popEvent()
+            channel = self.character.getChannel(info.channel)
+            event = channel.getEvent(info.event)
+            self.fireAnimEvent(event.getEvent(), event.getOptions())
+
+    def fireAnimEvent(self, event, options):
+        if event == AnimEvent.Client_Play_Sound:
+            self.doAnimEventSound(options)
+
+        elif event == AnimEvent.Client_Bodygroup_Set_Value:
+            name, value = options.split()
+            self.setBodygroupValue(name, int(value))
+
+    def doAnimEventSound(self, soundName):
+        pass
+
+    def controlJoint(self, node, jointName):
+        """
+        Gives the indicated node control of the indicated joint.
+
+        If node is None, creates a new node with the same name
+        as the joint that can be used to control the joint.
+
+        Returns the node.
+        """
+
+        if not node:
+            node = NodePath(ModelNode(jointName))
+
+        if not self.character:
+            return node
+
+        node.reparentTo(self.characterNp)
+
+        joint = self.character.findJoint(jointName)
+        if joint != -1:
+            node.setMat(self.character.getJointDefaultValue(joint))
+            self.character.setJointControllerNode(joint, node.node())
+
+        return node
+
+    def releaseJoint(self, jointName):
+        if not self.character:
+            return
+
+        joint = self.character.findJoint(jointName)
+        if joint == -1:
+            return
+
+        self.character.clearJointControllerNode(joint)

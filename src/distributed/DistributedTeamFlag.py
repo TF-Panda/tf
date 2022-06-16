@@ -5,7 +5,7 @@ from panda3d.pphysics import *
 
 from direct.interval.IntervalGlobal import LerpHprInterval
 
-from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, TFTeam, CollisionGroup
+from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, TFTeam, CollisionGroup, WorldParent
 
 from tf.entity.DistributedEntity import DistributedEntity
 
@@ -71,6 +71,8 @@ class DistributedTeamFlag(DistributedEntity):
         self.flagModel = None
         self.spinIval = None
 
+        self.parentEntityId = WorldParent.Unchanged
+
         # 32x32x32 trigger box for picking up the flag.
         self.solidShape = SolidShape.Box
         self.hullMins = Point3(-32)
@@ -80,10 +82,14 @@ class DistributedTeamFlag(DistributedEntity):
 
         self.playerWithFlag = -1
 
+        if IS_CLIENT:
+            self.removeInterpolatedVar(self.ivPos)
+            self.removeInterpolatedVar(self.ivRot)
+
     if not IS_CLIENT:
 
-        def initFromLevel(self, properties):
-            DistributedEntity.initFromLevel(self, properties)
+        def initFromLevel(self, ent, properties):
+            DistributedEntity.initFromLevel(self, ent, properties)
 
             # Save off the initial position and orientation for
             # when the flag gets returned.
@@ -95,8 +101,6 @@ class DistributedTeamFlag(DistributedEntity):
             else:
                 self.flagModelName = Filename.fromOsSpecific(
                     properties.getAttributeValue("flag_model").getString()).getFullpathWoExtension()
-
-            self.team = properties.getAttributeValue("TeamNum").getInt() - 2
 
             if self.team == 0:
                 self.setContentsMask(Contents.RedTeam)

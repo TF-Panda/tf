@@ -149,7 +149,6 @@ class DPickupItemBase(DistributedEntity):
             # Create an interval to spin the item.
             self.spinIval = LerpHprInterval(self.model, 3.0, (360, 0, 0), (0, 0, 0))
             self.spinIval.loop()
-            self.reparentTo(base.dynRender)
 
         def RecvProxy_hidden(self, hidden):
             if hidden != self.hidden:

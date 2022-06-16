@@ -14,11 +14,24 @@ object (before `generate()`), passing in the `PDXElement` of entity properties
 specified in the level file.
 """
 
+from .World import WorldAI
 from .DHealthKitAI import DHealthKitSmallAI, DHealthKitMediumAI, DHealthKitFullAI
 from .DAmmoPackAI import DAmmoPackSmallAI, DAmmoPackMediumAI, DAmmoPackFullAI
 from .DistributedTeamFlag import DistributedTeamFlagAI
+from tf.entity.DistributedTrigger import DistributedTriggerAI
+from tf.entity.DistributedFuncRegenerate import DistributedFuncRegenerateAI
+from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
+from tf.entity.DistributedFuncDoor import DistributedFuncDoorAI
+from tf.entity.DistributedFuncBrush import DistributedFuncBrushAI
 
 EntityRegistry = {
+    "worldspawn": WorldAI,
+    "trigger_once": DistributedTriggerAI,
+    "trigger_multiple": DistributedTriggerAI,
+    "func_regenerate": DistributedFuncRegenerateAI,
+    "prop_dynamic": DistributedPropDynamicAI,
+    "func_door": DistributedFuncDoorAI,
+    "func_brush": DistributedFuncBrushAI,
     "item_healthkit_small": DHealthKitSmallAI,
     "item_healthkit_medium": DHealthKitMediumAI,
     "item_healthkit_full": DHealthKitFullAI,

@@ -1,6 +1,6 @@
 """DistributedWeaponShared module: contains the DistributedWeaponShared class"""
 
-from tf.actor.Char import Char
+from tf.actor.Actor import Actor
 
 from tf.actor.Activity import Activity
 from tf.player.InputButtons import InputFlag
@@ -78,12 +78,13 @@ class DistributedWeaponShared:
 
     def syncAllHitBoxes(self):
         # Make sure all characters have their hit boxes synchronized.
+        # FIXME: horrible
         for do in base.net.doId2do.values():
-            if isinstance(do, Char):
+            if isinstance(do, Actor):
                 do.syncHitBoxes()
 
     def getVMSequenceLength(self):
-        return self.viewModel.getDuration()
+        return self.viewModel.getCurrentAnimLength()
 
     def playSound(self, name):
         # Only the server (AI) implements this currently.
@@ -92,7 +93,7 @@ class DistributedWeaponShared:
     def activate(self):
         assert self.player
         self.sendWeaponAnim(Activity.VM_Draw)
-        self.nextPrimaryAttack = globalClock.frame_time + self.viewModel.getDuration()
+        self.nextPrimaryAttack = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
         self.nextSecondaryAttack = self.nextPrimaryAttack
 
     def deactivate(self):
@@ -160,15 +161,15 @@ class DistributedWeaponShared:
         if not self.viewModel:
             return False
 
-        self.viewModel.startChannel(seq, act)
-        self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getDuration()
+        self.viewModel.setAnim(seq, act)
+        self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
 
         return True
 
     def weaponIdle(self):
         if self.hasWeaponIdleTimeElapsed():
             self.sendWeaponAnim(Activity.VM_Idle)
-            self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getDuration()
+            self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
 
     def hasWeaponIdleTimeElapsed(self):
         return globalClock.frame_time > self.timeWeaponIdle
@@ -320,7 +321,7 @@ class DistributedWeaponShared:
         self.sendWeaponAnim(activity)
         #self.setPlayerGesture(playerActivity)
 
-        sequenceEndTime = globalClock.frame_time + self.viewModel.getDuration()
+        sequenceEndTime = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
         self.nextPrimaryAttack = self.nextSecondaryAttack = sequenceEndTime
 
         self.inReload = True
@@ -423,14 +424,14 @@ class DistributedWeaponShared:
 
     def generate(self):
         if not self.UsesViewModel:
-            self.viewModelChar = Char()
+            self.viewModelChar = Actor()
             self.viewModelChar.loadModel(self.WeaponViewModel)
         if self.WeaponModel:
             self.loadModel(self.WeaponModel)
 
     def delete(self):
         if self.viewModelChar:
-            self.viewModelChar.delete()
+            self.viewModelChar.cleanup()
             self.viewModelChar = None
         self.player = None
         self.viewModel = None

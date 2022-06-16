@@ -86,10 +86,6 @@ class DWeaponDrop(BaseClass):
                         self.enabled = False
                         self.used = True
                         base.net.deleteObject(self)
-    else:
-        def announceGenerate(self):
-            BaseClass.announceGenerate(self)
-            self.reparentTo(base.dynRender)
 
 if not IS_CLIENT:
     DWeaponDropAI = DWeaponDrop

@@ -58,6 +58,7 @@ class WorldParent:
     ViewModel = -4 # Parent into view model scene.
     ViewModelCamera = -5 # Parent to view model scene camera.
     Camera = -6 # Parent to 3D scene camera.
+    DynRender = -7
 
 def getWorldParent(parentId):
     """
@@ -66,7 +67,7 @@ def getWorldParent(parentId):
     if parentId == WorldParent.Unchanged:
         return None
     elif parentId == WorldParent.Render:
-        return base.dynRender
+        return base.render
     elif parentId == WorldParent.Hidden:
         return base.hidden
     elif parentId == WorldParent.ViewModel:
@@ -75,6 +76,8 @@ def getWorldParent(parentId):
         return base.vmCamera
     elif parentId == WorldParent.Camera:
         return base.camera
+    elif parentId == WorldParent.DynRender:
+        return base.dynRender
     else:
         return None
 

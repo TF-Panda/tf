@@ -138,8 +138,8 @@ class DMinigun(TFWeaponGun):
             self.barrelControlJoints = []
             # Create a node to control the barrel joint with.  We will animate this
             # node to spin the barrel.
-            self.barrelControlJoints.append(self.viewModelChar.controlJoint(None, "modelRoot", "barrel"))
-            self.barrelControlJoints.append(self.controlJoint(None, "modelRoot", "barrel"))
+            self.barrelControlJoints.append(self.viewModelChar.controlJoint(None, "barrel"))
+            self.barrelControlJoints.append(self.controlJoint(None, "barrel"))
 
         def stopWeaponSound(self):
             if self.currSound:

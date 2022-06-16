@@ -132,10 +132,14 @@ PredictionCopy(CopyMode mode, PredictedObject *obj, PTA_uchar dest_dict, PTA_uch
   _mode(mode),
   _error_check(count_errors),
   _perform_copy(perform_copy),
+  _report_errors(report_errors),
   _error_count(0),
   _src_dist(src_dict),
   _dest_dict(dest_dict),
-  _obj(obj)
+  _obj(obj),
+  _current_command_reference(0),
+  _dest_slot(0),
+  _cmd_num(0)
 {
 }
 
@@ -161,6 +165,28 @@ compare_vecs(const Type &a, const Type &b, float tolerance) {
   }
 
   return diff;
+}
+
+/**
+ *
+ */
+template<class Type>
+INLINE void PredictionCopy::
+report_error_delta(const PredictionField *field, int cmd, const Type &predicted, const Type &received) {
+  prediction_cat.info()
+    << field->get_name() << " differs (command " << cmd << "): pred "
+    << predicted << ", net " << received << ", delta " << received - predicted << "\n";
+}
+
+/**
+ *
+ */
+template<class Type>
+INLINE void PredictionCopy::
+report_error(const PredictionField *field, int cmd, const Type &predicted, const Type &received) {
+  prediction_cat.info()
+    << field->get_name() << " differs (command " << cmd << "): pred "
+    << predicted << ", net " << received << "\n";
 }
 
 /**

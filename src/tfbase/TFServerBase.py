@@ -4,6 +4,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from tf.distributed.TFServerRepository import TFServerRepository
 
 from tf.tfbase import Sounds, TFGlobals, SurfaceProperties
+from tf.entity.EntityManager import EntityManager
 
 from panda3d.core import *
 from panda3d.pphysics import *
@@ -54,6 +55,8 @@ class TFServerBase(HostBase):
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Projectile, False)
 
         self.simTaskMgr.add(self.__physicsUpdate, 'serverPhysicsUpdate', sort = 50)
+
+        self.entMgr = EntityManager()
 
         self.sv = TFServerRepository(self.config.GetInt("sv_port", 6667))
         self.air = self.sv

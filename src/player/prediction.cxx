@@ -21,6 +21,8 @@ static PStatCollector transfer_pcollector("PredictionCPP:TransferData");
 static PStatCollector shift_pcollector("PredictionCPP:ShiftIntermediateDataForward");
 static PStatCollector alloc_pcollector("PredictionCPP:AllocSlot");
 
+NotifyCategoryDef(prediction, "");
+
 PredictionField::
 PredictionField() :
   _getter(nullptr),
@@ -309,7 +311,7 @@ post_entity_packet_received() {
  *
  */
 bool PredictedObject::
-post_network_data_received(int commands_acked) {
+post_network_data_received(int commands_acked, int curr_reference) {
   bool had_errors = false;
   bool error_check = (commands_acked > 0);
 
@@ -322,7 +324,7 @@ post_network_data_received(int commands_acked) {
     bool copy_data = false;
     PredictionCopy copy(PredictionCopy::CM_networked_only, this, predicted_state_data, original_state_data,
                         count_errors, true, copy_data);
-    int error_count = copy.transfer_data();
+    int error_count = copy.transfer_data(curr_reference, commands_acked - 1);
     if (error_count > 0) {
       had_errors = true;
     }
@@ -344,6 +346,7 @@ alloc_slot(int slot) {
   if (slot == -1) {
     if (_original_data.is_null()) {
       _original_data.resize(_buffer_size);
+      memset(_original_data.p(), 0, _buffer_size);
     }
     return _original_data;
 
@@ -351,6 +354,7 @@ alloc_slot(int slot) {
     slot = slot % prediction_data_slots;
     if (_data_slots[slot].is_null()) {
       _data_slots[slot].resize(_buffer_size);
+      memset(_data_slots[slot].p(), 0, _buffer_size);
     }
     return _data_slots[slot];
   }
@@ -528,12 +532,16 @@ static LVecBase4f *Dtool_Coerce_LVecBase4f(PyObject *args, LVecBase4f &coerced) 
  *
  */
 int PredictionCopy::
-transfer_data() {
+transfer_data(int current_command_reference, int dest_slot) {
   PStatTimer timer(transfer_pcollector);
 
   if (!_got_types) {
     fetch_types();
   }
+
+  _current_command_reference = current_command_reference;
+  _dest_slot = dest_slot;
+  _cmd_num = _current_command_reference + _dest_slot;
 
   size_t pos = 0u;
   for (size_t i = 0; i < _obj->_fields.size(); ++i) {
@@ -551,9 +559,6 @@ transfer_data() {
       continue;
     }
     DiffType diff = transfer_field(field, pos);
-    if (_error_check && diff == DT_differs) {
-      ++_error_count;
-    }
 
     // Advance position in intermediate result buffer.
     pos += field->get_stride();
@@ -581,6 +586,13 @@ transfer_field(const PredictionField *field, size_t pos) {
       set_int_value(src_value, field, _dest_dict, pos);
     }
 
+    if (_error_check && diff == DT_differs) {
+      if (_report_errors) {
+        report_error_delta(field, _cmd_num, src_value, dest_value);
+      }
+      ++_error_count;
+    }
+
   } else if (field->get_type() == PredictionField::T_bool) {
     bool src_value = get_bool_value(field, _src_dist, pos);
     bool dest_value = get_bool_value(field, _dest_dict, pos);
@@ -591,6 +603,13 @@ transfer_field(const PredictionField *field, size_t pos) {
 
     if (_perform_copy && diff != DT_identical) {
       set_bool_value(src_value, field, _dest_dict, pos);
+    }
+
+    if (_error_check && diff == DT_differs) {
+      if (_report_errors) {
+        report_error(field, _cmd_num, src_value, dest_value);
+      }
+      ++_error_count;
     }
 
   } else if (field->get_type() == PredictionField::T_float) {
@@ -605,6 +624,13 @@ transfer_field(const PredictionField *field, size_t pos) {
       set_float_value(src_value, field, _dest_dict, pos);
     }
 
+    if (_error_check && diff == DT_differs) {
+      if (_report_errors) {
+        report_error_delta(field, _cmd_num, src_value, dest_value);
+      }
+      ++_error_count;
+    }
+
   } else if (field->get_type() == PredictionField::T_vec2) {
     LVecBase2f src_value = get_vec2_value(field, _src_dist, pos);
     LVecBase2f dest_value = get_vec2_value(field, _dest_dict, pos);
@@ -615,6 +641,13 @@ transfer_field(const PredictionField *field, size_t pos) {
 
     if (_perform_copy && diff != DT_identical) {
       set_vec2_value(src_value, field, _dest_dict, pos);
+    }
+
+    if (_error_check && diff == DT_differs) {
+      if (_report_errors) {
+        report_error_delta(field, _cmd_num, src_value, dest_value);
+      }
+      ++_error_count;
     }
 
   } else if (field->get_type() == PredictionField::T_vec3) {
@@ -629,6 +662,13 @@ transfer_field(const PredictionField *field, size_t pos) {
       set_vec3_value(src_value, field, _dest_dict, pos);
     }
 
+    if (_error_check && diff == DT_differs) {
+      if (_report_errors) {
+        report_error_delta(field, _cmd_num, src_value, dest_value);
+      }
+      ++_error_count;
+    }
+
   } else if (field->get_type() == PredictionField::T_vec4) {
     LVecBase4f src_value = get_vec4_value(field, _src_dist, pos);
     LVecBase4f dest_value = get_vec4_value(field, _dest_dict, pos);
@@ -639,6 +679,13 @@ transfer_field(const PredictionField *field, size_t pos) {
 
     if (_perform_copy && diff != DT_identical) {
       set_vec4_value(src_value, field, _dest_dict, pos);
+    }
+
+    if (_error_check && diff == DT_differs) {
+      if (_report_errors) {
+        report_error_delta(field, _cmd_num, src_value, dest_value);
+      }
+      ++_error_count;
     }
   }
 

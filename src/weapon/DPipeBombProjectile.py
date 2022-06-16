@@ -130,7 +130,6 @@ class DPipeBombProjectile(BaseClass):
             BaseClass.announceGenerate(self)
             self.skin = self.team
             self.setModel("models/weapons/w_grenade_grenadelauncher")
-            self.reparentTo(base.dynRender)
             # Hide the pipe bomb for the first 0.1 seconds of its life to hide
             # interpolation artifacts.  Same thing is done with rocket
             # projectiles.
