@@ -12,7 +12,7 @@ GameZone = 2
 
 ###############################################################################
 
-from panda3d.core import BitMask32, Vec3, DynamicTextFont, SamplerState
+from panda3d.core import BitMask32, Vec3, DynamicTextFont, SamplerState, NodePath, LineSegs
 
 class TFTeam:
     NoTeam = -1
@@ -30,6 +30,7 @@ class CollisionGroup:
     PlayerMovement = 5
     Projectile = 6
     Rockets = 7
+    Gibs = 8
 
 class Contents:
     Empty = 0
@@ -232,6 +233,19 @@ def getTF2ProfessorFont():
         TF2ProfessorFont.setPixelsPerUnit(128)
     return TF2ProfessorFont
 
+def getAxisViz():
+    segs = LineSegs('axis')
+    segs.setColor((0, 1, 0, 1))
+    segs.moveTo((0, 0, 0))
+    segs.drawTo((0, 16, 0))
+    segs.setColor((1, 0, 0, 1))
+    segs.moveTo((0, 0, 0))
+    segs.drawTo((16, 0, 0))
+    segs.setColor((0, 0, 1, 1))
+    segs.moveTo((0, 0, 0))
+    segs.drawTo((0, 0, 16))
+    return NodePath(segs.create())
+
 # All classes use the same standing/ducking collision hulls.
 VEC_VIEW = Vec3(0, 0, 72)
 VEC_HULL_MIN = Vec3(-24, -24, 0)
@@ -272,6 +286,7 @@ ModelPrecacheList = [
     "models/char/scout",
     "models/char/soldier",
     "models/char/spy",
+    "models/char/medic",
 
     "models/buildables/sentry1",
     "models/buildables/sentry1_blueprint",
@@ -289,6 +304,14 @@ ModelPrecacheList = [
     "models/buildables/dispenser_gib3",
     "models/buildables/dispenser_gib4",
     "models/buildables/dispenser_gib5",
+    "models/buildables/teleporter",
+    "models/buildables/teleporter_light",
+    "models/buildables/teleporter_blueprint_enter",
+    "models/buildables/teleporter_blueprint_exit",
+    "models/buildables/teleporter_gib1",
+    "models/buildables/teleporter_gib2",
+    "models/buildables/teleporter_gib3",
+    "models/buildables/teleporter_gib4",
 
     "models/effects/explosion",
 
@@ -330,5 +353,7 @@ ModelPrecacheList = [
     "models/weapons/w_revolver",
     "models/weapons/w_rocket",
     "models/weapons/w_scattergun",
-    "models/weapons/w_toolbox"
+    "models/weapons/w_toolbox",
+    "models/weapons/w_bonesaw",
+    "models/weapons/v_bonesaw_medic",
 ]

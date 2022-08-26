@@ -51,6 +51,9 @@ CLP(GameLevel)::
 CLP(GameLevel)() :
   _lvl_data(nullptr)
 {
+#ifdef TF_CLIENT
+  _geom_index = 0;
+#endif
 }
 
 #ifdef TF_CLIENT
@@ -66,6 +69,55 @@ flatten(NodePath &np) {
   gr.collect_vertex_data(np.node(), 0);
   gr.unify(np.node(), false);
 }
+
+/**
+ *
+ */
+void CLP(GameLevel)::
+process_prop_geom_node(GeomNode *node, const MapStaticProp *sprop) {
+  for (int i = 0; i < node->get_num_geoms(); ++i) {
+    const GeomVertexArrayData *array = sprop->get_vertex_lighting(_geom_index);
+    const Geom *geom = node->get_geom(i);
+    const RenderState *state = node->get_geom_state(i);
+    const GeomVertexData *vdata = geom->get_vertex_data();
+    int arr_index = vdata->get_num_arrays();
+
+    const GeomVertexFormat *fmt = vdata->get_format();
+
+    PT(GeomVertexArrayFormat) arr_fmt = new GeomVertexArrayFormat;
+    arr_fmt->add_column(InternalName::make("vertex_lighting"), 3, GeomEnums::NT_float16, GeomEnums::C_other);
+    CPT(GeomVertexArrayFormat) carr_fmt = GeomVertexArrayFormat::register_format(arr_fmt);
+
+    PT(GeomVertexFormat) new_fmt = new GeomVertexFormat(*fmt);
+    new_fmt->add_array(carr_fmt);
+    CPT(GeomVertexFormat) cnew_fmt = GeomVertexFormat::register_format(new_fmt);
+
+    PT(GeomVertexData) new_vdata = new GeomVertexData(*vdata);
+    new_vdata->set_format(cnew_fmt);
+    new_vdata->set_array(arr_index, array);
+
+    PT(Geom) new_geom = geom->make_copy();
+    new_geom->set_vertex_data(new_vdata);
+    node->set_geom(i, new_geom);
+
+    ++_geom_index;
+  }
+}
+
+/**
+ *
+ */
+void CLP(GameLevel)::
+r_process_prop_node(PandaNode *node, const MapStaticProp *sprop) {
+  if (node->is_geom_node()) {
+    process_prop_geom_node(DCAST(GeomNode, node), sprop);
+  }
+
+  for (int i = 0; i < node->get_num_children(); ++i) {
+    r_process_prop_node(node->get_child(i), sprop);
+  }
+}
+
 #endif
 
 /**
@@ -73,9 +125,9 @@ flatten(NodePath &np) {
  */
 void CLP(GameLevel)::
 load_level_props() {
-  const SpatialPartition *tree = _lvl_data->get_area_cluster_tree();
 
 #ifdef TF_CLIENT
+  const SpatialPartition *tree = _lvl_data->get_area_cluster_tree();
   PT(StaticPartitionedObjectNode) prop_node = new StaticPartitionedObjectNode("props");
   NodePath prop_root = _lvl.attach_new_node(prop_node);
   pvector<NodePath> light_nodes;
@@ -98,25 +150,14 @@ load_level_props() {
 
   PT(PhysMaterial) temp_mat = new PhysMaterial(0.5f, 0.5f, 0.5f);
 
-  for (int i = 0; i < _lvl_data->get_num_entities(); ++i) {
-    MapEntity *ent = _lvl_data->get_entity(i);
-    if (ent->get_class_name() != "prop_static") {
+  for (int i = 0; i < _lvl_data->get_num_static_props(); ++i) {
+    const MapStaticProp *sprop = _lvl_data->get_static_prop(i);
+
+    if (sprop->get_model_filename().get_basename_wo_extension().empty()) {
       continue;
     }
 
-    PDXElement *props = ent->get_properties();
-
-    if (!props->has_attribute("model")) {
-      continue;
-    }
-
-    const PDXValue &model_val = props->get_attribute_value("model");
-    if (!model_val.is_string()) {
-      continue;
-    }
-
-    Filename model_filename = Filename::from_os_specific(
-      std::regex_replace(model_val.get_string(), std::regex(".mdl"), ".bam"));
+    Filename model_filename = sprop->get_model_filename();
     NodePath prop_model = NodePath(loader->load_sync(model_filename, lopts));
     if (prop_model.is_empty()) {
       continue;
@@ -125,30 +166,20 @@ load_level_props() {
     loaded_models.push_back(prop_mdlroot);
 
 #ifdef TF_CLIENT
-    if (props->has_attribute("skin")) {
-      int skin = props->get_attribute_value("skin").get_int();
-      if (skin >= 0 && skin < prop_mdlroot->get_num_material_groups()) {
-        prop_mdlroot->set_active_material_group(skin);
-      }
+    if (sprop->get_skin() < prop_mdlroot->get_num_material_groups()) {
+      prop_mdlroot->set_active_material_group(sprop->get_skin());
     }
 #endif
 
-    LPoint3 pos;
-    if (props->has_attribute("origin")) {
-      props->get_attribute_value("origin").to_vec3(pos);
-      prop_model.set_pos(pos);
-    }
+    prop_model.set_pos(sprop->get_pos());
+    prop_model.set_hpr(sprop->get_hpr());
 
-    if (props->has_attribute("angles")) {
-      LVecBase3 phr;
-      props->get_attribute_value("angles").to_vec3(phr);
-      prop_model.set_hpr(phr[1] - 90, -phr[0], phr[2]);
-    }
+    LPoint3 pos = sprop->get_pos();
 
     // Set up collisions for the prop.
     PT(PhysRigidStaticNode) cnode;
     ModelRoot::CollisionInfo *cinfo = prop_mdlroot->get_collision_info();
-    if (props->get_attribute_value("solid").get_int() != 0 &&
+    if (sprop->get_solid() &&
         cinfo != nullptr && cinfo->get_part(0)->mesh_data != nullptr) {
       const ModelRoot::CollisionPart *part = cinfo->get_part(0);
       PT(PhysShape) shape;
@@ -174,12 +205,18 @@ load_level_props() {
 
 #ifdef TF_CLIENT
     // Perform lots of flattening to reduce nodes and geoms on props.
-    prop_model.flatten_strong();
+    prop_model.flatten_light();
     NodePath lod_node = prop_model.find("**/+LODNode");
     if (!lod_node.is_empty()) {
       // Grab the first LOD and throw away the rest so we can flatten.
       prop_model = lod_node.get_child(0);
     }
+
+    // Tack on baked per-vertex lighting.
+    _geom_index = 0;
+    r_process_prop_node(prop_model.node(), sprop);
+    prop_model.set_shader_input(ShaderInput("bakedVertexLight", LVecBase2(0)));
+
     prop_model.flatten_strong();
 
     if (prop_model.get_num_children() == 1) {
@@ -202,7 +239,7 @@ load_level_props() {
       }
     }
 
-    prop_model.set_effect(MapLightingEffect::make(CamBits::main));
+    //prop_model.set_effect(MapLightingEffect::make(CamBits::main));
     light_nodes.push_back(prop_model);
 
     prop_model.node()->set_final(true);
@@ -211,23 +248,27 @@ load_level_props() {
     }
 
 #endif // TF_CLIENT
+
+    if (cnode != nullptr) {
+      cnode->sync_transform();
+    }
   }
 
 #ifdef TF_CLIENT
-  flatten(prop_root);
+  //flatten(prop_root);
+
+  CPT(MapLightingEffect) light_effect =
+    DCAST(MapLightingEffect, MapLightingEffect::make(CamBits::main));
 
   for (NodePath &prop_model : light_nodes) {
     // Also, we can flatten better by pre-computing the lighting state once.
-    const MapLightingEffect *light_effect = DCAST(MapLightingEffect,
-      prop_model.get_effect(MapLightingEffect::get_class_type()));
     light_effect->compute_lighting(
       prop_model.get_net_transform(), _lvl_data,
       prop_model.get_bounds()->as_geometric_bounding_volume(),
-      prop_model.get_parent().get_net_transform());
+      prop_model.get_parent().get_net_transform(), true);
     CPT(RenderState) state = prop_model.get_state();
     state = state->compose(light_effect->get_current_lighting_state());
     prop_model.set_state(state);
-    prop_model.clear_effect(MapLightingEffect::get_class_type());
     prop_model.flatten_light();
   }
 
@@ -309,8 +350,8 @@ load_level(const Filename &lvl_name) {
     }
   }
 
-  _lvl.clear_model_nodes();
-  flatten(_lvl);
+  //_lvl.clear_model_nodes();
+  //flatten(_lvl);
 
   PT(MapRender) scene_top = new MapRender("top");
   scene_top->replace_node(base->get_render().node());

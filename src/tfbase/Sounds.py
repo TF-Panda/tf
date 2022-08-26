@@ -155,7 +155,7 @@ def createSound(info, spatial=False, getWave=False):
     sound.setVolume(random.uniform(info.volume[0], info.volume[1]))
     if spatial:
         props = SteamAudioProperties()
-        props._enable_occlusion = False
+        props._enable_occlusion = True
         props._enable_transmission = False
         props._enable_air_absorption = False
         props._enable_reflections = False
@@ -215,7 +215,7 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False, getI
     sound.setVolume(volume)
     if spatialized:
         props = SteamAudioProperties()
-        props._enable_occlusion = False
+        props._enable_occlusion = True
         props._enable_transmission = False
         props._enable_air_absorption = False
         props._enable_reflections = False

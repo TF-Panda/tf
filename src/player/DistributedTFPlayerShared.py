@@ -22,6 +22,8 @@ from tf.movement.MoveData import MoveData
 
 import math
 
+tf_max_health_boost = 1.5
+
 class DistributedTFPlayerShared:
 
     DiagonalFactor = math.sqrt(2.) / 2.
@@ -31,9 +33,23 @@ class DistributedTFPlayerShared:
     StateAlive = 2
 
     CondNone = 0
-    CondAiming = 1 << 0
-    CondTaunting = 1 << 1
-    CondSelectedToTeleport = 1 << 2
+    CondAiming = 1
+    CondTaunting = 2
+    CondSelectedToTeleport = 3
+    CondDisguised = 4
+    CondBurning = 5
+    CondHealthBuff = 6
+    CondInvulnerable = 7
+    CondStealthedBlink = 8
+    CondInvulnerableWearingOff = 9
+    CondTeleported = 10
+
+    BadConditions = [
+        CondBurning
+    ]
+
+    COND_COUNT = 8
+    COND_PERMANENT = -1
 
     def __init__(self):
         self.playerName = ""
@@ -42,6 +58,7 @@ class DistributedTFPlayerShared:
         self.eyeH = 0.0
         self.eyeP = 0.0
 
+        self.conditions = {}
         self.condition = self.CondNone
 
         self.viewModel = None
@@ -59,9 +76,11 @@ class DistributedTFPlayerShared:
         self.selectedBuilding = 0
 
         self.airDashing = False
+        self.ducking = False
 
         self.stepSoundTime = 0.0
         self.stepSide = 0
+        self.fallVelocity = 0.0
 
         self.observerMode = ObserverMode.Off
         self.observerTarget = -1
@@ -96,6 +115,19 @@ class DistributedTFPlayerShared:
 
         self.metal = 0
         self.maxMetal = 200
+
+    def __conditionThink(self, task):
+
+        return task.cont
+
+    def getMaxBuffedHealth(self):
+        boostMax = self.maxHealth * tf_max_health_boost
+        roundDown = int(boostMax / 5)
+        roundDown *= 5
+        return roundDown
+
+    def getClassViewOffset(self):
+        return Vec3(0, 0, self.classInfo.ViewOffset)
 
     def usesMetal(self):
         return self.tfClass == Class.Engineer
@@ -218,13 +250,20 @@ class DistributedTFPlayerShared:
         self.punchAngle += ang * 20
 
     def removeCondition(self, cond):
-        self.condition &= ~cond
+        if cond in self.conditions:
+            del self.conditions[cond]
+        self.condition &= ~(1 << cond)
 
-    def setCondition(self, cond):
-        self.condition |= cond
+    def removeAllConditions(self):
+        self.conditions = {}
+        self.condition = 0
+
+    def setCondition(self, cond, time=-1):
+        self.conditions[cond] = time
+        self.condition |= (1 << cond)
 
     def inCondition(self, cond):
-        return (self.condition & cond) != 0
+        return self.condition & cond
 
     def isObserver(self):
         return self.observerMode != ObserverMode.Off
@@ -401,7 +440,7 @@ class DistributedTFPlayerShared:
         right = command.buttons & InputFlag.MoveRight
 
         self.moveData.player = self
-        self.moveData.origin = self.getPos()
+        self.moveData.origin = self.controller.foot_position
         self.moveData.oldAngles = Vec3(self.moveData.angles)
         self.moveData.angles = Vec3(command.viewAngles)
         self.moveData.viewAngles = Vec3(command.viewAngles)

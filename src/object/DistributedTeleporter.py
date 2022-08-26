@@ -6,7 +6,9 @@ from .BaseObject import BaseObject
 from .ObjectType import ObjectType
 from .ObjectState import ObjectState
 
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, TFLocalizer
+
+from direct.interval.IntervalGlobal import *
 
 from direct.directbase import DirectRender
 
@@ -126,6 +128,8 @@ class DistributedTeleporter(BaseObject):
 
             self.teleportingPlayer = player
             player.setCondition(player.CondSelectedToTeleport)
+
+            self.sendUpdate('teleportEffect', [self.teleportingPlayer.doId])
 
             self.emitSoundSpatial("Building_Teleporter.Send")
 
@@ -364,6 +368,86 @@ class DistributedTeleporter(BaseObject):
 
     else: # IS_CLIENT
 
+        def teleportEffect(self, doId):
+            plyr = base.cr.doId2do.get(doId)
+            if not plyr:
+                return
+
+            system = ParticleSystem2()
+            system.setPoolSize(200)
+
+            system.setInput(0, plyr.modelNp, False)
+
+            emitter = ContinuousParticleEmitter()
+            emitter.setEmissionRate(667)
+            emitter.setDuration(0.5)
+            system.addEmitter(emitter)
+
+            system.addInitializer(P2_INIT_PositionModelHitBoxes(0))
+            system.addInitializer(P2_INIT_LifespanRandomRange(4, 4))
+            if plyr.team == TFGlobals.TFTeam.Red:
+                system.addInitializer(P2_INIT_ColorRandomRange(Vec3(255/255, 90/255, 90/255), Vec3(255/255, 126/255, 93/255)))
+            else:
+                system.addInitializer(P2_INIT_ColorRandomRange(Vec3(0/255, 159/255, 165/255), Vec3(116/255, 152/255, 255/255)))
+            system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(1), Vec3(3), True))
+            system.addInitializer(P2_INIT_RotationVelocityRandomRange(20, 35, True))
+
+            colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+            l0 = ParticleLerpSegment()
+            l0.type = l0.LTLinear
+            l0.start = 0.0
+            l0.end = 0.05
+            l0.start_value = Vec3(0)
+            l0.end_is_initial = True
+            colorLerp.addSegment(l0)
+            l0.start = 0.8
+            l0.end = 1.0
+            l0.start_is_initial = True
+            l0.end_is_initial = False
+            l0.end_value = Vec3(0)
+            colorLerp.addSegment(l0)
+            system.addFunction(colorLerp)
+
+            scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+            l0 = ParticleLerpSegment()
+            l0.start = 0.0
+            l0.end = 0.05
+            l0.scale_on_initial = True
+            l0.start_value = Vec3(0.3)
+            l0.end_value = Vec3(2.5)
+            l0.type = l0.LTLinear
+            scaleLerp.addSegment(l0)
+            l0.start_value = Vec3(2.5)
+            l0.end_value = Vec3(1.0)
+            l0.start = 0.05
+            l0.end = 0.1
+            scaleLerp.addSegment(l0)
+            l0.scale_on_initial = False
+            l0.start_is_initial = True
+            l0.end_value = Vec3(0.3)
+            l0.start = 0.1
+            l0.end = 1.0
+            scaleLerp.addSegment(l0)
+            system.addFunction(scaleLerp)
+
+            system.addFunction(LifespanKillerParticleFunction())
+            system.addFunction(VelocityJitterParticleFunction(0.05, 0.05, Vec3(1, 1, 1), 0.1, 0.45))
+            #system.addFunction(VelocityJitterParticleFunction(1, 1, Vec3(1, 1, 1), 0.48, 1.0))
+            system.addFunction(BounceParticleFunction(LPlane(0, 0, 1, -plyr.getZ()), 0.0))
+            system.addFunction(LinearMotionParticleFunction())
+            system.addFunction(AngularMotionParticleFunction())
+
+            #system.addForce(VectorParticleForce(Vec3.up() * 4, 0.0, 0.5))
+            system.addForce(VectorParticleForce(Vec3.down() * (200), 0.45))
+
+            renderer = SpriteParticleRenderer2()
+            renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/tp_spark.pmat")),
+                                                    ColorAttrib.makeVertex()))
+            system.addRenderer(renderer)
+
+            system.start(base.dynRender)
+            Sequence(Wait(0.55), Func(system.softStop)).start()
+
         def announceGenerate(self):
             BaseObject.announceGenerate(self)
             self.addTask(self.__teleUpdate, "teleUpdateClient", appendTask=True, sim=False)
@@ -460,12 +544,14 @@ class DistributedTeleporterEntrance(DistributedTeleporter):
     def __init__(self):
         DistributedTeleporter.__init__(self)
         self.objectType = ObjectType.TeleporterEntrance
+        self.objectName = 'Teleporter Entrance'
 
 class DistributedTeleporterExit(DistributedTeleporter):
 
     def __init__(self):
         DistributedTeleporter.__init__(self)
         self.objectType = ObjectType.TeleporterExit
+        self.objectName = 'Teleporter Exit'
 
 if not IS_CLIENT:
     DistributedTeleporterAI = DistributedTeleporter

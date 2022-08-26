@@ -9,7 +9,6 @@ class Ragdoll(PhysRagdoll):
     def __init__(self, characterNp, collInfo):
         PhysRagdoll.__init__(self, characterNp)
         #self.setDebug(True, 4.0)
-        self.task = None
         self.collInfo = collInfo
         self.characterNp = characterNp
         self.characterNp.node().setFinal(True)
@@ -32,57 +31,33 @@ class Ragdoll(PhysRagdoll):
                 parentName = self.collInfo.getPart(part.parent).name
             else:
                 parentName = ""
-            self.addJoint(parentName, part.name, shape, part.mass, part.rot_damping * 10,
-                          part.damping, part.limit_x, part.limit_y, part.limit_z)
-
-    def __update(self, task):
-        self.update()
-
-        # Recompute a bounding volume that contains all of the ragdoll's joint positions.
-        # FIXME: This isn't a perfect solution.  The ragdoll bounds will be unioned
-        # with the bounds of the character geometry, which will be stationed at the ragdoll's
-        # initial position.  This means the character's bounding volume will stretch in the
-        # direction that the ragdoll moves.  A better solution would be to do the unioning
-        # of the ragdoll limb bounds, but also move the root of the character node to the
-        # position of the root ragdoll joint.  That means we also have to change how the
-        # joint transforms are computed.
-        bounds = BoundingBox()
-        for i in range(self.getNumJoints()):
-            actorBounds = self.getJointActor(i).getPhysBounds()
-            # It's currently in world-space.  Transform it to be relative to
-            # the character.
-            actorBounds.xform(self.characterNp.getNetTransform().getInverse().getMat())
-            bounds.extendBy(actorBounds)
-
-        self.characterNp.node().setBounds(bounds)
-
-        return task.cont
+            self.addJoint(parentName, part.name, shape, part.mass, part.rot_damping,
+                          part.damping, part.inertia, part.limit_x, part.limit_y, part.limit_z)
 
     def destroy(self):
-        if self.task:
-            self.task.remove()
-        self.task = None
         self.characterNp = None
         PhysRagdoll.destroy(self)
 
-    def setEnabled(self, enable, forceJointName, forceVector, forcePos):
+    def setEnabled(self, enable, forceJointName, forceVector, forcePos, initialVel = Vec3(0)):
         if enable:
             self.startRagdoll(base.physicsWorld, base.dynRender)
 
             for i in range(self.getNumJoints()):
                 actor = self.getJointActor(i)
                 actor.setCollisionGroup(CollisionGroup.Debris)
+                actor.setPythonTag("entity", self)
 
-            if self.task:
-                self.task.remove()
-            self.task = base.taskMgr.add(self.__update, 'ragdollUpdate', sort = 35)
-
-            if forceJointName is not None:
-                forceJoint = self.getJointActor(forceJointName)
-            else:
-                forceJoint = self.getJointActor(self.collInfo.root_part)
+            initialVel = Vec3(initialVel[0], initialVel[1], initialVel[2])
+            if initialVel.lengthSquared() > 0.001:
+                for i in range(self.getNumJoints()):
+                    joint = self.getJointActor(i)
+                    joint.addForce(initialVel, joint.FTVelocityChange)
 
             if (forceVector.lengthSquared() > 0.001):
+                if forceJointName is not None:
+                    forceJoint = self.getJointActor(forceJointName)
+                else:
+                    forceJoint = self.getJointActor(self.collInfo.root_part)
 
                 forceJoint.addForce(forceVector, forceJoint.FTImpulse)
                 forcePos = Point3(forceJoint.getTransform().getPos())
@@ -97,6 +72,3 @@ class Ragdoll(PhysRagdoll):
                         joint.addForceAtPos(forceVector * scale, forcePos, joint.FTImpulse)
         else:
             self.stopRagdoll()
-            if self.task:
-                self.task.remove()
-                self.task = None

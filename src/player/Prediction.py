@@ -127,7 +127,7 @@ class Prediction(DirectObject):
         Called at the end of the frame if any packets were received.
         """
 
-        errorCheck = (commandsAcknowledged > 0)
+        #errorCheck = (commandsAcknowledged > 0)
 
         self.numServerCommandsAcknowledged += commandsAcknowledged
         self.previousAckHadErrors = False

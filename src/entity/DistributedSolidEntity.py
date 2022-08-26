@@ -29,7 +29,6 @@ class DistributedSolidEntity(DistributedEntity):
         def initFromLevel(self, ent, properties):
             DistributedEntity.initFromLevel(self, ent, properties)
             self.modelNum = ent.getModelIndex()
-            print("model num", self.modelNum)
 
     def makeModelCollisionShape(self):
         if self.physType == self.PTConvex:
@@ -39,7 +38,6 @@ class DistributedSolidEntity(DistributedEntity):
             for mesh in meshes:
                 shape = PhysShape(mesh, defMat)
                 shapeDatas.append((shape, mesh))
-            print("convex shape datas", shapeDatas)
             return shapeDatas
 
         elif self.physType == self.PTTriangles:
@@ -68,6 +66,7 @@ class DistributedSolidEntity(DistributedEntity):
         DistributedEntity.announceGenerate(self)
         self.fetchModel()
         self.parentModelToEntity()
+        #self.flattenLight()
         self.setPosHpr(0, 0, 0, 0, 0, 0)
 
     def delete(self):

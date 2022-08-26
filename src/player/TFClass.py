@@ -65,6 +65,9 @@ class Weapon:
     Revolver = 18
     Knife = 19
     Toolbox = 20
+    BoneSaw = 21
+    MediGun = 22
+    SyringeGun = 23
 
 BaseSpeed = 300
 
@@ -121,6 +124,11 @@ class EngineerInfo:
     TeleporterThanks = [
         "Engineer.ThanksForTheTeleporter01",
         "Engineer.ThanksForTheTeleporter02"
+    ]
+
+    ThanksForHeal = [
+        "Engineer.ThanksForTheHeal01",
+        "Engineer.ThanksForTheHeal02"
     ]
 
     VoiceCommands = {
@@ -187,6 +195,12 @@ class SoldierInfo:
         "Soldier.ThanksForTheTeleporter03"
     ]
 
+    ThanksForHeal = [
+        "Soldier.ThanksForTheHeal01",
+        "Soldier.ThanksForTheHeal02",
+        "Soldier.ThanksForTheHeal03"
+    ]
+
     VoiceCommands = {
         VoiceCommand.Medic: [
             "Soldier.Medic01",
@@ -250,6 +264,12 @@ class DemoInfo:
         "Demoman.ThanksForTheTeleporter02"
     ]
 
+    ThanksForHeal = [
+        "Demoman.ThanksForTheHeal01",
+        "Demoman.ThanksForTheHeal02",
+        "Demoman.ThanksForTheHeal03"
+    ]
+
     VoiceCommands = {
         VoiceCommand.Medic: [
             "Demoman.Medic01",
@@ -304,6 +324,12 @@ class HeavyInfo:
         "Heavy.ThanksForTheTeleporter01",
         "Heavy.ThanksForTheTeleporter02",
         "Heavy.ThanksForTheTeleporter03"
+    ]
+
+    ThanksForHeal = [
+        "Heavy.ThanksForTheHeal01",
+        "Heavy.ThanksForTheHeal02",
+        "Heavy.ThanksForTheHeal03"
     ]
 
     VoiceCommands = {
@@ -364,6 +390,11 @@ class ScoutInfo:
         "Scout.ThanksForTheTeleporter02",
         "Scout.ThanksForTheTeleporter03"
     ]
+    ThanksForHeal = [
+        "Scout.ThanksForTheHeal01",
+        "Scout.ThanksForTheHeal02",
+        "Scout.ThanksForTheHeal03"
+    ]
     VoiceCommands = {
         VoiceCommand.Medic: [
             "Scout.Medic01",
@@ -414,6 +445,9 @@ class PyroInfo:
     ]
     TeleporterThanks = [
         "Pyro.ThanksForTheTeleporter01"
+    ]
+    ThanksForHeal = [
+        "Pyro.ThanksForTheHeal01"
     ]
     VoiceCommands = {
         VoiceCommand.Medic: [
@@ -466,6 +500,11 @@ class SpyInfo:
         "Spy.ThanksForTheTeleporter02",
         "Spy.ThanksForTheTeleporter03"
     ]
+    ThanksForHeal = [
+        "Spy.ThanksForTheHeal01",
+        "Spy.ThanksForTheHeal02",
+        "Spy.ThanksForTheHeal03"
+    ]
     VoiceCommands = {
         VoiceCommand.Medic: [
             "Spy.Medic01",
@@ -476,6 +515,68 @@ class SpyInfo:
 
     Weapons = [Weapon.Revolver, Weapon.Knife]
 
+
+class MedicInfo:
+    Name = TFLocalizer.Medic
+    MenuWeapon = "models/weapons/w_medigun"
+    PlayerModel = "models/char/medic"
+    ViewModel = "models/weapons/v_bonesaw_medic"
+    ForwardFactor = 1.07
+    BackwardFactor = 0.96
+    CrouchFactor = 0.36
+    SwimmingFactor = 0.85
+    ViewHeight = 75
+    MaxHealth = 150
+    Phonemes = 'medic'
+    Expressions = {
+        'idle': ['defaultFace'],
+        'specialAction': ['specialAction01'],
+        'pain': ['painSmall']
+    }
+
+    HeadRotationOffset = Vec3(0, 0, 0)
+
+    PainFilenames = [
+        "Medic.PainSevere01",
+        "Medic.PainSevere02",
+        "Medic.PainSevere03",
+        "Medic.PainSevere04"
+    ]
+    CritPainFilenames = [
+        "Medic.PainCrticialDeath01",
+        "Medic.PainCrticialDeath02",
+        "Medic.PainCrticialDeath03",
+        "Medic.PainCrticialDeath04"
+    ]
+    SharpPainFilenames = [
+        "Medic.PainSharp01",
+        "Medic.PainSharp02",
+        "Medic.PainSharp03",
+        "Medic.PainSharp04",
+        "Medic.PainSharp05",
+        "Medic.PainSharp06",
+        "Medic.PainSharp07",
+        "Medic.PainSharp08"
+    ]
+    TeleporterThanks = [
+        "Medic.ThanksForTheTeleporter01",
+        "Medic.ThanksForTheTeleporter02",
+        "Medic.ThanksForTheTeleporter03"
+    ]
+    ThanksForHeal = [
+        "Medic.ThanksForTheHeal01",
+        "Medic.ThanksForTheHeal02"
+    ]
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Medic.Medic01",
+            "Medic.Medic02",
+            "Medic.Medic03"
+        ]
+    }
+
+    Weapons = [Weapon.MediGun, Weapon.BoneSaw]
+
 ClassInfos = {
     Class.Soldier: SoldierInfo,
     Class.Demo: DemoInfo,
@@ -483,5 +584,6 @@ ClassInfos = {
     Class.HWGuy: HeavyInfo,
     Class.Scout: ScoutInfo,
     Class.Pyro: PyroInfo,
-    Class.Spy: SpyInfo
+    Class.Spy: SpyInfo,
+    Class.Medic: MedicInfo
 }

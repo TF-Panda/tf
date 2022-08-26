@@ -52,6 +52,8 @@ class CubemapRendering:
 
         displayRegions = []
 
+        dirLight = base.game.lvlData.getDirLight()
+
         # Now create display regions for each of the cube map faces.
         for i in range(6):
             dr = buffer.makeDisplayRegion()
@@ -59,10 +61,22 @@ class CubemapRendering:
             dr.setCamera(self.faceCams[i])
             dr.disableClears()
             dr.setClearDepthActive(True)
+            dr.setActive(False)
+            displayRegions.append(dr)
 
-        # Render the cube map.
-        base.graphicsEngine.renderFrame()
-        base.graphicsEngine.syncFrame()
+        for i in range(6):
+            dr = displayRegions[i]
+
+            if not dirLight.isEmpty():
+                # Update cascades for this cube map face camera.
+                dirLight.node().setSceneCamera(self.faceCams[i])
+                dirLight.node().update(base.render)
+
+            dr.setActive(True)
+            # Render to this face.
+            base.graphicsEngine.renderFrame()
+            base.graphicsEngine.syncFrame()
+            dr.setActive(False)
 
         print(tex)
 
@@ -73,6 +87,9 @@ class CubemapRendering:
 
         # Clean up.
         base.graphicsEngine.removeWindow(buffer)
+
+        if not dirLight.isEmpty():
+            dirLight.node().setSceneCamera(base.cam)
 
     def renderCubemaps(self, lvlData):
         # Don't render dynamic objects.

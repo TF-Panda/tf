@@ -1,0 +1,20 @@
+//
+// tf_anim_events.pdx
+//
+// This file defines all of the TF animation event types.
+//
+// The value IDs can be accessed in Python code via:
+//    from tf.actor.AnimEvents import AnimEvent
+//    AnimEvent.Name
+//
+// or in C++ code via:
+//    AnimEvent::ptr()->get_value_id("Name");
+//
+
+[
+  Client_Play_Sound
+
+  Client_Bodygroup_Set_Value
+
+  Server_Weapon_Increment_Ammo
+]

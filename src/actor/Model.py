@@ -199,7 +199,7 @@ class Model(DirectObject):
             # No model.
             return False
 
-        self.modelNp = base.loader.loadModel(filename)
+        self.modelNp = base.loader.loadModel(filename, okMissing=True)
         if not self.modelNp or self.modelNp.isEmpty():
             self.notify.error("Could not load model %s" % filename)
             return False

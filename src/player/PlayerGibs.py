@@ -5,6 +5,7 @@ from tf.tfbase.SurfaceProperties import SurfaceProperties
 from tf.tfbase.TFGlobals import Contents, CollisionGroup
 
 from direct.directbase import DirectRender
+from direct.interval.IntervalGlobal import Sequence, Wait, Func, LerpColorScaleInterval, Parallel
 
 import random
 
@@ -29,6 +30,8 @@ class PlayerGibs:
             mdlRoot = mdl.node()
             if skin < mdlRoot.getNumMaterialGroups():
                 mdlRoot.setActiveMaterialGroup(skin)
+
+            mdl.setTransparency(True)
 
             surfaceProp = "default"
             customData = mdlRoot.getCustomData()
@@ -55,7 +58,7 @@ class PlayerGibs:
             cnode.setMass(cpart.mass)
             cnode.setLinearDamping(cpart.damping)
             cnode.setAngularDamping(cpart.rot_damping)
-            cnode.setCollisionGroup(CollisionGroup.Debris)
+            cnode.setCollisionGroup(CollisionGroup.Gibs)
             cnode.setContentsMask(Contents.Solid)
             cnode.setSolidMask(Contents.Solid)
             cnode.setCcdEnabled(True)
@@ -91,6 +94,15 @@ class PlayerGibs:
 
             self.gibs.append(cnp)
 
+        # Fade gibs out after 10 seconds.
+        self.track = Sequence(Wait(10.0))
+        fadeTrack = Parallel()
+        for gib in self.gibs:
+            fadeTrack.append(LerpColorScaleInterval(gib, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
+        self.track.append(fadeTrack)
+        self.track.append(Func(self.destroy))
+        self.track.start()
+
     def getHeadPosition(self):
         # Return the world-space COM of the head gib.
         return self.headPiece.getMat(base.render).xformPoint(self.headPiece.node().getCenterOfMass())
@@ -100,8 +112,12 @@ class PlayerGibs:
         return self.headPiece.getMat(base.render) * LMatrix4.translateMat(self.headPiece.node().getCenterOfMass())
 
     def destroy(self):
-        for gib in self.gibs:
-            gib.node().removeFromScene(base.physicsWorld)
-            gib.removeNode()
-        self.gibs = None
+        if self.track:
+            self.track.finish()
+            self.track = None
+        if self.gibs:
+            for gib in self.gibs:
+                gib.node().removeFromScene(base.physicsWorld)
+                gib.removeNode()
+            self.gibs = None
         self.headPiece = None

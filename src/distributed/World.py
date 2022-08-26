@@ -28,6 +28,7 @@ class World(DistributedSolidEntity):
     def announceGenerate(self):
         DistributedSolidEntity.announceGenerate(self)
         self.initializeCollisions()
+        #self.node().setCcdEnabled(True)
 
     def delete(self):
         base.world = None

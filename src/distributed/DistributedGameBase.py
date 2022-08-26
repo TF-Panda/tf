@@ -28,6 +28,43 @@ class DistributedGameBase:
         gr.collectVertexData(np.node(), 0)
         gr.unify(np.node(), False)
 
+    def processPropGeomNode(self, node, sprop):
+        for i in range(node.getNumGeoms()):
+            array = sprop.getVertexLighting(self.geomIndex)
+            geom = node.getGeom(i)
+            state = node.getGeomState(i)
+            vdata = geom.getVertexData()
+            arrIndex = vdata.getNumArrays()
+
+            fmt = vdata.getFormat()
+
+            arrFmt = GeomVertexArrayFormat()
+            arrFmt.addColumn(InternalName.make("vertex_lighting"), 3, GeomEnums.NTFloat16, GeomEnums.COther)
+            arrFmt = GeomVertexArrayFormat.registerFormat(arrFmt)
+
+            newFmt = GeomVertexFormat(fmt)
+            newFmt.addArray(arrFmt)
+            newFmt = GeomVertexFormat.registerFormat(newFmt)
+
+            #print(newFmt)
+
+            newVData = GeomVertexData(vdata)
+            newVData.setFormat(newFmt)
+            newVData.setArray(arrIndex, array)
+
+            ngeom = geom.makeCopy()
+            ngeom.setVertexData(newVData)
+            node.setGeom(i, ngeom)
+
+            self.geomIndex += 1
+
+    def r_processPropNode(self, node, sprop):
+        if node.isGeomNode():
+            self.processPropGeomNode(node, sprop)
+
+        for i in range(node.getNumChildren()):
+            self.r_processPropNode(node.getChild(i), sprop)
+
     def loadLevelProps(self):
         # Create a dedicated DynamicVisNode for culling static props.
         # We have one node dedicated to culling static props and another
@@ -45,43 +82,38 @@ class DistributedGameBase:
         propPhysRoot = NodePath("propPhysRoot")
         propPhysRoot.hide()
         lightNodes = []
-        for i in range(self.lvlData.getNumEntities()):
-            ent = self.lvlData.getEntity(i)
-            if ent.getClassName() != "prop_static":
+
+        # We keep track of the models that we loaded so we can evict them
+        # from the ModelPoolc ache after we are done.
+        # Prop models are typically only loaded one during level loads
+        # and fully manipulated after, we so can free up memory by not
+        # having them in the cache.
+        loadedModels = []
+
+        for i in range(self.lvlData.getNumStaticProps()):
+            sprop = self.lvlData.getStaticProp(i)
+
+            if not sprop.getModelFilename().getBasenameWoExtension():
                 continue
 
-            props = ent.getProperties()
-
-            if not props.hasAttribute("model"):
-                continue
-
-            modelVal = props.getAttributeValue("model")
-            if not modelVal.isString():
-                continue
-
-            modelFilename = Filename.fromOsSpecific(modelVal.getString().replace(".mdl", ".bam"))
+            modelFilename = sprop.getModelFilename()
             propModel = loader.loadModel(modelFilename, okMissing=True)
             if not propModel or propModel.isEmpty():
                 continue
 
-            if props.hasAttribute("skin"):
-                skin = props.getAttributeValue("skin").getInt()
-                if skin >= 0 and skin < propModel.node().getNumMaterialGroups():
-                    propModel.node().setActiveMaterialGroup(skin)
+            loadedModels.append(propModel.node())
 
-            pos = Point3()
-            if props.hasAttribute("origin"):
-                props.getAttributeValue("origin").toVec3(pos)
-                propModel.setPos(pos)
+            if sprop.getSkin() < propModel.node().getNumMaterialGroups():
+                propModel.node().setActiveMaterialGroup(sprop.getSkin())
 
-            if props.hasAttribute("angles"):
-                phr = Vec3()
-                props.getAttributeValue("angles").toVec3(phr)
-                propModel.setHpr(phr[1] - 90, -phr[0], phr[2])
+            propModel.setPos(sprop.getPos())
+            propModel.setHpr(sprop.getHpr())
+
+            pos = sprop.getPos()
 
             cnode = None
             cinfo = propModel.node().getCollisionInfo()
-            if props.getAttributeValue("solid").getInt() != 0 and cinfo and cinfo.getPart(0).mesh_data:
+            if sprop.getSolid() and cinfo and cinfo.getPart(0).mesh_data:
                 part = cinfo.getPart(0)
                 if part.concave:
                     mdata = PhysTriangleMeshData(part.mesh_data)
@@ -106,17 +138,23 @@ class DistributedGameBase:
                     shape = PhysShape(mesh, mat)
                     cnode = PhysRigidStaticNode("propcoll")
                     cnode.addShape(shape)
+                    #cnode.setCcdEnabled(True)
                     cnode.addToScene(base.physicsWorld)
                     cnp = propPhysRoot.attachNewNode(cnode)
                     cnp.setTransform(NodePath(), propModel.getTransform(NodePath()))
                     cnode.setContentsMask(Contents.Solid)
                     #cnode.setPythonTag("entity", base.world)
 
-            propModel.flattenStrong()
+            propModel.flattenLight()
             lodNode = propModel.find("**/+LODNode")
             if not lodNode.isEmpty():
                 # Grab the first LOD and throw away the rest so we can flatten.
                 propModel = lodNode.getChild(0)
+
+            # Tack on baked per-vertex lighting.
+            self.geomIndex = 0
+            self.r_processPropNode(propModel.node(), sprop)
+            propModel.setShaderInput("bakedVertexLight", LVecBase2(0))
 
             propModel.flattenStrong()
 
@@ -137,7 +175,7 @@ class DistributedGameBase:
                         propModel.reparentTo(base.sky3DRoot)
                         in3DSky = True
 
-                propModel.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
+                #propModel.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
                 lightNodes.append(propModel)
 
             propModel.node().setFinal(True)
@@ -147,17 +185,19 @@ class DistributedGameBase:
             if cnode:
                 cnode.syncTransform()
 
-        self.flatten(propRoot)
+        #self.flatten(propRoot)
+
+        lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask)
 
         for propModel in lightNodes:
             # Also, we can flatten better by pre-computing the lighting state once.
-            lightEffect = propModel.getEffect(MapLightingEffect.getClassType())
+            #lightEffect = propModel.getEffect(MapLightingEffect.getClassType())
             lightEffect.computeLighting(propModel.getNetTransform(), self.lvlData,
-                                        propModel.getBounds(), propModel.getParent().getNetTransform())
+                                        propModel.getBounds(), propModel.getParent().getNetTransform(), True)
             state = propModel.getState()
             state = state.compose(lightEffect.getCurrentLightingState())
             propModel.setState(state)
-            propModel.clearEffect(MapLightingEffect.getClassType())
+            #propModel.clearEffect(MapLightingEffect.getClassType())
             propModel.flattenLight()
 
         for child in propRoot.getChildren():
@@ -167,6 +207,10 @@ class DistributedGameBase:
         propRoot.node().partitionObjects(self.lvlData.getNumClusters(), self.lvlData.getAreaClusterTree())
 
         self.propPhysRoot = propPhysRoot
+
+        # Now evict the prop models we loaded from the ModelPool cache.
+        for mdlNode in loadedModels:
+            ModelPool.releaseModel(mdlNode)
 
     def delete(self):
         self.unloadLevel()
@@ -189,7 +233,11 @@ class DistributedGameBase:
 
         self.levelName = lvlName
 
-        self.lvl = loader.loadModel(lvlName)
+        # Don't RAM or disk cache the level BAM file.
+        opts = LoaderOptions(LoaderOptions.LFSearch |
+                             LoaderOptions.LFReportErrors |
+                             LoaderOptions.LFNoCache)
+        self.lvl = loader.loadModel(lvlName, loaderOptions=opts)
         #self.lvl.reparentTo(base.render)
         lvlRoot = self.lvl.find("**/+MapRoot")
         lvlRoot.setLightOff(-1)

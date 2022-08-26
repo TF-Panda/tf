@@ -15,7 +15,7 @@ texorder = [0,2,1,3,4,5]
 class SkyBox:
 
     def __init__(self, skyName = "sky_well_01_hdr"):
-        self.root = base.sky2DTop.attachNewNode("skybox")
+        self.root = base.render.attachNewNode("skybox")
 
         for i in range(6):
             cm = CardMaker('cm')

@@ -20,6 +20,13 @@ def simpleSpline(self, val):
 PUNCH_DAMPING = 9.0
 PUNCH_SPRING_CONSTANT = 65.0
 
+PLAYER_FATAL_FALL_SPEED = 1024
+PLAYER_MAX_SAFE_FALL_SPEED = 580
+PLAYER_LAND_ON_FLOATING_OBJECT = 200
+PLAYER_MIN_BOUNCE_SPEED = 200
+PLAYER_FALL_PUNCH_THRESHOLD = 350
+DAMAGE_FOR_FALL_SPEED = 100.0 / (PLAYER_FATAL_FALL_SPEED - PLAYER_MAX_SAFE_FALL_SPEED)
+
 class GameMovement:
 
     def __init__(self):
@@ -164,6 +171,14 @@ class GameMovement:
         # FIXME
         pass
 
+    def handleDuckSpeedCrop(self):
+        if not self.speedCropped and self.player.ducking and self.mv.onGround:
+            frac = 0.333333333
+            self.mv.forwardMove *= frac
+            self.mv.sideMove *= frac
+            self.mv.upMove *= frac
+            self.speedCropped = True
+
     def duck(self):
         """
         See if duck button is pressed and do the appropriate things.
@@ -173,6 +188,110 @@ class GameMovement:
         buttonsReleased = buttonsChanged & self.mv.oldButtons
 
         # Check to see if we are in the air.
+        inAir = not self.mv.onGround
+        inDuck = self.player.ducking
+        duckJump = self.player.jumpTime > 0.0
+        duckJumpTime = self.player.duckJumpTime > 0.0
+
+        if self.mv.buttons & InputFlag.Crouch:
+            self.mv.oldButtons |= InputFlag.Crouch
+        else:
+            self.mv.oldButtons &= ~InputFlag.Crouch
+
+        if self.player.isDead():
+            return
+
+        # Slow down ducked players.
+        self.handleDuckSpeedCrop()
+
+        # If the player is holding down the duck button, the player is in the duck transition, ducking, or duck-jumping.
+        if (self.mv.buttons & InputFlag.Crouch) or self.player.ducking or inDuck or duckJump:
+            # DUCK
+            if (self.mv.buttons & InputFlag.Crouch) or duckJump:
+                # Have the duck button pressed, but the player currently isn't in the duck position.
+                if (buttonsPressed & InputFlag.Crouch) and not inDuck and not duckJump and not duckJumpTime:
+                    self.player.duckTime = GAMEMOVEMENT_DUCK_TIME
+                    self.player.ducking = True
+
+                # The player is in the duck transition and not duck-jumping.
+                if self.player.ducking and not duckJump and not duckJumpTime:
+                    duckMs = max(0.0, GAMEMOVEMENT_DUCK_TIME - self.player.duckTime)
+                    duckSecs = duckMs * 0.001
+
+                    # Finish duck transition when time is over, in "duck", in air.
+                    if (duckSecs > TIME_TO_DUCK) or inDuck or inAir:
+                        self.finishDuck()
+                    else:
+                        # Calc parametric time
+                        duckFraction = simpleSpline(duckSecs / TIME_TO_DUCK)
+                        self.setDuckedEyeOffset(duckFraction)
+
+                if duckJump:
+                    if not inDuck:
+                        self.startUnDuckJump()
+                    else:
+                        # Check for a crouch override.
+                        if not (self.mv.buttons & InputFlag.Crouch):
+                            pass
+
+    def startUnDuckJump(self):
+        self.player.ducking = True
+        self.player.ducked = True
+        self.player.ducking = False
+
+        self.player.viewOffset = self.getPlayerViewOffset(True)
+
+        self.fixPlayerCrouchStuck(True)
+
+    def getPlayerViewOffset(self, ducked):
+        return VEC_DUCK_VIEW if ducked else self.player.getClassViewOffset()
+
+    def getPlayerHullMins(self, ducked):
+        return VEC_DUCK_HULL_MIN if ducked else VEC_HULL_MAX
+
+    def getPlayerHullMaxs(self, ducked):
+        return VEC_DUCK_HULL_MAX if ducked else VEC_HULL_MAX
+
+    def testPlayerPosition(self, pos, collGroup):
+        ret = PhysSweepResult()
+        solidMask = self.player.controller.getSolidMask()
+        if base.physicsWorld.boxcast(ret, self.getPlayerHullMins(self.player.ducked),
+            self.getPlayerHullMaxs(self.player.ducked),
+            Vec3.forward(), 0.0, Vec3(0.0), solidMask, 0, collGroup):
+
+            b = ret.getBlock()
+            a = b.getActor()
+            if a.getContentsMask() & solidMask:
+                ent = a.getPythonTag("entity")
+                if ent:
+                    return (ent, b)
+
+        return (None, None)
+
+    def finishDuck(self):
+        self.player.ducking = True
+        self.player.ducked = True
+        self.player.ducking = False
+
+        self.player.viewOffset = self.getPlayerViewOffset(True)
+
+        self.fixPlayerCrouchStuck(True)
+
+    def fixPlayerCrouchStuck(self, upward):
+        hitent, _ = self.testPlayerPosition(self.mv.origin, CollisionGroup.PlayerMovement)
+        if not hitent:
+            return
+
+        direction = 1 if upward else 0
+
+        test = Point3(self.mv.origin)
+        for _ in range(36):
+            self.mv.origin.z += direction
+            hitent, _ = self.testPlayerPosition(self.mv.origin, CollisionGroup.PlayerMovement)
+            if not hitent:
+                return
+
+        self.mv.origin = test
 
     def updateDuckJumpEyeOffset(self):
         if self.player.duckJumpTime != 0:
@@ -203,10 +322,13 @@ class GameMovement:
 
         self.oldWaterLevel = self.player.waterLevel
 
+        if not self.mv.onGround:
+            self.player.fallVelocity = -self.mv.velocity[2]
+
         self.player.updateStepSound(self.mv.origin, self.mv.velocity)
 
-        self.updateDuckJumpEyeOffset()
-        self.duck()
+        #self.updateDuckJumpEyeOffset()
+        #self.duck()
 
         # Handle movement modes.
         if self.player.moveType == MoveType.Walk:
@@ -596,7 +718,49 @@ class GameMovement:
         fraction = maxScaledSpeed / spd
         self.mv.velocity *= fraction
 
-    #def checkFalling(self):
+    def checkFalling(self):
+        if self.mv.onGround and not self.player.isDead() and self.player.fallVelocity >= PLAYER_FALL_PUNCH_THRESHOLD:
+            #alive = True
+            vol = 0.5
+
+            if False: # self.player.waterLevel > 0
+                pass
+            else:
+                # They hit the ground.
+                if self.player.fallVelocity > PLAYER_MAX_SAFE_FALL_SPEED:
+                    #alive = self.player.playerFallingDamage()
+                    if not IS_CLIENT:
+                        self.player.playerFallingDamage()
+                    vol = 1.0
+                elif self.player.fallVelocity > PLAYER_MAX_SAFE_FALL_SPEED * 0.5:
+                    vol = 0.85
+                elif self.player.fallVelocity < PLAYER_MIN_BOUNCE_SPEED:
+                    vol = 0.0
+
+            self.playerRoughLandingEffects(vol)
+
+        if self.mv.onGround:
+            self.player.fallVelocity = 0.0
+
+    def playerRoughLandingEffects(self, vol):
+        if self.player.tfClass == Class.Scout:
+            # Scouts don't play rumble unless they take damage.
+            if vol < 1.0:
+                vol = 0.0
+
+        if vol == 0.0:
+            return
+
+        # Play ladning sound right awway.
+        self.player.stepSoundTime = 400
+
+        # Play step sound for current texture.
+        self.player.playStepSound(self.mv.origin, vol, True)
+
+        # Knock the screen around a little bit, temporary effect.
+        self.player.punchAngle[2] = self.player.fallVelocity * 0.013
+        if self.player.punchAngle[1] > 8:
+            self.player.punchAngle[1] = 8
 
     def printData(self):
         print("move data at cmd num", self.player.currentCommand.commandNumber)
@@ -632,13 +796,15 @@ class GameMovement:
         # Make sure velocity is valid.
         self.checkVelocity()
 
+        origVel = Vec3(self.mv.velocity)
+
         # Do the move.  This will clip our velocity and tell us if we are on
         # the ground.
         if self.mv.onGround:
-            #wasOnGround = True
+            wasOnGround = True
             self.walkMove()
         else:
-            #wasOnGround = False
+            wasOnGround = False
             self.airMove()
 
         #print("POST WALK")
@@ -647,7 +813,7 @@ class GameMovement:
         self.mv.onGround = bool(self.player.controller.collision_flags & PhysController.CFDown)
         if self.mv.onGround:
             #if not wasOnGround:
-                #print("landed at cmdnum", self.player.currentCommand.commandNumber)
+            #    # Landed.  Check
             self.player.airDashing = False
 
         self.checkVelocity()
@@ -658,6 +824,6 @@ class GameMovement:
         if self.mv.onGround:
             self.mv.velocity[2] = 0.0
 
-        #self.checkFalling()
+        self.checkFalling()
 
 g_game_movement = GameMovement()

@@ -119,9 +119,9 @@ class DistributedEntity(BaseClass, NodePath):
         # it.  This can improve cull traverser performance since it only has
         # to consider visiting the root node instead of every individual
         # physics node.
-        self.physicsRoot = self.attachNewNode("physics")
-        self.physicsRoot.node().setOverallHidden(True)
-        self.physicsRoot.node().setFinal(True)
+        #self.physicsRoot = self.attachNewNode("physics")
+        #self.physicsRoot.node().setOverallHidden(True)
+        #self.physicsRoot.node().setFinal(True)
 
         # Add a tag on our node that links back to us.
         self.setPythonTag("entity", self)
@@ -134,10 +134,7 @@ class DistributedEntity(BaseClass, NodePath):
             self.updateParentEntity()
         else:
             if self.parentEntityName:
-                print("parent entity name", self.parentEntityName)
                 parentEnt = base.entMgr.targetName2ent.get(self.parentEntityName)
-                print(parentEnt)
-                print(bool(parentEnt))
                 if parentEnt is not None:
                     self.setParentEntityId(parentEnt.doId)
 
@@ -264,6 +261,8 @@ class DistributedEntity(BaseClass, NodePath):
         # Ensure it's not in any PhysScene.
         self.node().removeFromScene(base.physicsWorld)
 
+        self.removeTask("physSync")
+
         if replaceWithNormalNode:
             # Replace the physics node with a regular PandaNode.
             entNode = PandaNode("entity")
@@ -385,11 +384,15 @@ class DistributedEntity(BaseClass, NodePath):
             body.setWakeCallback(clbk)
             body.setSleepCallback(clbk)
 
+        body.setCcdEnabled(True)
         body.addToScene(base.physicsWorld)
         # Make this the node that represents the entity.
         body.replaceNode(self.node())
+        self.node().syncTransform()
 
         self.hasCollisions = True
+
+        self.considerPhysSyncTask()
 
     def getEyePosition(self):
         return self.getPos() + self.viewOffset
@@ -590,12 +593,12 @@ class DistributedEntity(BaseClass, NodePath):
     def setVelocity(self, vel):
         self.velocity = vel
 
-    def getPhysicsRoot(self):
-        """
-        Returns the physics root node of the entity; the node that all physics
-        nodes live under.
-        """
-        return self.physicsRoot
+    #def getPhysicsRoot(self):
+    #    """
+    #    Returns the physics root node of the entity; the node that all physics
+    #    nodes live under.
+    #    """
+    #    return self.physicsRoot
 
     def getParentEntity(self):
         return self.parentEntity
@@ -618,6 +621,28 @@ class DistributedEntity(BaseClass, NodePath):
         """
         pass
 
+    def considerPhysSyncTask(self):
+        """
+        Determines whether or not a task that syncs this entity's
+        physics object with its current position every frame is necessary.
+
+        It is necessary if the entity is parented to another entity and has
+        kinematic physics.
+        """
+
+        if self.parentEntityId >= 0 and self.parentEntity and self.hasCollisions and self.kinematic:
+            self.addTask(self.__physSync, "physSync", sim=True, appendTask=True)
+        else:
+            self.removeTask("physSync")
+
+    def __physSync(self, task):
+        """
+        Synchronizes the entity's net transform with its associated physics object
+        every frame.
+        """
+        self.node().syncTransform()
+        return task.cont
+
     def updateParentEntity(self):
         parentId = self.parentEntityId
         if parentId < 0:
@@ -639,6 +664,8 @@ class DistributedEntity(BaseClass, NodePath):
                 # just float in space or something.
                 self.wrtReparentTo(base.hidden)
             self.parentEntity = parentEntity
+
+        self.considerPhysSyncTask()
 
     def setParentEntityId(self, parentId):
         """
@@ -733,7 +760,6 @@ class DistributedEntity(BaseClass, NodePath):
                     param = conn.getParameter(j)
                     if param:
                         oconn.parameters.append(param)
-                print(oconn.parameters)
                 self.connMgr.addConnection(conn.getOutputName(), oconn)
 
         def takeDamage(self, info):
@@ -839,6 +865,21 @@ class DistributedEntity(BaseClass, NodePath):
 
         def onKillEntity(self, ent):
             pass
+
+        def takeHealth(self, hp, bits):
+            if self.takeDamageMode < TakeDamage.Yes:
+                return 0
+
+            if self.health >= self.maxHealth:
+                return 0
+
+            oldHealth = self.health
+            self.health += hp
+            if self.health > self.maxHealth:
+                self.health = self.maxHealth
+
+            return self.health - oldHealth
+
     else:
 
         # IS_CLIENT
@@ -927,7 +968,7 @@ class DistributedEntity(BaseClass, NodePath):
         # since we're about to delete it anyway.  Saves a tiny bit of time.
         self.destroyCollisions(replaceWithNormalNode=False)
         self.parentEntity = None
-        self.physicsRoot = None
+        #self.physicsRoot = None
         if not self.isEmpty():
             self.removeNode()
         BaseClass.delete(self)

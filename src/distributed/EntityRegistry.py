@@ -23,6 +23,7 @@ from tf.entity.DistributedFuncRegenerate import DistributedFuncRegenerateAI
 from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
 from tf.entity.DistributedFuncDoor import DistributedFuncDoorAI
 from tf.entity.DistributedFuncBrush import DistributedFuncBrushAI
+from tf.entity.DistributedPointSpotlight import DistributedPointSpotlightAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -32,6 +33,7 @@ EntityRegistry = {
     "prop_dynamic": DistributedPropDynamicAI,
     "func_door": DistributedFuncDoorAI,
     "func_brush": DistributedFuncBrushAI,
+    #"point_spotlight": DistributedPointSpotlightAI,
     "item_healthkit_small": DHealthKitSmallAI,
     "item_healthkit_medium": DHealthKitMediumAI,
     "item_healthkit_full": DHealthKitFullAI,

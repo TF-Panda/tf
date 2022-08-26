@@ -179,13 +179,10 @@ class DMinigun(TFWeaponGun):
                 return
 
             spatialize = not self.isOwnedByLocalPlayer()
-            self.currSound = Sounds.createSoundByName(self.Sounds[sound], False, spatialize)
-            if self.currSound:
-                self.currSound.setLoop(loop)
-                if spatialize:
-                    offset = self.player.getWorldSpaceCenter() - self.getPos(base.render)
-                    self.registerSpatialSound(self.currSound, offset)
-                self.currSound.play()
+            if spatialize:
+                self.currSound = self.emitSoundSpatial(self.Sounds[sound], (0, 0, 30), loop=loop)
+            else:
+                self.currSound = self.emitSound(self.Sounds[sound], loop=loop)
 
     def windUp(self):
         if not self.player:

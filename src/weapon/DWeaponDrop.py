@@ -30,6 +30,11 @@ class DWeaponDrop(BaseClass):
             self.used = False
 
     if not IS_CLIENT:
+        def announceGenerate(self):
+            BaseClass.announceGenerate(self)
+            self.enabled = True
+            self.activeTime = globalClock.frame_time
+
         def simulate(self):
             BaseClass.simulate(self)
 
@@ -37,12 +42,12 @@ class DWeaponDrop(BaseClass):
             if self.singleUse and self.enabled and ((now - self.activeTime) >= self.lifetime):
                 base.net.deleteObject(self)
 
-        def onSleep(self):
-            self.enabled = True
-            self.activeTime = globalClock.frame_time
+        #def onSleep(self):
+        #    self.enabled = True
+        #    self.activeTime = globalClock.frame_time
 
-        def onWake(self):
-            self.enabled = False
+        #def onWake(self):
+        #    self.enabled = False
 
         def onTriggerEnter(self, ent):
             if not self.enabled or self.used:

@@ -41,17 +41,14 @@ public:
   virtual void announce_generate() override;
   virtual void destroy() override;
 
+  INLINE int get_max_health() const;
+  INLINE int get_health() const;
+  INLINE int get_team() const;
+
 protected:
   int _health;
   int _max_health;
-
-  LVector3 _velocity;
-  float _gravity;
-  LVector3 _base_velocity;
-
-  TFTeam _team;
-
-  LPoint3 _pos;
+  int _team;
 
   // Node in the scene graph that represents the entity.
   NodePath _node;

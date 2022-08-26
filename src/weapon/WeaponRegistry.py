@@ -20,6 +20,8 @@ from .DistributedRevolver import DistributedRevolver
 from .DistributedKnife import DistributedKnife
 from .DistributedPDA import DistributedConstructionPDA, DistributedDestructionPDA
 from .DistributedToolbox import DistributedToolbox
+from .DistributedBoneSaw import DistributedBoneSaw
+from .DistributedMedigun import DistributedMedigun
 
 Weapons = {
   Weapon.ShotgunEngineer: DistributedShotgunEngineer,
@@ -42,5 +44,7 @@ Weapons = {
   Weapon.Knife: DistributedKnife,
   Weapon.ConstructionPDA: DistributedConstructionPDA,
   Weapon.DestructionPDA: DistributedDestructionPDA,
-  Weapon.Toolbox: DistributedToolbox
+  Weapon.Toolbox: DistributedToolbox,
+  Weapon.BoneSaw: DistributedBoneSaw,
+  Weapon.MediGun: DistributedMedigun
 }

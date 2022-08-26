@@ -6,7 +6,7 @@ from .DistributedTFPlayerShared import DistributedTFPlayerShared
 from .TFClass import *
 from .TFPlayerAnimState import TFPlayerAnimState
 
-from tf.tfbase import Sounds
+from tf.tfbase import Sounds, TFGlobals
 from tf.actor.Eyes import Eyes
 from tf.actor.Expressions import Expressions
 from .PlayerGibs import PlayerGibs
@@ -43,7 +43,8 @@ phonemeClasses = [
     'demo',
     'soldier',
     'scout',
-    'spy'
+    'spy',
+    'medic'
 ]
 
 def loadPhonemes():
@@ -53,6 +54,10 @@ def loadPhonemes():
 loadPhonemes()
 
 class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
+
+    DTNone = 0
+    DTRagdoll = 1
+    DTGibs = 2
 
     def __init__(self):
         DistributedChar.__init__(self)
@@ -82,7 +87,56 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.currentSpeech = None
 
+        self.overhealedEffect = None
+
+        self.deathType = self.DTNone
+
         self.gibs = None
+
+    def createOverhealedEffect(self):
+        system = ParticleSystem2()
+        system.setPoolSize(30)
+
+        system.setInput(0, self.modelNp, False)
+
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(15)
+        system.addEmitter(emitter)
+
+        system.addInitializer(P2_INIT_PositionModelHitBoxes(0))
+        system.addInitializer(P2_INIT_LifespanRandomRange(2, 2))
+        system.addInitializer(P2_INIT_VelocityExplicit(Vec3.up(), 13, 13))
+        if self.team == TFGlobals.TFTeam.Red:
+            system.addInitializer(P2_INIT_ColorRandomRange(Vec3(255/255, 90/255, 90/255), Vec3(255/255, 126/255, 93/255)))
+        else:
+            system.addInitializer(P2_INIT_ColorRandomRange(Vec3(0/255, 159/255, 165/255), Vec3(116/255, 152/255, 255/255)))
+        system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(2), Vec3(2)))
+
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        l0 = ParticleLerpSegment()
+        l0.type = l0.LTLinear
+        l0.start = 0.0
+        l0.end = 0.2
+        l0.start_value = Vec3(0)
+        l0.end_is_initial = True
+        colorLerp.addSegment(l0)
+        l0.start = 0.8
+        l0.end = 1.0
+        l0.start_is_initial = True
+        l0.end_is_initial = False
+        l0.end_value = Vec3(0)
+        colorLerp.addSegment(l0)
+        system.addFunction(colorLerp)
+
+        system.addFunction(LifespanKillerParticleFunction())
+        system.addFunction(LinearMotionParticleFunction())
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/healsign.pmat")),
+                                                ColorAttrib.makeVertex()))
+        system.addRenderer(renderer)
+
+        return system
 
     def isPlayer(self):
         """
@@ -93,24 +147,25 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         return True
 
     def getSpatialAudioCenter(self):
-        if self.isDead():
-            if self.ragdoll:
-                # If we're ragdolling, position spatial audio relative to
-                # the ragdoll head.
-                return self.ragdoll[1].getJointActor("bip_head").getTransform().getMat()
-            elif self.gibs:
-                # Spatial sounds follow the head gib when gibbed.
-                return self.gibs.getHeadMatrix()
+        if self.deathType == self.DTNone:
+            # Return world space transform of player + view offset.
+            # Assumes no pitch or roll in angles.  Proper way would
+            # be to put view offset in a translation matrix and multiply
+            # node transform by that.  But since we never have pitch
+            # or roll in player angles, it is faster to just add the
+            # view offset onto the translation component.
+            trans = self.getMat(base.render)
+            trans.setRow(3, trans.getRow3(3) + self.viewOffset)
+            return trans
+        elif self.deathType == self.DTGibs and self.gibs:
+            # Spatial sounds follow the head gib when gibbed.
+            return self.gibs.getHeadMatrix()
+        elif self.deathType == self.DTRagdoll and self.ragdoll:
+            # If we're ragdolling, position spatial audio relative to
+            # the ragdoll head.
+            return self.ragdoll[1].getJointActor("bip_head").getTransform().getMat()
 
-        # Return world space transform of player + view offset.
-        # Assumes no pitch or roll in angles.  Proper way would
-        # be to put view offset in a translation matrix and multiply
-        # node transform by that.  But since we never have pitch
-        # or roll in player angles, it is faster to just add the
-        # view offset onto the translation component.
-        trans = self.getMat(base.render)
-        trans.setRow(3, trans.getRow3(3) + self.viewOffset)
-        return trans
+        return Mat4.identMat()
 
     def RecvProxy_rot(self, r, i, j, k):
         # Ignoring this because the player angles are set in TFPlayerAnimState.
@@ -144,6 +199,10 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.disableController()
         DistributedChar.becomeRagdoll(self, *args, **kwargs)
         self.hide()
+        self.deathType = self.DTRagdoll
+        if self.overhealedEffect:
+            self.overhealedEffect.softStop()
+            self.overhealedEffect = None
         if self.ragdoll:
             self.ragdoll[0].modelNp.showThrough(DirectRender.ShadowCameraBitmask)
             # Re-direct lip-sync to ragdoll.
@@ -159,7 +218,11 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
     def gib(self):
         self.disableController()
+        self.deathType = self.DTGibs
         self.hide()
+        if self.overhealedEffect:
+            self.overhealedEffect.softStop()
+            self.overhealedEffect = None
         if self.gibs:
             self.gibs.destroy()
             self.gibs = None
@@ -180,9 +243,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
                 self.talker.setCharacter(self.character)
             if self.expressions:
                 self.expressions.character = self.character
-        if self.gibs:
-            self.gibs.destroy()
         self.gibs = None
+        self.deathType = self.DTNone
         self.show()
         self.enableController()
         if self.eyes:
@@ -297,6 +359,10 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if self.eyes:
             self.eyes.cleanup()
 
+        if self.overhealedEffect:
+            self.overhealedEffect.stop()
+            self.overhealedEffect = None
+
         # Load new player model.
         self.loadModel(self.classInfo.PlayerModel)
         self.setSkin(self.team)
@@ -331,17 +397,24 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.pushExpression('specialAction')
 
     def __updateTalker(self, task):
-        #if self.ragdoll:
-        #    # Don't do this while ragdolling and the model is hidden.
-        #    return task.cont
-
-        if self.talker and not self.gibs:
-            self.talker.update()
-
-        if self.expressions and not self.gibs:
-            self.expressions.update()
+        if self.deathType in (self.DTNone, self.DTRagdoll):
+            if self.talker:
+                self.talker.update()
+            if self.expressions:
+                self.expressions.update()
 
         return task.cont
+
+    def postDataUpdate(self):
+        DistributedChar.postDataUpdate(self)
+
+        if self.health > self.maxHealth:
+            if not self.overhealedEffect and not self.isDead():
+                self.overhealedEffect = self.createOverhealedEffect()
+                self.overhealedEffect.start(base.dynRender, self)
+        elif self.overhealedEffect:
+            self.overhealedEffect.softStop()
+            self.overhealedEffect = None
 
     def announceGenerate(self):
         DistributedChar.announceGenerate(self)
@@ -356,6 +429,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if self.eyes:
             self.eyes.cleanup()
             self.eyes = None
+        if self.overhealedEffect:
+            self.overhealedEffect.stop()
+            self.overhealedEffect = None
         self.stopSpeech()
         self.talker = None
         self.ivPos = None

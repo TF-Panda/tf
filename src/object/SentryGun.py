@@ -4,7 +4,7 @@ from panda3d.core import Vec3, Quat, lookAt, Filename, InterpolatedFloat, Point3
 from .BaseObject import BaseObject
 
 from tf.actor.Activity import Activity
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, TFLocalizer
 from tf.tfbase.TFGlobals import Contents, DamageType
 from tf.weapon.WeaponEffects import makeMuzzleFlash
 
@@ -57,6 +57,7 @@ class SentryGun(BaseObject):
     def __init__(self):
         BaseObject.__init__(self)
         self.objectType = ObjectType.SentryGun
+        self.objectName = TFLocalizer.SentryGun
         self.goalAngles = Vec3()
         self.currAngles = Vec3()
         self.turningRight = False

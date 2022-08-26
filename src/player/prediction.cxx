@@ -823,9 +823,10 @@ get_vec2_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) 
     PyObject *vec_obj = get_field_py_obj(field);
     LVecBase2f tmp;
     LVecBase2f *coerced = Dtool_Coerce_LVecBase2f(vec_obj, tmp);
+    tmp = *coerced;
     Py_DECREF(vec_obj);
     nassertr(coerced != nullptr, LVecBase2f());
-    return *coerced;
+    return tmp;
   }
 }
 
@@ -858,9 +859,10 @@ get_vec3_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) 
     PyObject *vec_obj = get_field_py_obj(field);
     LVecBase3f tmp;
     LVecBase3f *coerced = Dtool_Coerce_LVecBase3f(vec_obj, tmp);
+    tmp = *coerced;
     Py_DECREF(vec_obj);
     nassertr(coerced != nullptr, LVecBase3f());
-    return *coerced;
+    return tmp;
   }
 }
 
@@ -894,9 +896,10 @@ get_vec4_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) 
     PyObject *vec_obj = get_field_py_obj(field);
     LVecBase4f tmp;
     LVecBase4f *coerced = Dtool_Coerce_LVecBase4f(vec_obj, tmp);
+    tmp = *coerced;
     Py_DECREF(vec_obj);
     nassertr(coerced != nullptr, LVecBase4f());
-    return *coerced;
+    return tmp;
   }
 }
 

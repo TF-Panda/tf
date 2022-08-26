@@ -1,0 +1,87 @@
+keyword unreliable;
+keyword event;
+
+//
+// Note about the distinction we make in TF2 between structs and dclasses:
+//
+// Structs are treated as a single unit, while dclasses are treated as
+// extensions of the dclass that contains it.  For instance, the fields in
+// an embedded dclass are delta encoded individually and the dclass field can
+// be enabled/disabled from being transmitted.  Structs are delta encoded as
+// a single unit.  For instance, the individual fields of a struct Vector are
+// not delta encoded, the entire vector itself is.
+//
+// struct Vector {
+//   int16 x;
+//   int16 y;
+//   int16 z;
+// };
+//
+// dclass LocalPlayerData {
+//   int32 foo;
+//   uint8 bar;
+//   ...
+// };
+//
+// dclass Player {
+//   LocalPlayerData localPlayerData; // Each field of LocalPlayerData is delta encoded individually,
+//                                    // dclass can be excluded from being transmitted.
+//   Vector position; // Delta encoded as a single unit.
+//   Vector velocity;
+// };
+//
+
+// Coordinate range (per axis): -21474836.47 to 21474836.47
+// Two decimals of precision.
+struct Position {
+  int32 x / 100;
+  int32 y / 100;
+  int32 z / 100;
+};
+
+// Use this for sending unit vectors on the wire.
+struct UnitVector {
+  int16 x / 1000;
+  int16 y / 1000;
+  int16 z / 1000;
+};
+
+// Non-unit vector, 4 bytes per axis.  You may prefer sending a UnitVector
+// along with a separate magnitude scalar instead of this, as it would use
+// fewer bytes.
+struct Vector {
+  int32 x / 1000;
+  int32 y / 1000;
+  int32 z / 1000;
+};
+
+// Specialization for sending euler angles on the wire.
+struct Angles {
+  int16 h % 360 / 10;
+  int16 p % 360 / 10;
+  int16 r % 360 / 10;
+};
+
+struct Quat {
+  int16 r / 10000;
+  int16 i / 10000;
+  int16 j / 10000;
+  int16 k / 10000;
+};
+
+// Scale range (per axis): -32.767 to 32.767
+// Three decimals of precision.
+struct Scale {
+  int16 sx / 1000;
+  int16 sy / 1000;
+  int16 sz / 1000;
+};
+
+dclass ModelData {
+  string model;
+  uint8 skin;
+};
+
+dclass ActorData : ModelData {
+
+};

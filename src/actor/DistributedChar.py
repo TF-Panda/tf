@@ -70,14 +70,14 @@ class DistributedChar(Actor, DistributedEntity):
             self.modelNp.reparentTo(self)
         Actor.onModelChanged(self)
 
-    def becomeRagdoll(self, forceJoint, forcePosition, forceVector):
+    def becomeRagdoll(self, forceJoint, forcePosition, forceVector, initialVel):
         if self.ragdoll:
             # Remove existing ragdoll.
             self.ragdoll[0].cleanup()
             self.ragdoll[1].destroy()
             self.ragdoll = None
 
-        self.ragdoll = self.makeRagdoll(forceJoint, forcePosition, forceVector)
+        self.ragdoll = self.makeRagdoll(forceJoint, forcePosition, forceVector, initialVel)
 
         return self.ragdoll
 

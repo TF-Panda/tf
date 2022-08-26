@@ -1,7 +1,7 @@
 """ DistributedTFPlayerOV: Local TF player """
 
 from panda3d.core import WindowProperties, MouseData, Point2, Vec2, Datagram, OmniBoundingVolume, NodePath, Point3, Vec3, lookAt
-from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker
+from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker, Quat
 
 from panda3d.pphysics import PhysSweepResult
 
@@ -15,12 +15,13 @@ from tf.object.ObjectType import ObjectType
 from tf.tfgui.TFHud import TFHud
 from tf.tfgui.KillFeed import KillFeed
 from tf.tfgui.TFWeaponSelection import TFWeaponSelection
-from tf.tfbase import TFGlobals
+from tf.tfgui import CrossHairInfo
+from tf.tfbase import TFGlobals, TFFilters
 
 from direct.distributed2.ClientConfig import *
 from direct.showbase.InputStateGlobal import inputState
 from direct.directbase import DirectRender
-from direct.gui.DirectGui import OnscreenText
+from direct.gui.DirectGui import *
 
 from tf.tfgui.TFClassMenu import TFClassMenu
 
@@ -89,6 +90,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.controlsEnabled = False
         self.mouseDelta = Vec2()
         self.classMenu = None
+        self.crossHairInfo = CrossHairInfo.CrossHairInfo()
 
         self.wasLastWeaponSwitchPressed = False
 
@@ -116,6 +118,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.killedByLabel = None
 
         self.objectPanels = {}
+
+    def setCSHealer(self, doId):
+        self.crossHairInfo.setForceEnt(doId, CrossHairInfo.CTX_HEALER)
+
+    def setCSHealTarget(self, doId):
+        self.crossHairInfo.setForceEnt(doId, CrossHairInfo.CTX_HEALING)
+
+    def clearCSHealer(self):
+        self.crossHairInfo.clearEnt()
 
     def doTeleport(self, heading, fovDuration, fovStart):
         # Slam exit direction onto view angles heading.
@@ -185,6 +196,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         # We predict changes to max speed when winding up the heavy's minigun
         # or zooming in with the sniper rifle.
         self.addPredictionField("maxSpeed", float, tolerance=0.5)
+        self.addPredictionField("fallVelocity", float, noErrorCheck=True, networked=False)
 
     def setActiveWeapon(self, index):
         if self.activeWeapon == index:
@@ -284,13 +296,12 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         qForward = Quat()
         qForward.setHpr(aForward)
         origin = self.getEyePosition()
-        if self.isDead():
-            if self.ragdoll:
-                origin = Point3(self.ragdoll[1].getRagdollPosition())
-                origin.z += 40
-            elif self.gibs:
-                origin = Point3(self.gibs.getHeadPosition())
-                origin.z += 40
+        if (self.deathType == self.DTRagdoll) and self.ragdoll:
+            origin = Point3(self.ragdoll[1].getRagdollPosition())
+            origin.z += 40
+        elif (self.deathType == self.DTGibs) and self.gibs:
+            origin = Point3(self.gibs.getHeadPosition())
+            origin.z += 40
 
         if killer and killer != self:
             # Compute angles to look at killer.
@@ -331,10 +342,12 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         blendPerc = max(0, min(1, curTime / spec_freeze_traveltime.getValue()))
         blendPerc = TFGlobals.simpleSpline(blendPerc)
 
-        if target.isDead() and target.ragdoll:
-            camDesired = Point3(target.ragdoll[1].getRagdollPosition())
-        else:
-            camDesired = target.getPos()
+        camDesired = target.getPos()
+        if target.isPlayer():
+            if (target.deathType == self.DTRagdoll) and target.ragdoll:
+                camDesired = Point3(target.ragdoll[1].getRagdollPosition())
+            elif (target.deathType == self.DTGibs) and target.gibs:
+                camDesired = Point3(target.gibs.getHeadPosition())
         if target.health > 0:
             camDesired[2] += target.viewOffset[2]
         #else:
@@ -450,6 +463,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.hide()
         self.viewModel.show()
         self.hud.showHud()
+        self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)
 
     def onTFClassChanged(self):
         DistributedTFPlayer.onTFClassChanged(self)
@@ -459,15 +473,19 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         elif self.tfClass != Class.Engineer:
             self.destroyObjectPanels()
 
-    def becomeRagdoll(self, forceJoint, forcePosition, forceVector):
-        DistributedTFPlayer.becomeRagdoll(self, forceJoint, forcePosition, forceVector)
+    def becomeRagdoll(self, forceJoint, forcePosition, forceVector, initialVel):
+        DistributedTFPlayer.becomeRagdoll(self, forceJoint, forcePosition, forceVector, initialVel)
         self.viewModel.hide()
         self.hud.hideHud()
+        self.removeTask('updateCSInfo')
+        self.crossHairInfo.clearEnt()
 
     def gib(self):
         DistributedTFPlayer.gib(self)
         self.viewModel.hide()
         self.hud.hideHud()
+        self.removeTask('updateCSInfo')
+        self.crossHairInfo.clearEnt()
 
     def RecvProxy_weapons(self, weapons):
         changed = weapons != self.weapons
@@ -584,6 +602,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
     def delete(self):
         self.disableControls()
+        if self.crossHairInfo:
+            self.crossHairInfo.destroy()
+            self.crossHairInfo = None
         if self.killFeed:
             self.killFeed.cleanup()
             self.killFeed = None
@@ -642,6 +663,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.win.requestProperties(props)
 
         self.accept('escape', self.enableControls)
+
+        self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)
 
     def startControls(self):
         base.simTaskMgr.add(self.runControls, 'runControls')
@@ -710,7 +733,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         """
 
         mw = base.mouseWatcherNode
-        if self.controlsEnabled and mw.hasMouse() and not self.isDead():
+        if self.controlsEnabled and mw.hasMouse() and (self.observerTarget in (-1, self.doId)):
             md = mw.getMouse()
             sens = mouse_sensitivity.getValue()
             sizeX = base.win.getXSize()
@@ -721,7 +744,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             #base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
 
             self.viewAngles[0] -= delta.x * 0.022
-            self.viewAngles[1] = max(-90, min(90, self.viewAngles[1] + (delta.y * 0.022)))
+            self.viewAngles[1] = max(-89, min(89, self.viewAngles[1] + (delta.y * 0.022)))
             self.viewAngles[2] = 0.0
             self.mouseDelta += delta
             self.lastMouseSample = sample
@@ -734,6 +757,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         rand = random.Random(cmd.commandNumber)
         cmd.randomSeed = rand.randint(0, 0xFFFFFFFF)
         cmd.tickCount = base.tickCount
+
+        fastWpnSwitch = base.config.GetBool('tf-fast-weapon-switch', 0)
 
         cmd.buttons = InputFlag.Empty
         if not self.isDead():
@@ -752,11 +777,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             if inputState.isSet("crouch"):
                 cmd.buttons |= InputFlag.Crouch
             if inputState.isSet("attack1"):
-                if self.wpnSelect.isActive:
+                if self.wpnSelect.isActive and not fastWpnSwitch:
                     cmd.weaponSelect = self.wpnSelect.index
                     self.wpnSelect.hide()
                 else:
                     cmd.buttons |= InputFlag.Attack1
+
+            if fastWpnSwitch and self.wpnSelect.isActive:
+                cmd.weaponSelect = self.wpnSelect.index
+                self.wpnSelect.hide()
 
             if inputState.isSet("lastweapon"):
                 if not self.wasLastWeaponSwitchPressed:

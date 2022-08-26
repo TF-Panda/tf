@@ -33,6 +33,8 @@ class Actor(Model):
     # selection from activities is consistent with the server.
     GlobalActivitySeed = 0
 
+    AllCharacters = NodePathCollection()
+
     def __init__(self):
         Model.__init__(self)
 
@@ -47,6 +49,10 @@ class Actor(Model):
         self.hitBoxes = []
         self.hitBoxRoot = None
         self.lastHitBoxSyncTime = 0.0
+
+    @staticmethod
+    def updateAllAnimations():
+        CharacterNode.animateCharacters(Actor.AllCharacters)
 
     @staticmethod
     def setGlobalActivitySeed(seed):
@@ -72,7 +78,7 @@ class Actor(Model):
         """
         return self.character is not None
 
-    def makeRagdoll(self, forceJoint, forcePosition, forceVector):
+    def makeRagdoll(self, forceJoint, forcePosition, forceVector, initialVel = Vec3(0)):
 
         collInfo = self.modelNode.getCollisionInfo()
         if not collInfo or (collInfo.getNumParts() < 2):
@@ -101,7 +107,7 @@ class Actor(Model):
         rd = Ragdoll(ragdollActor.modelNp, collInfo)
         rd.setup()
         if forceJoint == -1:
-            rd.setEnabled(True, None, forceVector, forcePosition)
+            rd.setEnabled(True, None, forceVector, forcePosition, initialVel)
         else:
             # Find the closest joint to apply the force to.
             joint = forceJoint
@@ -116,9 +122,9 @@ class Actor(Model):
                     joint = ragdollActor.character.getJointParent(joint)
 
             if foundJoint:
-                rd.setEnabled(True, jointName, forceVector, forcePosition)
+                rd.setEnabled(True, jointName, forceVector, forcePosition, initialVel)
             else:
-                rd.setEnabled(True, None, forceVector, forcePosition)
+                rd.setEnabled(True, None, forceVector, forcePosition, initialVel)
 
         return (ragdollActor, rd)
 
@@ -195,6 +201,11 @@ class Actor(Model):
         else:
             self.character.play(anim, fromFrame, toFrame, layer, playRate,
                                 autoKill, blendIn, blendOut)
+
+        if activity is not None:
+            # Store the activity we got the channel from on the layer.
+            alayer = self.character.getAnimLayer(layer)
+            alayer._activity = activity
 
     def stopAnim(self, layer = None, kill = False):
         """
@@ -510,6 +521,8 @@ class Actor(Model):
         """
         Removes the current model from the scene graph and all related data.
         """
+        if self.characterNp:
+            Actor.AllCharacters.removePath(self.characterNp)
         self.characterNp = None
         self.character = None
         self.channelsByName = {}
@@ -538,6 +551,7 @@ class Actor(Model):
             # a CharacterNode.
             self.characterNp = None
         else:
+            Actor.AllCharacters.addPath(self.characterNp)
             self.character = self.characterNp.node().getCharacter()
             self.buildAnimTable()
 

@@ -52,6 +52,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.clusterNodes = None
         self.currentCluster = -1
         self.fogMgr = None
+        self.clnp = None
 
         self.accept('shift-v', self.toggleVisDebug)
         self.accept('c', self.renderCubeMaps)
@@ -180,8 +181,19 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.changeLevel(self.levelName)
         self.worldLoaded()
 
+    def __updateCascadeLight(self, task):
+        if not self.clnp:
+            return task.done
+
+        self.clnp.node().update(base.render)
+
+        return task.cont
+
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
+
+        self.clnp = None
+        base.taskMgr.remove('updateCascadeLight')
 
         self.ssMgr.destroySoundscapes()
 
@@ -303,8 +315,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         print("skyname:", skyName)
         self.sky = SkyBox(skyName)
 
+        #base.planar.setup(Vec3(0, 0, 1), 0.0)
+        #base.planar.renderReflection(base.render)
+
         self.lvlData.setCam(base.cam)
         self.lvlData.buildTraceScene()
+        base.sfxManagerList[0].setTraceScene(self.lvlData.getTraceScene())
 
         clnp = self.lvlData.getDirLight()
         if not clnp.isEmpty():
@@ -313,8 +329,11 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             cl.setSoftnessFactor(1.0)
             cl.setShadowCaster(True, 2048, 2048)
             cl.setCameraMask(DirectRender.ShadowCameraBitmask)
+            clnp.showThrough(DirectRender.ShadowCameraBitmask)
             clnp.reparentTo(base.cam)
             clnp.setCompass()
+            base.taskMgr.add(self.__updateCascadeLight, 'updateCascadeLight', sort=49)
+            self.clnp = clnp
         #base.csmDebug.setShaderInput("cascadeSampler", cl.getShadowMap())
 
         saData = self.lvlData.getSteamAudioSceneData()
@@ -323,7 +342,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         # Initialize the dynamic vis node to the number of visgroups in the
         # new level.
-        base.dynRender.node().levelInit(self.lvlData.getNumClusters())
+        base.dynRender.node().levelInit(self.lvlData.getNumClusters(), self.lvlData.getAreaClusterTree())
 
         # Here we build up the scene graph visibility info from the map vis
         # info for culling scene graph nodes.
@@ -403,7 +422,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         # Ensure all graphics objects are prepared ahead of time.
         base.render.prepareScene(base.win.getGsg())
-        #base.sky3DRoot.prepareScene(base.win.getGsg())
+
+        self.flatten(base.sky3DRoot)
+        base.sky3DRoot.prepareScene(base.win.getGsg())
 
     def getTeamFormat(self, team):
         if team == 0:
@@ -429,6 +450,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                 text = self.getTeamFormat(assist.team) + killer.playerName + "\2 finished off " + self.getTeamFormat(killed.team) + killed.playerName + "\2"
             else:
                 text = self.getTeamFormat(killed.team) + killed.playerName + "\2 bid farewell, cruel world!"
+        elif killer == base.world:
+            text = self.getTeamFormat(killed.team) + killed.playerName + "\2 fell to a clumsy, painful death."
         else:
             # Someone killed someone else.
             text = ""

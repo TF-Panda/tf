@@ -55,6 +55,8 @@ class BaseRocket(BaseClass):
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
 
+            return
+
             # Stick the initial velocity and angles into the interpolation
             # history.
             self.ivPos.clearHistory()

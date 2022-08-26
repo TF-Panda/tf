@@ -157,7 +157,7 @@ class SoundscapeComponent:
             sprops._enable_distance_atten = True
             sprops._enable_air_absorption = False
             sprops._enable_directivity = False
-            sprops._enable_occlusion = False
+            sprops._enable_occlusion = True
             sprops._enable_transmission = False
             sprops._enable_reflections = False
             sprops._enable_pathing = False

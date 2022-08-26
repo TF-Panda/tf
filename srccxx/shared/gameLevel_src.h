@@ -27,6 +27,9 @@ public:
 
 #ifdef TF_CLIENT
   void flatten(NodePath &np);
+
+  void r_process_prop_node(PandaNode *node, const MapStaticProp *sprop);
+  void process_prop_geom_node(GeomNode *node, const MapStaticProp *sprop);
 #endif
 
   void load_level_props();
@@ -39,4 +42,8 @@ public:
   NodePath _prop_phys_root;
   PT(MapData) _lvl_data;
   Filename _lvl_name;
+
+#ifdef TF_CLIENT
+  int _geom_index;
+#endif
 };

@@ -4,6 +4,7 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, getTF2BuildFont
+from tf.tfbase import TFLocalizer
 
 from .BaseObject import BaseObject
 from .ObjectType import ObjectType
@@ -23,6 +24,7 @@ class DistributedDispenser(BaseObject):
     def __init__(self):
         BaseObject.__init__(self)
         self.objectType = ObjectType.Dispenser
+        self.objectName = TFLocalizer.Dispenser
         self.maxHealth = 150
         self.maxLevel = 1
         self.metalToDropInGibs = 50

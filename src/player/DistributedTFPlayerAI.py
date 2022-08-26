@@ -12,7 +12,7 @@ from .PlayerAnimEvent import PlayerAnimEvent
 from .TFClass import *
 from .DViewModelAI import DViewModelAI
 from .ObserverMode import ObserverMode
-from tf.weapon.TakeDamageInfo import addMultiDamage
+from tf.weapon.TakeDamageInfo import addMultiDamage, TakeDamageInfo
 
 from tf.tfbase import TFGlobals, Sounds, TFFilters
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
@@ -30,6 +30,8 @@ tf_damageforcescale_other = 6.0
 tf_damageforcescale_self_soldier = 10.0
 tf_damagescale_self_soldier = 0.6
 damage_force_self_scale = 9.0
+
+tf_boost_drain_time = 15.0
 
 TF_DEATH_ANIMATION_TIME = 2.0
 spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
@@ -72,6 +74,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.forceJoint = -1
         self.bulletForce = Vec3(0)
 
+        self.healers = []
+
         self.flag = None
 
         self.pendingChangeClass = Class.Invalid
@@ -83,7 +87,170 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.lastPainTime = 0.0
         self.lastVoiceCmdTime = 0.0
 
+        self.healFraction = 0.0
+        self.lastDamageTime = 0.0
+
         self.clientSideAnimation = True
+
+    def __conditionThinkAI(self, task):
+        for cond, timeLeft in self.conditions.items():
+            if timeLeft != -1:
+                reduction = globalClock.dt
+
+                # If we're being healed, we reduce bad conditions faster
+                if cond in self.BadConditions and self.healers:
+                    reduction += len(self.healers) * reduction * 4
+
+                newTimeLeft = max(timeLeft - reduction, 0)
+
+                if newTimeLeft == 0:
+                    self.removeCondition(cond)
+                else:
+                    self.conditions[cond] = newTimeLeft
+
+        # Our health will only decay (from being medic buffed) if we are not being healed
+        # by a medic.
+        # Dispensers can give us CondHealthBuff, but will not maintain or give us
+        # health above 100%.
+        decayHealth = True
+        if self.CondHealthBuff in self.conditions:
+            timeSinceDamage = globalClock.frame_time - self.lastDamageTime
+            scale = TFGlobals.remapValClamped(timeSinceDamage, 10, 15, 1.0, 3.0)
+
+            hasFullHealth = self.health >= self.maxHealth
+
+            totalHealAmount = 0.0
+            for healer in self.healers:
+                if hasFullHealth and healer['dispenser']:
+                    continue
+
+                # Being healed by a medigun, don't decay our health.
+                decayHealth = False
+
+                if healer['dispenser']:
+                    # Dispensers heal at a slower rate, but ignore scale
+                    self.healFraction += globalClock.dt * healer['amount']
+                else:
+                    # Player heals are affected by the last damage time
+                    self.healFraction += globalClock.dt * healer['amount'] * scale
+
+                totalHealAmount += healer['amount']
+
+            healthToAdd = int(self.healFraction)
+            if healthToAdd > 0:
+                self.healFraction -= healthToAdd
+
+                boostMax = self.getMaxBuffedHealth()
+
+                # TODO: CondDisgused
+
+                # Cap it to the max we'll boost a player's health.
+                healthToAdd = max(0, min(healthToAdd, boostMax - self.health))
+
+                self.takeHealth(healthToAdd, DamageType.IgnoreMaxHealth)
+
+            if self.CondBurning in self.conditions:
+                # Reduce the duration of this burn
+                reduction = 2
+                self.flameRemoveTime -= reduction * globalClock.dt
+
+        if decayHealth:
+            # If we're not buffed, our health drains back to max
+            if self.health > self.maxHealth:
+                boostMaxAmount = self.getMaxBuffedHealth() - self.maxHealth
+                self.healFraction += globalClock.dt * (boostMaxAmount / tf_boost_drain_time)
+
+                healthToDrain = int(self.healFraction)
+                if healthToDrain > 0:
+                    self.healFraction -= healthToDrain
+                    # Manually subtract the health so we don't generate pain sounds
+                    self.health -= healthToDrain
+
+        return task.cont
+
+    def setPos(self, *args, **kwargs):
+        DistributedCharAI.setPos(self, *args, **kwargs)
+        if self.controller:
+            # Keep controller in sync.
+            self.controller.foot_position = self.getPos()
+
+    def takeHealth(self, hp, bits):
+        if bits & DamageType.IgnoreMaxHealth:
+            self.health += hp
+            result = True
+        else:
+            healthToAdd = hp
+            maxHealth = self.maxHealth
+
+            if healthToAdd > maxHealth - self.health:
+                healthToAdd = maxHealth - self.health
+
+            if healthToAdd <= 0:
+                result = False
+            else:
+                result = DistributedCharAI.takeHealth(self, hp, bits)
+
+        return result
+
+    def getNumHealers(self):
+        return len(self.healers)
+
+    def findHealer(self, healer):
+        for i in range(len(self.healers)):
+            if self.healers[i]['player'] == healer:
+                return i
+
+        return -1
+
+    def heal(self, healer, amount, dispenserHeal=False):
+        assert self.findHealer(healer) == -1
+
+        data = {
+            'player': healer,
+            'amount': amount,
+            'dispenser': dispenserHeal
+        }
+        self.healers.append(data)
+
+        if not dispenserHeal:
+            self.sendUpdate('setCSHealer', [healer.doId])
+            healer.sendUpdate('setCSHealTarget', [self.doId])
+
+        self.setCondition(self.CondHealthBuff)
+
+    def stopHealing(self, healer):
+        index = self.findHealer(healer)
+        assert index != -1
+
+        theHealerData = self.healers[index]
+        self.healers.remove(self.healers[index])
+
+        if not theHealerData['dispenser']:
+            gotNewCSHealer = False
+            for data in self.healers:
+                if not data['dispenser']:
+                    self.sendUpdate('setCSHealer', [data['player'].doId])
+                    data['player'].sendUpdate('setCSHealTarget', [self.doId])
+                    gotNewCSHealer = True
+                    break
+            if not gotNewCSHealer:
+                self.sendUpdate('clearCSHealer')
+                theHealerData['player'].sendUpdate('clearCSHealer')
+
+    def recalculateInvuln(self, instantRemove):
+        pass
+
+    def playerFallingDamage(self):
+        fallDamage = base.game.playerFallDamage(self)
+        if fallDamage > 0:
+            info = TakeDamageInfo()
+            info.inflictor = base.world
+            info.attacker = base.world
+            info.damage = fallDamage
+            info.damageType = DamageType.Fall
+            self.takeDamage(info)
+            self.emitSound("Player.FallDamage", client=self.owner)
+            self.emitSoundSpatial("Player.FallDamage", excludeClients=[self.owner])
 
     def voiceCommand(self, cmd):
         now = globalClock.frame_time
@@ -249,6 +416,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if chance < 0.3:
             self.d_speak(random.choice(self.classInfo.TeleporterThanks))
 
+    def speakHealed(self):
+        if self.health >= self.maxHealth:
+            chance = random.random()
+            if chance < 0.5:
+                self.d_speak(random.choice(self.classInfo.ThanksForHeal))
+
     def getClassSize(self):
         mins = TFGlobals.VEC_HULL_MIN
         maxs = TFGlobals.VEC_HULL_MAX
@@ -260,12 +433,16 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             vecDir = info.inflictor.getWorldSpaceCenter() - Vec3(0, 0, 10) - self.getWorldSpaceCenter()
             vecDir.normalize()
 
+        self.lastDamageTime = globalClock.frame_time
+
         if info.attacker == self:
             # We damaged ourselves.
             if self.tfClass == Class.Soldier:
                 force = vecDir * -self.damageForce(self.getClassSize(), info.damage, tf_damageforcescale_self_soldier)
             else:
                 force = vecDir * -self.damageForce(self.getClassSize(), info.damage, damage_force_self_scale)
+        elif info.inflictor == base.world:
+            force = Vec3(0.0)
         else:
             if info.inflictor.isObject():
                 # Sentries push a lot harder
@@ -276,14 +453,17 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                     # Heavies take less push from non sentry guns.
                     force *= 0.5
 
-        self.velocity += force
-
         #print("subtracting", int(info.damage + 0.5), "from tf player hp")
         self.health -= int(info.damage + 0.5)
         if self.health <= 0:
             # Died.
             self.die(info)
             self.health = 0
+        else:
+            # Only add the damage force if we didn't die.  Otherwise the damage force
+            # added to the player velocity will double up with the impulse applied to
+            # the ragdoll from the damage.
+            self.velocity += force
 
     def damageForce(self, size, damage, scale):
         force = damage * ((48 * 48 * 82.0) / (size[0] * size[1] * size[2])) * scale
@@ -362,9 +542,14 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.pushExpression('pain')
 
             now = globalClock.frame_time
-            # Do sharp pain for local avatar and other players, severe for
-            # player that did the damage.
-            if (now - self.lastPainTime) >= 1.0:
+
+            if info.damageType & DamageType.Fall:
+                self.d_speak(random.choice(self.classInfo.PainFilenames))
+                self.lastPainTime = now
+
+            elif (now - self.lastPainTime) >= 0.75:
+                # Do sharp pain for local avatar and other players, severe for
+                # player that did the damage.
                 sharpFname = random.choice(self.classInfo.SharpPainFilenames)
                 self.d_speak(sharpFname, excludeClients=[info.attacker.owner])
                 severeFname = random.choice(self.classInfo.PainFilenames)
@@ -427,11 +612,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Become a ragdoll.
         #print("Die at forcejoit", self.forceJoint, "force", self.bulletForce + self.velocity)
-        if (dmgType & DamageType.Blast) != 0 and self.health <= -10:
+        if (dmgType & DamageType.Blast) != 0 and self.health <= -20:
             # I think the logic is if the blast damage >= remaining health + 10
             self.sendUpdate('gib', [])
         else:
-            self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce + (self.velocity * 20)])
+            self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce, self.velocity])
         self.disableController()
 
         # Respawn after 5 seconds.
@@ -440,6 +625,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if info:
             if info.inflictor and info.inflictor.isObject():
                 self.observerTarget = info.inflictor.doId
+            elif info.inflictor == base.world:
+                self.observerTarget = self.doId
             else:
                 self.observerTarget = info.attacker.doId
         else:
@@ -450,6 +637,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.playedFreezeSound = False
         self.abortFreezeCam = False
         self.velocity = Vec3(0)
+        self.resetViewPunch()
+        self.removeAllConditions()
         if self.activeWeapon != -1:
             wpn = base.net.doId2do.get(self.weapons[self.activeWeapon])
             if wpn:
@@ -458,7 +647,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.health = 0
 
         # Player died.
-        if dmgType & DamageType.Club:
+        if dmgType & DamageType.Fall:
+            pain = None
+        elif dmgType & DamageType.Club:
             pain = random.choice(self.classInfo.CritPainFilenames)
         elif dmgType & DamageType.Blast:
             pain = random.choice(self.classInfo.SharpPainFilenames)
@@ -466,7 +657,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             pain = random.choice(self.classInfo.CritPainFilenames)
         else:
             pain = random.choice(self.classInfo.PainFilenames)
-        self.d_speak(pain)
+        if pain:
+            self.d_speak(pain)
 
         self.playerState = self.StateDead
 
@@ -673,6 +865,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.viewModel.team = self.team
         self.viewModel.skin = self.skin
         base.sv.generateObject(self.viewModel, self.zoneId)
+
+        # Start condition update logic.
+        self.addTask(self.__conditionThinkAI, 'TFPlayerConditionThinkAI', appendTask=True, sim=True)
 
     def delete(self):
         if self.flag:
@@ -1006,3 +1201,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             prev = to
 
         self.processPlayerCommands(backupCmds, newCmds, totalCommands, False)
+
+    def getTimeBase(self):
+        return self.tickBase * base.intervalPerTick

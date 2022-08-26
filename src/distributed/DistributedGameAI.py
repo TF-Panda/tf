@@ -58,6 +58,26 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.playersByTeam = {0: [], 1: []}
         self.objectsByTeam = {0: [], 1: []}
 
+    def inSetup(self):
+        return self.roundState == RoundState.Setup
+
+    def playerFallDamage(self, player):
+        if player.fallVelocity > 650:
+            # Old TFC damage formula.
+            fallDamage = 5 * (player.fallVelocity / 300)
+
+            # Fall damage needs to scale according to the player's max health, or
+            # it's always going to be much more dangerous to weaker classes than
+            # larger.
+            ratio = player.maxHealth / 100
+            fallDamage *= ratio
+
+            fallDamage *= random.uniform(0.8, 1.2)
+
+            return fallDamage
+
+        return 0.0
+
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)
         self.addTask(self.__gameUpdate, "gameUpdate", appendTask=True)
@@ -412,6 +432,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         player = DistributedTFPlayerAI()
         client.player = player
         player.playerName = name
+        #player.team = 1
         if self.numRed > self.numBlue:
             # Blue team
             player.team = 1
@@ -422,10 +443,10 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.numRed += 1
         player.skin = player.team
         if self.numEngineer > self.numSoldier:
-            tfclass = Class.Demo
+            tfclass = Class.Soldier
             self.numSoldier += 1
         else:
-            tfclass = Class.Engineer
+            tfclass = Class.Demo
             self.numEngineer += 1
         self.playersByTeam[player.team].append(player)
         player.changeClass(tfclass, force = True, sendRespawn = False, giveWeapons = False)

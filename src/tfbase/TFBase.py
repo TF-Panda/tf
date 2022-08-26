@@ -13,6 +13,7 @@ from tf.tfbase import TFGlobals, TFLocalizer, SurfaceProperties, Soundscapes, So
 from tf.tfgui.TFMainMenu import TFMainMenu
 from tf.tfgui.NotifyView import NotifyView
 from .TFPostProcess import TFPostProcess
+from .PlanarReflector import PlanarReflector
 from . import Sounds
 
 from .Console import Console
@@ -118,12 +119,17 @@ class TFBase(ShowBase, FSM):
         self.physicsWorld.setGravity((0, 0, -800)) # 9.81 m/s as inches
         self.physicsWorld.setFixedTimestep(0.015)
 
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
+        #self.physicsWorld.setGroupCollisionFlag(
+        #    TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
         self.physicsWorld.setGroupCollisionFlag(
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
+        self.physicsWorld.setGroupCollisionFlag(
+            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Gibs, False)
+        self.physicsWorld.setGroupCollisionFlag(
+            TFGlobals.CollisionGroup.Gibs, TFGlobals.CollisionGroup.Gibs, False)
 
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
+        self.taskMgr.add(self.ragdollUpdate, 'ragdollUpdate', sort = 35)
 
         self.dynRender = self.render.attachNewNode(DynamicVisNode("dynamic"))
 
@@ -171,7 +177,7 @@ class TFBase(ShowBase, FSM):
         self.vmCamera.reparentTo(self.vmRender)
         self.postProcess.addCamera(self.vmCamera, 0, 2)
 
-        self.taskMgr.add(self.viewModelSceneUpdate, 'viewModelSceneUpdate', sort = 39)
+        self.taskMgr.add(self.viewModelSceneUpdate, 'viewModelSceneUpdate', sort = 47)
 
         self.playGame = None
 
@@ -184,6 +190,9 @@ class TFBase(ShowBase, FSM):
         base.accept('shift-p', self.togglePbr)
         base.accept('shift-i', self.toggleIk)
         base.accept('shift-l', self.render.ls)
+        base.accept('shift-k', self.vmRender.ls)
+
+        self.planar = PlanarReflector(1024)
 
         self.enableParticles()
 
@@ -205,6 +214,30 @@ class TFBase(ShowBase, FSM):
 
         self.lastListenerPos = Point3()
         self.taskMgr.add(self.__updateAudioListener, 'updateAudioListener', sort=51)
+
+        self.taskMgr.add(self.__updateCharacters, 'updateCharacters', sort=46)
+
+        self.particleMgr2 = ParticleManager2.getGlobalPtr()
+        self.taskMgr.add(self.__updateParticles2, 'updateParticles2', sort=48)
+
+        self.taskMgr.add(self.__updateDirtyDynamicNodes, 'updateDirtyDynamicNodes', sort=49)
+
+    def __updateCharacters(self, task):
+        from tf.actor.Actor import Actor
+        Actor.updateAllAnimations()
+        return task.cont
+
+    def ragdollUpdate(self, task):
+        PhysRagdoll.updateRagdolls()
+        return task.cont
+
+    def __updateDirtyDynamicNodes(self, task):
+        self.dynRender.node().updateDirtyChildren()
+        return task.cont
+
+    def __updateParticles2(self, task):
+        self.particleMgr2.update(globalClock.dt)
+        return task.cont
 
     def __updateAudioListener(self, task):
         ts = self.cam.getNetTransform()
@@ -321,8 +354,13 @@ class TFBase(ShowBase, FSM):
             if speed < 100.0:#70.0:
                 continue
 
-            #a = data.getActorA()
-            #b = data.getActorB()
+            a = data.getActorA()
+            b = data.getActorB()
+
+            entA = a.getPythonTag("entity")
+            entB = b.getPythonTag("entity")
+            if entA and entA == entB:
+                continue
 
             position = point.getPosition()
 
@@ -372,10 +410,22 @@ class TFBase(ShowBase, FSM):
         return task.cont
 
     def viewModelSceneUpdate(self, task):
-        if self.render.getState() != self.vmRender.getState():
-            self.vmRender.setState(self.render.getState())
-        self.vmLens.setAspectRatio(self.getAspectRatio())
+
+        vmState = self.vmRender.getState()
+        state = self.render.getState()
+        if vmState != state:
+            self.vmRender.setState(state)
+
+        vmAr = self.vmLens.getAspectRatio()
+        ar = self.getAspectRatio()
+        if vmAr != ar:
+            self.vmLens.setAspectRatio(ar)
+
         self.vmCamera.setTransform(render, self.camera.getTransform(render))
+
+        self.vmRender.getBounds() # Weird hack
+
+        #print(self.vmRender.getBounds())
 
         return task.cont
 
@@ -480,6 +530,8 @@ class TFBase(ShowBase, FSM):
         for pc in TFGlobals.ModelPrecacheList:
             mdl = loader.loadModel(pc)
             self.precache.append(mdl)
+
+            base.graphicsEngine.renderFrame()
 
             # Upload textures, vertex buffers, index buffers.
             mdl.prepareScene(base.win.getGsg())
