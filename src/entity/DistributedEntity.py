@@ -25,7 +25,7 @@ else:
 
 class DistributedEntity(BaseClass, NodePath):
 
-    def __init__(self):
+    def __init__(self, dynamicLighting=True):
         BaseClass.__init__(self)
         if not self.this:
             NodePath.__init__(self, "entity")
@@ -89,7 +89,8 @@ class DistributedEntity(BaseClass, NodePath):
         if IS_CLIENT:
             # Makes the node compute its lighting state from the lighting
             # information in the level when its rendered.
-            self.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
+            if dynamicLighting:
+                self.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
             # And render into shadow maps.
             self.showThrough(DirectRender.ShadowCameraBitmask)
 
