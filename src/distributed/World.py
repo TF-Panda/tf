@@ -30,6 +30,10 @@ class World(DistributedSolidEntity):
         self.initializeCollisions()
         #self.node().setCcdEnabled(True)
 
+        # Enable Z-prepass on the world geometry.
+        self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask))
+        self.flattenLight()
+
     def delete(self):
         base.world = None
         DistributedSolidEntity.delete(self)
