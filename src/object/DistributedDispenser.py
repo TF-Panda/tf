@@ -41,6 +41,8 @@ class DistributedDispenser(BaseObject):
             self.healSound = None
             self.text0 = None
             self.text1 = None
+            self.text0Root = None
+            self.text1Root = None
             self.screen0 = None
             self.screen1 = None
 
@@ -204,15 +206,17 @@ class DistributedDispenser(BaseObject):
             if self.screen0:
                 self.screen0.removeNode()
                 self.screen0 = None
-            if self.text0:
-                self.text0.removeNode()
-                self.text0 = None
+            if self.text0Root:
+                self.text0Root.removeNode()
+                self.text0Root = None
+            self.text0 = None
             if self.screen1:
                 self.screen1.removeNode()
                 self.screen1 = None
-            if self.text1:
-                self.text1.removeNode()
-                self.text1 = None
+            if self.text1Root:
+                self.text1Root.removeNode()
+                self.text1Root = None
+            self.text1 = None
 
         def screenColor(self):
             if self.team == 0:
@@ -247,22 +251,23 @@ class DistributedDispenser(BaseObject):
             text.setTextColor(0.3, 0.3, 0.3, 1.0)
             text.setAlign(TextNode.ACenter)
             text.setText(str(self.ammoMetal))
-            tnp = root.attachNewNode(text)
-            tnp.setPos((llpos + urpos) * 0.5)
-            tnp.setDepthOffset(1)
-            tnp.setScale(4)
+            textRootNp = root.attachNewNode("textRoot")
+            textRootNp.setPos((llpos + urpos) * 0.5)
+            textRootNp.setDepthOffset(1)
+            textRootNp.setScale(4)
             if index == 1:
-                tnp.setP(90)
-                tnp.setH(180)
+                textRootNp.setP(90)
+                textRootNp.setH(180)
             else:
-                tnp.setP(-90)
-            return (screenFrame, tnp)
+                textRootNp.setP(-90)
+            textRootNp.attachNewNode(text.generate())
+            return (screenFrame, textRootNp, text)
 
         def createScreens(self):
             self.destroyScreens()
 
-            self.screen0, self.text0 = self.createScreen(0)
-            self.screen1, self.text1 = self.createScreen(1)
+            self.screen0, self.text0Root, self.text0 = self.createScreen(0)
+            self.screen1, self.text1Root, self.text1 = self.createScreen(1)
 
         def disable(self):
             self.destroyScreens()
@@ -274,9 +279,13 @@ class DistributedDispenser(BaseObject):
         def RecvProxy_ammoMetal(self, metal):
             if metal != self.ammoMetal:
                 if self.text0:
-                    self.text0.node().setText(str(metal))
+                    self.text0.setText(str(metal))
+                    self.text0Root.node().removeAllChildren()
+                    self.text0Root.attachNewNode(self.text0.generate())
                 if self.text1:
-                    self.text1.node().setText(str(metal))
+                    self.text1.setText(str(metal))
+                    self.text1Root.node().removeAllChildren()
+                    self.text1Root.attachNewNode(self.text1.generate())
                 self.ammoMetal = metal
 
         def RecvProxy_objectState(self, state):
