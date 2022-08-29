@@ -233,6 +233,10 @@ class TFBase(ShowBase, FSM):
 
     def __updateDirtyDynamicNodes(self, task):
         self.dynRender.node().updateDirtyChildren()
+        if self.render.node().isBoundsStale():
+            self.render.node().getBounds()
+        if self.vmRender.node().isBoundsStale():
+            self.vmRender.node().getBounds()
         return task.cont
 
     def __updateParticles2(self, task):
@@ -423,7 +427,7 @@ class TFBase(ShowBase, FSM):
 
         self.vmCamera.setTransform(render, self.camera.getTransform(render))
 
-        self.vmRender.getBounds() # Weird hack
+        #self.vmRender.getBounds() # Weird hack
 
         #print(self.vmRender.getBounds())
 
