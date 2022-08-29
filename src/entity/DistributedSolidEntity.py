@@ -19,7 +19,7 @@ class DistributedSolidEntity(DistributedEntity):
     PTTriangles = 2
 
     def __init__(self):
-        DistributedEntity.__init__(self)
+        DistributedEntity.__init__(self, False)
         self.setLightOff(-1)
         self.modelNum = 0
         self.model = None
