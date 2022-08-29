@@ -384,7 +384,8 @@ class DistributedEntity(BaseClass, NodePath):
             body.setWakeCallback(clbk)
             body.setSleepCallback(clbk)
 
-        body.setCcdEnabled(True)
+        if not self.kinematic:
+            body.setCcdEnabled(True)
         body.addToScene(base.physicsWorld)
         # Make this the node that represents the entity.
         body.replaceNode(self.node())
