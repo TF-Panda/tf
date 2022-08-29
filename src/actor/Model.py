@@ -20,6 +20,7 @@ class Model(DirectObject):
     def __init__(self):
         # NodePath of ModelRoot, the top level node in the loaded model.
         self.modelNp = None
+        self.modelRootNode = None
         self.modelNode = None
         self.modelData = None
         self.model = ""
@@ -32,7 +33,7 @@ class Model(DirectObject):
         """
         Sets the active material group of the actor to the specified index.
         """
-        if skin != self.skin or (self.modelNode and self.modelNode.getActiveMaterialGroup() != skin):
+        if skin != self.skin or (self.modelRootNode and self.modelRootNode.getActiveMaterialGroup() != skin):
             self.skin = skin
             self.updateSkin()
 
@@ -40,9 +41,9 @@ class Model(DirectObject):
         """
         Updates the model to use the currently specified material group/skin.
         """
-        if self.modelNode:
-            if self.skin >= 0 and self.skin < self.modelNode.getNumMaterialGroups():
-                self.modelNode.setActiveMaterialGroup(self.skin)
+        if self.modelRootNode:
+            if self.skin >= 0 and self.skin < self.modelRootNode.getNumMaterialGroups():
+                self.modelRootNode.setActiveMaterialGroup(self.skin)
 
     def cleanup(self):
         self.unloadModel()
@@ -58,6 +59,7 @@ class Model(DirectObject):
             self.modelNp.removeNode()
             self.modelNp = None
         self.modelNode = None
+        self.modelRootNode = None
         self.modelData = None
         self.model = ""
         self.bodygroups = {}
@@ -73,10 +75,8 @@ class Model(DirectObject):
         bodygroup contains all of the "rocket" prefixed nodes under each
         LODNode of the model.
         """
-        if not self.modelNode:
-            return
 
-        data = self.modelNode.getCustomData()
+        data = self.modelData
         if not data:
             return
         if not data.hasAttribute("bodygroups"):
@@ -152,7 +152,7 @@ class Model(DirectObject):
         return surfaceProp
 
     def makeModelCollisionShape(self):
-        cinfo = self.modelNode.getCollisionInfo()
+        cinfo = self.modelRootNode.getCollisionInfo()
         if not cinfo:
             return None
         part = cinfo.getPart(0)
@@ -203,12 +203,24 @@ class Model(DirectObject):
         if not self.modelNp or self.modelNp.isEmpty():
             self.notify.error("Could not load model %s" % filename)
             return False
-        self.modelNode = self.modelNp.node()
+        self.modelRootNode = self.modelNp.node()
+        if self.modelNp.find("**/+CharacterNode").isEmpty():
+            # Not a character, so flatten it out.
+            self.modelNp.flattenStrong()
+        if self.modelNp.getNumChildren() == 1:
+            # Get rid of the ModelRoot node.
+            # We need to instance the child so the ModelRoot is still a parent
+            # of the child and can properly change material groups.
+            self.modelNp = self.modelNp.getChild(0).instanceTo(NodePath())
+            self.modelNode = self.modelNp.node()
+        else:
+            self.modelNode = self.modelRootNode
         # Cull the model's subgraph as a single unit.
-        self.modelNode.setFinal(True)
-        self.modelData = self.modelNode.getCustomData()
+        #self.modelNode.setFinal(True)
+        self.modelData = self.modelRootNode.getCustomData()
 
         modelNode = self.modelNode
+        modelNode.setFinal(True)
         cdata = self.modelData
         if cdata:
             if cdata.hasAttribute("omni") and cdata.getAttributeValue("omni").getBool():

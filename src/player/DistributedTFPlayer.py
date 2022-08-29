@@ -226,7 +226,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if self.gibs:
             self.gibs.destroy()
             self.gibs = None
-        cdata = self.modelNp.node().getCustomData()
+        cdata = self.modelData
         if cdata.hasAttribute("gibs"):
             gibInfo = cdata.getAttributeValue("gibs").getList()
             self.gibs = PlayerGibs(self.getPos(base.render), self.getHpr(base.render), self.skin, gibInfo)

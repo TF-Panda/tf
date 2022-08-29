@@ -143,7 +143,7 @@ class BaseObject(BaseClass):
             Turns the building into a set gibs that give metal/ammo.
             """
 
-            data = self.modelNp.node().getCustomData()
+            data = self.modelData
             if not data:
                 return
             if not data.hasAttribute("gibs"):

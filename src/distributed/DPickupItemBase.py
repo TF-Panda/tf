@@ -4,6 +4,7 @@ from panda3d.core import Vec3
 
 from tf.entity.DistributedEntity import DistributedEntity
 from tf.tfbase import TFGlobals
+from tf.actor.Model import Model
 
 from direct.interval.IntervalGlobal import LerpHprInterval
 
@@ -147,7 +148,7 @@ class DPickupItemBase(DistributedEntity):
         def announceGenerate(self):
             DistributedEntity.announceGenerate(self)
             # Create an interval to spin the item.
-            self.spinIval = LerpHprInterval(self.model, 3.0, (360, 0, 0), (0, 0, 0))
+            self.spinIval = LerpHprInterval(self.model.modelNp, 3.0, (360, 0, 0), (0, 0, 0))
             self.spinIval.loop()
 
         def RecvProxy_hidden(self, hidden):
@@ -161,9 +162,10 @@ class DPickupItemBase(DistributedEntity):
         def RecvProxy_modelIndex(self, index):
             if index != self.modelIndex:
                 if self.model:
-                    self.model.removeNode()
-                self.model = base.loader.loadModel(self.models[index])
-                self.model.reparentTo(self)
+                    self.model.cleanup()
+                self.model = Model()
+                self.model.loadModel(self.models[index])
+                self.model.modelNp.reparentTo(self)
                 self.modelIndex = index
 
         def disable(self):
@@ -171,7 +173,7 @@ class DPickupItemBase(DistributedEntity):
                 self.spinIval.finish()
                 self.spinIval = None
             if self.model:
-                self.model.removeNode()
+                self.model.cleanup()
                 self.model = None
             DistributedEntity.disable(self)
 

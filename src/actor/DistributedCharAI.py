@@ -40,8 +40,8 @@ class DistributedCharAI(Actor, DistributedEntityAI):
 
     def initializeCollisions(self):
         if self.solidShape == SolidShape.Model:
-            assert self.modelNode
-            cinfo = self.modelNode.getCollisionInfo()
+            assert self.modelRootNode
+            cinfo = self.modelRootNode.getCollisionInfo()
             if cinfo:
                 cinfo = cinfo.getPart(0)
                 assert cinfo

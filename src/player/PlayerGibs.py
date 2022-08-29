@@ -3,6 +3,7 @@ from panda3d.pphysics import *
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 from tf.tfbase.TFGlobals import Contents, CollisionGroup
+from tf.actor.Model import Model
 
 from direct.directbase import DirectRender
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, LerpColorScaleInterval, Parallel
@@ -24,17 +25,16 @@ class PlayerGibs:
             isHead = False
             if partInfo.hasAttribute("is_head"):
                 isHead = partInfo.getAttributeValue("is_head").getBool()
-            mdl = base.loader.loadModel(mdlFilename)
-            if mdl is None or mdl.isEmpty():
+            mdl = Model()
+            mdl.setSkin(skin)
+            if not mdl.loadModel(mdlFilename):
+                mdl.cleanup()
                 continue
-            mdlRoot = mdl.node()
-            if skin < mdlRoot.getNumMaterialGroups():
-                mdlRoot.setActiveMaterialGroup(skin)
 
-            mdl.setTransparency(True)
+            mdl.modelNp.setTransparency(True)
 
             surfaceProp = "default"
-            customData = mdlRoot.getCustomData()
+            customData = mdl.modelData
             if customData is not None:
                 if customData.hasAttribute("surfaceprop"):
                     surfaceProp = customData.getAttributeValue("surfaceprop").getString()
@@ -43,7 +43,7 @@ class PlayerGibs:
                 continue
 
             # Setup physics for giblet piece.
-            cinfo = mdlRoot.getCollisionInfo()
+            cinfo = mdl.modelRootNode.getCollisionInfo()
             cpart = cinfo.getPart(0)
             if cpart.concave:
                 cmdata = PhysTriangleMeshData(cpart.mesh_data)
@@ -70,7 +70,7 @@ class PlayerGibs:
             cnp.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
             cnp.showThrough(DirectRender.ShadowCameraBitmask)
             cnode.syncTransform()
-            mdl.reparentTo(cnp)
+            mdl.modelNp.reparentTo(cnp)
 
             partVel = Vec3.up()
             partVel.x += random.uniform(-1.0, 1.0)
@@ -92,13 +92,13 @@ class PlayerGibs:
             if isHead:
                 self.headPiece = cnp
 
-            self.gibs.append(cnp)
+            self.gibs.append((cnp, mdl))
 
         # Fade gibs out after 10 seconds.
         self.track = Sequence(Wait(10.0))
         fadeTrack = Parallel()
-        for gib in self.gibs:
-            fadeTrack.append(LerpColorScaleInterval(gib, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
+        for _, mdl in self.gibs:
+            fadeTrack.append(LerpColorScaleInterval(mdl.modelNp, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
         self.track.append(fadeTrack)
         self.track.append(Func(self.destroy))
         self.track.start()
@@ -116,7 +116,8 @@ class PlayerGibs:
             self.track.finish()
             self.track = None
         if self.gibs:
-            for gib in self.gibs:
+            for gib, mdl in self.gibs:
+                mdl.cleanup()
                 gib.node().removeFromScene(base.physicsWorld)
                 gib.removeNode()
             self.gibs = None

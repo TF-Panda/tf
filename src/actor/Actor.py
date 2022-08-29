@@ -80,7 +80,7 @@ class Actor(Model):
 
     def makeRagdoll(self, forceJoint, forcePosition, forceVector, initialVel = Vec3(0)):
 
-        collInfo = self.modelNode.getCollisionInfo()
+        collInfo = self.modelRootNode.getCollisionInfo()
         if not collInfo or (collInfo.getNumParts() < 2):
             # No ragdoll for this actor.
             return None
@@ -104,7 +104,7 @@ class Actor(Model):
         ragdollActor.modelNp.setTransform(self.modelNp.getNetTransform())
 
         # Create the ragdoll using the model's collision info.
-        rd = Ragdoll(ragdollActor.modelNp, collInfo)
+        rd = Ragdoll(ragdollActor.characterNp, collInfo)
         rd.setup()
         if forceJoint == -1:
             rd.setEnabled(True, None, forceVector, forcePosition, initialVel)
@@ -545,7 +545,10 @@ class Actor(Model):
         if not Model.loadModel(self, filename):
             return False
 
-        self.characterNp = self.modelNp.find("**/+CharacterNode")
+        if isinstance(self.modelNp.node(), CharacterNode):
+            self.characterNp = NodePath(self.modelNp)
+        else:
+            self.characterNp = self.modelNp.find("**/+CharacterNode")
         if self.characterNp.isEmpty():
             # The model is not an animated character if it does not contain
             # a CharacterNode.

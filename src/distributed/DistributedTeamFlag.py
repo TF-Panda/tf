@@ -6,7 +6,7 @@ from panda3d.pphysics import *
 from direct.interval.IntervalGlobal import LerpHprInterval
 
 from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, TFTeam, CollisionGroup, WorldParent
-
+from tf.actor.Model import Model
 from tf.entity.DistributedEntity import DistributedEntity
 
 class CaptureZone:
@@ -242,17 +242,18 @@ class DistributedTeamFlag(DistributedEntity):
             self.flagModelName = model
 
             if self.flagModel:
-                self.flagModel.removeNode()
+                self.flagModel.cleanup()
                 self.flagModel = None
-            self.flagModel = base.loader.loadModel(model)
+            self.flagModel = Model()
             # Set to color of team.
-            self.flagModel.node().setActiveMaterialGroup(self.team)
-            self.flagModel.reparentTo(self)
+            self.flagModel.setSkin(self.team)
+            self.flagModel.loadModel(model)
+            self.flagModel.modelNp.reparentTo(self)
 
         def startSpin(self):
             self.stopSpin()
 
-            self.spinIval = LerpHprInterval(self.flagModel, 3.0, (360, 0, 0), (0, 0, 0))
+            self.spinIval = LerpHprInterval(self.flagModel.modelNp, 3.0, (360, 0, 0), (0, 0, 0))
             self.spinIval.loop()
 
         def stopSpin(self):
@@ -269,7 +270,7 @@ class DistributedTeamFlag(DistributedEntity):
         def disable(self):
             self.stopSpin()
             if self.flagModel:
-                self.flagModel.removeNode()
+                self.flagModel.cleanup()
                 self.flagModel = None
             DistributedEntity.disable(self)
 
