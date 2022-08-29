@@ -53,6 +53,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.currentCluster = -1
         self.fogMgr = None
         self.clnp = None
+        self.waterGeomNp = None
 
         self.accept('shift-v', self.toggleVisDebug)
         self.accept('c', self.renderCubeMaps)
@@ -192,6 +193,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
 
+        if self.waterGeomNp:
+            self.waterGeomNp.removeNode()
+            self.waterGeomNp = None
+            base.planarReflect.shutdown()
+            base.planarRefract.shutdown()
+
         self.clnp = None
         base.taskMgr.remove('updateCascadeLight')
 
@@ -315,9 +322,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         print("skyname:", skyName)
         self.sky = SkyBox(skyName)
 
-        #base.planar.setup(Vec3(0, 0, 1), 0.0)
-        #base.planar.renderReflection(base.render)
-
         self.lvlData.setCam(base.cam)
         self.lvlData.buildTraceScene()
         base.sfxManagerList[0].setTraceScene(self.lvlData.getTraceScene())
@@ -362,6 +366,40 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #skyTop.setMapData(self.lvlData)
 
         render.setAttrib(LightRampAttrib.makeHdr0())
+
+        mdl = self.lvlData.getModel(0)
+        gn = mdl.getGeomNode()
+        waterGeomNode = GeomNode("water")
+        for i in reversed(range(gn.getNumGeoms())):
+            geom = gn.getGeom(i)
+            state = gn.getGeomState(i)
+            if state.hasAttrib(MaterialAttrib):
+                mattr = state.getAttrib(MaterialAttrib)
+                mat = mattr.getMaterial()
+                if mat and isinstance(mat, SourceWaterMaterial):
+                    gn.removeGeom(i)
+                    waterGeomNode.addGeom(geom.makeCopy(), state)
+        if waterGeomNode.getNumGeoms() > 0:
+            geom = waterGeomNode.getGeom(0)
+            reader = GeomVertexReader(geom.getVertexData(), "vertex")
+            reader.setRow(geom.getPrimitive(0).getVertex(0))
+            z = reader.getData3f().getZ()
+
+            print("Water Z", z)
+            print("Water GeomNode", waterGeomNode)
+
+            waterGeomNp = base.render.attachNewNode(waterGeomNode)
+            waterGeomNp.setShaderInput("u_fogLensNearFar", Vec2(base.camLens.getNear(), base.camLens.getFar()))
+            print(base.camLens.getNear(), base.camLens.getFar())
+
+            base.planarReflect.setup(Vec3(0, 0, 1), z)
+            base.planarReflect.render(waterGeomNp)
+
+            base.planarRefract.setup(Vec3(0, 0, -1), z)
+            base.planarRefract.render(waterGeomNp)
+            #base.planarRefract.debug()
+
+            self.waterGeomNp = waterGeomNp
 
         numSounds = 0
         sounds = [

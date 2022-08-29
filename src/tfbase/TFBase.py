@@ -192,7 +192,8 @@ class TFBase(ShowBase, FSM):
         base.accept('shift-l', self.render.ls)
         base.accept('shift-k', self.vmRender.ls)
 
-        self.planar = PlanarReflector(1024)
+        self.planarReflect = PlanarReflector(1024, "reflection", True)
+        self.planarRefract = PlanarReflector(1024, "refraction", False)
 
         self.enableParticles()
 
