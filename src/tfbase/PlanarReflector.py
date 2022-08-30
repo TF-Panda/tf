@@ -14,16 +14,22 @@ class PlanarReflector:
         self.isSetup = False
         self.stageName = stageName
         self.reflect = reflect
+        self.texSize = texSize
+        self.buffer = None
+
+    def setupBuffer(self):
+        if self.buffer:
+            return
 
         fbp = FrameBufferProperties()
         fbp.clear()
         fbp.setForceHardware(True)
         fbp.setFloatColor(True)
         fbp.setRgbaBits(16, 16, 16, 0)
-        fbp.setDepthBits(24)
+        fbp.setDepthBits(32)
 
         winprops = WindowProperties()
-        winprops.setSize(texSize, texSize)
+        winprops.setSize(self.texSize, self.texSize)
 
         flags = GraphicsPipe.BFRefuseWindow
 
@@ -52,7 +58,7 @@ class PlanarReflector:
         #self.camera.setCullCenter(base.cam)
         self.cameraNP = NodePath(self.camera)
 
-        print(lens.getNear(), lens.getFar())
+        #print(lens.getNear(), lens.getFar())
 
         self.lens = lens
 
@@ -61,7 +67,9 @@ class PlanarReflector:
         self.displayRegion.setClearDepthActive(True)
         self.displayRegion.setClearColorActive(True)
         self.displayRegion.setCamera(self.cameraNP)
-        self.displayRegion.setActive(False)
+        #self.displayRegion.setActive(False)
+
+        #self.buffer.setActive(False)
 
     def render(self, node):
         node.setTexture(TextureStagePool.getStage(TextureStage(self.stageName)), self.texture)
@@ -79,6 +87,8 @@ class PlanarReflector:
             OnscreenImage(image=self.texture, scale=0.3, pos=(0, 0, -0.7))
 
     def setup(self, planeVec, distance, scale=1.0):
+        self.setupBuffer()
+
         self.shutdown()
 
         self.distance = distance
@@ -94,7 +104,9 @@ class PlanarReflector:
         stateNP.setAntialias(False, 100)
         self.camera.setInitialState(stateNP.getState())
 
-        self.displayRegion.setActive(True)
+        #self.displayRegion.setActive(True)
+
+        #self.buffer.setActive(True)
 
         self.cameraNP.reparentTo(base.render)
 
@@ -114,7 +126,7 @@ class PlanarReflector:
         if not self.isSetup:
             return
 
-        self.displayRegion.setActive(False)
+        self.buffer.setActive(False)
         self.cameraNP.reparentTo(NodePath())
         base.render.node().clearPvsCenter(self.cameraNP.node())
         self.updateTask.remove()
