@@ -207,11 +207,18 @@ class Model(DirectObject):
         if self.modelNp.find("**/+CharacterNode").isEmpty():
             # Not a character, so flatten it out.
             self.modelNp.flattenStrong()
-        if self.modelNp.getNumChildren() == 1:
+        if False:#self.modelNp.getNumChildren() == 1:
             # Get rid of the ModelRoot node.
             # We need to instance the child so the ModelRoot is still a parent
             # of the child and can properly change material groups.
-            self.modelNp = self.modelNp.getChild(0).instanceTo(NodePath())
+            np = self.modelNp.getChild(0)
+            np.detachNode()
+            # This makes our instance the first parent in the list, so NodePath::any_path()
+            # favors our instance, not the ModelRoot.
+            np2 = np.instanceTo(NodePath())
+            np.reparentTo(self.modelNp)
+            print(np.node().getParents())
+            self.modelNp = np2
             self.modelNode = self.modelNp.node()
         else:
             self.modelNode = self.modelRootNode
