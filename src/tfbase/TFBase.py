@@ -191,6 +191,7 @@ class TFBase(ShowBase, FSM):
         base.accept('shift-i', self.toggleIk)
         base.accept('shift-l', self.render.ls)
         base.accept('shift-k', self.vmRender.ls)
+        base.accept('shift-j', self.printVMRenderMasks)
 
         self.planarReflect = PlanarReflector(1024, "reflection", True)
         self.planarRefract = PlanarReflector(1024, "refraction", False)
@@ -222,6 +223,20 @@ class TFBase(ShowBase, FSM):
         self.taskMgr.add(self.__updateParticles2, 'updateParticles2', sort=48)
 
         self.taskMgr.add(self.__updateDirtyDynamicNodes, 'updateDirtyDynamicNodes', sort=49)
+
+    def printVMRenderMasks(self):
+        self.r_printNodeMasks(self.vmRender.node(), 0)
+
+    def r_printNodeMasks(self, node, indent):
+
+        print(" " * indent, "Node", node.getName())
+        print(" " * indent, "Draw show mask", node.getDrawShowMask())
+        print(" " * indent, "Net draw show mask", node.getNetDrawShowMask())
+        print(" " * indent, "Draw control mask", node.getDrawControlMask())
+        print(" " * indent, "Net draw control mask", node.getNetDrawControlMask())
+
+        for child in node.getChildren():
+            self.r_printNodeMasks(child, indent + 2)
 
     def __updateCharacters(self, task):
         from tf.actor.Actor import Actor
@@ -532,17 +547,20 @@ class TFBase(ShowBase, FSM):
         base.graphicsEngine.flipFrame()
 
         self.precache = []
+        pgo = base.win.getGsg().getPreparedObjects()
         for pc in TFGlobals.ModelPrecacheList:
             mdl = loader.loadModel(pc)
             self.precache.append(mdl)
 
-            base.graphicsEngine.renderFrame()
+            #base.graphicsEngine.renderFrame()
 
             # Upload textures, vertex buffers, index buffers.
             mdl.prepareScene(base.win.getGsg())
 
             # Keep the window pumping.
             base.graphicsEngine.renderFrame()
+
+            #pgo.beginFrameApp()
 
         loadingText.destroy()
         bg.removeNode()
