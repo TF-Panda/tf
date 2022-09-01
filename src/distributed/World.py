@@ -31,7 +31,7 @@ class World(DistributedSolidEntity):
         #self.node().setCcdEnabled(True)
 
         # Enable Z-prepass on the world geometry.
-        self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask))
+        self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask|DirectRender.ReflectionCameraBitmask))
         self.flattenLight()
 
     def delete(self):
