@@ -3,6 +3,7 @@ from tf.actor.DistributedCharAI import DistributedCharAI
 
 from .DViewModelShared import DViewModelShared
 from tf.actor.Activity import Activity
+from tf.tfbase import TFGlobals
 
 class DViewModelAI(DistributedCharAI):
 
@@ -10,6 +11,10 @@ class DViewModelAI(DistributedCharAI):
         DistributedCharAI.__init__(self)
         DViewModelShared.__init__(self)
         self.clientSideAnimation = True
+        # ViewModel of another player is hidden to them,
+        # but the local avatar parents its viewmodel to the viewmodel
+        # scene graph.
+        self.parentEntityId = TFGlobals.WorldParent.Unchanged
 
     def delete(self):
         if self.player:

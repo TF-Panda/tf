@@ -127,7 +127,7 @@ class DistributedEntity(BaseClass, NodePath):
         # Add a tag on our node that links back to us.
         self.setPythonTag("entity", self)
 
-        self.reparentTo(self.parentEntity)
+        #self.reparentTo(self.parentEntity)
 
     def announceGenerate(self):
         BaseClass.announceGenerate(self)
@@ -138,6 +138,8 @@ class DistributedEntity(BaseClass, NodePath):
                 parentEnt = base.entMgr.targetName2ent.get(self.parentEntityName)
                 if parentEnt is not None:
                     self.setParentEntityId(parentEnt.doId)
+            else:
+                self.updateParentEntity()
 
 
     def generate(self):

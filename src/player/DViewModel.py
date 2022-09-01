@@ -168,7 +168,8 @@ class DViewModel(DistributedChar, DViewModelShared):
     def __playerPoll(self, task):
         if self.playerId != -1 and self.player is None:
             # Poll for the player.
-            self.updatePlayer()
+            if self.updatePlayer():
+                return task.done
         return task.cont
 
     def shouldPredict(self):
@@ -196,8 +197,12 @@ class DViewModel(DistributedChar, DViewModelShared):
         if self.playerId == base.localAvatarId:
             self.reparentTo(base.vmRender)
         else:
-            self.reparentTo(hidden)
+            self.reparentTo(base.hidden)
+
+        return self.player
 
     def RecvProxy_playerId(self, playerId):
+        changed = playerId != self.playerId
         self.playerId = playerId
-        self.updatePlayer()
+        if changed:
+            self.updatePlayer()
