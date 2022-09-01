@@ -459,6 +459,14 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #self.lvl.analyze()
 
         # Ensure all graphics objects are prepared ahead of time.
+
+        # The models aren't parented to render yet since they are tied to
+        # DistributedEntities that haven't been generated yet... so prepare
+        # them explicitly.
+        for i in range(self.lvlData.getNumModels()):
+            mdl = self.lvlData.getModel(i)
+            NodePath.anyPath(mdl.getGeomNode()).prepareScene(base.win.getGsg())
+
         base.render.prepareScene(base.win.getGsg())
 
         self.flatten(base.sky3DRoot)
