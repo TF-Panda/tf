@@ -422,6 +422,8 @@ class DistributedWeaponShared:
             self.player = None
             self.viewModel = None
 
+        return self.player
+
     def generate(self):
         if not self.UsesViewModel:
             self.viewModelChar = Actor()

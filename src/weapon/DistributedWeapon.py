@@ -115,6 +115,8 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         # Poll for the player.
         if self.playerId != -1 and (self.player is None or self.viewModel is None):
             self.updatePlayer()
+        else:
+            return task.done
         return task.cont
 
     def updatePlayer(self):
