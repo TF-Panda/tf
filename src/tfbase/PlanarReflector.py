@@ -25,8 +25,14 @@ class PlanarReflector:
         fbp.clear()
         fbp.setForceHardware(True)
         fbp.setFloatColor(True)
+        fbp.setFloatDepth(False)
         fbp.setRgbaBits(16, 16, 16, 0)
-        fbp.setDepthBits(32)
+        if not self.reflect:
+            # FIXME: pipelining workaround.. we don't actually need 32 bits for depth.
+            fbp.setDepthBits(32)
+        else:
+            fbp.setDepthBits(1)
+        #fbp.setDepthBits(8)
 
         winprops = WindowProperties()
         winprops.setSize(self.texSize, self.texSize)
@@ -41,14 +47,25 @@ class PlanarReflector:
         self.buffer.addRenderTexture(self.texture, GraphicsOutput.RTMBindOrCopy, GraphicsOutput.RTPColor)
         self.texture.setWrapV(SamplerState.WMClamp)
         self.texture.setWrapU(SamplerState.WMClamp)
+        self.texture.setMinfilter(SamplerState.FTLinear)
+        self.texture.setMagfilter(SamplerState.FTLinear)
 
         if not self.reflect:
             self.depthTexture = Texture(f"planar-{self.stageName}-depth")
+            #self.depthTexture.setComponentType(Texture.TUnsignedByte)
             self.buffer.addRenderTexture(self.depthTexture, GraphicsOutput.RTMBindOrCopy, GraphicsOutput.RTPDepth)
             self.depthTexture.setWrapV(SamplerState.WMClamp)
             self.depthTexture.setWrapU(SamplerState.WMClamp)
+            self.depthTexture.setMinfilter(SamplerState.FTLinear)
+            self.depthTexture.setMagfilter(SamplerState.FTLinear)
+
+            #print(self.depthTexture)
 
         self.buffer.disableClears()
+
+        #print(self.buffer.getFbProperties())
+
+        #print("Setup frame", globalClock.frame_count)
 
         #img = OnscreenImage(self.texture, scale =0.3, pos = (0, 0, -0.7))
 
