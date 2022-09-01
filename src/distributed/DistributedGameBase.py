@@ -27,6 +27,7 @@ class DistributedGameBase:
         gr.makeCompatibleState(np.node())
         gr.collectVertexData(np.node(), 0)
         gr.unify(np.node(), False)
+        gr.removeUnusedVertices(np.node())
 
     def processPropGeomNode(self, node, sprop):
         for i in range(node.getNumGeoms()):
@@ -199,6 +200,20 @@ class DistributedGameBase:
             propModel.setState(state)
             #propModel.clearEffect(MapLightingEffect.getClassType())
             propModel.flattenLight()
+
+        # Attempt to share vertex buffers and combine GeomPrimitives
+        # across the prop GeomNodes, without actually combining the
+        # GeomNodes themselves, so we can cull them effectively.
+        print("Prop root pre reduce")
+        propRoot.analyze()
+        propGr = SceneGraphReducer()
+        propGr.applyAttribs(propRoot.node())
+        propGr.makeCompatibleState(propRoot.node())
+        propGr.collectVertexData(propRoot.node(), 0)
+        propGr.unify(propRoot.node(), False)
+        propGr.removeUnusedVertices(propRoot.node())
+        print("Post prop reduce")
+        propRoot.analyze()
 
         for child in propRoot.getChildren():
             propRoot.node().addObject(child.node())
