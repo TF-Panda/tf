@@ -143,7 +143,9 @@ class SoundscapeComponent:
         volume = random.uniform(self.desc.volume[0], self.desc.volume[1])
         self.soundVolume = volume
         # Stream it if we're looping.
-        self.sound = base.loader.loadSfx(filename, stream=self.desc.looping)
+        # Actually, don't stream, opening the stream causes a chug.
+        # Should look into non-blocking reads.
+        self.sound = base.loader.loadSfx(filename)#, stream=self.desc.looping)
         self.sound.setLoop(self.desc.looping)
         self.sound.setVolume(self.soundscape.volume * volume)
 
