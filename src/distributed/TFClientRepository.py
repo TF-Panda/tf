@@ -25,7 +25,7 @@ class TFClientRepository(ClientRepository, FSM):
 
         self.loadingMusic = base.loader.loadMusic("misc/training_vid_ctf_2fort.mp3")
         self.loadingMusic.play()
-        base.musicManager.update()
+        #base.musicManager.update()
 
         self.request("Connect", info)
 

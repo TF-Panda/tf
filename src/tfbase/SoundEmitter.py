@@ -1,5 +1,7 @@
 """SoundEmitter module: contains the SoundEmitter class."""
 
+from panda3d.core import Vec3, Quat
+
 from direct.showbase.DirectObject import DirectObject
 
 class SoundData:
@@ -53,9 +55,12 @@ class SoundEmitter(DirectObject):
 
         center = self.host.getSpatialAudioCenter()
 
+        q = Quat.identQuat()
+        v = Vec3()
+
         for s in spatialSounds:
             pos = center.xformPoint(s.offset)
-            s.sound.set3dAttributes(pos.x, pos.y, pos.z, 0.0, 0.0, 0.0)
+            s.sound.set3dAttributes(pos, q, v)
 
         return task.cont
 
@@ -86,7 +91,7 @@ class SoundEmitter(DirectObject):
             # If we wait until next frame or later in this frame, the sound
             # may appear to jump.
             pos = self.host.getSpatialAudioCenter().xformPoint(offset)
-            sound.set3dAttributes(pos.x, pos.y, pos.z, 0.0, 0.0, 0.0)
+            sound.set3dAttributes(pos, Quat.identQuat(), Vec3())
         if channel is not None:
             self.chanSounds[channel] = soundData
         else:

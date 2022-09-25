@@ -4,7 +4,7 @@ Builds the sound list from the script file.
 
 import math
 from enum import IntEnum, auto
-from panda3d.core import ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager, PitchShiftDSP, PStatCollector, SteamAudioProperties
+from panda3d.core import ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager, PitchShiftDSP, PStatCollector, SteamAudioProperties, loadPrcFileData
 import random
 
 csc_coll = PStatCollector("App:Sounds:CreateSoundClient")
@@ -26,13 +26,13 @@ def attenToDistMult(attn):
 
 def soundLevelToDistMult(sndlvl):
     if sndlvl:
-        return (math.pow(10.0, snd_refdb.getValue() / 20) / math.pow(10.0, float(sndlvl) / 20)) / snd_refdist.getValue()
+        return (math.pow(10.0, snd_refdb.value / 20) / math.pow(10.0, float(sndlvl) / 20)) / snd_refdist.value
     else:
         return 0.0
 
 def distMultToSoundLevel(distMult):
     if distMult:
-        return 20 * math.log10(math.pow(10.0, snd_refdb.getValue() / 20) / (distMult * snd_refdist.getValue()))
+        return 20 * math.log10(math.pow(10.0, snd_refdb.value / 20) / (distMult * snd_refdist.value))
     else:
         return 0.0
 
@@ -149,22 +149,14 @@ def createSound(info, spatial=False, getWave=False):
         return None
 
     sound = wave.getSound(base.sfxManagerList[0])
-    sound.set3dMinDistance(info.minDistance)
-    sound.set3dDistanceFactor(info.distMult)
     sound.setPlayRate(random.uniform(info.pitch[0], info.pitch[1]))
     sound.setVolume(random.uniform(info.volume[0], info.volume[1]))
     if spatial:
+        sound.set3dMinDistance(info.minDistance)
         props = SteamAudioProperties()
-        props._enable_occlusion = True
-        props._enable_transmission = False
-        props._enable_air_absorption = False
-        props._enable_reflections = False
-        props._bilinear_hrtf = True
-        #props._enable_pathing = True
-        #props._binaural_pathing = True
-        #props._enable_reflections = True
-        #props._binaural_reflections = False
+        #props._enable_air_absorption = False
         sound.applySteamAudioProperties(props)
+        #print(repr(info))
 
     if getWave:
         return (sound, wave)
@@ -209,22 +201,14 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False, getI
     get_sound_coll.start()
     sound = wave.getSound(base.sfxManagerList[0])
     get_sound_coll.stop()
-    sound.set3dMinDistance(info.minDistance)
-    sound.set3dDistanceFactor(info.distMult)
     sound.setPlayRate(pitch)
     sound.setVolume(volume)
     if spatialized:
+        sound.set3dMinDistance(info.minDistance)
         props = SteamAudioProperties()
-        props._enable_occlusion = True
-        props._enable_transmission = False
-        props._enable_air_absorption = False
-        props._enable_reflections = False
-        props._bilinear_hrtf = True
-        #props._enable_pathing = True
-        #props._binaural_pathing = True
-        #props._enable_reflections = True
-        #props._binaural_reflections = False
+        #props._enable_air_absorption = False
         sound.applySteamAudioProperties(props)
+        #print(repr(info))
 
     csc_coll.stop()
     if getInfo:
@@ -277,7 +261,10 @@ def processSound(kv):
             else:
                 info.soundLevel = SoundLevel[value]
             info.distMult = soundLevelToDistMult(info.soundLevel)
-            info.minDistance = 0.01
+            if info.distMult > 0.0:
+                info.minDistance = 1.0 / info.distMult
+            else:
+                info.minDistance = 1000000.0
         elif key == "wave":
             info.wave = Wave()
             if value.startswith(")") or value.startswith(">") or value.startswith("<"):
@@ -351,5 +338,18 @@ def loadSounds(server = False):
 
     #print(repr(Sounds))
 
+def incRefDb():
+    db = snd_refdb.value
+    db += 1
+    loadPrcFileData('', 'snd-refdb %s' % db)
+    print("ref db:", db)
 
+def decRefDb():
+    db = snd_refdb.value
+    db -= 1
+    loadPrcFileData('', 'snd-refdb %s' % db)
+    print("ref db:", db)
 
+def enableRefDbDebug():
+    base.accept('arrow_up', incRefDb)
+    base.accept('arrow_down', decRefDb)

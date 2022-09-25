@@ -142,7 +142,8 @@ class SoundscapeComponent:
         filename = random.choice(self.desc.waveFilenames)
         volume = random.uniform(self.desc.volume[0], self.desc.volume[1])
         self.soundVolume = volume
-        self.sound = base.loader.loadSfx(filename)
+        # Stream it if we're looping.
+        self.sound = base.loader.loadSfx(filename, stream=self.desc.looping)
         self.sound.setLoop(self.desc.looping)
         self.sound.setVolume(self.soundscape.volume * volume)
 
@@ -150,19 +151,21 @@ class SoundscapeComponent:
             # This is a spatialized soundscape component.
 
             pos = self.soundscape.positions[int(self.desc.position)]
-            self.sound.set3dAttributes(pos[0], pos[1], pos[2], 0, 0, 0)
-            self.sound.set3dDistanceFactor(self.desc.distMult)
+            self.sound.set3dAttributes(pos, Quat.identQuat(), Vec3())
+            self.sound.set3dMinDistance((1.0 / self.desc.distMult) if (self.desc.distMult > 0.0) else 1000000.0)
+
 
             sprops = SteamAudioProperties()
-            sprops._enable_distance_atten = True
-            sprops._enable_air_absorption = False
-            sprops._enable_directivity = False
-            sprops._enable_occlusion = True
-            sprops._enable_transmission = False
-            sprops._enable_reflections = False
-            sprops._enable_pathing = False
-            sprops._bilinear_hrtf = True
-            sprops._volumetric_occlusion = False
+            #sprops._enable_air_absorption = False
+            #sprops._enable_distance_atten = True
+            #sprops._enable_air_absorption = False
+            #sprops._enable_directivity = False
+            #sprops._enable_occlusion = True
+            #sprops._enable_transmission = False
+            #sprops._enable_reflections = False
+            #sprops._enable_pathing = False
+            #sprops._bilinear_hrtf = True
+            #sprops._volumetric_occlusion = False
             self.sound.applySteamAudioProperties(sprops)
 
         self.sound.play()

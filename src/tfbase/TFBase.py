@@ -16,7 +16,7 @@ from .TFPostProcess import TFPostProcess
 from .PlanarReflector import PlanarReflector
 from . import Sounds
 
-from .Console import Console
+#from .Console import Console
 
 import random
 
@@ -96,12 +96,21 @@ class TFBase(ShowBase, FSM):
         self.postProcess.setup()
         self.taskMgr.add(self.__updatePostProcess, 'updatePostProcess')
 
+        # 16 units per feet * feet per meter (3.28084)
+        self.audioEngine.set3dUnitScale(52.49344)
+        # Enable the steam audio listener-centric reverb on sound effects.
+        base.sfxManagerList[0].setSteamAudioReverb()
+
         if True:#self.postProcess.enableHDR:
             self.render.setAttrib(LightRampAttrib.makeIdentity())
 
+        # We always want to stream music.
+        #self.musicManager.setStreamMode(AudioManager.SMStream)
         self.musicManager.setVolume(self.config.GetFloat('music-volume', 1))
 
+        # We always want to preload sound effects.
         for mgr in self.sfxManagerList:
+            #mgr.setStreamMode(AudioManager.SMSample)
             mgr.setVolume(base.config.GetFloat("sfx-volume", 1))
 
         self.setBackgroundColor(0, 0, 0)
@@ -263,16 +272,10 @@ class TFBase(ShowBase, FSM):
         ts = self.cam.getNetTransform()
         pos = ts.getPos()
         q = ts.getQuat()
-        fwd = q.getForward()
-        up = q.getUp()
 
         vel = (pos - self.lastListenerPos) / globalClock.dt
 
-        for mgr in self.sfxManagerList:
-            mgr.audio3dSetListenerAttributes(pos[0], pos[1], pos[2],
-                                             vel[0], vel[1], vel[2],
-                                             fwd[0], fwd[1], fwd[2],
-                                             up[0], up[1], up[2])
+        self.audioEngine.set3dListenerAttributes(pos, q, vel)
 
         self.lastListenerPos = Point3(pos)
 
@@ -291,6 +294,7 @@ class TFBase(ShowBase, FSM):
             loadPrcFileData('', 'ik-enable 0')
 
     def openConsole(self):
+        from .Console import Console
         if not self.console:
             self.console = Console()
         else:
@@ -316,7 +320,7 @@ class TFBase(ShowBase, FSM):
     def playMusic(self, audio, loop=False):
         if isinstance(audio, (str, Filename)):
             self.musicFilename = audio
-            audio = self.loader.loadMusic(audio)
+            audio = self.loader.loadMusic(audio, stream=True)
         self.stopMusic()
         self.music = audio
         self.music.setLoop(loop)
@@ -324,7 +328,11 @@ class TFBase(ShowBase, FSM):
 
     def stopMusic(self):
         if self.music:
-            self.music.stop()
+            if self.music.status() == AudioSound.PLAYING:
+                # Stop the sound *only if* it's currently playing.  If this was
+                # called from the finished event of the sound, calling stop()
+                # again will cause an infinite loop.
+                self.music.stop()
             self.music = None
         self.musicFilename = None
 

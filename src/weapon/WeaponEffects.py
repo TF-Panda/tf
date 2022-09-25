@@ -162,7 +162,7 @@ class Whiz:
 
     def __update(self, t):
         point = self.start + self.delta * t
-        self.snd.set3dAttributes(point.x, point.y, point.z, 0, 0, 0)
+        self.snd.set3dAttributes(point, Quat.identQuat(), Vec3())
 
 nextWhizTime = 0.0
 def tracerSound(start, end):
@@ -203,8 +203,9 @@ def tracerSound(start, end):
     nextWhizTime = globalClock.frame_time + 0.1
 
     snd = Sounds.createSoundByName(soundName, spatial=True)
-    snd.set3dDistanceFactor(0.0)
-    snd.set3dAttributes(start[0], start[1], start[2], 0, 0, 0)
+    #snd.set3dDistanceFactor(0.0)
+    snd.set3dMinDistance(10000000.0)
+    snd.set3dAttributes(start, Quat.identQuat(), Vec3())
     snd.play()
 
     dir = (end - start).normalized()
