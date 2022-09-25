@@ -36,6 +36,16 @@ spec_freeze_distance_max = ConfigVariableDouble("spec-freeze-distance-max", 200)
 mouse_sensitivity = ConfigVariableDouble("mouse-sensitivity", 3.0)
 mouse_raw_input = ConfigVariableBool("mouse-raw-input", True)
 
+# My nvidia so is crashing when I enable relative mode on linux,
+# so doing MConfined on linux for now.
+#import os
+#if os.name == 'nt':
+#    mouse_relative = True
+#else:
+#    mouse_relative = False
+mouse_relative = True
+print('mouse_relative:', mouse_relative)
+
 WALL_MINS = Vec3(-6)
 WALL_MAXS = Vec3(6)
 
@@ -706,18 +716,26 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         props = WindowProperties()
         props.setCursorHidden(True)
-        props.setMouseMode(WindowProperties.MRelative)
+        if mouse_relative:
+            props.setMouseMode(WindowProperties.MRelative)
+        else:
+            props.setMouseMode(WindowProperties.MConfined)
 
         base.win.requestProperties(props)
 
         #base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
-        if base.mouseWatcherNode.hasMouse():
-            md = base.mouseWatcherNode.getMouse()
-            sizeX = base.win.getXSize()
-            sizeY = base.win.getYSize()
-            self.lastMouseSample = Vec2((md.getX() * 0.5 + 0.5) * sizeX, (md.getY() * 0.5 + 0.5) * sizeY)
+        if mouse_relative:
+            if base.mouseWatcherNode.hasMouse():
+                md = base.mouseWatcherNode.getMouse()
+                sizeX = base.win.getXSize()
+                sizeY = base.win.getYSize()
+                self.lastMouseSample = Vec2((md.getX() * 0.5 + 0.5) * sizeX, (md.getY() * 0.5 + 0.5) * sizeY)
+            else:
+                self.lastMouseSample = Vec2()
         else:
+            base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
             self.lastMouseSample = Vec2()
+
         self.mouseDelta = Vec2()
 
         self.accept('escape', self.disableControls)
@@ -734,14 +752,18 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         mw = base.mouseWatcherNode
         if self.controlsEnabled and mw.hasMouse() and (self.observerTarget in (-1, self.doId)):
-            md = mw.getMouse()
-            sens = mouse_sensitivity.getValue()
-            sizeX = base.win.getXSize()
-            sizeY = base.win.getYSize()
-            #center = Point2(base.win.getXSize() // 2, base.win.getYSize() // 2)
-            sample = Vec2((md.getX() * 0.5 + 0.5) * sizeX, (md.getY() * 0.5 + 0.5) * sizeY)
+            sens = mouse_sensitivity.value
+            sizeX = base.win.size.x
+            sizeY = base.win.size.y
+            if mouse_relative:
+                md = mw.getMouse()
+                sample = Vec2((md.x * 0.5 + 0.5) * sizeX, (md.y * 0.5 + 0.5) * sizeY)
+            else:
+                md = base.win.getPointer(0)
+                sample = Vec2(md.x, md.y)
+                base.win.movePointer(0, sizeX // 2, sizeY // 2)
+
             delta = (sample - self.lastMouseSample) * sens
-            #base.win.movePointer(0, base.win.getXSize() // 2, base.win.getYSize() // 2)
 
             self.viewAngles[0] -= delta.x * 0.022
             self.viewAngles[1] = max(-89, min(89, self.viewAngles[1] + (delta.y * 0.022)))
