@@ -33,29 +33,29 @@ class DistributedGameBase:
         for i in range(node.getNumGeoms()):
             array = sprop.getVertexLighting(self.geomIndex)
             geom = node.getGeom(i)
-            state = node.getGeomState(i)
             vdata = geom.getVertexData()
-            arrIndex = vdata.getNumArrays()
 
-            fmt = vdata.getFormat()
+            if array.getNumRows() == vdata.getNumRows():
+                arrIndex = vdata.getNumArrays()
+                fmt = vdata.getFormat()
 
-            arrFmt = GeomVertexArrayFormat()
-            arrFmt.addColumn(InternalName.make("vertex_lighting"), 3, GeomEnums.NTFloat16, GeomEnums.COther)
-            arrFmt = GeomVertexArrayFormat.registerFormat(arrFmt)
+                arrFmt = GeomVertexArrayFormat()
+                arrFmt.addColumn(InternalName.make("vertex_lighting"), 3, GeomEnums.NTFloat16, GeomEnums.COther)
+                arrFmt = GeomVertexArrayFormat.registerFormat(arrFmt)
 
-            newFmt = GeomVertexFormat(fmt)
-            newFmt.addArray(arrFmt)
-            newFmt = GeomVertexFormat.registerFormat(newFmt)
+                newFmt = GeomVertexFormat(fmt)
+                newFmt.addArray(arrFmt)
+                newFmt = GeomVertexFormat.registerFormat(newFmt)
 
-            #print(newFmt)
+                #print(newFmt)
 
-            newVData = GeomVertexData(vdata)
-            newVData.setFormat(newFmt)
-            newVData.setArray(arrIndex, array)
+                newVData = GeomVertexData(vdata)
+                newVData.setFormat(newFmt)
+                newVData.setArray(arrIndex, array)
 
-            ngeom = geom.makeCopy()
-            ngeom.setVertexData(newVData)
-            node.setGeom(i, ngeom)
+                ngeom = geom.makeCopy()
+                ngeom.setVertexData(newVData)
+                node.setGeom(i, ngeom)
 
             self.geomIndex += 1
 
@@ -204,16 +204,12 @@ class DistributedGameBase:
         # Attempt to share vertex buffers and combine GeomPrimitives
         # across the prop GeomNodes, without actually combining the
         # GeomNodes themselves, so we can cull them effectively.
-        print("Prop root pre reduce")
-        propRoot.analyze()
         propGr = SceneGraphReducer()
         propGr.applyAttribs(propRoot.node())
         propGr.makeCompatibleState(propRoot.node())
         propGr.collectVertexData(propRoot.node(), 0)
         propGr.unify(propRoot.node(), False)
         propGr.removeUnusedVertices(propRoot.node())
-        print("Post prop reduce")
-        propRoot.analyze()
 
         for child in propRoot.getChildren():
             propRoot.node().addObject(child.node())
