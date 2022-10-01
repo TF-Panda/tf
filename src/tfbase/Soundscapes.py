@@ -4,6 +4,8 @@ from panda3d.core import *
 
 from .Sounds import attenToDistMult
 
+from tf.tfbase import TFGlobals
+
 import random
 
 class SoundscapeComponentDef:
@@ -203,6 +205,7 @@ class Soundscape:
         self.radius = -1
         self.task = None
         self.proxy = False
+        self.fading = 0
 
         self.position = Point3()
 
@@ -250,17 +253,32 @@ class Soundscape:
 
         return ss
 
-    def start(self):
-        for comp in self.components:
-            comp.start()
-        self.task = base.taskMgr.add(self.updateTask, 'updateSoundscape')
+    def start(self, fadeIn=False):
+        if fadeIn:
+            self.fading = 1
+            # We don't set the volume to 0.0 because the soundscape
+            # might be restarted during a fade out.
+        else:
+            self.volume = 1.0
+            self.fading = 0
 
-    def stop(self):
-        for comp in self.components:
-            comp.stop()
-        if self.task:
-            self.task.remove()
-            self.task = None
+        # The soundscape might be started again while it's currently being faded
+        # out and the task (and all components) are still active.
+        if not self.task:
+            for comp in self.components:
+                comp.start()
+            self.task = base.taskMgr.add(self.updateTask, 'updateSoundscape')
+
+    def stop(self, fadeOut=False):
+        if fadeOut:
+            self.fading = 2
+        else:
+            self.fading = 0
+            for comp in self.components:
+                comp.stop()
+            if self.task:
+                self.task.remove()
+                self.task = None
 
     def destroy(self):
         for comp in self.components:
@@ -275,6 +293,20 @@ class Soundscape:
         self.radius = None
 
     def updateTask(self, task):
+        if self.fading == 1:
+            # Fading in.
+            self.volume = TFGlobals.approach(1.0, self.volume, 2.0 * globalClock.dt)
+            if self.volume >= 1.0:
+                # Fade in done.
+                self.fading = 0
+        elif self.fading == 2:
+            # Fading out.
+            self.volume = TFGlobals.approach(0.0, self.volume, 2.0 * globalClock.dt)
+            if self.volume <= 0.0:
+                # Fade out done, stop.
+                self.stop(False)
+                return task.done
+
         for comp in self.components:
             comp.update()
         return task.cont
@@ -288,11 +320,11 @@ class SoundscapeProxy:
         self.position = Point3(0)
         self.proxy = True
 
-    def start(self):
-        self.actualSoundscape.start()
+    def start(self, fadeIn=False):
+        self.actualSoundscape.start(fadeIn)
 
-    def stop(self):
-        self.actualSoundscape.stop()
+    def stop(self, fadeOut=False):
+        self.actualSoundscape.stop(fadeOut)
 
     def destroy(self):
         self.stop()
@@ -371,12 +403,12 @@ class SoundscapeManager:
 
         if not self.soundscapesEqual(ss, self.currSoundscape):
             if self.currSoundscape:
-                self.currSoundscape.stop()
+                self.currSoundscape.stop(True)
                 self.currSoundscape = None
             if ss:
                 self.currSoundscape = ss
-                self.currSoundscape.start()
-                print("soundscape:", ss.desc.name, "proxy:", ss.proxy)
+                self.currSoundscape.start(True)
+                #print("soundscape:", ss.desc.name, "proxy:", ss.proxy)
 
         return task.cont
 
