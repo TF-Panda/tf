@@ -33,7 +33,7 @@ EntityRegistry = {
     "prop_dynamic": DistributedPropDynamicAI,
     "func_door": DistributedFuncDoorAI,
     "func_brush": DistributedFuncBrushAI,
-    #"point_spotlight": DistributedPointSpotlightAI,
+    "point_spotlight": DistributedPointSpotlightAI,
     "item_healthkit_small": DHealthKitSmallAI,
     "item_healthkit_medium": DHealthKitMediumAI,
     "item_healthkit_full": DHealthKitFullAI,

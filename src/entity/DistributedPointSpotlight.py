@@ -2,7 +2,7 @@
 
 from .DistributedEntity import DistributedEntity
 
-from panda3d.core import Vec3, CardMaker, CallbackNode, CallbackObject, KeyValues, SpriteGlow
+from panda3d.core import *
 
 from direct.directbase import DirectRender
 
@@ -19,11 +19,11 @@ class DistributedPointSpotlight(DistributedEntity):
         self.negSpotlightDir = Vec3.up()
         self.rgbColor = Vec3(0)
 
-        self.brightnessFactor = 100.0 / 255.0
+        self.brightnessFactor = 125.0 / 255.0
 
         if IS_CLIENT:
             self.spotlight = None
-            self.halo = None
+            #self.halo = None
 
     if not IS_CLIENT:
         def initFromLevel(self, ent, props):
@@ -43,37 +43,16 @@ class DistributedPointSpotlight(DistributedEntity):
             self.rgbColor[1] = g / 255.0
             self.rgbColor[2] = b / 255.0
 
-        def setBeamHaloFactor(self, blend):
-            if blend <= 0.001:
-                self.spotlight.hide()
-                self.halo.show()
-            elif blend >= 0.999:
-                self.spotlight.show()
-                self.halo.hide()
-            else:
-                self.spotlight.show()
-                self.halo.show()
-
-            self.spotlight.setColorScale(self.rgbColor * (1.0 - blend) * self.brightnessFactor)
-            self.halo.setColorScale(self.rgbColor * self.brightnessFactor)
-
-        def cullCallback(self, cbdata):
-            camToLight = self.getPos() - base.cam.getPos(base.render)
-            camToLight.normalize()
-
-            factor = abs(camToLight.z)
-
-            #print("factor", factor)
-
-            self.setBeamHaloFactor(factor)
-
-            cbdata.upcall()
-
         def announceGenerate(self):
             DistributedEntity.announceGenerate(self)
 
-            self.reparentTo(base.render)
-            self.showBounds()
+            self.reparentTo(base.dynRender)
+
+            #mins = Point3(-self.spotlightWidth, -self.spotlightWidth, -self.spotlightLength)
+            #maxs = Point3(self.spotlightWidth, self.spotlightWidth, 0)
+            #self.node().setBounds(BoundingBox(mins, maxs))
+            self.node().setFinal(True)
+            #self.showBounds()
 
             self.spotlightDir = Vec3(self.spotlightDir[0], self.spotlightDir[1], self.spotlightDir[2])
 
@@ -82,38 +61,46 @@ class DistributedPointSpotlight(DistributedEntity):
             self.hide(DirectRender.ShadowCameraBitmask)
             #self.hide(DirectRender.ReflectionCameraBitmask)
 
-            clbkNode = CallbackNode("spotlight-callback")
-            clbkNode.setCullCallback(CallbackObject.make(self.cullCallback))
-            self.spotlight = self.attachNewNode(clbkNode)
-            self.spotlight.setP(90)
+            clbkNode = SpotlightBeam("spotlight-callback")
+            clbkNode.setBeamColor(self.rgbColor * self.brightnessFactor)
+            clbkNode.setBeamSize(self.spotlightLength, self.spotlightWidth)
+            clbkNode.setHaloColor(self.rgbColor)
+            clbkNode.setHaloSize(75)
+            root = self.attachNewNode(clbkNode)
+            spotlight = root.attachNewNode("spotlight")
+            spotlight.setP(90)
 
             # Create sprite card for the spotlight beam.
             cm = CardMaker("beam")
             cm.setFrame(-1, 1, -1.0, 0.0)
             cm.setHasUvs(True)
-            beamNp = self.spotlight.attachNewNode(cm.generate())
+            beamNp = spotlight.attachNewNode(cm.generate())
             beamNp.setMaterial(base.loader.loadMaterial("tfmodels/src/materials/glow_test02.pmat"))
             beamNp.setSz(self.spotlightLength)
             beamNp.setSx(self.spotlightWidth)
             beamNp.setBillboardAxis()
 
-            #cm = CardMaker("halo")
-            #cm.setFrame(-1, 1, -1, 1)
-            #cm.setHasUvs(True)
+            cm = CardMaker("halo")
+            cm.setFrame(-1, 1, -1, 1)
+            cm.setHasUvs(True)
 
-            self.halo = self.attachNewNode("halo")#SpriteGlow("halo", 60))
-            #self.halo.setBillboardPointEye()
-            #haloNp = self.halo.attachNewNode(cm.generate())
-            #haloNp.setScale(60)
-            #haloNp.setMaterial(base.loader.loadMaterial("tfmodels/src/materials/light_glow03.pmat"))
+            haloNp = root.attachNewNode(cm.generate())
+            haloNp.setBillboardPointEye()
+            haloNp.setMaterial(base.loader.loadMaterial("tfmodels/src/materials/light_glow03.pmat"))
+            haloNp.setDepthTest(False, 1)
+            haloNp.setDepthWrite(False, 1)
+
+            self.spotlight = root
+
+            #self.addTask(self.__update, "updatePointSpotlight", )
 
         def disable(self):
             if self.spotlight:
                 self.spotlight.removeNode()
                 self.spotlight = None
-            if self.halo:
-                self.halo.removeNode()
-                self.halo = None
+            #if self.halo:
+            #    self.halo.removeNode()
+            #    self.halo = None
             DistributedEntity.disable(self)
 
 if not IS_CLIENT:
