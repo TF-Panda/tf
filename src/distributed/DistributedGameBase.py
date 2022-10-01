@@ -30,18 +30,25 @@ class DistributedGameBase:
         gr.removeUnusedVertices(np.node())
 
     def processPropGeomNode(self, node, sprop):
+        hasAny = False
+
+        tmp = NodePath("tmp")
+        tmp.setShaderInput("bakedVertexLight", LVecBase2i(0))
+
+        arrFmt = GeomVertexArrayFormat()
+        arrFmt.addColumn(InternalName.make("vertex_lighting"), 3, GeomEnums.NTFloat16, GeomEnums.COther)
+        arrFmt = GeomVertexArrayFormat.registerFormat(arrFmt)
+
         for i in range(node.getNumGeoms()):
             array = sprop.getVertexLighting(self.geomIndex)
             geom = node.getGeom(i)
             vdata = geom.getVertexData()
 
-            if array.getNumRows() == vdata.getNumRows():
+            if array and (array.getNumRows() == vdata.getNumRows()):
+                state = node.getGeomState(i)
+
                 arrIndex = vdata.getNumArrays()
                 fmt = vdata.getFormat()
-
-                arrFmt = GeomVertexArrayFormat()
-                arrFmt.addColumn(InternalName.make("vertex_lighting"), 3, GeomEnums.NTFloat16, GeomEnums.COther)
-                arrFmt = GeomVertexArrayFormat.registerFormat(arrFmt)
 
                 newFmt = GeomVertexFormat(fmt)
                 newFmt.addArray(arrFmt)
@@ -57,14 +64,22 @@ class DistributedGameBase:
                 ngeom.setVertexData(newVData)
                 node.setGeom(i, ngeom)
 
+                node.setGeomState(i, state.compose(tmp.getState()))
+
+                hasAny = True
+
             self.geomIndex += 1
+        return hasAny
 
     def r_processPropNode(self, node, sprop):
+        hasAny = False
         if node.isGeomNode():
-            self.processPropGeomNode(node, sprop)
+            hasAny = self.processPropGeomNode(node, sprop)
 
         for i in range(node.getNumChildren()):
-            self.r_processPropNode(node.getChild(i), sprop)
+            if self.r_processPropNode(node.getChild(i), sprop):
+                hasAny = True
+        return hasAny
 
     def loadLevelProps(self):
         # Create a dedicated DynamicVisNode for culling static props.
@@ -154,8 +169,8 @@ class DistributedGameBase:
 
             # Tack on baked per-vertex lighting.
             self.geomIndex = 0
-            self.r_processPropNode(propModel.node(), sprop)
-            propModel.setShaderInput("bakedVertexLight", LVecBase2(0))
+            hasAnyVtxLight = self.r_processPropNode(propModel.node(), sprop)
+            #print(hasAnyVtxLight)
 
             propModel.flattenStrong()
 
@@ -177,7 +192,7 @@ class DistributedGameBase:
                         in3DSky = True
 
                 #propModel.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
-                lightNodes.append(propModel)
+                lightNodes.append((propModel, hasAnyVtxLight))
 
             propModel.node().setFinal(True)
             if not in3DSky:
@@ -188,17 +203,14 @@ class DistributedGameBase:
 
         #self.flatten(propRoot)
 
-        lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask)
-
-        for propModel in lightNodes:
+        for propModel, hasVtxLight in lightNodes:
             # Also, we can flatten better by pre-computing the lighting state once.
-            #lightEffect = propModel.getEffect(MapLightingEffect.getClassType())
+            lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask)
             lightEffect.computeLighting(propModel.getNetTransform(), self.lvlData,
-                                        propModel.getBounds(), propModel.getParent().getNetTransform(), True)
+                                        propModel.getBounds(), propModel.getParent().getNetTransform(), hasVtxLight)
             state = propModel.getState()
             state = state.compose(lightEffect.getCurrentLightingState())
             propModel.setState(state)
-            #propModel.clearEffect(MapLightingEffect.getClassType())
             propModel.flattenLight()
 
         # Attempt to share vertex buffers and combine GeomPrimitives
