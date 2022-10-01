@@ -722,8 +722,15 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Select a random spawn location.
         spawnPoints = base.air.game.teamSpawns[self.team]
         origin, angles = random.choice(spawnPoints)
-        self.setPos(origin)
-        self.setHpr(angles[1] - 90, angles[0], angles[2])
+        # Trace player hull down to find ground.
+        tr = TFFilters.traceBox(origin + TFGlobals.VEC_HULL_MIN, origin + TFGlobals.VEC_HULL_MAX,
+                                Vec3.down(), 100, TFGlobals.Contents.Solid, 0,
+                                TFFilters.TFQueryFilter(self))
+        if tr['hit']:
+            self.setPos(tr['pos'])
+        else:
+            self.setPos(origin)
+        self.d_setViewAngles((angles[1] - 90, angles[0]))
         # Make client teleport player to respawn location.
         self.teleport()
 

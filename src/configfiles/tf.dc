@@ -270,6 +270,8 @@ dclass DistributedTFPlayer : DistributedChar {
   // direction and perform the FOV lerp.
   doTeleport(int16 h % 360 / 10, float64 fovTime, float64 fovStart) ownrecv;
 
+  setViewAngles(int16 h % 360 / 10, int16 p % 360 / 10) ownrecv;
+
   setCSHealer(uint32 doId) ownrecv;
   setCSHealTarget(uint32 doId) ownrecv;
   clearCSHealer() ownrecv;

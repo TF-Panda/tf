@@ -129,6 +129,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.objectPanels = {}
 
+    def setViewAngles(self, h, p):
+        # Server is overriding our current view angles.
+        self.viewAngles[0] = h
+        self.viewAngles[1] = p
+
     def setCSHealer(self, doId):
         self.crossHairInfo.setForceEnt(doId, CrossHairInfo.CTX_HEALER)
 

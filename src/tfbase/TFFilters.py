@@ -1,6 +1,6 @@
 """TFFilters module: contains various physics query filters"""
 
-from panda3d.pphysics import PythonPhysQueryFilter, PhysRayCastResult
+from panda3d.pphysics import PythonPhysQueryFilter, PhysRayCastResult, PhysSweepResult
 from panda3d.core import NodePath, PStatCollector, Point3, Vec3
 
 from tf.tfbase.TFGlobals import Contents
@@ -146,6 +146,28 @@ def traceLine(start, end, contents, cgroup, filter):
     dist = dir.length()
     dir.normalize()
     base.physicsWorld.raycast(result, start, dir, dist, contents, 0, cgroup, filter)
+    data = {}
+    data['hit'] = result.hasBlock()
+    if result.hasBlock():
+        block = result.getBlock()
+        actor = block.getActor()
+        data['actor'] = actor
+        data['pos'] = block.getPosition()
+        data['norm'] = block.getNormal()
+        data['mat'] = block.getMaterial()
+        data['ent'] = actor.getPythonTag('entity')
+    else:
+        data['actor'] = None
+        data['pos'] = Point3()
+        data['norm'] = Vec3()
+        data['mat'] = None
+        data['ent'] = None
+    return data
+
+def traceBox(mins, maxs, dir, dist, contents, cgroup, filter):
+    result = PhysSweepResult()
+    base.physicsWorld.boxcast(result, mins, maxs, dir, dist,
+                              0, contents, 0, cgroup, filter)
     data = {}
     data['hit'] = result.hasBlock()
     if result.hasBlock():
