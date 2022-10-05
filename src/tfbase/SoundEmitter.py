@@ -1,8 +1,11 @@
 """SoundEmitter module: contains the SoundEmitter class."""
 
-from panda3d.core import Vec3, Quat
+from panda3d.core import Vec3, Quat, PStatCollector
 
 from direct.showbase.DirectObject import DirectObject
+
+buildListPColl = PStatCollector("SoundEmitter:BuildSpatialList")
+updateAttributesPColl = PStatCollector("SoundEmitter:Update3DAttributes")
 
 class SoundData:
     pass
@@ -30,17 +33,19 @@ class SoundEmitter(DirectObject):
         # Analagous to CHAN_STATIC.
         self.generalSounds = []
 
+        self.spatialSounds = set()
+
         self.host = host
-        self.task = base.taskMgr.add(self.__updateSpatialSounds, "updateSpatialSounds", sort=49)
+        self.task = None
 
     def delete(self):
-        self.task.remove()
-        self.task = None
+        self.stopSpatialTask()
         self.ignoreAll()
         for s in (self.generalSounds + list(self.chanSounds.values())):
             s.sound.stop()
         self.chanSounds = None
         self.generalSounds = None
+        self.spatialSounds = None
         self.host = None
 
     def __updateSpatialSounds(self, task):
@@ -49,18 +54,24 @@ class SoundEmitter(DirectObject):
         this object based on the current spatial audio transform of the host.
         """
 
-        spatialSounds = [s for s in (self.generalSounds + list(self.chanSounds.values())) if s.spatial]
-        if not spatialSounds:
+        #buildListPColl.start()
+        #spatialSounds = [s for s in (self.generalSounds + list(self.chanSounds.values())) if s.spatial]
+        #buildListPColl.stop()
+        if not self.spatialSounds:
             return task.cont
+
+        #updateAttributesPColl.start()
 
         center = self.host.getSpatialAudioCenter()
 
         q = Quat.identQuat()
         v = Vec3()
 
-        for s in spatialSounds:
+        for s in self.spatialSounds:
             pos = center.xformPoint(s.offset)
             s.sound.set3dAttributes(pos, q, v)
+
+        #updateAttributesPColl.stop()
 
         return task.cont
 
@@ -80,6 +91,10 @@ class SoundEmitter(DirectObject):
                 # about to override the reference anyways.
                 self.ignore(soundData.eventName)
                 soundData.sound.stop()
+                if soundData in self.spatialSounds:
+                    self.spatialSounds.remove(soundData)
+                    if not self.spatialSounds:
+                        self.stopSpatialTask()
 
         soundData = SoundData()
         soundData.sound = sound
@@ -92,6 +107,9 @@ class SoundEmitter(DirectObject):
             # may appear to jump.
             pos = self.host.getSpatialAudioCenter().xformPoint(offset)
             sound.set3dAttributes(pos, Quat.identQuat(), Vec3())
+            self.spatialSounds.add(soundData)
+            # Start the spatial update task if this is our first spatial sound.
+            self.startSpatialTask()
         if channel is not None:
             self.chanSounds[channel] = soundData
         else:
@@ -101,6 +119,15 @@ class SoundEmitter(DirectObject):
         soundData.eventName = "sound-" + str(id(sound)) + "-finished"
         sound.setFinishedEvent(soundData.eventName)
         self.acceptOnce(soundData.eventName, self.__handleSoundFinished, extraArgs=[soundData])
+
+    def startSpatialTask(self):
+        if not self.task:
+            self.task = base.taskMgr.add(self.__updateSpatialSounds, "updateSpatialSounds", sort=49)
+
+    def stopSpatialTask(self):
+        if self.task:
+            self.task.remove()
+            self.task = None
 
     def __handleSoundFinished(self, soundData, sound):
         # Sound was stopped or played to completion.  Release
@@ -113,3 +140,9 @@ class SoundEmitter(DirectObject):
 
         elif soundData in self.generalSounds:
             self.generalSounds.remove(soundData)
+
+        if self.spatialSounds and soundData in self.spatialSounds:
+            self.spatialSounds.remove(soundData)
+            if not self.spatialSounds:
+                # If we removed the last spatial sound, stop our update task.
+                self.stopSpatialTask()
