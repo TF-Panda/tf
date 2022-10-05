@@ -54,6 +54,8 @@ class TFServerBase(HostBase):
         self.physicsWorld.setGroupCollisionFlag(
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Projectile, False)
 
+        if ConfigVariableBool('garbage-collect-states').value:
+            self.simTaskMgr.add(self.__garbageCollectStates, 'serverGarbageCollect', sort = -100)
         self.simTaskMgr.add(self.__physicsUpdate, 'serverPhysicsUpdate', sort = 50)
 
         self.entMgr = EntityManager()
@@ -68,12 +70,10 @@ class TFServerBase(HostBase):
         for pc in TFGlobals.ModelPrecacheList:
             self.precache.append(loader.loadModel(pc))
 
-    def restart(self):
-        ShowBase.restart(self)
-        # This task is added by ShowBase automatically for the built-in
-        # collision system, which we do not use.  Remove it.
-        self.taskMgr.remove('resetPrevTransform')
-        self.taskMgr.remove('collisionLoop')
+    def __garbageCollectStates(self, task):
+        TransformState.garbageCollect()
+        RenderState.garbageCollect()
+        return task.cont
 
     def preRunFrame(self):
         PStatClient.mainTick()
