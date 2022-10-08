@@ -14,6 +14,7 @@
 // If we are using the ctattach tools, append "built"--this is a VR
 // Studio convention.
 model-path      $TFMODELS/built
+model-path      $TFMODELS/built/sound
 sound-path      $TFMODELS/built
 #else
 // Most people outside the VR Studio just see this.
@@ -47,73 +48,67 @@ anim-activities $TF/src/configfiles/tf_anim_activities.pdx
 # TF2 on Source runs at 66 ticks per second.
 sv_tickrate 66
 
+# Keep hardskinned geometry vertex animated.
+# Normally this will convert the hardskinned geometry into
+# static geometry and parent it under an expose joint in the
+# scene graph, but we want to keep a minimal scene graph and minimize
+# draw calls.
 egg-rigid-geometry 0
+# Don't quantize joint weights, doesn't have any effect for GPU skinning.
+egg-vertex-membership-quantize 0.0
 
-csm-distance 1000
-csm-sun-distance 4000
+# Configuration for cascaded shadow maps.
+csm-distance 1600
+csm-sun-distance 8000
+csm-fixed-film-size #t
+csm-border-bias 0.1
 
-phys-tolerance-length 1
-phys-tolerance-speed 20.32
+# pphysics/PhysX configuration
 phys-panda-mass-unit kilograms
 phys-panda-length-unit inches
-phys-enable-pvd #f
-phys-enable-pvd-server #t
-phys-solver tgs
-phys-ragdoll-contact-distance-ratio 0.5
-phys-ragdoll-projection-angular-tolerance 15.0
-phys-ragdoll-projection-linear-tolerance 8.0
-phys-ragdoll-max-depenetration-vel 5.0
-phys-ragdoll-projection 0
-phys-ragdoll-pos-iterations 8
-phys-ragdoll-vel-iterations 4
+phys-solver pgs
+phys-ragdoll-pos-iterations 4
+phys-ragdoll-vel-iterations 1
+phys-ragdoll-joint-stiffness 0.0
+phys-ragdoll-joint-damping 0.0
+phys-ragdoll-joint-restitution 0.0
+phys-ragdoll-joint-bounce-threshold 0.0
+phys-ragdoll-contact-distance-ratio 0.49
+phys-ragdoll-projection 1
+phys-ragdoll-max-depenetration-vel 10000.0
+phys-ragdoll-projection-angular-tolerance 10.0
+phys-ragdoll-projection-linear-tolerance 2.0
+phys-tolerance-length 0.1
+phys-tolerance-speed 20.32
 
 framebuffer-srgb 1
 
-hbao-falloff 2.0
-hbao-max-sample-distance 20.0
-hbao-sample-radius 3.5
-hbao-angle-bias 0.564
-hbao-strength 5.0
-
-hdr-enable 1
-fxaa-enable 0
+# Postprocessing config.
+hdr-enable 0
+fxaa-enable 1
 ssao-enable 0
 motion-blur-enable 0
-mat_motion_blur_forward_enabled 1
-tone-mapping-algorithm urchima
-
 bloom-enable 0
-bloom-remove-fireflies false
-bloom-strength-1 0.8
-bloom-strength-2 1
-bloom-strength-3 1
-bloom-strength-4 1
-bloom-strength-5 1
-bloom-radius-5 1
-bloom-radius-4 1
-bloom-radius-3 1
-bloom-radius-2 1
-bloom-radius-1 1
-bloom-streak-length 1
-bloom-blur-passes 5
-bloom-luminance-threshold 1.0
+tone-mapping-enable 1
+tone-mapping-algorithm aces
 
-hdr-max-shutter 30
-hdr-min-aperature 3.5
-hdr-max-iso 12800
-hdr-exposure-method 1
-hdr-max-ev 15.99
-hdr-exposure-std-middle-grey 0.5
-hdr-luminance-buffers 4
-
-shadow-depth-bits 24
-
+# FMOD audio configuraton.
+# Put this directory on plugin-path.  This is where the Steam Audio
+# FMOD plugin should reside.
+plugin-path $WINTOOLS/built/bin
+fmod-use-steam-audio 1
 fmod-speaker-mode stereo
-fmod-audio-preload-threshold -1
-fmod-mixer-sample-rate 44100
+fmod-mixer-sample-rate 48000
+fmod-dsp-buffer-size 1024
+fmod-number-of-sound-channels 256
+fmod-compressed-samples 1
+music-volume 1.0
+sfx-volume 0.72
 
+# Default viewmodel and normal camera FOVs.
+# Taken from original TF2.
 viewmodel-fov 54
-fov 90
+fov 75
 
 default-cube-map maps/sky.txo
 
@@ -130,5 +125,36 @@ default-model-extension .bam
 
 # This is set to the correct release version in the publish config file.
 tf-version dev
+
+talker-phoneme-filter 0.08
+
+# Configuration for garbage collection of TransformStates and RenderStates.
+# This is essentially the default, but we reduce the number of states collected
+# each cycle to reduce overhead.
+garbage-collect-states 1
+garbage-collect-states-rate 0.5
+auto-break-cycles 1
+transform-cache 1
+state-cache 1
+
+bounds-type box
+
+tf-fast-weapon-switch 0
+
+frame-rate-meter-update-interval 1.0
+
+# Uniquify TextureStages by name.
+texture-stage-pool-mode name
+
+# Turn off animation updating during the Cull traversal.
+# We do this in App to animate all the characters in parallel,
+# and reduce contention on parallel Cull traversals.
+cull-animation 0
+
+use-orig-source-shader 1
+
+threading-model /Draw
+
+model-cache-dir
 
 #end 50_tf.prc
