@@ -63,6 +63,7 @@ class SoundEmitter(DirectObject):
         #updateAttributesPColl.start()
 
         center = self.host.getSpatialAudioCenter()
+        # TODO: Should we check if the center changed since the last update?
 
         q = Quat.identQuat()
         v = Vec3()
