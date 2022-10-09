@@ -361,7 +361,7 @@ dclass DistributedTeleporter : BaseObject {
   uint8 showingBlur;
   uint8 showingDirectionArrow;
   int16 yawToExit % 360 / 10;
-  int16 rechargeTime / 10;
+  //int16 rechargeTime / 10;
   uint16 spinRate / 10000;
   uint16 timesUsed;
 
