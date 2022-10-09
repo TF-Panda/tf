@@ -86,7 +86,7 @@ class PlanarReflector:
         self.displayRegion.setCamera(self.cameraNP)
         #self.displayRegion.setActive(False)
 
-        #self.buffer.setActive(False)
+        self.buffer.setActive(False)
 
     def render(self, node):
         node.setTexture(TextureStagePool.getStage(TextureStage(self.stageName)), self.texture)
