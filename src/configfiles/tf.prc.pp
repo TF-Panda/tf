@@ -155,6 +155,9 @@ use-orig-source-shader 1
 
 threading-model /Draw
 
-model-cache-dir
+model-cache-dir tfcache
+model-cache-models 0
+model-cache-textures 0
+model-cache-compiled-shaders 0
 
 #end 50_tf.prc
