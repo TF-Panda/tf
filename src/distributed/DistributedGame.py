@@ -164,7 +164,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         Called by the world when its DO has been generated.  We can now load
         the level and notify the server we have joined the game.
         """
-        self.sendUpdate("joinGame", ['Brian'])
+        playerName = ConfigVariableString('tf-player-name', 'Player').value
+        self.sendUpdate("joinGame", [playerName])
 
     def joinGameResp(self, tickCount):
         base.setTickCount(tickCount)
