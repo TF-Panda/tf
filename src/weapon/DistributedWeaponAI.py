@@ -2,12 +2,15 @@
 from tf.actor.DistributedCharAI import DistributedCharAI
 from .DistributedWeaponShared import DistributedWeaponShared
 
+from tf.tfbase.TFGlobals import WorldParent
+
 class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
 
     def __init__(self):
         DistributedCharAI.__init__(self)
         DistributedWeaponShared.__init__(self)
         self.clientSideAnimation = True
+        self.parentEntityId = WorldParent.Unchanged
 
         self.active = False
 
