@@ -253,8 +253,9 @@ class DistributedTeamFlag(DistributedEntity):
         def startSpin(self):
             self.stopSpin()
 
-            self.spinIval = LerpHprInterval(self.flagModel.modelNp, 3.0, (360, 0, 0), (0, 0, 0))
-            self.spinIval.loop()
+            if self.flagModel and self.flagModel.modelNp:
+                self.spinIval = LerpHprInterval(self.flagModel.modelNp, 3.0, (360, 0, 0), (0, 0, 0))
+                self.spinIval.loop()
 
         def stopSpin(self):
             if self.spinIval:
