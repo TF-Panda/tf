@@ -263,7 +263,7 @@ class DistributedTFPlayerShared:
         self.condition |= (1 << cond)
 
     def inCondition(self, cond):
-        return self.condition & cond
+        return self.condition & (1 << cond)
 
     def isObserver(self):
         return self.observerMode != ObserverMode.Off
