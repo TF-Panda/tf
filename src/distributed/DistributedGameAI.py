@@ -106,6 +106,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.roundTimeRemaining = self.roundTime
         base.world.emitSound("Ambient.Siren")
 
+        self.gameModeImpl.onBeginRound()
+
     def endRound(self, winTeam=None):
         self.notify.info("End round %i" % self.roundNumber)
         self.roundState = RoundState.Ended
@@ -119,6 +121,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 base.world.emitSound("Game.YourTeamLost", client=plyr.owner)
         else:
             base.world.emitSound("Game.Stalemate")
+
+        self.gameModeImpl.onEndRound()
 
     def __gameUpdate(self, task):
         if self.waitingForPlayers:

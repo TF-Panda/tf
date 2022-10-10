@@ -53,8 +53,9 @@ class CaptureZone:
         if cbdata.getTouchType() == PhysTriggerCallbackData.TEnter:
             if entity.flag:
                 announce = not base.game.gameModeImpl.flagCaptured(self.team)
-                entity.flag.returnFlag(True, announce)
-                entity.flag = None
+                if entity.flag:
+                    entity.flag.returnFlag(True, announce)
+                    entity.flag = None
 
 
 class DistributedTeamFlag(DistributedEntity):
@@ -170,7 +171,7 @@ class DistributedTeamFlag(DistributedEntity):
             self.skin = self.team
 
             # Return flag after 60 seconds if no one picks it back up.
-            self.addTask(self.__returnTask, 'returnFlagTask', delay=10.0, appendTask=True)
+            self.addTask(self.__returnTask, 'returnFlagTask', delay=60.0, appendTask=True)
 
             self.playerWithFlag = -1
 
@@ -187,6 +188,10 @@ class DistributedTeamFlag(DistributedEntity):
                 else:
                     self.enemySound("CaptureFlag.TeamReturned")
                     self.teamSound("CaptureFlag.EnemyReturned")
+            if self.playerWithFlag != -1:
+                plyr = base.air.doId2do.get(self.playerWithFlag)
+                if plyr:
+                    plyr.flag = None
             self.playerWithFlag = -1
 
         def __returnTask(self, task):

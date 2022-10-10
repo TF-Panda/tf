@@ -9,3 +9,9 @@ class GameModeTraining:
 
     def onNewRound(self):
         pass
+
+    def onBeginRound(self):
+        pass
+
+    def onEndRound(self):
+        pass

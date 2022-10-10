@@ -29,7 +29,21 @@ class GameModeCTF:
             return True
         return False
 
+    def returnFlags(self):
+        from tf.distributed.DistributedTeamFlag import DistributedTeamFlagAI
+        for do in base.air.doId2do.values():
+            if isinstance(do, DistributedTeamFlagAI):
+                do.returnFlag(False, False)
+
     def onNewRound(self):
         # Reset team cap counts.
         self.teamCapCounts[TFTeam.Red] = 0
         self.teamCapCounts[TFTeam.Blue] = 0
+        self.returnFlags()
+
+    def onBeginRound(self):
+        pass
+
+    def onEndRound(self):
+        # Return the flags.
+        self.returnFlags()
