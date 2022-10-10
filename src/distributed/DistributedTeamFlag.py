@@ -205,6 +205,9 @@ class DistributedTeamFlag(DistributedEntity):
             if self.playerWithFlag != -1:
                 # Ignore server position when a player is carrying the flag.
                 self.setPosHpr(0, 0, 0, 0, 0, 0)
+            else:
+                self.setPos(self.initialPos)
+                self.setHpr(self.initialHpr)
 
         def attachToPlayer(self, plyr):
             flagNode = plyr.find("**/flag")
