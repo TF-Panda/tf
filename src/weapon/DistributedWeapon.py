@@ -173,15 +173,14 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         """
         Called when the weapon is no longer the active weapon.
         """
-        assert self.player
 
         self.active = False
 
         self.reparentTo(hidden)
         if self.viewModelChar:
             self.viewModelChar.modelNp.reparentTo(hidden)
-        else:
+        elif self.player and self.player.viewModel and self.player.classInfo:
             self.player.viewModel.loadModel(self.player.classInfo.ViewModel)
 
-        if self.isActiveLocalPlayerWeapon():
-            DistributedWeaponShared.deactivate(self)
+        #if self.isActiveLocalPlayerWeapon():
+        #    DistributedWeaponShared.deactivate(self)

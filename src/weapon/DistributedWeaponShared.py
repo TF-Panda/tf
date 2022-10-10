@@ -97,7 +97,8 @@ class DistributedWeaponShared:
         self.nextSecondaryAttack = self.nextPrimaryAttack
 
     def deactivate(self):
-        assert self.player
+        #assert self.player
+        pass
 
     def getName(self):
         return "weapon_name"
