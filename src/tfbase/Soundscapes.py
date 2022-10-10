@@ -281,8 +281,9 @@ class Soundscape:
                 self.task = None
 
     def destroy(self):
-        for comp in self.components:
-            comp.destroy()
+        if self.components:
+            for comp in self.components:
+                comp.destroy()
         self.components = None
         if self.task:
             self.task.remove()
@@ -327,7 +328,6 @@ class SoundscapeProxy:
         self.actualSoundscape.stop(fadeOut)
 
     def destroy(self):
-        self.stop()
         self.actualSoundscape = None
         self.desc = None
         self.radius = None
