@@ -90,7 +90,7 @@ ssao-enable 0
 motion-blur-enable 0
 bloom-enable 0
 tone-mapping-enable 1
-tone-mapping-algorithm aces
+tone-mapping-algorithm urchima
 
 # FMOD audio configuraton.
 # Put this directory on plugin-path.  This is where the Steam Audio
