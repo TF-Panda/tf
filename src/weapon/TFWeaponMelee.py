@@ -121,6 +121,9 @@ class TFWeaponMelee(TFWeapon):
         return self.weaponData[self.weaponMode]['damage']
 
     def smack(self):
+        if not IS_CLIENT:
+            base.air.lagComp.startLagCompensation(self.player, self.player.currentCommand)
+
         self.syncAllHitBoxes()
 
         hadHit, result = self.doSwingTrace()
@@ -153,6 +156,9 @@ class TFWeaponMelee(TFWeapon):
                 applyMultiDamage()
 
                 self.onEntityHit(ent)
+
+        if not IS_CLIENT:
+            base.air.lagComp.finishLagCompensation(self.player)
 
     def onEntityHit(self, ent):
         pass

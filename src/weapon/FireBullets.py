@@ -16,6 +16,9 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
 
     doEffects = False
 
+    if not IS_CLIENT:
+        base.air.lagComp.startLagCompensation(player, player.currentCommand)
+
     q = Quat()
     q.setHpr(angles)
     forward = q.getForward()
@@ -66,3 +69,6 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
 
     # Apply damage if any.
     applyMultiDamage()
+
+    if not IS_CLIENT:
+        base.air.lagComp.finishLagCompensation(player)

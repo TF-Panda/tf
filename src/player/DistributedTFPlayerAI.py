@@ -873,6 +873,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.viewModel.skin = self.skin
         base.sv.generateObject(self.viewModel, self.zoneId)
 
+        base.air.lagComp.registerPlayer(self)
+
         # Start condition update logic.
         self.addTask(self.__conditionThinkAI, 'TFPlayerConditionThinkAI', appendTask=True, sim=True)
 
@@ -890,6 +892,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.stripWeapons()
 
         base.game.playersByTeam[self.team].remove(self)
+
+        base.air.lagComp.unregisterPlayer(self)
 
         DistributedCharAI.delete(self)
         DistributedTFPlayerShared.disable(self)

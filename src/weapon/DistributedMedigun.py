@@ -280,6 +280,9 @@ class DistributedMedigun(TFWeaponGun):
         self.healing = False
 
     def primaryAttack(self):
+        if not IS_CLIENT:
+            base.air.lagComp.startLagCompensation(self.player, self.player.currentCommand)
+
         if self.findAndHealTargets():
             if not self.healing:
                 self.sendWeaponAnim(Activity.VM_Pre_Fire)
@@ -293,6 +296,9 @@ class DistributedMedigun(TFWeaponGun):
                         self.player.emitSound("Player.UseDeny")
                     self.lastRejectSoundTime = globalClock.frame_time
             self.removeHealingTarget(False)
+
+        if not IS_CLIENT:
+            base.air.lagComp.finishLagCompensation(self.player)
 
     def secondaryAttack(self):
         if self.chargeLevel < 1.0 or self.chargeRelease:

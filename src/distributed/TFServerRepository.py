@@ -6,6 +6,8 @@ from tf.distributed.DistributedGameAI import DistributedGameAI
 from tf.distributed.World import WorldAI
 from tf.tfbase import TFGlobals
 
+from tf.player.LagCompensation import LagCompensation
+
 class TFServerRepository(ServerRepository):
     notify = directNotify.newCategory("TFServerRepository")
 
@@ -16,9 +18,16 @@ class TFServerRepository(ServerRepository):
 
         base.sv = self
 
+        self.lagComp = LagCompensation()
+        base.simTaskMgr.add(self.__recordPlayerPositions, 'recordPlayerPositions', sort=1000)
+
         self.game = DistributedGameAI()
         base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)
+
+    def __recordPlayerPositions(self, task):
+        self.lagComp.recordPlayerPositions()
+        return task.cont
 
     def addSnapshotHeaderData(self, dg, client):
         if not hasattr(client, 'player') or not client.player:
