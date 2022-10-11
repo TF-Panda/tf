@@ -129,6 +129,50 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.objectPanels = {}
 
+        self.serverLagCompDebugRoot = None
+        self.clientLagCompDebugRoot = None
+
+    def lagCompDebug(self, positions):
+        if self.serverLagCompDebugRoot:
+            self.serverLagCompDebugRoot.removeNode()
+
+        self.serverLagCompDebugRoot = base.render.attachNewNode("serverlagcompdebugroot")
+        self.serverLagCompDebugRoot.setDepthWrite(False)
+        self.serverLagCompDebugRoot.setDepthTest(False)
+        self.serverLagCompDebugRoot.setBin('fixed', 100)
+        self.serverLagCompDebugRoot.setColor((0, 0, 1, 1))
+        self.serverLagCompDebugRoot.setRenderModeWireframe()
+        cm = CardMaker('cm')
+        cm.setFrameFullscreenQuad()
+        for pos in positions:
+            pos = Point3(pos[0], pos[1], pos[2])
+            c = self.serverLagCompDebugRoot.attachNewNode(cm.generate())
+            c.setBillboardPointEye()
+            c.setScale(14)
+            c.setPos(pos)
+
+    def clientLagCompDebug(self, positions):
+        if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
+            return
+
+        if self.clientLagCompDebugRoot:
+            self.clientLagCompDebugRoot.removeNode()
+
+        self.clientLagCompDebugRoot = base.render.attachNewNode("clientLagCompDebugRoot")
+        self.clientLagCompDebugRoot.setDepthWrite(False)
+        self.clientLagCompDebugRoot.setDepthTest(False)
+        self.clientLagCompDebugRoot.setBin('fixed', 110)
+        self.clientLagCompDebugRoot.setColor((1, 0, 0, 1))
+        self.clientLagCompDebugRoot.setRenderModeWireframe()
+        cm = CardMaker('cm')
+        cm.setFrameFullscreenQuad()
+        for pos in positions:
+            pos = Point3(pos[0], pos[1], pos[2])
+            c = self.clientLagCompDebugRoot.attachNewNode(cm.generate())
+            c.setBillboardPointEye()
+            c.setScale(16)
+            c.setPos(pos)
+
     def setViewAngles(self, h, p):
         # Server is overriding our current view angles.
         self.viewAngles[0] = h

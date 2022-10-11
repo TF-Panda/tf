@@ -275,6 +275,12 @@ dclass DistributedTFPlayer : DistributedChar {
   setCSHealer(uint32 doId) ownrecv;
   setCSHealTarget(uint32 doId) ownrecv;
   clearCSHealer() ownrecv;
+
+  // Sent by server to show where all players were on the *server*
+  // when we fired our weapon.  We will draw these boxes in blue.
+  // On the client, we draw a separate set of boxes in red that show were
+  // the other players were on the *client* when we fired the weapon.
+  lagCompDebug(Position pos[]) ownrecv;
 };
 
 dclass DistributedWeapon : DistributedChar {

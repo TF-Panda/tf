@@ -25,6 +25,15 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
         if isinstance(do, Actor):
             do.syncHitBoxes()
 
+    # Client lag comp debug
+    #if IS_CLIENT and True:
+    #    from tf.player.DistributedTFPlayer import DistributedTFPlayer
+    #    positions = []
+    #    for do in base.net.doId2do.values():
+    #        if isinstance(do, DistributedTFPlayer) and do != base.localAvatar:
+    #            positions.append(do.getPos())
+    #    base.localAvatar.clientLagCompDebug(positions)
+
     q = Quat()
     q.setHpr(angles)
     forward = q.getForward()

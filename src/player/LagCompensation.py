@@ -21,10 +21,10 @@ class PlayerRecord:
 
 class LagCompensation(DirectObject):
     notify = directNotify.newCategory("LagCompensationAI")
-    notify.setDebug(True)
+    #notify.setDebug(True)
 
     def __init__(self):
-        self.notify.setDebug(True)
+        #self.notify.setDebug(True)
         self.playerRecords = {}
 
     def cleanup(self):
@@ -79,12 +79,14 @@ class LagCompensation(DirectObject):
         targetTime = base.ticksToTime(targetTick)
 
         self.notify.debug("Start lag comp for plyr " + str(plyr.doId) + ", targetTime " + str(targetTime) + ", currentTime " + str(globalClock.frame_time))
-        self.notify.debug("Half-RTT is " + str(plyr.owner.currentRtt * 0.0005) + " seconds")
+        self.notify.debug("Half-RTT is " + str(plyr.owner.averageRtt * 0.0005) + " seconds")
         self.notify.debug("Lerp time is " + str(plyr.owner.interpAmount))
         self.notify.debug("Lerp ticks " + str(lerpTicks))
         self.notify.debug("Target tick " + str(targetTick))
         self.notify.debug("current tick " + str(base.tickCount))
         self.notify.debug("delta time " + str(deltaTime))
+
+        #positions = []
 
         for doId, record in self.playerRecords.items():
             if doId == plyr.doId:
@@ -95,6 +97,11 @@ class LagCompensation(DirectObject):
                 continue
 
             self.backtrackPlayer(otherPlyr, record, targetTime)
+
+            #positions.append(otherPlyr.getPos())
+
+        #if True:
+        #    plyr.sendUpdate('lagCompDebug', [positions])
 
     def finishLagCompensation(self, plyr):
         for doId, record in self.playerRecords.items():
@@ -134,7 +141,7 @@ class LagCompensation(DirectObject):
         curPos = plyr.getPos()
         curHpr = plyr.getHpr()
 
-        prevPos = plyr.getPos()
+        prevPos = Point3(plyr.getPos())
         prevSample = None
         sample = None
 
@@ -146,13 +153,13 @@ class LagCompensation(DirectObject):
                 return
 
             delta = sample.pos - prevPos
-            if delta.lengthSquared() > 128.0:
-                return
+            #if delta.lengthSquared() > 128.0:
+            #    return
 
             if sample.simulationTime <= targetTime:
                 break
 
-            prevPos = sample.pos
+            prevPos = Point3(sample.pos)
 
         assert sample
 
@@ -165,11 +172,10 @@ class LagCompensation(DirectObject):
             assert targetTime < prevSample.simulationTime
 
             frac = (targetTime - sample.simulationTime) / (prevSample.simulationTime - sample.simulationTime)
-            e0 = 1.0 - frac
             assert frac > 0 and frac < 1
 
-            p = sample.pos * e0 + prevSample.pos * frac
-            hpr = sample.hpr * e0 + prevSample.hpr * frac
+            p = sample.pos + (prevSample.pos - sample.pos) * frac
+            hpr = sample.hpr + (prevSample.hpr - sample.hpr) * frac
         else:
             p = sample.pos
             hpr = sample.hpr
