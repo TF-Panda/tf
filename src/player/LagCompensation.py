@@ -122,9 +122,10 @@ class LagCompensation(DirectObject):
                 plyr.setHpr(restore.hpr)
                 anyChanged = True
 
-            pdelta = plyr.getPos() - change.pos
-            if pdelta.lengthSquared() < 128.0:
-                plyr.setPos(restore.pos + pdelta)
+            #pdelta = plyr.getPos() - change.pos
+            #if pdelta.lengthSquared() < 128.0:
+            if plyr.getPos() == change.pos:
+                plyr.setPos(restore.pos)
                 anyChanged = True
 
             if anyChanged:
