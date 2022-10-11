@@ -108,12 +108,19 @@ class LagCompensation(DirectObject):
             restore = record.restore
             change = record.change
 
+            anyChanged = False
+
             if plyr.getHpr() == change.hpr:
                 plyr.setHpr(restore.hpr)
+                anyChanged = True
 
             pdelta = plyr.getPos() - change.pos
             if pdelta.lengthSquared() < 128.0:
                 plyr.setPos(restore.pos + pdelta)
+                anyChanged = True
+
+            if anyChanged:
+                plyr.invalidateHitBoxes()
 
             record.needsRestore = False
 
@@ -179,10 +186,17 @@ class LagCompensation(DirectObject):
         restore.hpr = plyr.getHpr()
         restore.pos = plyr.getPos()
 
+        anyChanged = False
+
         if hdiff.lengthSquared() > 0.01:
             plyr.setHpr(hpr)
+            anyChanged = True
 
         if pdiff.lengthSquared() > 0.01:
             plyr.setPos(p)
+            anyChanged = True
+
+        if anyChanged:
+            plyr.invalidateHitBoxes()
 
         record.needsRestore = True

@@ -648,6 +648,9 @@ class Actor(Model):
             hbox.body.setTransform(
                 TransformState.makeMat(self.character.getJointNetTransform(hbox.joint)))
 
+    def invalidateHitBoxes(self):
+        self.lastHitBoxSyncTime = 0.0
+
     def doAnimationEvents(self, eventType=AnimEventType.Client):
         if not self.character:
             return
