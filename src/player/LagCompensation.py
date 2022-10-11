@@ -65,7 +65,7 @@ class LagCompensation(DirectObject):
     def startLagCompensation(self, plyr, cmd):
         correct = 0.0
         # Half RTT in seconds.
-        correct += plyr.owner.currentRtt * 0.0005
+        correct += plyr.owner.averageRtt * 0.0005
         lerpTicks = base.timeToTicks(plyr.owner.interpAmount)
         correct += base.ticksToTime(lerpTicks)
         correct = max(0.0, min(maxUnlag, correct))
@@ -83,6 +83,7 @@ class LagCompensation(DirectObject):
         self.notify.debug("Lerp time is " + str(plyr.owner.interpAmount))
         self.notify.debug("Lerp ticks " + str(lerpTicks))
         self.notify.debug("Target tick " + str(targetTick))
+        self.notify.debug("current tick " + str(base.tickCount))
         self.notify.debug("delta time " + str(deltaTime))
 
         for doId, record in self.playerRecords.items():
