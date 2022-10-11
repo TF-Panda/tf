@@ -19,6 +19,12 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     if not IS_CLIENT:
         base.air.lagComp.startLagCompensation(player, player.currentCommand)
 
+    # Sync hitboxes *after* lag compensation.
+    from tf.actor.Actor import Actor
+    for do in base.net.doId2do.values():
+        if isinstance(do, Actor):
+            do.syncHitBoxes()
+
     q = Quat()
     q.setHpr(angles)
     forward = q.getForward()

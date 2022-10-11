@@ -348,7 +348,7 @@ class DistributedWeaponShared:
 
         self.playSound(self.getSingleSound())
 
-        self.syncAllHitBoxes()
+        #self.syncAllHitBoxes()
 
     def itemPreFrame(self):
         #if self.viewModel.isCurrentSequenceFinished():
