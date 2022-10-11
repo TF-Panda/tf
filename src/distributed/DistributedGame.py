@@ -168,14 +168,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.sendUpdate("joinGame", [playerName])
 
     def joinGameResp(self, tickCount):
-        base.setTickCount(tickCount)
-        base.realFrameTime = base.ticksToTime(tickCount)
-        base.frameTime = base.ticksToTime(tickCount)
-        base.realDeltaTime = base.intervalPerTick
-        base.remainder = 0.0
-        globalClock.real_time = base.frameTime
-        globalClock.frame_time = base.frameTime
-        base.cr.clockDriftMgr.setServerTick(base.tickCount)
+        base.resetSimulation(tickCount)
 
     def announceGenerate(self):
         DistributedObject.announceGenerate(self)
