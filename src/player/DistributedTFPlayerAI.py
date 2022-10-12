@@ -15,7 +15,7 @@ from .ObserverMode import ObserverMode
 from tf.weapon.TakeDamageInfo import addMultiDamage, TakeDamageInfo
 
 from tf.tfbase import TFGlobals, Sounds, TFFilters
-from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
+from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType, TFTeam
 from tf.object.BaseObject import BaseObject
 from tf.object.ObjectType import ObjectType
 
@@ -79,6 +79,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.flag = None
 
         self.pendingChangeClass = Class.Invalid
+        self.pendingChangeTeam = TFTeam.NoTeam
 
         # Also give them a view model
         self.viewModel = DViewModelAI()
@@ -668,6 +669,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.playerState = self.StateDead
 
+    def isRespawnInProgress(self):
+        return self.hasTask('respawn')
+
     def respawnTask(self, task):
 
         now = globalClock.frame_time
@@ -697,11 +701,16 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Respawn now.
 
+        self.removeTask('respawn')
+
+        if self.pendingChangeTeam != self.team and self.pendingChangeTeam != TFTeam.NoTeam:
+            self.changeTeam(self.pendingChangeTeam, respawn=False)
+            self.pendingChangeTeam = TFTeam.NoTeam
         if self.pendingChangeClass != self.tfClass and self.pendingChangeClass != Class.Invalid:
-            self.changeClass(self.pendingChangeClass)
+            self.changeClass(self.pendingChangeClass, respawn=False)
             self.pendingChangeClass = Class.Invalid
-        else:
-            self.respawn()
+
+        self.respawn()
 
         return task.done
 
@@ -761,8 +770,47 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                     obj.explode()
                     base.air.deleteObject(obj)
 
+    def changeTeam(self, team, respawn=True):
+        if team == self.team:
+            self.pendingChangeTeam = TFTeam.NoTeam
+            return
+
+        if team not in (TFTeam.Red, TFTeam.Blue):
+            return
+
+        if self.playerState == self.StateAlive:
+            self.die()
+            self.pendingChangeTeam = team
+            return
+        elif self.isRespawnInProgress():
+            self.pendingChangeTeam = team
+            return
+
+        self.destroyAllObjects()
+        self.stripWeapons()
+
+        # Remove from old team.
+        if self in base.game.playersByTeam[self.team]:
+            base.game.playersByTeam[self.team].remove(self)
+        # Assign to new team.
+        if not self in base.game.playersByTeam[team]:
+            base.game.playersByTeam[team].append(self)
+
+        self.team = team
+        self.setSkin(team)
+
+        if self.viewModel:
+            self.viewModel.team = team
+            self.viewModel.setSkin(team)
+
+        self.giveClassWeapons()
+
+        if respawn:
+            self.respawn()
+
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
         if (cls == self.tfClass) and not force:
+            self.pendingChangeClass = Class.Invalid
             return
 
         if (cls < Class.Scout) or (cls > Class.Spy):
@@ -770,6 +818,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         if self.playerState == self.StateAlive:
             self.die()
+            self.pendingChangeClass = cls
+            return
+        elif self.isRespawnInProgress():
             self.pendingChangeClass = cls
             return
 

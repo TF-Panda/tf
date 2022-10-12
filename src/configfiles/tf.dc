@@ -244,6 +244,7 @@ dclass DistributedTFPlayer : DistributedChar {
 
   // Client request to change class.
   changeClass(uint8 classId) ownsend airecv;
+  changeTeam(uint8 team) ownsend airecv;
   die() ownsend airecv;
 
   swing() broadcast ownrecv;

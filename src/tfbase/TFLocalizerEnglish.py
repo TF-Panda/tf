@@ -66,3 +66,5 @@ TFDisclaimer = 'Team Fortress and the Team Fortress logo are registered trademar
                'Team Fortress 2 Panda runs on a modified version of the Panda3D game engine.  ' \
                'Panda3D is Copyright (c) Carnegie Mellon University.  ' \
                'FMOD Studio is Copyright (c) Firelight Technologies Pty Ltd.'
+RED = 'RED'
+BLU = 'BLU'

@@ -24,6 +24,7 @@ from direct.directbase import DirectRender
 from direct.gui.DirectGui import *
 
 from tf.tfgui.TFClassMenu import TFClassMenu
+from tf.tfgui.TFTeamMenu import TFTeamMenu
 
 import copy
 import random
@@ -100,6 +101,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.controlsEnabled = False
         self.mouseDelta = Vec2()
         self.classMenu = None
+        self.teamMenu = None
         self.crossHairInfo = CrossHairInfo.CrossHairInfo()
 
         self.wasLastWeaponSwitchPressed = False
@@ -284,6 +286,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.sendUpdate('changeClass', [clsId])
         self.enableControls()
         self.classMenu = None
+
+    def d_changeTeam(self, team):
+        self.sendUpdate('changeTeam', [team])
+        self.enableControls()
+        self.teamMenu = None
 
     def addPlayerSimulatedEntity(self, ent):
         """
@@ -682,6 +689,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if self.classMenu:
             self.classMenu.destroy()
             self.classMenu = None
+        if self.teamMenu:
+            self.teamMenu.destroy()
+            self.teamMenu = None
         self.playerSimulatedEntities = None
         base.simTaskMgr.remove('runControls')
         base.taskMgr.remove('calcView')
@@ -712,6 +722,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.accept('wheel_up', self.wpnSelect.hoverPrevWeapon)
         self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
         self.accept(',', self.doChangeClass)
+        self.accept('.', self.doChangeTeam)
 
         self.accept('e', self.sendUpdate, ['voiceCommand', [VoiceCommand.Medic]])
 
@@ -737,7 +748,19 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
     def doChangeClass(self):
         if self.classMenu:
             return
+        if self.teamMenu:
+            self.teamMenu.destroy()
+            self.teamMenu = None
         self.classMenu = TFClassMenu()
+        self.disableControls()
+
+    def doChangeTeam(self):
+        if self.teamMenu:
+            return
+        if self.classMenu:
+            self.classMenu.destroy()
+            self.classMenu = None
+        self.teamMenu = TFTeamMenu()
         self.disableControls()
 
     def createObjectPanels(self):

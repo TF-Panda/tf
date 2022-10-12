@@ -383,10 +383,18 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.expressions.pushExpression('idle', 1.0, oscillation=0.4, oscillationSpeed=1.5)
         self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
 
+    def onTFTeamChanged(self):
+        pass
+
     def RecvProxy_tfClass(self, tfClass):
         self.tfClass = tfClass
         self.classInfo = ClassInfos[tfClass]
         self.onTFClassChanged()
+
+    def RecvProxy_team(self, team):
+        if team != self.team:
+            self.team = team
+            self.onTFTeamChanged()
 
     def pushExpression(self, name):
         if self.expressions:
