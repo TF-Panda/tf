@@ -86,7 +86,9 @@ class DistributedWrench(TFWeaponMelee):
         ent = None
         if hadHit:
             block = result.getBlock()
-            ent = block.getActor().getPythonTag("entity")
+            a = block.getActor()
+            if a:
+                ent = a.getPythonTag("entity")
 
         if ent and ent.isObject() and ent.team == self.player.team:
             if not IS_CLIENT:

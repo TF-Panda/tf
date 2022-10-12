@@ -261,7 +261,7 @@ class GameMovement:
 
             b = ret.getBlock()
             a = b.getActor()
-            if a.getContentsMask() & solidMask:
+            if a and (a.getContentsMask() & solidMask):
                 ent = a.getPythonTag("entity")
                 if ent:
                     return (ent, b)

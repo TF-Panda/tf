@@ -153,8 +153,12 @@ class BaseRocket(BaseClass):
                                        sweepDir, sweepLen, self.solidMask, BitMask32.allOff(),
                                        self.collisionGroup):
                 block = result.getBlock()
-                np = NodePath(block.getActor())
-                ent = np.getNetPythonTag("entity")
+                actor = block.getActor()
+                if actor:
+                    np = NodePath(actor)
+                    ent = np.getNetPythonTag("entity")
+                else:
+                    ent = None
                 if ent:
                     self.setPos(block.getPosition() - (sweepDir * 0.01))
                     self.explode(ent)

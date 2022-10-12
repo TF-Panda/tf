@@ -39,9 +39,12 @@ class DistributedKnife(TFWeaponMelee):
         if hadHit:
             # We will hit something with the attack.
             block = result.getBlock()
-            np = NodePath(block.getActor())
-            ent = np.getNetPythonTag("entity")
-            if ent and ('TFPlayer' in ent.__class__.__name__):
+            actor = block.getActor()
+            if actor:
+                ent = NodePath(actor).getNetPythonTag("entity")
+            else:
+                ent = None
+            if ent and ent.isPlayer():
                 if ent.team != self.player.team:
                     # Deal extra damage to players when stabbing them from behind.
                     if self.isBehindTarget(ent):

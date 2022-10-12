@@ -116,8 +116,12 @@ class DPipeBombProjectile(BaseClass):
                                          TFGlobals.CollisionGroup.Empty,
                                          filter):
                 block = result.getBlock()
-                np = NodePath(block.getActor())
-                ent = np.getNetPythonTag("entity")
+                actor = block.getActor()
+                if actor:
+                    np = NodePath(actor)
+                    ent = np.getNetPythonTag("entity")
+                else:
+                    ent = None
                 if ent and ent != self.shooter:
                     # Switch to the direct-hit damage.
                     self.damage = self.fullDamage

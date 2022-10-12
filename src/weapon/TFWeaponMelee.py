@@ -129,8 +129,12 @@ class TFWeaponMelee(TFWeapon):
         hadHit, result = self.doSwingTrace()
         if hadHit:
             block = result.getBlock()
-            np = NodePath(block.getActor())
-            ent = np.getNetPythonTag("entity")
+            actor = block.getActor()
+            if actor:
+                np = NodePath(actor)
+                ent = np.getNetPythonTag("entity")
+            else:
+                ent = None
             if ent and ent.isPlayer():
                 self.playSound(self.getHitPlayerSound())
             else:

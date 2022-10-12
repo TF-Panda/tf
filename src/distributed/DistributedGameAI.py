@@ -341,7 +341,11 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             base.physicsWorld.raycast(res, src, dir, dist, mask, Contents.Empty, CollisionGroup.Projectile, filter)
             if res.hasBlock():
                 b = res.getBlock()
-                hitEnt = b.getActor().getPythonTag("entity")
+                act = b.getActor()
+                if act:
+                    hitEnt = act.getPythonTag("entity")
+                else:
+                    hitEnt = None
                 if hitEnt and hitEnt != do:
                     # Explosion blocked by this entity.
                     continue

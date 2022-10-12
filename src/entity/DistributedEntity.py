@@ -434,7 +434,10 @@ class DistributedEntity(BaseClass, NodePath):
                 base.game.doTracer(info['tracerOrigin'], block.getPosition())
 
             actor = block.getActor()
-            entity = actor.getPythonTag("entity")
+            if actor:
+                entity = actor.getPythonTag("entity")
+            else:
+                entity = None
             if not entity:
                 # Didn't hit an entity.  Hmm.
                 return
@@ -831,8 +834,11 @@ class DistributedEntity(BaseClass, NodePath):
             if result.hasBlock():
                 block = result.getBlock()
                 node = block.getActor()
-                np = NodePath(node)
-                ent = np.getNetPythonTag("entity")
+                if node:
+                    np = NodePath(node)
+                    ent = np.getNetPythonTag("entity")
+                else:
+                    ent = None
                 if ent == entity:
                     # LOS is valid.
                     return (True, ent)
@@ -859,8 +865,11 @@ class DistributedEntity(BaseClass, NodePath):
             if result.hasBlock():
                 block = result.getBlock()
                 node = block.getActor()
-                np = NodePath(node)
-                ent = np.getNetPythonTag("entity")
+                if node:
+                    np = NodePath(node)
+                    ent = np.getNetPythonTag("entity")
+                else:
+                    ent = None
                 # LOS to point is blocked by this entity.
                 return (False, ent)
 

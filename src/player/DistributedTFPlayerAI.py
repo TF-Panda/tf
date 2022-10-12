@@ -352,7 +352,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if hadHit:
             block = result.getBlock()
             actor = block.getActor()
-            ent = actor.getPythonTag("entity")
+            if actor:
+                ent = actor.getPythonTag("entity")
+            else:
+                ent = None
             if not ent or ent.__class__.__name__ != 'WorldAI':
                 good = False
             else:
@@ -563,7 +566,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             return
 
         actor = hit.getActor()
-        data = actor.getPythonTag("hitbox")
+        if actor:
+            data = actor.getPythonTag("hitbox")
+        else:
+            data = None
         if data:
             # Save this joint for the ragdoll.
             self.forceJoint = data[1].joint

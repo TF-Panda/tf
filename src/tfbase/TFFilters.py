@@ -155,7 +155,7 @@ def traceLine(start, end, contents, cgroup, filter):
         data['pos'] = block.getPosition()
         data['norm'] = block.getNormal()
         data['mat'] = block.getMaterial()
-        data['ent'] = actor.getPythonTag('entity')
+        data['ent'] = actor.getPythonTag('entity') if actor else None
     else:
         data['actor'] = None
         data['pos'] = Point3()
@@ -177,7 +177,7 @@ def traceBox(mins, maxs, dir, dist, contents, cgroup, filter):
         data['pos'] = block.getPosition()
         data['norm'] = block.getNormal()
         data['mat'] = block.getMaterial()
-        data['ent'] = actor.getPythonTag('entity')
+        data['ent'] = actor.getPythonTag('entity') if actor else None
     else:
         data['actor'] = None
         data['pos'] = Point3()
