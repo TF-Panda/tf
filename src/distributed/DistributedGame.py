@@ -72,7 +72,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         minutes = self.roundTimeRemaining // 60
         seconds = self.roundTimeRemaining % 60
 
-        self.roundTimeText.setText(str(minutes) + ":" + str(seconds))
+        self.roundTimeText.setText(str(minutes) + ":" + str(seconds).zfill(2))
 
     def toggleVisDebug(self):
         self.visDebug = not self.visDebug
