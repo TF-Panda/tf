@@ -122,6 +122,10 @@ class SoundscapeComponent:
         self.soundVolume = 1.0
         self.task = None
 
+    def preloadSounds(self):
+        for fname in self.desc.waveFilenames:
+            base.loader.loadSfx(fname)
+
     def update(self):
         if self.sound:
             self.sound.setVolume(self.soundscape.volume * self.soundVolume)
@@ -153,12 +157,6 @@ class SoundscapeComponent:
 
         if self.desc.position != -1:
             # This is a spatialized soundscape component.
-
-            pos = self.soundscape.positions[int(self.desc.position)]
-            self.sound.set3dAttributes(pos, Quat.identQuat(), Vec3())
-            self.sound.set3dMinDistance((1.0 / self.desc.distMult) if (self.desc.distMult > 0.0) else 1000000.0)
-
-
             sprops = SteamAudioProperties()
             #sprops._enable_air_absorption = False
             #sprops._enable_distance_atten = True
@@ -171,6 +169,10 @@ class SoundscapeComponent:
             #sprops._bilinear_hrtf = True
             #sprops._volumetric_occlusion = False
             self.sound.applySteamAudioProperties(sprops)
+
+            pos = self.soundscape.positions[int(self.desc.position)]
+            self.sound.set3dAttributes(pos, Quat.identQuat(), Vec3())
+            self.sound.set3dMinDistance((1.0 / self.desc.distMult) if (self.desc.distMult > 0.0) else 1000000.0)
 
         self.sound.play()
 
@@ -211,6 +213,7 @@ class Soundscape:
 
         for compDesc in desc.components:
             comp = SoundscapeComponent(self, compDesc)
+            comp.preloadSounds()
             self.components.append(comp)
 
     @staticmethod
