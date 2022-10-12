@@ -10,7 +10,7 @@ else:
 
 from .ObjectState import ObjectState
 from tf.actor.Activity import Activity
-from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, CollisionGroup
+from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, CollisionGroup, TFTeam
 from tf.player.TFClass import Class
 from tf.tfbase import Sounds
 
@@ -91,6 +91,12 @@ class BaseObject(BaseClass):
         if self.builderDoId < 0:
             return None
         return base.net.doId2do.get(self.builderDoId)
+
+    def setCollideMasks(self):
+        self.setContentsMask(Contents.RedTeam if self.team == TFTeam.Red else Contents.BlueTeam)
+        # TODO: solid to builder
+        #if IS_CLIENT and self.isBuiltByLocalAvatar():
+        #    self.setSolidMask()
 
     if not IS_CLIENT:
 
@@ -323,10 +329,7 @@ class BaseObject(BaseClass):
             self.team = bldr.team
             base.game.objectsByTeam[self.team].append(self)
             self.setSkin(bldr.team)
-            if self.team == 0:
-                self.contentsMask = Contents.RedTeam
-            elif self.team == 1:
-                self.contentsMask = Contents.BlueTeam
+            self.setCollideMasks()
 
         #def getRepairRate(self):
             # TODO
@@ -460,11 +463,7 @@ class BaseObject(BaseClass):
 
             self.setSkin(self.team)
 
-            if self.team == 0:
-                self.contentsMask = Contents.RedTeam
-            else:
-                self.contentsMask = Contents.BlueTeam
-            self.node().setContentsMask(self.contentsMask)
+            self.setCollideMasks()
 
             bldr = self.getBuilder()
             if bldr:

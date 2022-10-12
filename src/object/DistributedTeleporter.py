@@ -173,7 +173,6 @@ class DistributedTeleporter(BaseObject):
 
         def generate(self):
             self.setModelIndex(0)
-            self.setCollideMasks()
             BaseObject.generate(self)
 
         def setTeleState(self, state):
@@ -455,7 +454,6 @@ class DistributedTeleporter(BaseObject):
             BaseObject.announceGenerate(self)
             self.addTask(self.__teleUpdate, "teleUpdateClient", appendTask=True, sim=False)
             self.currBlurAlpha = 0.0
-            self.setCollideMasks()
 
         def disable(self):
             self.directionPP = None
