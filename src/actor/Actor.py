@@ -542,7 +542,7 @@ class Actor(Model):
         Returns true if the model was loaded successfully, false otherwise.
         """
 
-        if not Model.loadModel(self, filename):
+        if not Model.loadModel(self, filename, callOnChanged=False):
             return False
 
         if isinstance(self.modelNp.node(), CharacterNode):
@@ -560,6 +560,8 @@ class Actor(Model):
 
             if hitboxes:
                 self.setupHitBoxes()
+
+        self.onModelChanged()
 
         return True
 
@@ -697,6 +699,7 @@ class Actor(Model):
             node = NodePath(ModelNode(jointName))
 
         if not self.character:
+            self.notify.warning("Actor is not animated, can't control joint " + jointName)
             return node
 
         node.reparentTo(self.characterNp)
@@ -705,6 +708,8 @@ class Actor(Model):
         if joint != -1:
             node.setMat(self.character.getJointDefaultValue(joint))
             self.character.setJointControllerNode(joint, node.node())
+        else:
+            self.notify.warning("controlJoint: joint " + jointName + " not found on character " + self.character.getName())
 
         return node
 

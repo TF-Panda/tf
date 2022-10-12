@@ -125,7 +125,8 @@ class DMinigun(TFWeaponGun):
             for ctrl in self.barrelControlJoints:
                 ctrl.setH(barrelAngleDeg)
 
-            self.weaponSoundUpdate()
+            if not self.isOwnedByLocalPlayer():
+                self.weaponSoundUpdate()
 
             return task.cont
 
@@ -147,6 +148,9 @@ class DMinigun(TFWeaponGun):
                 self.currSound = None
 
         def weaponSoundUpdate(self):
+            if base.cr.prediction.hasBeenPredicted():
+                return
+
             sound = -1
             loop = False
             if self.weaponState == MG_STATE_IDLE:
@@ -347,6 +351,17 @@ class DMinigun(TFWeaponGun):
                 else:
                     self.weaponState = MG_STATE_DRYFIRE
             self.sendWeaponAnim(Activity.Primary_VM_SecondaryFire)
+
+    def itemPostFrame(self):
+        TFWeaponGun.itemPostFrame(self)
+        if IS_CLIENT:
+            self.weaponSoundUpdate()
+
+    def deactivate(self):
+        if not IS_CLIENT or self.isOwnedByLocalPlayer():
+            self.windDown()
+
+        TFWeaponGun.deactivate(self)
 
 if not IS_CLIENT:
     DMinigunAI = DMinigun

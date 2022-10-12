@@ -179,7 +179,7 @@ class Model(DirectObject):
         """
         pass
 
-    def loadModel(self, filename):
+    def loadModel(self, filename, callOnChanged=True):
         """
         Loads up a model from the indicated model filename.  The existing
         model is unloaded.
@@ -217,7 +217,7 @@ class Model(DirectObject):
             # favors our instance, not the ModelRoot.
             np2 = np.instanceTo(NodePath())
             np.reparentTo(self.modelNp)
-            print(np.node().getParents())
+            #print(np.node().getParents())
             self.modelNp = np2
             self.modelNode = self.modelNp.node()
         else:
@@ -249,6 +249,7 @@ class Model(DirectObject):
         # Apply the currently specified skin.
         self.updateSkin()
 
-        self.onModelChanged()
+        if callOnChanged:
+            self.onModelChanged()
 
         return True

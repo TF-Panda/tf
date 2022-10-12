@@ -55,6 +55,12 @@ class Prediction(DirectObject):
         # List of all entities that use prediction.
         self.predictables = []
 
+    def hasBeenPredicted(self):
+        return self.inPrediction and not self.firstTimePredicted
+
+    def isFirstTimePredicted(self):
+        return self.inPrediction and self.firstTimePredicted
+
     def addPredictable(self, ent):
         assert ent not in self.predictables
         self.predictables.append(ent)

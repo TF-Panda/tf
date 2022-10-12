@@ -38,6 +38,8 @@ class SoundEmitter(DirectObject):
         self.host = host
         self.task = None
 
+        self.debug = False
+
     def delete(self):
         self.stopSpatialTask()
         self.ignoreAll()
@@ -68,8 +70,13 @@ class SoundEmitter(DirectObject):
         q = Quat.identQuat()
         v = Vec3()
 
+        if self.debug:
+            print("host center pos is", center.getRow3(3))
+
         for s in self.spatialSounds:
             pos = center.xformPoint(s.offset)
+            if self.debug:
+                print("set", s, "to pos", pos)
             s.sound.set3dAttributes(pos, q, v)
 
         #updateAttributesPColl.stop()
