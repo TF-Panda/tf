@@ -411,24 +411,23 @@ class DistributedTFPlayerShared:
         enableController() is called.
         """
 
-        if self.controller:
-            # Hack: Set the contents+solid mask to all 0s.
-            self.controller.setContentsMask(0)
-            self.controller.setSolidMask(0)
+        self.controller = None
 
     def enableController(self):
         """
         Re-enables the controller.  Collisions will occur with the controller
         again.
         """
-        if self.controller:
-            self.applyControllerMasks()
+        if not self.controller:
+            self.setupController()
 
     def announceGenerate(self):
         self.classInfo = ClassInfos[self.tfClass]
-        self.setupController()
+        #self.setupController()
 
     def runPlayerCommand(self, command, deltaTime):
+        if not self.controller:
+            return
 
         self.controller.foot_position = self.getPos()
 
@@ -440,7 +439,7 @@ class DistributedTFPlayerShared:
         right = command.buttons & InputFlag.MoveRight
 
         self.moveData.player = self
-        self.moveData.origin = self.controller.foot_position
+        self.moveData.origin = self.getPos()
         self.moveData.oldAngles = Vec3(self.moveData.angles)
         self.moveData.angles = Vec3(command.viewAngles)
         self.moveData.viewAngles = Vec3(command.viewAngles)

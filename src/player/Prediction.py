@@ -381,7 +381,7 @@ class Prediction(DirectObject):
         move.player = avatar
         move.velocity = Vec3(avatar.velocity[0], avatar.velocity[1], avatar.velocity[2])
         #print("IN velocity", move.velocity)
-        move.origin = avatar.controller.foot_position
+        move.origin = avatar.getPos()#avatar.controller.foot_position
         move.oldAngles = Vec3(move.angles)
         move.oldButtons = avatar.lastButtons
         move.clientMaxSpeed = avatar.maxSpeed
@@ -408,7 +408,7 @@ class Prediction(DirectObject):
         avatar.setPos(move.origin)
 
     def runCommand(self, avatar, cmd):
-        if avatar.isDead():
+        if avatar.isDead() or not avatar.controller:
             return
 
         self.startCommand(avatar, cmd)
