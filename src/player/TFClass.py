@@ -43,6 +43,8 @@ class Class:
     Sniper    = 7
     Spy       = 8
 
+    COUNT = 9
+
 class Weapon:
     PistolEngineer = 0
     PistolScout = 1

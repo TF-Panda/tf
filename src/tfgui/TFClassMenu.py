@@ -92,7 +92,10 @@ class TFClassMenu:
         self.classButtons = []
 
         z = 0.3
-        for classId, info in ClassInfos.items():
+        for classId in range(Class.COUNT):
+            info = ClassInfos.get(classId)
+            if not info:
+                continue
             btn = DirectButton(relief = None, text = info.Name,
                                text_font = TFGlobals.getTF2SecondaryFont(),
                                text_scale = 0.08,
