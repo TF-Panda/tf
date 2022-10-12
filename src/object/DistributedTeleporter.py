@@ -540,6 +540,12 @@ class DistributedTeleporter(BaseObject):
 
                 self.teleState = state
 
+        def updateObjectPlayRate(self):
+            if self.objectState == ObjectState.Active:
+                self.setSpinRate(self.spinRate)
+            else:
+                BaseObject.updateObjectPlayRate(self)
+
 class DistributedTeleporterEntrance(DistributedTeleporter):
 
     def __init__(self):

@@ -442,11 +442,12 @@ class BaseObject(BaseClass):
         def updateObjectAnimState(self):
             if self.objectState == ObjectState.Constructing:
                 self.setAnim(activity = Activity.Object_Build)
-                self.updateObjectPlayRate()
             elif self.objectState == ObjectState.Active:
                 self.setAnim(activity = Activity.Object_Idle)
             elif self.objectState == ObjectState.Upgrading:
                 self.setAnim(activity = Activity.Object_Upgrade)
+
+            self.updateObjectPlayRate()
 
         def updateObjectPlayRate(self):
             if self.objectState == ObjectState.Constructing:
