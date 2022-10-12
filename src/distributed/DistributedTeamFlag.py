@@ -199,6 +199,7 @@ class DistributedTeamFlag(DistributedEntity):
                     plyr.flag = None
             self.playerWithFlag = -1
             self.dropped = 0
+            self.removeTask('returnFlagTask')
 
         def __returnTask(self, task):
             self.returnFlag(False)
