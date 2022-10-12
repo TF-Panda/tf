@@ -465,6 +465,7 @@ dclass DistributedTeamFlag : DistributedEntity {
   Angles initialHpr;
   string flagModelName;
   int32 playerWithFlag;
+  uint8 dropped;
 };
 
 

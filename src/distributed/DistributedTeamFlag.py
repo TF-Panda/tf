@@ -68,6 +68,7 @@ class DistributedTeamFlag(DistributedEntity):
 
         self.initialPos = Point3()
         self.initialHpr = Vec3()
+        self.dropped = 0
         self.flagModelName = ""
         self.flagModel = None
         self.spinIval = None
@@ -132,6 +133,8 @@ class DistributedTeamFlag(DistributedEntity):
 
             self.skin = self.team + 3
 
+            self.dropped = 0
+
             self.playerWithFlag = player.doId
             player.flag = self
 
@@ -170,6 +173,8 @@ class DistributedTeamFlag(DistributedEntity):
 
             self.skin = self.team
 
+            self.dropped = 1
+
             # Return flag after 60 seconds if no one picks it back up.
             self.addTask(self.__returnTask, 'returnFlagTask', delay=60.0, appendTask=True)
 
@@ -193,6 +198,7 @@ class DistributedTeamFlag(DistributedEntity):
                 if plyr:
                     plyr.flag = None
             self.playerWithFlag = -1
+            self.dropped = 0
 
         def __returnTask(self, task):
             self.returnFlag(False)
@@ -210,7 +216,7 @@ class DistributedTeamFlag(DistributedEntity):
             if self.playerWithFlag != -1:
                 # Ignore server position when a player is carrying the flag.
                 self.setPosHpr(0, 0, 0, 0, 0, 0)
-            else:
+            elif not self.dropped:
                 self.setPos(self.initialPos)
                 self.setHpr(self.initialHpr)
 
