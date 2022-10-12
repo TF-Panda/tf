@@ -813,7 +813,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.lastActiveWeapon = self.activeWeapon
 
-        if self.activeWeapon > 0 and self.activeWeapon < len(self.weapons):
+        if self.activeWeapon >= 0 and self.activeWeapon < len(self.weapons):
             # Deactive the old weapon.
             wpnId = self.weapons[self.activeWeapon]
             wpn = base.sv.doId2do.get(wpnId)
