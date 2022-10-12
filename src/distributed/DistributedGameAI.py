@@ -453,7 +453,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             tfclass = Class.Demo
             self.numEngineer += 1
         self.playersByTeam[player.team].append(player)
-        player.changeClass(tfclass, force = True, sendRespawn = False, giveWeapons = False)
+        player.changeClass(tfclass, force = True, sendRespawn = True, giveWeapons = False)
         # FIXME!!!!!
         base.sv.generateObject(player, TFGlobals.GameZone, client)
         player.giveClassWeapons()
