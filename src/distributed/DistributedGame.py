@@ -395,6 +395,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
             self.waterGeomNp = waterGeomNp
 
+            del reader
+
         numSounds = 0
         sounds = [
             "/c/Users/brian/Desktop/Scott-joplin-maple-leaf-rag.mp3",
@@ -465,6 +467,13 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         self.flatten(base.sky3DRoot)
         base.sky3DRoot.prepareScene(base.win.getGsg())
+
+        # Render a few frames to flush the pipeline, that way all of our
+        # queued textures, vbuffers, etc, are fully uploaded before we do
+        # anything else.  Even without the multithreaded pipeline we want
+        # to do this to get all of our uploads out of the way right now.
+        base.graphicsEngine.renderFrame()
+        base.graphicsEngine.renderFrame()
 
     def getTeamFormat(self, team):
         if team == 0:
