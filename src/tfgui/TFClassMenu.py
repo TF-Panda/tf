@@ -22,6 +22,20 @@ class MenuChar(Actor):
     def __init__(self):
         Actor.__init__(self)
         self.soundEmitter = SoundEmitter(self)
+        self.aeTask = None
+
+    def startProcessingAnimationEvents(self):
+        if not self.aeTask:
+            self.aeTask = base.simTaskMgr.add(self.__animEventsTask, 'menuCharAnimEvents', sort=100)
+
+    def stopProcessingAnimationEvents(self):
+        if self.aeTask:
+            self.aeTask.remove()
+            self.aeTask = None
+
+    def __animEventsTask(self, task):
+        self.doAnimationEvents()
+        return task.cont
 
     def doAnimEventSound(self, soundName):
         sound, info = Sounds.createSoundByName(soundName, getInfo=True)
@@ -111,7 +125,6 @@ class TFClassMenu:
             self.classButtons.append(btn)
             #btn.bind(DGG.EXIT, self.onLeaveClassBtn, [classId])
 
-        base.simTaskMgr.add(self.__charAnimEvents, "cmCharAnimEvents")
         base.taskMgr.add(self.__cmUpdatePostProcess, "cmUpdatePostProcess")
 
         self.pp = PostProcess()
@@ -172,10 +185,6 @@ class TFClassMenu:
         self.classLens.setAspectRatio(base.camLens.getAspectRatio())
         self.pp.update()
         self.pp.windowEvent()
-        return task.cont
-
-    def __charAnimEvents(self, task):
-        self.classChar.doAnimationEvents()
         return task.cont
 
     def onHoverClassBtn(self, classId, params):

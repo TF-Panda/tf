@@ -207,6 +207,8 @@ class Actor(Model):
             alayer = self.character.getAnimLayer(layer)
             alayer._activity = activity
 
+        self.considerProcessAnimationEvents()
+
     def stopAnim(self, layer = None, kill = False):
         """
         Stops whatever animation channel is playing on the indicated layer,
@@ -221,6 +223,8 @@ class Actor(Model):
             self.character.stop(-1, kill)
         elif layer < self.character.getNumAnimLayers():
             self.character.stop(layer, kill)
+
+        self.considerProcessAnimationEvents()
 
     def getCurrentAnim(self, layer = 0):
         """
@@ -521,6 +525,7 @@ class Actor(Model):
         """
         Removes the current model from the scene graph and all related data.
         """
+        self.stopProcessingAnimationEvents()
         if self.characterNp:
             Actor.AllCharacters.removePath(self.characterNp)
         self.characterNp = None
@@ -652,6 +657,33 @@ class Actor(Model):
 
     def invalidateHitBoxes(self):
         self.lastHitBoxSyncTime = 0.0
+
+    def needsToProcessAnimationEvents(self):
+        if not self.character:
+            return False
+
+        # If any channel playing on any layer has events, we need to
+        # process animation events.
+        for i in range(self.character.getNumAnimLayers()):
+            alayer = self.character.getAnimLayer(i)
+            if alayer.isPlaying() and alayer._sequence != -1:
+                chan = self.character.getChannel(alayer._sequence)
+                if chan.getNumEvents() > 0:
+                    return True
+
+        return False
+
+    def considerProcessAnimationEvents(self):
+        if self.needsToProcessAnimationEvents():
+            self.startProcessingAnimationEvents()
+        else:
+            self.stopProcessingAnimationEvents()
+
+    def startProcessingAnimationEvents(self):
+        pass
+
+    def stopProcessingAnimationEvents(self):
+        pass
 
     def doAnimationEvents(self, eventType=AnimEventType.Client):
         if not self.character:

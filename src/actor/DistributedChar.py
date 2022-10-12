@@ -15,12 +15,27 @@ class DistributedChar(Actor, DistributedEntity):
 
         # Client-side ragdoll associated with this entity.
         self.ragdoll = None
+        self.processingAnimEvents = False
 
     def RecvProxy_skin(self, skin):
         self.setSkin(skin)
 
     def RecvProxy_model(self, model):
         self.loadModel(model)
+
+    def startProcessingAnimationEvents(self):
+        if not self.processingAnimEvents:
+            self.addTask(self.__processAnimationEventsTask, 'processAnimEvents', sim=True, sort=100, appendTask=True)
+            self.processingAnimEvents = True
+
+    def stopProcessingAnimationEvents(self):
+        if self.processingAnimEvents:
+            self.removeTask('processAnimEvents')
+            self.processingAnimEvents = False
+
+    def __processAnimationEventsTask(self, task):
+        self.doAnimationEvents()
+        return task.cont
 
     def shouldSpatializeAnimEventSounds(self):
         return True
@@ -80,11 +95,6 @@ class DistributedChar(Actor, DistributedEntity):
         self.ragdoll = self.makeRagdoll(forceJoint, forcePosition, forceVector, initialVel)
 
         return self.ragdoll
-
-    def postInterpolate(self):
-        DistributedEntity.postInterpolate(self)
-        if globalClock.dt != 0.0:
-            self.doAnimationEvents()
 
     def setModel(self, filename):
         self.loadModel(filename)
