@@ -87,6 +87,11 @@ class DistributedTeleporter(BaseObject):
         self.hullMins = Point3(-24, -24, 0)
         self.hullMaxs = Point3(24, 24, 12)
 
+    def setCollideMasks(self):
+        self.setContentsMask(TFGlobals.Contents.Solid | (TFGlobals.Contents.RedTeam if (self.team == TFGlobals.TFTeam.Red) else TFGlobals.Contents.BlueTeam))
+        # This mask determines what can enter the trigger.  Our team only.
+        self.setSolidMask(TFGlobals.Contents.RedTeam if (self.team == TFGlobals.TFTeam.Red) else TFGlobals.Contents.BlueTeam)
+
     if not IS_CLIENT:
 
         def onTriggerEnter(self, ent):
@@ -168,9 +173,7 @@ class DistributedTeleporter(BaseObject):
 
         def generate(self):
             self.setModelIndex(0)
-            self.setContentsMask(TFGlobals.Contents.Solid | (TFGlobals.Contents.RedTeam if (self.team == 0) else TFGlobals.Contents.BlueTeam))
-            # This mask determines what can enter the trigger.  Our team only.
-            self.setSolidMask(TFGlobals.Contents.RedTeam if (self.team == 0) else TFGlobals.Contents.BlueTeam)
+            self.setCollideMasks()
             BaseObject.generate(self)
 
         def setTeleState(self, state):
@@ -451,10 +454,8 @@ class DistributedTeleporter(BaseObject):
         def announceGenerate(self):
             BaseObject.announceGenerate(self)
             self.addTask(self.__teleUpdate, "teleUpdateClient", appendTask=True, sim=False)
-
             self.currBlurAlpha = 0.0
-
-            self.setContentsMask(TFGlobals.Contents.Solid | TFGlobals.Contents.RedTeam if (self.team == 0) else TFGlobals.Contents.BlueTeam)
+            self.setCollideMasks()
 
         def disable(self):
             self.directionPP = None
