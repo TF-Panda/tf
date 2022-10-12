@@ -132,6 +132,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.serverLagCompDebugRoot = None
         self.clientLagCompDebugRoot = None
 
+    #def disableController(self):
+    #    pass
+
     def lagCompDebug(self, positions):
         if self.serverLagCompDebugRoot:
             self.serverLagCompDebugRoot.removeNode()

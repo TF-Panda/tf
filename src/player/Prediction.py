@@ -381,7 +381,7 @@ class Prediction(DirectObject):
         move.player = avatar
         move.velocity = Vec3(avatar.velocity[0], avatar.velocity[1], avatar.velocity[2])
         #print("IN velocity", move.velocity)
-        move.origin = avatar.getPos()#avatar.controller.foot_position
+        move.origin = Point3(avatar.getPos())#avatar.controller.foot_position
         move.oldAngles = Vec3(move.angles)
         move.oldButtons = avatar.lastButtons
         move.clientMaxSpeed = avatar.maxSpeed
@@ -408,8 +408,6 @@ class Prediction(DirectObject):
         avatar.setPos(move.origin)
 
     def runCommand(self, avatar, cmd):
-        if avatar.isDead() or not avatar.controller:
-            return
 
         self.startCommand(avatar, cmd)
 
@@ -418,48 +416,54 @@ class Prediction(DirectObject):
         base.setDeltaTime(base.intervalPerTick)
         base.setTickCount(cmd.tickCount)
 
-        # Do weapon selection
-        if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(avatar.weapons) and cmd.weaponSelect != avatar.activeWeapon:
-            avatar.setActiveWeapon(cmd.weaponSelect)
+        if not avatar.isDead():
 
-        avatar.updateButtonsState(cmd.buttons)
+            # Do weapon selection
+            if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(avatar.weapons) and cmd.weaponSelect != avatar.activeWeapon:
+                avatar.setActiveWeapon(cmd.weaponSelect)
 
-        oldAngles = Vec3(avatar.viewAngles)
+            avatar.updateButtonsState(cmd.buttons)
 
-        avatar.viewAngles = cmd.viewAngles
+            oldAngles = Vec3(avatar.viewAngles)
 
-        #self.runPreThink(avatar)
-        #self.runThink(avatar, base.intervalPerTick)
+            avatar.viewAngles = cmd.viewAngles
 
-        # Get the active weapon
-        wpn = None
-        if avatar.activeWeapon != -1 and avatar.activeWeapon < len(avatar.weapons):
-            wpnId = avatar.weapons[avatar.activeWeapon]
-            wpn = base.net.doId2do.get(wpnId)
+            #self.runPreThink(avatar)
+            #self.runThink(avatar, base.intervalPerTick)
 
-        if wpn:
-            wpn.itemPreFrame()
+            # Get the active weapon
+            wpn = None
+            if avatar.activeWeapon != -1 and avatar.activeWeapon < len(avatar.weapons):
+                wpnId = avatar.weapons[avatar.activeWeapon]
+                wpn = base.net.doId2do.get(wpnId)
 
-        avatar.controller.foot_position = avatar.getPos()
+            if wpn:
+                wpn.itemPreFrame()
 
-        # Setup input.
-        self.setupMove(avatar, cmd)
+            doMovement = avatar.controller is not None
 
-        g_game_movement.processMovement(avatar, avatar.moveData)
+            if doMovement:
+                avatar.controller.foot_position = avatar.getPos()
 
-        if wpn:
-            wpn.itemBusyFrame()
+                # Setup input.
+                self.setupMove(avatar, cmd)
 
-        self.finishMove(avatar, cmd)
+                g_game_movement.processMovement(avatar, avatar.moveData)
 
-        #self.runPostThink(avatar)
-        if wpn:
-            wpn.itemPostFrame()
+            if wpn:
+                wpn.itemBusyFrame()
+
+            if doMovement:
+                self.finishMove(avatar, cmd)
+
+            #self.runPostThink(avatar)
+            if wpn:
+                wpn.itemPostFrame()
+
+            # Restore smooth view angles.
+            avatar.viewAngles = oldAngles
 
         self.finishCommand(avatar)
-
-        # Restore smooth view angles.
-        avatar.viewAngles = oldAngles
 
         avatar.tickBase += 1
 

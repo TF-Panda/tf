@@ -423,7 +423,7 @@ class DistributedTFPlayerShared:
 
     def announceGenerate(self):
         self.classInfo = ClassInfos[self.tfClass]
-        #self.setupController()
+        self.setupController()
 
     def runPlayerCommand(self, command, deltaTime):
         if not self.controller:
@@ -439,7 +439,7 @@ class DistributedTFPlayerShared:
         right = command.buttons & InputFlag.MoveRight
 
         self.moveData.player = self
-        self.moveData.origin = self.getPos()
+        self.moveData.origin = Point3(self.getPos())
         self.moveData.oldAngles = Vec3(self.moveData.angles)
         self.moveData.angles = Vec3(command.viewAngles)
         self.moveData.viewAngles = Vec3(command.viewAngles)

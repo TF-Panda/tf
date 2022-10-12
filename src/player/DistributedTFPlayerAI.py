@@ -1114,9 +1114,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         base.setDeltaTime(saveDt)
 
     def runPlayerCommand(self, cmd, deltaTime):
-        if self.isDead():
-            return
-
         self.currentCommand = cmd
 
         base.setFrameTime(self.tickBase * base.intervalPerTick)
@@ -1124,37 +1121,39 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         base.net.predictionRandomSeed = cmd.randomSeed
 
-        # Do weapon selection.
-        if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(self.weapons) and cmd.weaponSelect != self.activeWeapon:
-            self.setActiveWeapon(cmd.weaponSelect)
+        if not self.isDead():
 
-        self.updateButtonsState(cmd.buttons)
+            # Do weapon selection.
+            if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(self.weapons) and cmd.weaponSelect != self.activeWeapon:
+                self.setActiveWeapon(cmd.weaponSelect)
 
-        self.viewAngles = cmd.viewAngles
-        self.eyeH = self.viewAngles[0] % 360 / 360
-        self.eyeP = self.viewAngles[1] % 360 / 360
+            self.updateButtonsState(cmd.buttons)
 
-        # Get the active weapon
-        wpn = None
-        if self.activeWeapon != -1:
-            wpnId = self.weapons[self.activeWeapon]
-            wpn = base.sv.doId2do.get(wpnId)
+            self.viewAngles = cmd.viewAngles
+            self.eyeH = self.viewAngles[0] % 360 / 360
+            self.eyeP = self.viewAngles[1] % 360 / 360
 
-        if wpn:
-            wpn.itemPreFrame()
+            # Get the active weapon
+            wpn = None
+            if self.activeWeapon != -1:
+                wpnId = self.weapons[self.activeWeapon]
+                wpn = base.sv.doId2do.get(wpnId)
 
-        # Run the movement.
-        DistributedTFPlayerShared.runPlayerCommand(self, cmd, deltaTime)
+            if wpn:
+                wpn.itemPreFrame()
 
-        if wpn:
-            wpn.itemBusyFrame()
+            # Run the movement.
+            DistributedTFPlayerShared.runPlayerCommand(self, cmd, deltaTime)
 
-        self.notify.debug("Running command %s" % str(cmd))
+            if wpn:
+                wpn.itemBusyFrame()
 
-        if wpn:
-            wpn.itemPostFrame()
+            self.notify.debug("Running command %s" % str(cmd))
 
-        self.animState.update()
+            if wpn:
+                wpn.itemPostFrame()
+
+            self.animState.update()
 
         # Let time pass.
         self.tickBase += 1
