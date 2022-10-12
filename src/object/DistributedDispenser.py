@@ -3,7 +3,9 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import Contents, CollisionGroup, getTF2BuildFont
+from direct.directnotify.DirectNotifyGlobal import directNotify
+
+from tf.tfbase.TFGlobals import Contents, CollisionGroup, getTF2BuildFont, TFTeam
 from tf.tfbase import TFLocalizer
 
 from .BaseObject import BaseObject
@@ -15,6 +17,8 @@ DISPENSER_MAX_HEALING_TARGETS = 32
 DISPENSER_AMMO = 40
 
 class DistributedDispenser(BaseObject):
+
+    notify = directNotify.newCategory("DistributedDispenser")
 
     Models = [
         "models/buildables/dispenser",
@@ -36,7 +40,10 @@ class DistributedDispenser(BaseObject):
 
         self.healingTargets = []
 
+        self.viewOffset = Vec3(0, 0, 28)
+
         if IS_CLIENT:
+            self.targetBeams = {}
             self.idleSound = None
             self.healSound = None
             self.text0 = None
@@ -66,6 +73,7 @@ class DistributedDispenser(BaseObject):
                 self.touchTrigger.node().removeFromScene(base.physicsWorld)
                 self.touchTrigger.removeNode()
                 self.toughTrigger = None
+            self.stopHealingAll()
             self.touchingEntities = None
             self.healingTargets = None
             BaseObject.delete(self)
@@ -117,22 +125,76 @@ class DistributedDispenser(BaseObject):
             else:
                 self.endTouch(entity)
 
+        def stopHealingAll(self):
+            for doId in self.healingTargets:
+                do = base.air.doId2do.get(doId)
+                if do and not do.isDODeleted():
+                    do.stopHealing(self.getBuilder())
+
+        def couldHealTarget(self, target):
+            """
+            Returns true if the given target can be healed by this dispenser.
+            """
+
+            if not target.isEntityVisible(self, Contents.Solid)[0]:
+                # Don't have a LOS to dispenser, can't heal them.
+                return False
+
+            if target.isPlayer() and not target.isDead():
+
+                # TODO: Enemy spy disguised as dispenser's team an be healed.
+
+                if target.team != self.team:
+                    # Not same team (or apparent team), can't heal them.
+                    return False
+
+                return True
+
+            return False
+
+        def startHealing(self, other):
+            """
+            Begins healing the indicated player.
+            """
+            if other.doId in self.healingTargets:
+                return
+            self.healingTargets.append(other.doId)
+            obj_dispenser_heal_rate = 10
+            # TODO: if dispenser can be upgraded, change heal reate
+            # based on upgrade level.
+            other.heal(self.getBuilder(), obj_dispenser_heal_rate, True)
+            self.notify.debug("Started healing " + repr(other))
+
+        def stopHealing(self, other):
+            """
+            Stops healing the indicated player.
+            """
+            if other.doId in self.healingTargets:
+                self.healingTargets.remove(other.doId)
+                other.stopHealing(self.getBuilder())
+                self.notify.debug("Stopped healing " + repr(other))
+
+        def isHealingTarget(self, other):
+            """
+            Returns true if we are currently healing this player.
+            """
+            return other.doId in self.healingTargets
+
         def startTouch(self, other):
             if other in self.touchingEntities:
                 return
 
             self.touchingEntities.append(other)
-            self.healingTargets.append(other.doId)
-            #if self.couldHealTarget(other) and not self.isHealingTarget(other):
-            #    self.startHealing(other)
+            if not self.isHealingTarget(other) and self.couldHealTarget(other):
+                self.startHealing(other)
 
         def endTouch(self, other):
             if other not in self.touchingEntities:
                 return
 
             self.touchingEntities.remove(other)
-            self.healingTargets.remove(other.doId)
-            #self.stopHealing(other)
+            #self.healingTargets.remove(other.doId)
+            self.stopHealing(other)
 
         def __refill(self, task):
             # Auto refill half the amount as TFC, but twice as often.
@@ -158,6 +220,21 @@ class DistributedDispenser(BaseObject):
                 # Try to dispense more often when no players are around so we
                 # give it as soon as possible when a new player shows up.
                 self.nextAmmoDispense += 1.0 if (numNearbyPlayers > 0) else 0.1
+
+            for do in list(self.touchingEntities):
+
+                if do.isDODeleted() or do.isDead():
+                    self.endTouch(do)
+                    continue
+
+                healingTarget = do.doId in self.healingTargets
+                validHealingTarget = self.couldHealTarget(do)
+
+                if healingTarget and not validHealingTarget:
+                    self.stopHealing(do)
+                elif not healingTarget and validHealingTarget:
+                    self.startHealing(do)
+
             task.delayTime = 0.1
             return task.again
 
@@ -193,6 +270,81 @@ class DistributedDispenser(BaseObject):
             return gaveAny
 
     else:
+        def makeHealBeamParticle(self, target):
+            healBeamTargetNode = target.attachNewNode("healTargetDispenser")
+            healBeamTargetNode.setPos(0, 0, 48)
+
+            sys = ParticleSystem2()
+            sys.setPoolSize(166)
+            sys.setInput(0, self.healBeamSourceNode, False) # medigun muzzle
+            sys.setInput(1, healBeamTargetNode, True) # heal target
+
+            emitter = ContinuousParticleEmitter()
+            emitter.setEmissionRate(150)
+            sys.addEmitter(emitter)
+
+            sys.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0.1, 0.1, Vec3(1, 0, 1)))
+            sys.addInitializer(P2_INIT_LifespanRandomRange(1, 1))
+            sys.addInitializer(P2_INIT_ScaleRandomRange(Vec3(3), Vec3(3)))
+            if self.team == TFTeam.Red:
+                sys.addInitializer(P2_INIT_ColorRandomRange(Vec3(255/255, 90/255, 90/255), Vec3(255/255, 126/255, 93/255)))
+            else:
+                sys.addInitializer(P2_INIT_ColorRandomRange(Vec3(0/255, 159/255, 165/255), Vec3(116/255, 152/255, 255/255)))
+            sys.addInitializer(P2_INIT_RotationVelocityRandomRange(96, 96))
+
+            scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+            l0 = ParticleLerpSegment()
+            l0.type = l0.LTLinear
+            l0.start = 0.0
+            l0.end = 1.0
+            l0.start_is_initial = True
+            l0.end_value = Vec3(1.0)
+            scaleLerp.addSegment(l0)
+            sys.addFunction(scaleLerp)
+
+            colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+            l0 = ParticleLerpSegment()
+            l0.type = l0.LTLinear
+            l0.start = 0.0
+            l0.end = 1.0
+            l0.start_is_initial = True
+            if self.team == TFTeam.Red:
+                l0.end_value = Vec3(255/255, 90/255, 0/255)
+            else:
+                l0.end_value = Vec3(48/255, 141/255, 255/255)
+            colorLerp.addSegment(l0)
+            sys.addFunction(colorLerp)
+
+            sys.addFunction(LinearMotionParticleFunction())
+            sys.addFunction(AngularMotionParticleFunction())
+            sys.addFunction(LifespanKillerParticleFunction())
+
+            twist = CylinderVortexParticleForce(512.0, (0, 1, 0))
+            twist.setLocalAxis(False)
+            twist.setInput0(0)
+            twist.setInput1(1)
+            twist.setMode(twist.AMVecBetweenInputs)
+            sys.addForce(twist)
+
+            const = PathParticleConstraint()
+            const.start_input = 0
+            const.end_input = 1
+            const.max_distance = 2
+            const.mid_point = 0.1
+            const.min_distance = 2
+            const.bulge_control = 1
+            const.random_bulge = 1.3
+            const.travel_time = 1.0
+            sys.addConstraint(const)
+
+            renderer = SpriteParticleRenderer2()
+            state = RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/medicbeam_curl.pmat")),
+                         ColorAttrib.makeVertex())
+            renderer.setRenderState(state)
+            sys.addRenderer(renderer)
+
+            return sys
+
         def playIdleSound(self):
             self.stopIdleSound()
             self.idleSound = self.emitSoundSpatial("Building_Dispenser.Idle", loop=True)
@@ -269,7 +421,17 @@ class DistributedDispenser(BaseObject):
             self.screen0, self.text0Root, self.text0 = self.createScreen(0)
             self.screen1, self.text1Root, self.text1 = self.createScreen(1)
 
+        def generate(self):
+            BaseObject.generate(self)
+            self.healBeamSourceNode = self.attachNewNode("HealBeamSourceNode")
+            self.healBeamSourceNode.setPos(self.viewOffset)
+            self.healBeamSourceNode.setH(90)
+
         def disable(self):
+            for beam in self.targetBeams.values():
+                beam.stop()
+            self.targetBeams = None
+            self.healBeamSourceNode = None
             self.destroyScreens()
             self.stopIdleSound()
             self.stopHealSound()
@@ -296,6 +458,17 @@ class DistributedDispenser(BaseObject):
             else:
                 self.stopIdleSound()
 
+        def startTargetHealBeam(self, doId):
+            target = base.cr.doId2do.get(doId)
+            if target:
+                self.targetBeams[doId] = self.makeHealBeamParticle(target)
+                self.targetBeams[doId].start(base.dynRender)
+
+        def stopTargetHealBeam(self, doId):
+            if doId in self.targetBeams:
+                self.targetBeams[doId].softStop()
+                del self.targetBeams[doId]
+
         def RecvProxy_healingTargets(self, targets):
             if len(targets) > 0:
                 diff = len(targets) - len(self.healingTargets)
@@ -315,6 +488,18 @@ class DistributedDispenser(BaseObject):
             else:
                 # No heal targets, stop heal sound.
                 self.stopHealSound()
+
+            added = [x for x in targets if x not in self.healingTargets]
+            removed = [x for x in self.healingTargets if x not in targets]
+
+            self.notify.debug("added heal targets " + repr(added))
+            self.notify.debug("removed heal targets " + repr(removed))
+
+            for new in added:
+                self.startTargetHealBeam(new)
+            for old in removed:
+                self.stopTargetHealBeam(old)
+
             self.healingTargets = targets
 
         def stopHealSound(self):
