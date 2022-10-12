@@ -323,6 +323,8 @@ class DistributedTFPlayerShared:
                     base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
 
             actor = block.getActor()
+            if not actor:
+                return
             entity = actor.getPythonTag("entity")
             if not entity:
                 # Didn't hit an entity.  Hmm.
