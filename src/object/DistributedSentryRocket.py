@@ -19,7 +19,7 @@ class DistributedSentryRocket(BaseRocket):
             BaseRocket.announceGenerate(self)
 
             # Start the spinning animation.
-            self.setAnim("idle", loop=True)
+            self.setAnim("idle")
 
             numRockets = 4
             for i in range(numRockets):
