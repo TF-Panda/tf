@@ -385,9 +385,10 @@ class TFBase(ShowBase, FSM):
             a = data.getActorA()
             b = data.getActorB()
 
-            entA = a.getPythonTag("entity")
-            entB = b.getPythonTag("entity")
-            if entA and entA == entB:
+            objA = a.getPythonTag("object")
+            objB = b.getPythonTag("object")
+            if objA and objA == objB:
+                # Don't do impact sounds for self-collisions.
                 continue
 
             position = point.getPosition()

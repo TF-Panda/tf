@@ -393,6 +393,7 @@ class DistributedTFPlayerShared:
         self.controller.setStepOffset(24) # 18 HUs to inches?
         self.controller.setContactOffset(1) # 6 inches idk
         self.controller.getActorNode().setPythonTag("entity", self)
+        self.controller.getActorNode().setPythonTag("object", self)
         self.attachNewNode(self.controller.getActorNode())
 
     def applyControllerMasks(self):

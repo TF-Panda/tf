@@ -126,6 +126,7 @@ class DistributedEntity(BaseClass, NodePath):
 
         # Add a tag on our node that links back to us.
         self.setPythonTag("entity", self)
+        self.setPythonTag("object", self)
 
         #self.reparentTo(self.parentEntity)
 

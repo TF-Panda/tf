@@ -24,6 +24,7 @@ class World(DistributedSolidEntity):
         # Link static prop physics to world entity.
         for np in base.game.propPhysRoot.findAllMatches("**/+PhysRigidActorNode"):
             np.setPythonTag("entity", self)
+            np.setPythonTag("object", self)
 
     def announceGenerate(self):
         DistributedSolidEntity.announceGenerate(self)

@@ -631,6 +631,7 @@ class Actor(Model):
         # Add a link to ourself so traces know who they hit.
         body.setPythonTag("hitbox", (self, hbox))
         body.setPythonTag("entity", self)
+        body.setPythonTag("object", self)
         self.hitBoxes.append(hbox)
         assert self.hitBoxRoot
         self.hitBoxRoot.attachNewNode(body)

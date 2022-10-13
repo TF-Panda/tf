@@ -52,6 +52,7 @@ class LevelBase:
             body.setContentsMask(Contents.Solid)
             body.addToScene(base.physicsWorld)
             body.setPythonTag("entity", base.world)
+            body.setPythonTag("object", base.world)
             self.lvl.attachNewNode(body)
 
         self.loadLevelProps()
@@ -115,6 +116,7 @@ class LevelBase:
                     cnp.setTransform(NodePath(), propModel.getTransform(NodePath()))
                     cnode.setContentsMask(Contents.Solid)
                     cnode.setPythonTag("entity", base.world)
+                    cnode.setPythonTag("object", base.world)
 
             propModel.reparentTo(propRoot)
             propModel.flattenStrong()

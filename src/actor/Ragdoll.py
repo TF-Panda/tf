@@ -45,7 +45,7 @@ class Ragdoll(PhysRagdoll):
             for i in range(self.getNumJoints()):
                 actor = self.getJointActor(i)
                 actor.setCollisionGroup(CollisionGroup.Debris)
-                #actor.setPythonTag("entity", self)
+                actor.setPythonTag("object", self)
 
             initialVel = Vec3(initialVel[0], initialVel[1], initialVel[2])
             if initialVel.lengthSquared() > 0.001:
