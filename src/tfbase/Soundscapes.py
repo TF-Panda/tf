@@ -203,7 +203,7 @@ class Soundscape:
         for i in range(8):
             self.positions.append(Point3(0))
         self.components = []
-        self.volume = 1.0
+        self.volume = 0.0
         self.radius = -1
         self.task = None
         self.proxy = False
