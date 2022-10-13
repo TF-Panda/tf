@@ -195,19 +195,17 @@ class DistributedTFPlayerShared:
             if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
                 return
 
+        origin = Point3(origin)
+
         # Trace down to get current ground material, ignoring player.
         surfaceDef = None
-        filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
-        result = PhysRayCastResult()
-        base.physicsWorld.raycast(result, Point3(origin) + (0, 0, 16), Vec3.down(), 32,
-                                  Contents.Solid, Contents.Empty, CollisionGroup.Empty, filter)
-        if result.hasBlock():
-            b = result.getBlock()
-            physMat = b.getMaterial()
-            if physMat:
-                # Get the surface definition associated with the PhysMaterial
-                # the ray hit.
-                surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
+        tr = TFFilters.traceBox(TFGlobals.VEC_HULL_MIN + origin, TFGlobals.VEC_HULL_MAX + origin, Vec3.down(),
+                                64, Contents.Solid, 0, PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude))
+        mat = tr['mat']
+        if mat:
+            # Get the surface definition associated with the PhysMaterial
+            # the ray hit.
+            surfaceDef = SurfacePropertiesByPhysMaterial.get(mat)
         if not surfaceDef:
             surfaceDef = SurfaceProperties['default']
 
