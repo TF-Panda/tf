@@ -296,6 +296,11 @@ ModelPrecacheList = [
     "models/buildables/sentry1_gib4",
     "models/buildables/sentry2",
     "models/buildables/sentry2_heavy",
+    "models/buildables/sentry2_gib1",
+    "models/buildables/sentry2_gib2",
+    "models/buildables/sentry2_gib3",
+    "models/buildables/sentry2_gib4",
+    "models/buildables/sentry3_gib1",
     "models/buildables/dispenser",
     "models/buildables/dispenser_light",
     "models/buildables/dispenser_blueprint",
@@ -312,6 +317,8 @@ ModelPrecacheList = [
     "models/buildables/teleporter_gib2",
     "models/buildables/teleporter_gib3",
     "models/buildables/teleporter_gib4",
+    "models/buildables/sapper_gib001",
+    "models/buildables/sapper_gib002",
 
     "models/effects/explosion",
 
