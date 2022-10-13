@@ -34,6 +34,13 @@ class DViewModel(DistributedChar, DViewModelShared):
         self.removeInterpolatedVar(self.ivPos)
         self.removeInterpolatedVar(self.ivRot)
 
+    def resetSway(self):
+        """
+        Clears the sway interpolation history so that an abrupt change/override
+        of view angles doesn't cause weird artifacts.
+        """
+        self.ivLagAngles.clearHistory()
+
     def addPredictionFields(self):
         DistributedChar.addPredictionFields(self)
         # We shouldn't attempt to predict the view model transform.

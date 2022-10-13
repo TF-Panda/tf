@@ -182,6 +182,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         # Server is overriding our current view angles.
         self.viewAngles[0] = h
         self.viewAngles[1] = p
+        if self.viewModel:
+            self.viewModel.resetSway()
 
     def setCSHealer(self, doId):
         self.crossHairInfo.setForceEnt(doId, CrossHairInfo.CTX_HEALER)
@@ -226,7 +228,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         track.start()
 
         if self.viewModel:
-            self.viewModel.ivLagAngles.clearHistory()
+            self.viewModel.resetSway()
 
     def shouldSpatializeAnimEventSounds(self):
         return False
