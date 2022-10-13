@@ -218,7 +218,7 @@ class SentryPanel(ObjectPanel):
             self.upgradeBar['value'] = upgradeFrac
         else:
             self.upgradeLbl.setText("Rockets")
-            rocketsFrac = self.object.numRockets / self.object.maxRockets
+            rocketsFrac = self.object.ammoRockets / self.object.maxAmmoRockets
             self.upgradeBar['value'] = rocketsFrac
 
     def enterBuiltActive(self):

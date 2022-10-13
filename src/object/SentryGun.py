@@ -8,6 +8,9 @@ from tf.tfbase import TFGlobals, TFLocalizer
 from tf.tfbase.TFGlobals import Contents, DamageType
 from tf.weapon.WeaponEffects import makeMuzzleFlash
 
+if not IS_CLIENT:
+    from .DistributedSentryRocket import DistributedSentryRocketAI
+
 from .ObjectState import ObjectState
 from .ObjectType import ObjectType
 
@@ -75,8 +78,8 @@ class SentryGun(BaseObject):
         self.health = self.maxHealth
         self.ammoShells = SENTRYGUN_MAX_SHELLS_1
         self.maxAmmoShells = self.ammoShells
-        self.numRockets = SENTRYGUN_MAX_ROCKETS
-        self.maxRockets = self.numRockets
+        self.ammoRockets = SENTRYGUN_MAX_ROCKETS
+        self.maxAmmoRockets = self.ammoRockets
         self.viewOffset = SENTRYGUN_EYE_OFFSET_LEVEL_1
         self.numKills = 0
         self.numAssists = 0
@@ -89,7 +92,7 @@ class SentryGun(BaseObject):
             self.addInterpolatedVar(self.ivYaw, self.getLookYaw, self.setLookYaw)
         self.enemy = None
 
-        self.maxLevel = 2
+        self.maxLevel = 3
 
     def loadModelBBoxIntoHull(self):
         # Override the collision hull in the model.
@@ -119,12 +122,25 @@ class SentryGun(BaseObject):
                     # Cap to the amount we can add
                     amountToAdd = min(40, maxShellsCanAfford)
                     amountToAdd = min(self.maxAmmoShells - self.ammoShells, amountToAdd)
-                    player.metal -= amountToAdd
+                    player.metal -= amountToAdd * metal_per_shell
                     self.ammoShells += amountToAdd
                     if amountToAdd > 0:
                         didWork = True
 
-                # TODO: one rocket per two ammo
+                # Add rockets.
+                if self.ammoRockets < self.maxAmmoRockets and self.level == 3 and player.metal > 0:
+                    maxRocketsPlayerCanAfford = int(player.metal / metal_per_rocket)
+
+                    amountToAdd = min(8, maxRocketsPlayerCanAfford)
+                    amountToAdd = min(self.maxAmmoRockets - self.ammoRockets, amountToAdd)
+
+                    player.metal -= amountToAdd * metal_per_rocket
+
+                    self.ammoRockets += amountToAdd
+
+                    if amountToAdd > 0:
+                        didWork = True
+
             return didWork
 
         def onUpgrade(self):
@@ -293,7 +309,7 @@ class SentryGun(BaseObject):
 
         def foundTarget(self, target, soundCenter):
             self.enemy = target
-            if (self.ammoShells > 0) or (self.numRockets > 0 and self.level == 3):
+            if (self.ammoShells > 0) or (self.ammoRockets > 0 and self.level == 3):
                 # Play one sound to everyone but the target.
                 if target.__class__.__name__ == 'DistributedTFPlayerAI':
                     # Play a specific sound just to the target.
@@ -353,7 +369,34 @@ class SentryGun(BaseObject):
         def fire(self):
             aimDir = Vec3()
 
-            # TODO: Fire rockets lvl 3
+            # Level 3 turrets fire rockets every 3 seconds
+            if self.level == 3 and self.ammoRockets > 0 and self.nextRocketAttack < globalClock.frame_time:
+                trans = self.character.getAttachmentNetTransform(2)
+                src = trans.getPos()
+
+                aimDir = self.enemy.getWorldSpaceCenter() - src
+                aimDir.normalize()
+                q = Quat()
+                lookAt(q, aimDir)
+
+                rocket = DistributedSentryRocketAI()
+                rocket.setPos(src)
+                rocket.setQuat(q)
+                rocket.inflictor = self
+                rocket.shooter = self.getBuilder()
+                rocket.damage = 100
+                # Don't damage the sentry with its own rocket.
+                # We can damage the engineer, though.
+                rocket.ignoreEntity = self
+                base.air.generateObject(rocket, self.zoneId)
+
+                # Setup next rocket shot
+                self.nextRocketAttack = globalClock.frame_time + 3
+                self.ammoRockets -= 1
+
+                # Inform clients that we fired some rockets.  Makes them play
+                # the rocket fire animation and the sound effect.
+                self.sendUpdate('fireRockets')
 
             # All turrets fire shells
             if self.ammoShells > 0:
@@ -524,6 +567,17 @@ class SentryGun(BaseObject):
                     if random.uniform(0, 1) < 0.3:
                         self.goalAngles.y = -random.randint(-10, 10)
     else:
+        def fireRockets(self):
+            """
+            Event broadcasted from the server to inform us that the sentry just
+            fired a rocket.
+            """
+
+            # Play the rocket firing animation and the rocket fire sound
+            # effect.
+            self.setAnim(activity = Activity.Object_Fire2, layer = SENTRYGUN_ROCKET_ANIM_LAYER)
+            self.emitSoundSpatial("Building_Sentrygun.FireRocket")
+
         def RecvProxy_firingState(self, state):
             self.firingState = state
             self.updateFiringAnim()

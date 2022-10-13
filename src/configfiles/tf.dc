@@ -59,6 +59,7 @@ from tf.object.DistributedDispenser import DistributedDispenser/AI
 from tf.object.DistributedTeleporter import DistributedTeleporter/AI
 from tf.object.DistributedTeleporter import DistributedTeleporterEntrance/AI
 from tf.object.DistributedTeleporter import DistributedTeleporterExit/AI
+from tf.object.DistributedSentryRocket import DistributedSentryRocket/AI
 from tf.weapon.BaseRocket import BaseRocket/AI
 from tf.weapon.RocketProjectile import RocketProjectile/AI
 from tf.weapon.DPipeBombProjectile import DPipeBombProjectile/AI
@@ -346,8 +347,8 @@ dclass BaseObject : DistributedChar {
 dclass SentryGun : BaseObject {
   uint16 ammoShells;
   uint16 maxAmmoShells;
-  uint16 numRockets;
-  uint16 maxRockets;
+  uint16 ammoRockets;
+  uint16 maxAmmoRockets;
   uint16 numKills;
   uint16 numAssists;
   uint16 lookPitch / 10000;
@@ -389,6 +390,10 @@ dclass BaseRocket : DistributedChar {
 
 dclass RocketProjectile : BaseRocket {
 };
+
+dclass DistributedSentryRocket : BaseRocket {
+};
+
 
 dclass World : DistributedEntity {
 };
