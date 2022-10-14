@@ -16,6 +16,7 @@ from tf.tfgui.TFHud import TFHud
 from tf.tfgui.KillFeed import KillFeed
 from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfgui import CrossHairInfo
+from tf.tfgui.DamageNumbers import DamageNumbers
 from tf.tfbase import TFGlobals, TFFilters
 
 from direct.distributed2.ClientConfig import *
@@ -36,6 +37,8 @@ spec_freeze_distance_max = ConfigVariableDouble("spec-freeze-distance-max", 200)
 
 mouse_sensitivity = ConfigVariableDouble("mouse-sensitivity", 3.0)
 mouse_raw_input = ConfigVariableBool("mouse-raw-input", True)
+
+tf_show_damage_numbers = ConfigVariableBool("tf-show-damage-numbers", False)
 
 # My nvidia so is crashing when I enable relative mode on linux,
 # so doing MConfined on linux for now.
@@ -103,6 +106,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.classMenu = None
         self.teamMenu = None
         self.crossHairInfo = CrossHairInfo.CrossHairInfo()
+        self.dmgNumbers = DamageNumbers()
 
         self.wasLastWeaponSwitchPressed = False
 
@@ -136,6 +140,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
     #def disableController(self):
     #    pass
+
+    def onDamagedOther(self, amount, pos):
+        if tf_show_damage_numbers.value:
+            self.dmgNumbers.addDamage(amount, pos)
 
     def lagCompDebug(self, positions):
         if self.serverLagCompDebugRoot:
@@ -673,6 +681,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
     def delete(self):
         self.disableControls()
+        if self.dmgNumbers:
+            self.dmgNumbers.cleanup()
+            self.dmgNumbers = None
         if self.crossHairInfo:
             self.crossHairInfo.destroy()
             self.crossHairInfo = None

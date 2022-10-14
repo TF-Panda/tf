@@ -124,6 +124,11 @@ class BaseObject(BaseClass):
 
             self.health = max(0, self.health - info.damage)
 
+            if info.inflictor and info.inflictor.isPlayer():
+                info.inflictor.onDamagedOther(self, info.damage)
+            elif info.attacker and info.attacker.isPlayer():
+                info.attacker.onDamagedOther(self, info.damage)
+
             if self.health <= 0:
                 # Died.
                 self.onKilled(info)

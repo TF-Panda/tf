@@ -93,6 +93,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.clientSideAnimation = True
 
+    def onDamagedOther(self, other, dmg):
+        self.sendUpdate('onDamagedOther', [dmg, other.getPos() + other.viewOffset])
+
     def __conditionThinkAI(self, task):
         for cond, timeLeft in self.conditions.items():
             if timeLeft != -1:
@@ -456,6 +459,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 if self.tfClass == Class.HWGuy:
                     # Heavies take less push from non sentry guns.
                     force *= 0.5
+
+        if info.inflictor and info.inflictor.isPlayer() and info.inflictor != self:
+            info.inflictor.onDamagedOther(self, info.damage)
+        elif info.attacker and info.attacker.isPlayer() and info.attacker != self:
+            info.attacker.onDamagedOther(self, info.damage)
 
         #print("subtracting", int(info.damage + 0.5), "from tf player hp")
         self.health -= int(info.damage + 0.5)
