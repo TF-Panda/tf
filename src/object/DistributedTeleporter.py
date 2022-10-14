@@ -549,14 +549,14 @@ class DistributedTeleporterEntrance(DistributedTeleporter):
     def __init__(self):
         DistributedTeleporter.__init__(self)
         self.objectType = ObjectType.TeleporterEntrance
-        self.objectName = 'Teleporter Entrance'
+        self.objectName = TFLocalizer.TeleporterEntrance
 
 class DistributedTeleporterExit(DistributedTeleporter):
 
     def __init__(self):
         DistributedTeleporter.__init__(self)
         self.objectType = ObjectType.TeleporterExit
-        self.objectName = 'Teleporter Exit'
+        self.objectName = TFLocalizer.TeleporterExit
 
 if not IS_CLIENT:
     DistributedTeleporterAI = DistributedTeleporter
