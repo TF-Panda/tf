@@ -41,7 +41,7 @@ class MenuChar(Actor):
         sound, info = Sounds.createSoundByName(soundName, getInfo=True)
         if not sound:
             return
-        self.soundEmitter.registerSound(sound, None if info.channel == Sounds.Channel.CHAN_STATIC else info.channel)
+        self.soundEmitter.registerSound(sound, info.channel)
         sound.play()
 
     def cleanup(self):

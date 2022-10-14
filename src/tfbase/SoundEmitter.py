@@ -7,6 +7,12 @@ from direct.showbase.DirectObject import DirectObject
 buildListPColl = PStatCollector("SoundEmitter:BuildSpatialList")
 updateAttributesPColl = PStatCollector("SoundEmitter:Update3DAttributes")
 
+from .Sounds import Channel
+
+# Set of channel ID's that allow more than one sound playing on the
+# channel at a time.
+NoOverrideChannels = (Channel.CHAN_STATIC, Channel.CHAN_AUTO)
+
 class SoundData:
     pass
 
@@ -30,7 +36,7 @@ class SoundEmitter(DirectObject):
         self.chanSounds = {}
         # Separate list of sounds that don't play on any channel.  There is
         # no limit to the number of simultaneously playing general sounds.
-        # Analagous to CHAN_STATIC.
+        # Analagous to CHAN_STATIC/CHAN_AUTO.
         self.generalSounds = []
 
         self.spatialSounds = set()
@@ -89,6 +95,10 @@ class SoundEmitter(DirectObject):
         on the given channel.  If channel is None, the sound is not
         assigned to any channel and will not stop any existing sounds.
         """
+
+        if channel in NoOverrideChannels:
+            # This channel doesn't override sounds on the same channel.
+            channel = None
 
         if channel is not None:
             # Sound is being played on a channel.  Stop existing sound on that

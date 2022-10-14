@@ -900,7 +900,7 @@ class DistributedEntity(BaseClass, NodePath):
         def emitSound_sv(self, soundIndex, waveIndex, volume, pitch, chan, loop):
             sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch)
             if sound is not None:
-                self.soundEmitter.registerSound(sound, None if chan == Sounds.Channel.CHAN_STATIC else chan)
+                self.soundEmitter.registerSound(sound,chan)
                 sound.setLoop(bool(loop))
                 sound.play()
 
@@ -910,7 +910,7 @@ class DistributedEntity(BaseClass, NodePath):
                 return
 
             self.soundEmitter.registerSound(sound,
-                None if chan == Sounds.Channel.CHAN_STATIC else chan,
+                chan,
                 True, offset)
             sound.setLoop(bool(loop))
             sound.play()
@@ -924,7 +924,7 @@ class DistributedEntity(BaseClass, NodePath):
             if sound is not None:
                 if chan is None:
                     chan = info.channel
-                self.soundEmitter.registerSound(sound, None if chan == Sounds.Channel.CHAN_STATIC else chan)
+                self.soundEmitter.registerSound(sound, chan)
                 if volume is not None:
                     sound.setVolume(volume)
                 sound.setLoop(loop)
@@ -945,7 +945,7 @@ class DistributedEntity(BaseClass, NodePath):
             if chan is None:
                 chan = info.channel
             self.soundEmitter.registerSound(sound,
-                None if chan == Sounds.Channel.CHAN_STATIC else chan,
+                chan,
                 True, offset)
             sound.play()
             return sound

@@ -46,15 +46,15 @@ class Channel(IntEnum):
 
     Invalid = -1
 
-    CHAN_AUTO = auto()
-    CHAN_WEAPON = auto()
-    CHAN_VOICE = auto()
-    CHAN_ITEM = auto()
-    CHAN_BODY = auto()
-    CHAN_STREAM = auto()
-    CHAN_STATIC = auto()
-    CHAN_VOICE_BASE = auto()
-    CHAN_VOICE2 = auto()
+    CHAN_AUTO = 0
+    CHAN_WEAPON = 1
+    CHAN_VOICE = 2
+    CHAN_ITEM = 3
+    CHAN_BODY = 4
+    CHAN_STREAM = 5
+    CHAN_STATIC = 6
+    CHAN_VOICE_BASE = 7
+    CHAN_VOICE2 = 8
 
 class SoundLevel(IntEnum):
 
@@ -109,7 +109,7 @@ class SoundInfo:
         # Pitch range.
         self.pitch = [1.0, 1.0]
         # The channel on the SoundEmitter that the sound plays on.
-        # If not CHAN_STATIC, overrides the currently playing sound on that
+        # If not CHAN_STATIC or CHAN_AUTO, overrides the currently playing sound on that
         # channel.
         self.channel = Channel.CHAN_AUTO
         self.soundLevel = 0

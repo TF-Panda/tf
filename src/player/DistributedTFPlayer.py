@@ -333,15 +333,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.currentSpeech = None
 
     def speak(self, soundIndex):
-        # This automatically stops the currently playing sound on the voice
-        # channel.
         spatial = (self != base.localAvatar)
         info = Sounds.AllSounds[soundIndex]
         data = Sounds.createSound(info, spatial=spatial, getWave=True)
         if not data:
             return
         sound, wave = data
-        self.soundEmitter.registerSound(sound, Sounds.Channel.CHAN_VOICE, spatial, self.viewOffset)
+        self.stopSpeech()
+        self.soundEmitter.registerSound(sound, Sounds.Channel.CHAN_AUTO, spatial, self.viewOffset)
         self.currentSpeech = sound
         if self.talker:
             self.talker.speak(sound, sentences.getSentence(str(wave.filename)))
