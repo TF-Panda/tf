@@ -63,7 +63,7 @@ class TFBase(ShowBase, FSM):
         if self.config.GetBool('want-notify-view', 0):
             self.notifyView = NotifyView()
 
-        TextNode.setDefaultFont(self.loader.loadFont("models/fonts/TF2.ttf"))
+        TextNode.setDefaultFont(TFGlobals.getTF2Font())
 
         if base.config.GetBool("want-pstats-hotkey", False):
             self.accept('shift-s', self.togglePStats)

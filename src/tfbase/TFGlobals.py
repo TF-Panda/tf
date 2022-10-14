@@ -197,12 +197,18 @@ def approachAngle(target, value, speed):
 
     return value
 
+def configureFont(fnt, ppu=48):
+    fnt.setPixelsPerUnit(ppu)
+    fnt.setNativeAntialias(True)
+    fnt.setAnisotropicDegree(16)
+    fnt.setTextureMargin(4)
+
 TF2Font = None
 def getTF2Font():
     global TF2Font
     if not TF2Font:
         TF2Font = DynamicTextFont("models/fonts/TF2.ttf")
-        TF2Font.setPixelsPerUnit(128)
+        configureFont(TF2Font)
     return TF2Font
 
 TF2BuildFont = None
@@ -210,7 +216,7 @@ def getTF2BuildFont():
     global TF2BuildFont
     if not TF2BuildFont:
         TF2BuildFont = DynamicTextFont("models/fonts/tf2build.ttf")
-        TF2BuildFont.setPixelsPerUnit(128)
+        configureFont(TF2BuildFont, 128)
     return TF2BuildFont
 
 TF2SecondaryFont = None
@@ -218,11 +224,7 @@ def getTF2SecondaryFont():
     global TF2SecondaryFont
     if not TF2SecondaryFont:
         TF2SecondaryFont = DynamicTextFont("models/fonts/TF2secondary.ttf")
-        TF2SecondaryFont.setPixelsPerUnit(48)
-        TF2SecondaryFont.setNativeAntialias(True)
-        #TF2SecondaryFont.setMinfilter(SamplerState.FTLinearMipmapLinear)
-        TF2SecondaryFont.setAnisotropicDegree(16)
-        TF2SecondaryFont.setTextureMargin(4)
+        configureFont(TF2SecondaryFont)
     return TF2SecondaryFont
 
 TF2ProfessorFont = None
@@ -230,7 +232,7 @@ def getTF2ProfessorFont():
     global TF2ProfessorFont
     if not TF2ProfessorFont:
         TF2ProfessorFont = DynamicTextFont("models/fonts/tf2professor.ttf")
-        TF2ProfessorFont.setPixelsPerUnit(128)
+        configureFont(TF2ProfessorFont)
     return TF2ProfessorFont
 
 def getAxisViz():
