@@ -149,15 +149,16 @@ class TFWeaponMelee(TFWeapon):
             if not IS_CLIENT and (ent is not None):
                 dmgType = DamageType.Bullet | DamageType.NeverGib | DamageType.Club
                 damage = self.getMeleeDamage(ent)
-                customDamage = -1
-                info = TakeDamageInfo()
-                info.attacker = self.player
-                info.inflictor = self.player
-                info.setDamage(damage)
-                info.damageType = dmgType
-                calculateMeleeDamageForce(info, forward, swingEnd, 1.0 / damage * tf_meleeattackforcescale)
-                ent.dispatchTraceAttack(info, forward, block)
-                applyMultiDamage()
+                if damage > 0:
+                    customDamage = -1
+                    info = TakeDamageInfo()
+                    info.attacker = self.player
+                    info.inflictor = self.player
+                    info.setDamage(damage)
+                    info.damageType = dmgType
+                    calculateMeleeDamageForce(info, forward, swingEnd, 1.0 / damage * tf_meleeattackforcescale)
+                    ent.dispatchTraceAttack(info, forward, block)
+                    applyMultiDamage()
 
                 self.onEntityHit(ent)
 
