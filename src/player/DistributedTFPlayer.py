@@ -10,6 +10,7 @@ from tf.tfbase import Sounds, TFGlobals
 from tf.actor.Eyes import Eyes
 from tf.actor.Expressions import Expressions
 from .PlayerGibs import PlayerGibs
+from .TFPlayerState import TFPlayerState
 
 #from test_talker import Talker
 
@@ -64,6 +65,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         DistributedTFPlayerShared.__init__(self)
 
         self.animState = TFPlayerAnimState(self)
+
+        self.prevPlayerState = self.playerState
 
         self.talker = None
         self.eyes = None
@@ -196,13 +199,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.controller.foot_position = self.getPos()
 
     def becomeRagdoll(self, *args, **kwargs):
-        self.disableController()
         DistributedChar.becomeRagdoll(self, *args, **kwargs)
-        self.hide()
         self.deathType = self.DTRagdoll
-        if self.overhealedEffect:
-            self.overhealedEffect.softStop()
-            self.overhealedEffect = None
         if self.ragdoll:
             self.ragdoll[0].modelNp.showThrough(DirectRender.ShadowCameraBitmask)
             # Re-direct lip-sync to ragdoll.
@@ -213,16 +211,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
                 # Remove idle expression so ragdoll goes to blank face after
                 # pain.
                 self.expressions.clearExpression('idle')
-        if self.eyes:
-            self.eyes.disable()
 
     def gib(self):
-        self.disableController()
         self.deathType = self.DTGibs
-        self.hide()
-        if self.overhealedEffect:
-            self.overhealedEffect.softStop()
-            self.overhealedEffect = None
         if self.gibs:
             self.gibs.destroy()
             self.gibs = None
@@ -230,28 +221,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if cdata.hasAttribute("gibs"):
             gibInfo = cdata.getAttributeValue("gibs").getList()
             self.gibs = PlayerGibs(self.getPos(base.render), self.getHpr(base.render), self.skin, gibInfo)
-            if self.eyes:
-                self.eyes.disable()
 
     def isDead(self):
-        return (self.playerState == self.StateDead) or DistributedChar.isDead(self)
-
-    def respawn(self):
-        if self.ragdoll:
-            # Return lip-sync to actual model.
-            if self.talker:
-                self.talker.setCharacter(self.character)
-            if self.expressions:
-                self.expressions.character = self.character
-        self.gibs = None
-        self.deathType = self.DTNone
-        self.show()
-        self.enableController()
-        if self.eyes:
-            self.eyes.enable()
-        if self.expressions:
-            self.expressions.resetExpressions()
-            self.expressions.pushExpression('idle', 1.0, oscillation=0.4, oscillationSpeed=1.5)
+        return (self.playerState != TFPlayerState.Playing) or DistributedChar.isDead(self)
 
     def RecvProxy_activeWeapon(self, index):
         self.setActiveWeapon(index)
@@ -277,21 +249,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         wpn = base.cr.doId2do.get(wpnId)
         if wpn:
             wpn.activate()
-
-    #def getVelocity(self):
-    #    """
-    #    Returns the world-space linear velocity of the player.
-    #    """
-
-    #    ctx = InterpolationContext()
-    #    ctx.enableExtrapolation(False)
-    #    ctx.setLastTimestamp(base.cr.lastServerTickTime)
-    #    vel = Vec3()
-    #    self.ivPos.getDerivativeSmoothVelocity(vel, globalClock.frame_time)
-        #q = self.getQuat(NodePath())
-        #q.invertInPlace()
-        #vel = q.xform(vel)
-    #    return -vel
 
     def setLookPitch(self, pitch):
         self.lookPitch = pitch
@@ -412,8 +369,40 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         return task.cont
 
+    def changePlayerState(self, newState, prevState):
+        if prevState == TFPlayerState.Playing:
+            # Leaving the tangible world.  We died or something.
+            self.disableController()
+            self.removeTask('playerAnimState')
+            if self.eyes:
+                self.eyes.disable()
+            if self.overhealedEffect:
+                self.overhealedEffect.softStop()
+                self.overhealedEffect = None
+            self.reparentTo(base.hidden)
+
+        if newState == TFPlayerState.Playing:
+            # Entering the tangible world.
+            self.deathType = self.DTNone
+            self.gibs = None
+            self.enableController()
+            self.addTask(self.__updateAnimState, 'playerAnimState', appendTask=True, sort=31, sim=False)
+            self.reparentTo(base.dynRender)
+            if self.eyes:
+                self.eyes.enable()
+            if self.expressions:
+                self.expressions.character = self.character
+                self.expressions.resetExpressions()
+                self.expressions.pushExpression('idle', 1.0, oscillation=0.4, oscillationSpeed=1.5)
+            if self.talker:
+                self.talker.setCharacter(self.character)
+
     def postDataUpdate(self):
         DistributedChar.postDataUpdate(self)
+
+        if self.prevPlayerState != self.playerState:
+            self.changePlayerState(self.playerState, self.prevPlayerState)
+            self.prevPlayerState = self.playerState
 
         if self.health > self.maxHealth:
             if not self.overhealedEffect and not self.isDead():
@@ -427,7 +416,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         DistributedChar.announceGenerate(self)
         DistributedTFPlayerShared.announceGenerate(self)
         self.addTask(self.__updateTalker, 'talker', appendTask=True, sim=False)
-        self.addTask(self.__updateAnimState, 'playerAnimState', appendTask=True, sort=31, sim=False)
 
     def disable(self):
         if self.expressions:
@@ -445,7 +433,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.ivLookPitch = None
         self.ivLookYaw = None
         self.ivVel = None
-        self.removeTask("animUpdate")
+        self.removeTask("playerAnimState")
         self.removeTask("talker")
         DistributedTFPlayerShared.disable(self)
         DistributedChar.disable(self)

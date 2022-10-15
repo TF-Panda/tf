@@ -241,6 +241,8 @@ dclass DistributedTFPlayer : DistributedChar {
 
   uint8 metal;
 
+  float64 respawnTime;
+
   // 46 bytes
 
   // Client request to change class.

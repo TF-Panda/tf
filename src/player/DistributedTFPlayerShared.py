@@ -20,6 +20,8 @@ from tf.movement.MoveType import MoveType
 from tf.movement.GameMovement import g_game_movement
 from tf.movement.MoveData import MoveData
 
+from .TFPlayerState import TFPlayerState
+
 import math
 
 tf_max_health_boost = 1.5
@@ -63,7 +65,8 @@ class DistributedTFPlayerShared:
 
         self.viewModel = None
 
-        self.playerState = self.StateNone
+        #self.playerState = self.StateNone
+        self.playerState = TFPlayerState.Fresh
 
         self.viewAngles = Vec3(0)
 
@@ -115,6 +118,8 @@ class DistributedTFPlayerShared:
 
         self.metal = 0
         self.maxMetal = 200
+
+        self.respawnTime = 0.0
 
     def __conditionThink(self, task):
 
@@ -424,7 +429,7 @@ class DistributedTFPlayerShared:
 
     def announceGenerate(self):
         self.classInfo = ClassInfos[self.tfClass]
-        self.setupController()
+        #self.setupController()
 
     def runPlayerCommand(self, command, deltaTime):
         if not self.controller:

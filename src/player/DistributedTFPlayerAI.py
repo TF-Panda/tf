@@ -12,6 +12,7 @@ from .PlayerAnimEvent import PlayerAnimEvent
 from .TFClass import *
 from .DViewModelAI import DViewModelAI
 from .ObserverMode import ObserverMode
+from .TFPlayerState import TFPlayerState
 from tf.weapon.TakeDamageInfo import addMultiDamage, TakeDamageInfo
 
 from tf.tfbase import TFGlobals, Sounds, TFFilters
@@ -36,6 +37,8 @@ tf_boost_drain_time = 15.0
 TF_DEATH_ANIMATION_TIME = 2.0
 spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
 spec_freeze_traveltime = ConfigVariableDouble("spec-freeze-travel-time", 0.4)
+tf_respawn_time = ConfigVariableDouble("tf-respawn-time", 5.0)
+tf_spectate_enemies = ConfigVariableBool("tf-spectate-enemies", True)
 
 class CommandContext:
     def __init__(self):
@@ -92,6 +95,67 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.lastDamageTime = 0.0
 
         self.clientSideAnimation = True
+
+    def changePlayerState(self, newState, prevState):
+        if prevState == TFPlayerState.Playing:
+            self.disableController()
+        elif prevState == TFPlayerState.Died:
+            self.removeTask('freezeFrameTask')
+            self.observerTarget = -1
+            self.observerMode = ObserverMode.Off
+        elif prevState == TFPlayerState.Spectating:
+            self.removeTask('respawn')
+            self.observerTarget = -1
+
+        if newState == TFPlayerState.Playing:
+            self.enableController()
+            self.respawnTime = 0.0
+
+        elif newState == TFPlayerState.Spectating:
+            self.pickSpectatorTarget()
+
+    def setPlayerState(self, state):
+        if state != self.playerState:
+            self.changePlayerState(state, self.playerState)
+            self.playerState = state
+
+    def pickSpectatorTarget(self):
+        """
+        Picks an initial player or object for this player to start spectating
+        after they die.
+        """
+
+        pos = self.getPos()
+
+        self.observerTarget = -1
+
+        # For Engineers, spectate the closest building.
+        if self.tfClass == Class.Engineer:
+            buildings = []
+            for doId in self.objects:
+                bldg = base.air.doId2do.get(doId)
+                if bldg:
+                    buildings.append(bldg)
+
+            if buildings:
+                buildings.sort(key=lambda x: (pos - x.getPos()).lengthSquared())
+                self.observerTarget = buildings[0].doId
+                return
+
+        # For non-Engineers, or Engineers with no buildings, spectate the
+        # closest same-class teammate, or just the closest teammate if nobody
+        # else is playing the same class.
+        teammates = [x for x in base.game.playersByTeam[self.team] if x != self]
+        if tf_spectate_enemies.value:
+            teammates += base.game.playersByTeam[not self.team]
+        if teammates:
+            teammates.sort(key=lambda x: (pos - x.getPos()).lengthSquared())
+
+            sameClass = [x for x in teammates if x.tfClass == self.tfClass]
+            if sameClass:
+                self.observerTarget = sameClass[0].doId
+            else:
+                self.observerTarget = teammates[0].doId
 
     def onDamagedOther(self, other, dmg):
         self.sendUpdate('onDamagedOther', [dmg, other.getPos() + other.viewOffset])
@@ -599,10 +663,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.sendUpdate('playerAnimEvent', [event, data])
 
     def isDead(self):
-        return (self.playerState == self.StateDead) or DistributedCharAI.isDead(self)
+        return (self.playerState != TFPlayerState.Playing) or DistributedCharAI.isDead(self)
 
     def die(self, info = None):
-        if self.playerState == self.StateDead:
+        if self.playerState != TFPlayerState.Playing:
             return
 
         if self.flag:
@@ -632,10 +696,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.sendUpdate('gib', [])
         else:
             self.sendUpdate('becomeRagdoll', [self.forceJoint, dmgPos, self.bulletForce, self.velocity])
-        self.disableController()
+       # self.disableController()
 
-        # Respawn after 5 seconds.
-        self.addTask(self.respawnTask, 'respawn', appendTask = True)
+        # Wait for death cam/freeze frame to end, then go into spectate mode and
+        # await respawn.
+        self.addTask(self.freezeFrameTask, 'freezeFrameTask', appendTask = True)
 
         if info:
             if info.inflictor and info.inflictor.isObject():
@@ -675,12 +740,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if pain:
             self.d_speak(pain)
 
-        self.playerState = self.StateDead
+        self.setPlayerState(TFPlayerState.Died)
 
-    def isRespawnInProgress(self):
-        return self.hasTask('respawn')
-
-    def respawnTask(self, task):
+    def freezeFrameTask(self, task):
 
         now = globalClock.frame_time
 
@@ -704,23 +766,35 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if now < freezeEnd:
             return task.cont
 
-        self.observerTarget = -1
-        self.observerMode = ObserverMode.Off
-
-        # Respawn now.
-
-        self.removeTask('respawn')
-
-        if self.pendingChangeTeam != self.team and self.pendingChangeTeam != TFTeam.NoTeam:
-            self.changeTeam(self.pendingChangeTeam, respawn=False)
-            self.pendingChangeTeam = TFTeam.NoTeam
-        if self.pendingChangeClass != self.tfClass and self.pendingChangeClass != Class.Invalid:
-            self.changeClass(self.pendingChangeClass, respawn=False)
-            self.pendingChangeClass = Class.Invalid
-
-        self.respawn()
+        # Spectate until we respawn.
+        self.setPlayerState(TFPlayerState.Spectating)
+        self.respawnTime = now + tf_respawn_time.value
+        self.addTask(self.__respawnTask, 'respawn', appendTask=True)
 
         return task.done
+
+    def __respawnTask(self, task):
+        #print("respawn task", task.time)
+        if not base.game.isRespawnAllowed():
+            # Round ended while we were awaiting respawn.
+            # Abort our timed respawn and await new round.
+            self.respawnTime = -1
+            return task.done
+
+        if globalClock.frame_time >= self.respawnTime:
+            # Respawn now.
+            self.doRespawn()
+            return task.done
+
+        return task.cont
+
+    def doRespawn(self):
+        if self.pendingChangeTeam != self.team and self.pendingChangeTeam != TFTeam.NoTeam:
+            self.doChangeTeam(self.pendingChangeTeam, respawn=False)
+        if self.pendingChangeClass != self.tfClass and self.pendingChangeClass != Class.Invalid:
+            self.doChangeClass(self.pendingChangeClass, respawn=False)
+
+        self.respawn()
 
     def respawn(self, sendRespawn = True):
         # Refill health
@@ -757,10 +831,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Make client teleport player to respawn location.
         self.teleport()
 
-        if sendRespawn:
-            self.sendUpdate('respawn')
-        self.playerState = self.StateAlive
-        self.enableController()
+        #if sendRespawn:
+        #    self.sendUpdate('respawn')
+        self.setPlayerState(TFPlayerState.Playing)
+        #self.enableController()
 
     def destroyObject(self, index):
         if not self.hasObject(index):
@@ -786,12 +860,22 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if team not in (TFTeam.Red, TFTeam.Blue):
             return
 
-        if self.playerState == self.StateAlive:
+        if self.playerState == TFPlayerState.Playing:
             self.die()
             self.pendingChangeTeam = team
             return
-        elif self.isRespawnInProgress():
+        elif self.playerState != TFPlayerState.Fresh:
             self.pendingChangeTeam = team
+            return
+
+        self.doChangeTeam(team, respawn)
+
+    def doChangeTeam(self, team, respawn=True):
+        if team == self.team:
+            self.pendingChangeTeam = TFTeam.NoTeam
+            return
+
+        if team not in (TFTeam.Red, TFTeam.Blue):
             return
 
         self.destroyAllObjects()
@@ -816,6 +900,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if respawn:
             self.respawn()
 
+        self.pendingChangeTeam = TFTeam.NoTeam
+
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
         if (cls == self.tfClass) and not force:
             self.pendingChangeClass = Class.Invalid
@@ -824,12 +910,22 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if (cls < Class.Scout) or (cls > Class.Spy):
             return
 
-        if self.playerState == self.StateAlive:
+        if self.playerState == TFPlayerState.Playing:
             self.die()
             self.pendingChangeClass = cls
             return
-        elif self.isRespawnInProgress():
+        elif self.playerState != TFPlayerState.Fresh:
             self.pendingChangeClass = cls
+            return
+
+        self.doChangeClass(cls, respawn, force, sendRespawn, giveWeapons)
+
+    def doChangeClass(self, cls, respawn=True, force=False, sendRespawn=True, giveWeapons=True):
+        if (cls == self.tfClass) and not force:
+            self.pendingChangeClass = Class.Invalid
+            return
+
+        if (cls < Class.Scout) or (cls > Class.Spy):
             return
 
         # Kill any objects that were built by the player.
@@ -851,6 +947,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         if respawn:
             self.respawn(sendRespawn)
+
+        self.pendingChangeClass = Class.Invalid
 
     def giveClassWeapons(self):
         from tf.weapon import WeaponRegistry

@@ -124,6 +124,10 @@ class CrossHairInfo:
             self.destroyEntInfo()
 
     def setForceEnt(self, entId, ctx):
+        if entId == -1:
+            self.clearEnt()
+            return
+
         self.forceEntId = entId
         self.context = ctx
         self.ent = base.cr.doId2do.get(entId)
@@ -159,8 +163,8 @@ class CrossHairInfo:
             self.clearEnt()
 
     def update(self, task):
-        if base.localAvatar.isDead():
-            return task.cont
+        #if base.localAvatar.isDead():
+        #    return task.cont
 
         if self.forceEntId != -1:
             if not self.gui:

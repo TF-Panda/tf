@@ -58,6 +58,14 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.playersByTeam = {0: [], 1: []}
         self.objectsByTeam = {0: [], 1: []}
 
+    def isRespawnAllowed(self):
+        """
+        Returns true if dead players are allowed to respawn at this point in
+        the game.  If the round ended, players must wait until the new round
+        to respawn.
+        """
+        return self.roundState != RoundState.Ended
+
     def inSetup(self):
         return self.roundState == RoundState.Setup
 

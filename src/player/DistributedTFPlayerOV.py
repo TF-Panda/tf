@@ -18,6 +18,7 @@ from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfgui import CrossHairInfo
 from tf.tfgui.DamageNumbers import DamageNumbers
 from tf.tfbase import TFGlobals, TFFilters
+from .TFPlayerState import TFPlayerState
 
 from direct.distributed2.ClientConfig import *
 from direct.showbase.InputStateGlobal import inputState
@@ -70,7 +71,7 @@ class PredictionError:
         self.error = Vec3()
 
 TF_DEATH_ANIMATION_TIME = 2.0
-CHASE_CAM_DISTANCE = 96.0
+CHASE_CAM_DISTANCE = 128.0
 
 class DistributedTFPlayerOV(DistributedTFPlayer):
 
@@ -137,6 +138,70 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.serverLagCompDebugRoot = None
         self.clientLagCompDebugRoot = None
+
+        self.respawnTimeLbl = None
+
+    def RecvProxy_observerTarget(self, doId):
+        self.observerTarget = doId
+        if self.playerState == TFPlayerState.Spectating:
+            self.crossHairInfo.setForceEnt(self.observerTarget, CrossHairInfo.CTX_HOVERED)
+
+    def changePlayerState(self, newState, prevState):
+        DistributedTFPlayer.changePlayerState(self, newState, prevState)
+
+        if prevState == TFPlayerState.Playing:
+            # Hide viewmodel and HUD.
+            if self.viewModel:
+                self.viewModel.hide()
+            self.hud.hideHud()
+            self.removeTask('updateCSInfo')
+            self.crossHairInfo.clearEnt()
+            self.ignore('wheel_up')
+            self.ignore('wheel_down')
+            self.ignore('e')
+
+        elif prevState == TFPlayerState.Spectating:
+            self.crossHairInfo.clearEnt()
+            if self.respawnTimeLbl:
+                self.respawnTimeLbl.destroy()
+                self.respawnTimeLbl = None
+            self.removeTask('respawnTimeLabel')
+
+        if newState == TFPlayerState.Playing:
+            self.hide()
+            if self.viewModel:
+                self.viewModel.show()
+            self.hud.showHud()
+            self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)
+            self.accept('wheel_up', self.wpnSelect.hoverPrevWeapon)
+            self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
+            self.accept('e', self.sendUpdate, ['voiceCommand', [VoiceCommand.Medic]])
+
+        elif newState == TFPlayerState.Spectating:
+            self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)
+            if self.observerTarget != -1:
+                self.crossHairInfo.setForceEnt(self.observerTarget, CrossHairInfo.CTX_HOVERED)
+            if self.respawnTime != 0:
+                self.respawnTimeLbl = OnscreenText('', pos=(0, 0.75), fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), font=TFGlobals.getTF2SecondaryFont())
+                self.updateRespawnTimeLbl()
+                self.addTask(self.__respawnLabelTask, 'respawnTimeLabel', appendTask=True, sim=True)
+
+    def updateRespawnTimeLbl(self):
+        if self.respawnTimeLbl:
+            text = "Respawn in: "
+            if self.respawnTime < 0:
+                text += "Wait for new round"
+            else:
+                timeLeft = int(self.respawnTime - globalClock.frame_time)
+                if timeLeft <= 0:
+                    text += "Wait for respawn"
+                else:
+                    text += str(timeLeft) + " seconds"
+            self.respawnTimeLbl.setText(text)
+
+    def __respawnLabelTask(self, task):
+        self.updateRespawnTimeLbl()
+        return task.cont
 
     #def disableController(self):
     #    pass
@@ -348,17 +413,61 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         Main routine to calculate position and angles for the camera.
         """
 
-        if self.isObserver():
+        if self.playerState == TFPlayerState.Died:
             if self.observerMode == ObserverMode.DeathCam:
                 self.calcDeathCamView()
             elif self.observerMode == ObserverMode.FreezeCam:
                 self.calcFreezeCamView()
+        elif self.playerState == TFPlayerState.Spectating:
+            self.calcSpectatorView()
         else:
-            base.camera.setPos(self.getEyePosition())
-            base.camera.setHpr(self.viewAngles + self.punchAngle)
-            if self.viewModel:
-                # Also calculate the viewmodel position/rotation.
-                self.viewModel.calcView(self, base.camera)
+            self.calcPlayingView()
+
+    def calcPlayingView(self):
+        base.camera.setPos(self.getEyePosition())
+        base.camera.setHpr(self.viewAngles + self.punchAngle)
+        if self.viewModel:
+            # Also calculate the viewmodel position/rotation.
+            self.viewModel.calcView(self, base.camera)
+
+    def calcSpectatorView(self):
+        specTarget = base.net.doId2do.get(self.observerTarget)
+        if not specTarget:
+            return
+
+        self.observerChaseDistance += globalClock.dt * 48.0
+        self.observerChaseDistance = max(16, min(CHASE_CAM_DISTANCE, self.observerChaseDistance))
+
+        viewQuat = Quat()
+        viewQuat.setHpr(self.viewAngles)
+        base.camera.setHpr(self.viewAngles)
+
+        origin = specTarget.getEyePosition()
+
+        if specTarget.isPlayer():
+            if (specTarget.deathType == self.DTRagdoll) and specTarget.ragdoll:
+                origin = Point3(specTarget.ragdoll[1].getRagdollPosition())
+                origin.z += 40
+            elif (specTarget.deathType == self.DTGibs) and specTarget.gibs:
+                origin = Point3(specTarget.gibs.getHeadPosition())
+                origin.z += 40
+
+        vForward = viewQuat.getForward()
+        eyeOrigin = origin + (vForward * -self.observerChaseDistance)
+
+        # Clip against world.
+        result = PhysSweepResult()
+        toEyeOrigin = eyeOrigin - origin
+        toEyeOriginLen = toEyeOrigin.length()
+        toEyeOrigin /= toEyeOriginLen
+        if base.physicsWorld.boxcast(result, WALL_MINS + origin, WALL_MAXS + origin,
+                                     toEyeOrigin, toEyeOriginLen, Vec3(0),
+                                     TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
+                                     TFGlobals.CollisionGroup.Empty):
+            eyeOrigin = result.getBlock().getPosition()
+            self.observerChaseDistance = (origin - eyeOrigin).length()
+
+        base.camera.setPos(eyeOrigin)
 
     def calcDeathCamView(self):
         killer = base.net.doId2do.get(self.observerTarget)
@@ -537,13 +646,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.sky3DTop.show()
         base.vmRender.show()
 
-    def respawn(self):
-        DistributedTFPlayer.respawn(self)
-        self.hide()
-        self.viewModel.show()
-        self.hud.showHud()
-        self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)
-
     def onTFClassChanged(self):
         DistributedTFPlayer.onTFClassChanged(self)
 
@@ -551,20 +653,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.createObjectPanels()
         elif self.tfClass != Class.Engineer:
             self.destroyObjectPanels()
-
-    def becomeRagdoll(self, forceJoint, forcePosition, forceVector, initialVel):
-        DistributedTFPlayer.becomeRagdoll(self, forceJoint, forcePosition, forceVector, initialVel)
-        self.viewModel.hide()
-        self.hud.hideHud()
-        self.removeTask('updateCSInfo')
-        self.crossHairInfo.clearEnt()
-
-    def gib(self):
-        DistributedTFPlayer.gib(self)
-        self.viewModel.hide()
-        self.hud.hideHud()
-        self.removeTask('updateCSInfo')
-        self.crossHairInfo.clearEnt()
 
     def RecvProxy_weapons(self, weapons):
         changed = weapons != self.weapons
@@ -684,6 +772,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if self.dmgNumbers:
             self.dmgNumbers.cleanup()
             self.dmgNumbers = None
+        if self.respawnTimeLbl:
+            self.respawnTimeLbl.destroy()
+            self.respawnTimeLbl = None
         if self.crossHairInfo:
             self.crossHairInfo.destroy()
             self.crossHairInfo = None
@@ -732,12 +823,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.attack2 = inputState.watchWithModifiers("attack2", "mouse3", inputSource = inputState.Mouse)
         self.lastWeapon = inputState.watchWithModifiers("lastweapon", "q", inputSource = inputState.Keyboard)
 
-        self.accept('wheel_up', self.wpnSelect.hoverPrevWeapon)
-        self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
         self.accept(',', self.doChangeClass)
         self.accept('.', self.doChangeTeam)
-
-        self.accept('e', self.sendUpdate, ['voiceCommand', [VoiceCommand.Medic]])
 
         base.taskMgr.add(self.mouseMovement, 'mouseMovement')
         base.taskMgr.add(self.calcViewTask, 'calcView', sort = 38)
@@ -749,8 +836,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.win.requestProperties(props)
 
         self.accept('escape', self.enableControls)
-
-        self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)
 
     def startControls(self):
         base.simTaskMgr.add(self.runControls, 'runControls')
@@ -828,8 +913,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.accept('escape', self.disableControls)
 
-        self.hud.showHud()
-
         self.controlsEnabled = True
 
     def mouseMovement(self, task):
@@ -839,7 +922,12 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         """
 
         mw = base.mouseWatcherNode
-        if self.controlsEnabled and mw.hasMouse() and (self.observerTarget in (-1, self.doId)):
+
+        doMovement = self.controlsEnabled and mw.hasMouse()
+        if self.playerState == TFPlayerState.Died and self.observerTarget not in (-1, self.doId):
+            doMovement = False
+
+        if doMovement:
             sens = mouse_sensitivity.value
             sizeX = base.win.size.x
             sizeY = base.win.size.y
@@ -940,8 +1028,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.win.requestProperties(props)
 
         self.accept('escape', self.enableControls)
-
-        self.hud.hideHud()
 
         self.controlsEnabled = False
 
