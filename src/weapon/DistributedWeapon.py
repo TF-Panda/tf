@@ -89,9 +89,9 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
     def setAmmo(self, ammo):
         changed = self.ammo != ammo
         self.ammo = ammo
-        if changed and self.isActiveLocalPlayerWeapon():
-            if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
-                return
+        if self.isActiveLocalPlayerWeapon():
+            #if not base.cr.prediction.inPrediction or not base.cr.prediction.firstTimePredicted:
+            #    return
             base.localAvatar.hud.updateAmmoLabel()
 
     def RecvProxy_ammo(self, ammo):
@@ -99,10 +99,10 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
     def setClip(self, clip):
         self.clip = clip
-        changed = self.clip != clip
-        if changed and self.isActiveLocalPlayerWeapon():
-            if base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
-                return
+        #changed = self.clip != clip
+        if self.isActiveLocalPlayerWeapon():
+            #if not base.cr.prediction.inPrediction or not base.cr.prediction.firstTimePredicted:
+            #    return
             base.localAvatar.hud.updateAmmoLabel()
 
     def RecvProxy_clip(self, clip):
