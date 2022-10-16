@@ -109,48 +109,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         Sequence(Wait(0.1), Func(effect.softStop)).start()
 
     def createOverhealedEffect(self):
-        system = ParticleSystem2()
-        system.setPoolSize(30)
-
+        from tf.tfbase import TFEffects
+        system = TFEffects.getOverhealedEffect(self.team)
         system.setInput(0, self.modelNp, False)
-
-        emitter = ContinuousParticleEmitter()
-        emitter.setEmissionRate(15)
-        system.addEmitter(emitter)
-
-        system.addInitializer(P2_INIT_PositionModelHitBoxes(0))
-        system.addInitializer(P2_INIT_LifespanRandomRange(2, 2))
-        system.addInitializer(P2_INIT_VelocityExplicit(Vec3.up(), 13, 13))
-        if self.team == TFGlobals.TFTeam.Red:
-            system.addInitializer(P2_INIT_ColorRandomRange(Vec3(255/255, 90/255, 90/255), Vec3(255/255, 126/255, 93/255)))
-        else:
-            system.addInitializer(P2_INIT_ColorRandomRange(Vec3(0/255, 159/255, 165/255), Vec3(116/255, 152/255, 255/255)))
-        system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(2), Vec3(2)))
-
-        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
-        l0 = ParticleLerpSegment()
-        l0.type = l0.LTLinear
-        l0.start = 0.0
-        l0.end = 0.2
-        l0.start_value = Vec3(0)
-        l0.end_is_initial = True
-        colorLerp.addSegment(l0)
-        l0.start = 0.8
-        l0.end = 1.0
-        l0.start_is_initial = True
-        l0.end_is_initial = False
-        l0.end_value = Vec3(0)
-        colorLerp.addSegment(l0)
-        system.addFunction(colorLerp)
-
-        system.addFunction(LifespanKillerParticleFunction())
-        system.addFunction(LinearMotionParticleFunction())
-
-        renderer = SpriteParticleRenderer2()
-        renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/healsign.pmat")),
-                                                ColorAttrib.makeVertex()))
-        system.addRenderer(renderer)
-
         return system
 
     def isPlayer(self):
