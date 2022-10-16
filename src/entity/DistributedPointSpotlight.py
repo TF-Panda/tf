@@ -75,7 +75,7 @@ class DistributedPointSpotlight(DistributedEntity):
             cm.setFrame(-1, 1, -1.0, 0.0)
             cm.setHasUvs(True)
             beamNp = spotlight.attachNewNode(cm.generate())
-            beamNp.setMaterial(base.loader.loadMaterial("tfmodels/src/materials/glow_test02.pmat"))
+            beamNp.setMaterial(base.loader.loadMaterial("materials/glow_test02.mto"))
             beamNp.setSz(self.spotlightLength)
             beamNp.setSx(self.spotlightWidth)
             beamNp.setBillboardAxis()
@@ -86,7 +86,7 @@ class DistributedPointSpotlight(DistributedEntity):
 
             haloNp = root.attachNewNode(cm.generate())
             haloNp.setBillboardPointEye()
-            haloNp.setMaterial(base.loader.loadMaterial("tfmodels/src/materials/light_glow03.pmat"))
+            haloNp.setMaterial(base.loader.loadMaterial("materials/light_glow03.mto"))
             haloNp.setDepthTest(False, 1)
             haloNp.setDepthWrite(False, 1)
 

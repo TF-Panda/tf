@@ -21,7 +21,7 @@ class SkyBox:
             cm = CardMaker('cm')
             cm.setFrame(-1, 1, -1, 1)
             card = self.root.attachNewNode(cm.generate())
-            card.setMaterial(MaterialPool.loadMaterial("tfmodels/src/materials/" + skyName + suffixes[texorder[i]] + ".pmat"))
+            card.setMaterial(MaterialPool.loadMaterial("materials/" + skyName + suffixes[texorder[i]] + ".mto"))
             card.setShaderInput("u_zFar_index", Vec2(base.camLens.getFar(), i))
 
         self.root.setBin("background", 0)

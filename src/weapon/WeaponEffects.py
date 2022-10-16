@@ -10,7 +10,7 @@ def lerp(v0, v1, amt):
 
 class MuzzleParticle(NodePath):
 
-    muzzleroot = "tfmodels/src/maps/starflash01.ptex"
+    muzzleroot = "maps/starflash01.txo"
 
     def __init__(self, startSize, endSize, roll, color, duration):
         NodePath.__init__(self, 'muzzleParticle')
