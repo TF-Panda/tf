@@ -304,6 +304,8 @@ def getMedigunHealBeam(team):
 
         MedigunHealBeam[team] = sys
 
+    return MedigunHealBeam[team].makeCopy()
+
 DispenserHealBeam = [None, None]
 def getDispenserHealBeam(team):
     global DispenserHealBeam
