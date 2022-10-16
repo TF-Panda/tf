@@ -290,6 +290,8 @@ dclass DistributedTFPlayer : DistributedChar {
   // We will create text showing the damage on the client if
   // they have damage numbers on.
   onDamagedOther(uint16 amount, Position pos) ownrecv;
+
+  doBloodGoop(Position pos) broadcast;
 };
 
 dclass DistributedWeapon : DistributedChar {

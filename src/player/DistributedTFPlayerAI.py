@@ -316,6 +316,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             info.attacker = base.world
             info.damage = fallDamage
             info.damageType = DamageType.Fall
+            info.damagePosition = self.getPos() + (0, 0, 16)
             self.takeDamage(info)
             self.emitSound("Player.FallDamage", client=self.owner)
             self.emitSoundSpatial("Player.FallDamage", excludeClients=[self.owner])
@@ -528,6 +529,14 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             info.inflictor.onDamagedOther(self, info.damage)
         elif info.attacker and info.attacker.isPlayer() and info.attacker != self:
             info.attacker.onDamagedOther(self, info.damage)
+
+        if info.damageType & (DamageType.Blast | DamageType.Burn):
+            goopPos = self.getWorldSpaceCenter()
+        elif info.damageType & DamageType.Fall:
+            goopPos = self.getPos() + (0, 0, 16)
+        else:
+            goopPos = info.damagePosition
+        self.sendUpdate('doBloodGoop', [goopPos])
 
         #print("subtracting", int(info.damage + 0.5), "from tf player hp")
         self.health -= int(info.damage + 0.5)

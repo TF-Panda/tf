@@ -464,8 +464,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
                                      toEyeOrigin, toEyeOriginLen, Vec3(0),
                                      TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
                                      TFGlobals.CollisionGroup.Empty):
-            eyeOrigin = result.getBlock().getPosition()
-            self.observerChaseDistance = (origin - eyeOrigin).length()
+            if result.hasBlock():
+                eyeOrigin = result.getBlock().getPosition()
+                self.observerChaseDistance = (origin - eyeOrigin).length()
 
         base.camera.setPos(eyeOrigin)
 
@@ -513,8 +514,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
                                      toEyeOrigin, toEyeOriginLen, Vec3(0),
                                      TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
                                      TFGlobals.CollisionGroup.Empty):
-            eyeOrigin = result.getBlock().getPosition()
-            self.observerChaseDistance = (origin - eyeOrigin).length()
+            if result.hasBlock():
+                eyeOrigin = result.getBlock().getPosition()
+                self.observerChaseDistance = (origin - eyeOrigin).length()
 
         base.camera.setPos(eyeOrigin)
 

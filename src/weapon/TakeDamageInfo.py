@@ -90,7 +90,7 @@ def addMultiDamage(info, entity):
     g_multiDamage.damageType |= info.damageType
     g_multiDamage.setDamage(g_multiDamage.damage + info.damage)
     g_multiDamage.damageForce += info.damageForce
-    g_multiDamage.damagePositsion = info.damagePosition
+    g_multiDamage.damagePosition = info.damagePosition
     g_multiDamage.sourcePosition = info.sourcePosition
     g_multiDamage.ammoType = info.ammoType
 

@@ -96,6 +96,18 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.gibs = None
 
+    def doBloodGoop(self, pos):
+        from tf.tfbase.TFEffects import getBloodGoopEffect
+        from direct.interval.IntervalGlobal import Sequence, Wait, Func
+
+        emitNode = base.render.attachNewNode("emitBloodGoop")
+        emitNode.setPos(pos)
+
+        effect = getBloodGoopEffect()
+        effect.setInput(0, emitNode, True)
+        effect.start(base.dynRender)
+        Sequence(Wait(0.1), Func(effect.softStop)).start()
+
     def createOverhealedEffect(self):
         system = ParticleSystem2()
         system.setPoolSize(30)
