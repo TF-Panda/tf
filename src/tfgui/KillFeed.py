@@ -23,6 +23,7 @@ class KillFeed:
         self.defaultLife = 10
         self.events = []
         self.maxEvents = 6
+        self.latestTime = 0.0
 
         base.taskMgr.add(self.__update, 'updateKillFeed')
 
@@ -42,7 +43,14 @@ class KillFeed:
             lbl['bg'] = (1, 1, 1, 1)
         lbl.hide()
 
-        self.events.append(KillFeedEvent(lbl, priority, globalClock.frame_time))
+        time = globalClock.frame_time
+        if time == self.latestTime:
+            # Weird fudge to prevent events with identical times.
+            # If two events have identical times the sorting goes weird.
+            time += 0.001
+        self.latestTime = time
+
+        self.events.append(KillFeedEvent(lbl, priority, time))
 
     def __update(self, task):
         self.sortEvents()
