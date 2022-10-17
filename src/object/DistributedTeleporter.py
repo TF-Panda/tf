@@ -56,6 +56,10 @@ class DistributedTeleporter(BaseObject):
         self.rechargeTime = 0.0
         self.timesUsed = 0
         self.spinRate = 0.0
+        self.rechargeStartTime = 0
+        self.rechargeEndTime = 0
+
+        self.viewOffset = Vec3(0, 0, 25)
 
         if not IS_CLIENT:
             self.solidFlags = TFGlobals.SolidFlag.Tangible | TFGlobals.SolidFlag.Trigger
@@ -92,6 +96,21 @@ class DistributedTeleporter(BaseObject):
         # This mask determines what can enter the trigger.  Our team only.
         self.setSolidMask(TFGlobals.Contents.RedTeam if (self.team == TFGlobals.TFTeam.Red) else TFGlobals.Contents.BlueTeam)
 
+    def isTeleporterIdle(self):
+        return self.teleState == TStateIdle
+
+    def isTeleporterReady(self):
+        return self.teleState == TStateReady
+
+    def isTeleporterRecharging(self):
+        return self.teleState == TStateRecharging
+
+    def isTeleporterSending(self):
+        return self.teleState == TStateSending
+
+    def isTeleporterReceiving(self):
+        return self.teleState in (TStateReceiving, TStateReceivingRelease)
+
     if not IS_CLIENT:
 
         def onTriggerEnter(self, ent):
@@ -104,6 +123,10 @@ class DistributedTeleporter(BaseObject):
 
             if self.team != ent.team:
                 # Not on same team, can't teleport them.
+                return
+
+            if ent.isDead():
+                # Can't teleport dead players.
                 return
 
             if self.objectType == ObjectType.TeleporterEntrance:
@@ -324,14 +347,24 @@ class DistributedTeleporter(BaseObject):
                         break
 
             elif self.teleState == TStateRecharging:
-                if globalClock.frame_time > self.rechargeTime:
+                now = globalClock.frame_time
+                if now > self.rechargeTime:
+                    #self.chargePerct = 1.0
                     self.setTeleState(TStateReady)
                     self.emitSoundSpatial("Building_Teleporter.Ready")
+                #else:
+                #    chargeDuration = self.rechargeTime - self.lastStateChangeTime
+                #    rechargeElapsed = now - self.lastStateChangeTime
+                #    self.chargePerct = max(0.0, rechargeElapsed / chargeDuration)
 
             elif self.teleState == TStateSending:
                 # Inform exit they are receiving the player we are sending.
                 match.teleporterReceive(self.teleportingPlayer, 1.0)
+                self.rechargeStartTime = base.tickCount
+                match.rechargeStartTime = base.tickCount
                 self.rechargeTime = globalClock.frame_time + (TELEPORTER_FADEOUT_TIME + TELEPORTER_FADEIN_TIME + TELEPORTER_RECHARGE_TIME)
+                self.rechargeEndTime = base.timeToTicks(self.rechargeTime)
+                match.rechargeEndTime = self.rechargeEndTime
                 # Start recharging for next teleport.
                 self.setTeleState(TStateRecharging)
 

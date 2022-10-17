@@ -4,6 +4,7 @@ from panda3d.core import *
 
 from tf.tfbase import TFFilters, TFGlobals
 from tf.player import TFClass
+from tf.object.ObjectType import ObjectType
 
 from direct.gui.DirectGui import DirectFrame, OnscreenText, DGG
 
@@ -19,7 +20,7 @@ class InfoGui:
         self.frame = DirectFrame()
         self.frame.reparentTo(base.aspect2d)
         self.frame['relief'] = DGG.FLAT
-        self.frame.setPos(0, 0, -0.15)
+        self.frame.setPos(0, 0, -0.2)
         self.elemRoot = self.frame.attachNewNode('elements')
         self.elements = {}
 
@@ -79,6 +80,8 @@ class CrossHairInfo:
             name.setText(self.ent.objectName + " built by " + self.ent.getBuilder().playerName)
         self.gui.elements['name'] = name
 
+        self.lastText = ""
+
         # Show health
         hp = OnscreenText("", fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1),
                           font=font, parent=self.gui.elemRoot, scale=0.05, pos=(0, -0.08))
@@ -89,30 +92,58 @@ class CrossHairInfo:
     def maintainCurrentEnt(self):
         assert self.ent and self.gui
 
-        miscInfoText = "Health: %i / %i" % (self.ent.health, self.ent.maxHealth)
-        if self.ent.isPlayer():
-            wpn = self.ent.getActiveWeaponObj()
-            if wpn:
-                # Show weapon ammo
-                if wpn.usesClip and wpn.usesAmmo:
-                    miscInfoText += "\nAmmo: %i / %i" % (wpn.clip, wpn.ammo)
-                elif wpn.usesAmmo:
-                    miscInfoText += "\nAmmo: %i" % (wpn.ammo)
-            if self.ent.tfClass == TFClass.Class.Engineer:
-                # Show engineer's metal amount.
-                miscInfoText += "\nMetal: %i" % self.ent.metal
-            elif self.ent.tfClass == TFClass.Class.Medic:
-                # Show medic's charge level.
-                from tf.weapon.DistributedMedigun import DistributedMedigun
-                if isinstance(wpn, DistributedMedigun):
-                    miscInfoText += "\nCharge: " + str(int(wpn.chargeLevel * 100)) + "%"
+        if self.ent.isDead():
+            miscInfoText = "Dead"
         else:
-            # It's a building.
-            # Show building level.
-            miscInfoText += "\nLevel %i" % self.ent.level
+            miscInfoText = "Health: %i / %i" % (self.ent.health, self.ent.maxHealth)
+            if self.ent.isPlayer():
+                wpn = self.ent.getActiveWeaponObj()
+                if wpn:
+                    # Show weapon ammo
+                    if wpn.usesClip and wpn.usesAmmo:
+                        miscInfoText += "\nAmmo: %i / %i" % (wpn.clip, wpn.ammo)
+                    elif wpn.usesAmmo:
+                        miscInfoText += "\nAmmo: %i" % (wpn.ammo)
+                if self.ent.tfClass == TFClass.Class.Engineer:
+                    # Show engineer's metal amount.
+                    miscInfoText += "\nMetal: %i" % self.ent.metal
+                elif self.ent.tfClass == TFClass.Class.Medic:
+                    # Show medic's charge level.
+                    from tf.weapon.DistributedMedigun import DistributedMedigun
+                    if isinstance(wpn, DistributedMedigun):
+                        miscInfoText += "\nCharge: " + str(int(wpn.chargeLevel * 100)) + "%"
+            else:
+                # It's a building.
+                if not self.ent.isBuilding():
+                    # Show building level.
+                    miscInfoText += "\nLevel %i" % self.ent.level
+                    # If the building is less than max level, show the upgrade progress.
+                    if self.ent.level < self.ent.maxLevel:
+                        miscInfoText += "\nUpgrade progress: %i / %i" % (self.ent.upgradeMetal, self.ent.upgradeMetalRequired)
+                    if self.ent.objectType in (ObjectType.TeleporterEntrance, ObjectType.TeleporterExit):
+                        # For a teleporter, show the charge level.
+                        if self.ent.isTeleporterIdle():
+                            if self.ent.objectType == ObjectType.TeleporterExit:
+                                miscInfoText += "\nEntrance not built"
+                            else:
+                                miscInfoText += "\nExit not built"
+                        elif self.ent.isTeleporterSending():
+                            miscInfoText += "\nSending..."
+                        elif self.ent.isTeleporterReceiving():
+                            miscInfoText += "\nReceiving..."
+                        elif self.ent.isTeleporterRecharging():
+                            chargeDuration = max(1, self.ent.rechargeEndTime - self.ent.rechargeStartTime)
+                            chargeElapsed = max(0, base.tickCount - self.ent.rechargeStartTime)
+                            chargePerct = max(0.0, min(1.0, chargeElapsed / chargeDuration))
+                            miscInfoText += "\nCharge: " + str(int(chargePerct * 100)) + "%"
+                        else:
+                            miscInfoText += "\nCharge: 100%"
 
-        self.gui.elements['hp'].setText(miscInfoText)
-        self.gui.finalizeFrame()
+
+        if self.lastText != miscInfoText:
+            self.gui.elements['hp'].setText(miscInfoText)
+            self.gui.finalizeFrame()
+            self.lastText = miscInfoText
 
     def setEnt(self, ent, ctx):
         self.ent = ent
@@ -152,7 +183,7 @@ class CrossHairInfo:
         csEnt = None
         if tr['hit'] and tr['ent']:
             ent = tr['ent']
-            if ent.team == plyr.team and (ent.isPlayer() or ent.isObject()) and not ent.isDead():
+            if not ent.isDODisabled() and ent.team == plyr.team and (ent.isPlayer() or ent.isObject()) and not ent.isDead():
                 csEnt = ent
 
         if csEnt and csEnt == self.ent:
@@ -167,10 +198,16 @@ class CrossHairInfo:
         #    return task.cont
 
         if self.forceEntId != -1:
-            if not self.gui:
-                self.buildEntInfo()
+            if self.ent:
+                if self.ent.isDODisabled():
+                    self.destroyEntInfo()
+                    self.ent = None
+                elif not self.gui:
+                    self.buildEntInfo()
+                else:
+                    self.maintainCurrentEnt()
             else:
-                self.maintainCurrentEnt()
+                self.destroyEntInfo()
         else:
             self.findNewEnt()
 
