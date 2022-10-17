@@ -374,7 +374,10 @@ class SentryGun(BaseObject):
                 trans = self.character.getAttachmentNetTransform(2)
                 src = trans.getPos()
 
-                aimDir = self.enemy.getWorldSpaceCenter() - src
+                # Aim at center.
+                aimPos = self.enemy.getWorldSpaceCenter()
+
+                aimDir = aimPos - src
                 aimDir.normalize()
                 q = Quat()
                 lookAt(q, aimDir)
@@ -414,8 +417,10 @@ class SentryGun(BaseObject):
                 src = trans.getPos()
                 #ang = trans.getHpr()
 
-                midEnemy = self.enemy.getWorldSpaceCenter()
-                aimDir = midEnemy - src
+                # Aim at chest.
+                aimPos = self.enemy.getPos()
+                aimPos += self.enemy.viewOffset * 0.75
+                aimDir = aimPos - src
                 distToTarget = aimDir.length()
                 aimDir.normalize()
 
