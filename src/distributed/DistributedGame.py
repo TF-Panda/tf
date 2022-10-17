@@ -505,7 +505,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             # Someone killed someone else.
             text = ""
             if killer.isObject():
-                text += self.getTeamFormat(killer.team) + "Sentry Gun"
+                text += self.getTeamFormat(killer.team) + killer.objectName
                 builder = base.cr.doId2do.get(killer.builderDoId)
                 if builder:
                     if builder == base.localAvatar:
@@ -518,7 +518,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                     text += " + " + self.getTeamFormat(assist.team) + assist.playerName + "\2"
             text += " killed "
             if killed.isObject():
-                text += self.getTeamFormat(killed.team) + "Sentry Gun"
+                text += self.getTeamFormat(killed.team) + killed.objectName
                 builder = base.cr.doId2do.get(killed.builderDoId)
                 if builder:
                     if builder == base.localAvatar:
