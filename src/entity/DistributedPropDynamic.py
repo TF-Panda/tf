@@ -37,7 +37,8 @@ class DistributedPropDynamic(BaseClass):
             if props.hasAttribute("model"):
                 fname = Filename.fromOsSpecific(props.getAttributeValue("model").getString().replace(".mdl", ".bam"))
                 vfs = VirtualFileSystem.getGlobalPtr()
-                if vfs.resolveFilename(fname, getModelPath().value):
+                resolved = Filename(fname)
+                if vfs.resolveFilename(resolved, getModelPath().value):
                     self.setModel(fname.getFullpath())
 
             if props.hasAttribute("solid"):
