@@ -400,10 +400,10 @@ class DistributedEntity(BaseClass, NodePath):
         self.considerPhysSyncTask()
 
     def getEyePosition(self):
-        return self.getPos() + self.viewOffset
+        return Point3(self.getPos() + self.viewOffset)
 
     def getWorldSpaceCenter(self):
-        return self.getPos(NodePath()) + (self.viewOffset * 0.5)
+        return Point3(self.getPos(NodePath()) + (self.viewOffset * 0.5))
 
     def fireBullets(self, info):
         clearMultiDamage()

@@ -3,7 +3,7 @@
 from panda3d.core import WindowProperties, MouseData, Point2, Vec2, Datagram, OmniBoundingVolume, NodePath, Point3, Vec3, lookAt
 from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker, Quat
 
-from panda3d.pphysics import PhysSweepResult
+from panda3d.pphysics import PhysSweepResult, PhysRayCastResult, PhysSphere
 
 from .DistributedTFPlayer import DistributedTFPlayer
 from .PlayerCommand import PlayerCommand
@@ -430,6 +430,28 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             # Also calculate the viewmodel position/rotation.
             self.viewModel.calcView(self, base.camera)
 
+    def camBlock(self, camPos, targetPos, camTargetEntity):
+        """
+        Given a desired camPos, offset a certain distance from targetPos,
+        traces a line from targetPos to camPos, and moves camPos in front
+        of any obstructions.
+
+        Returns True if there was an obstruction and camPos was moved, False
+        otherwise.
+        """
+
+        # Trace 8 units back from camPos, and if the line hits something
+        # move the camera 8 units in front of the hit position.
+        # This keeps the camera 8 units away from obstructions.
+
+        wallDistance = 8.0
+        toCam = (camPos - targetPos).normalized()
+        wallOffset = toCam * wallDistance
+        tr = TFFilters.traceLine(targetPos, camPos + wallOffset, TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(camTargetEntity))
+        if tr['hit']:
+            return (True, tr['pos'] - wallOffset)
+        return (False, camPos)
+
     def calcSpectatorView(self):
         specTarget = base.net.doId2do.get(self.observerTarget)
         if not specTarget:
@@ -446,27 +468,20 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         if specTarget.isPlayer():
             if (specTarget.deathType == self.DTRagdoll) and specTarget.ragdoll:
-                origin = Point3(specTarget.ragdoll[1].getRagdollPosition())
+                origin = specTarget.ragdoll[1].getRagdollPosition()
                 origin.z += 40
             elif (specTarget.deathType == self.DTGibs) and specTarget.gibs:
-                origin = Point3(specTarget.gibs.getHeadPosition())
+                origin = specTarget.gibs.getHeadPosition()
                 origin.z += 40
 
         vForward = viewQuat.getForward()
-        eyeOrigin = origin + (vForward * -self.observerChaseDistance)
+        eyeOrigin = Point3(origin + (vForward * -self.observerChaseDistance))
 
         # Clip against world.
-        result = PhysSweepResult()
-        toEyeOrigin = eyeOrigin - origin
-        toEyeOriginLen = toEyeOrigin.length()
-        toEyeOrigin /= toEyeOriginLen
-        if base.physicsWorld.boxcast(result, WALL_MINS + origin, WALL_MAXS + origin,
-                                     toEyeOrigin, toEyeOriginLen, Vec3(0),
-                                     TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
-                                     TFGlobals.CollisionGroup.Empty):
-            if result.hasBlock():
-                eyeOrigin = result.getBlock().getPosition()
-                self.observerChaseDistance = (origin - eyeOrigin).length()
+        tr = self.camBlock(eyeOrigin, origin, specTarget)
+        if tr[0]:
+            eyeOrigin = tr[1]
+            self.observerChaseDistance = (origin - eyeOrigin).length()
 
         base.camera.setPos(eyeOrigin)
 
@@ -484,13 +499,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         aForward = self.viewAngles
         qForward = Quat()
         qForward.setHpr(aForward)
-        origin = self.getEyePosition()
+
         if (self.deathType == self.DTRagdoll) and self.ragdoll:
-            origin = Point3(self.ragdoll[1].getRagdollPosition())
+            origin = self.ragdoll[1].getRagdollPosition()
             origin.z += 40
         elif (self.deathType == self.DTGibs) and self.gibs:
-            origin = Point3(self.gibs.getHeadPosition())
+            origin = self.gibs.getHeadPosition()
             origin.z += 40
+        else:
+            origin = self.getEyePosition()
 
         if killer and killer != self:
             # Compute angles to look at killer.
@@ -503,20 +520,13 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         vForward = qForward.getForward()
         vForward.normalize()
-        eyeOrigin = origin + (vForward * -self.observerChaseDistance)
+        eyeOrigin = Point3(origin + (vForward * -self.observerChaseDistance))
 
         # Clip against world.
-        result = PhysSweepResult()
-        toEyeOrigin = eyeOrigin - origin
-        toEyeOriginLen = toEyeOrigin.length()
-        toEyeOrigin /= toEyeOriginLen
-        if base.physicsWorld.boxcast(result, WALL_MINS + origin, WALL_MAXS + origin,
-                                     toEyeOrigin, toEyeOriginLen, Vec3(0),
-                                     TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
-                                     TFGlobals.CollisionGroup.Empty):
-            if result.hasBlock():
-                eyeOrigin = result.getBlock().getPosition()
-                self.observerChaseDistance = (origin - eyeOrigin).length()
+        tr = self.camBlock(eyeOrigin, origin, killer)
+        if tr[0]:
+            eyeOrigin = tr[1]
+            self.observerChaseDistance = (origin - eyeOrigin).length()
 
         base.camera.setPos(eyeOrigin)
 
@@ -535,14 +545,14 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         camDesired = target.getPos()
         if target.isPlayer():
             if (target.deathType == self.DTRagdoll) and target.ragdoll:
-                camDesired = Point3(target.ragdoll[1].getRagdollPosition())
+                camDesired = target.ragdoll[1].getRagdollPosition()
             elif (target.deathType == self.DTGibs) and target.gibs:
-                camDesired = Point3(target.gibs.getHeadPosition())
+                camDesired = target.gibs.getHeadPosition()
         if target.health > 0:
             camDesired[2] += target.viewOffset[2]
         #else:
         #    camDesired[2] += 40
-        camTarget = Vec3(camDesired)
+        camTarget = Point3(camDesired)
         if target.health > 0:
             mins = Vec3()
             maxs = Vec3()
@@ -566,34 +576,22 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         eyePosZ = target.getZ() + target.viewOffset[2]
         targetPos[2] = eyePosZ + self.freezeZOffset
 
-        # trace so that we're put in front of any walls.
-        result = PhysSweepResult()
-        camToTarget = targetPos - camTarget
-        camToTargetLen = camToTarget.length()
-        camToTarget /= camToTargetLen
-        if base.physicsWorld.boxcast(result, WALL_MINS + camTarget, WALL_MAXS + camTarget,
-                                     camToTarget, camToTargetLen,
-                                     Vec3(0), TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
-                                     TFGlobals.CollisionGroup.Empty):
+        # Trace so that we're put in front of any walls.
+        tr = self.camBlock(targetPos, camTarget, target)
+        if tr[0]:
             # The camera's going to be really close to the target.  So we
             # don't end up looking at someone's chest, aim close freezecams
             # at the target's eyes.
-            block = result.getBlock()
-            targetPos = block.getPosition()
+            targetPos = tr[1]
             camTarget = camDesired
 
             # To stop all close in views looking up at character's chins,
             # move the view up.
             targetPos[2] += abs(camTarget[2] - targetPos[2]) * 0.85
-            camToTarget = targetPos - camTarget
-            camToTargetLen = camToTarget.length()
-            camToTarget /= camToTargetLen
-            result2 = PhysSweepResult()
-            if base.physicsWorld.boxcast(result2, WALL_MINS + camTarget, WALL_MAXS + camTarget,
-                                         camToTarget, camToTargetLen,
-                                         Vec3(0), TFGlobals.Contents.Solid, TFGlobals.Contents.Empty,
-                                         TFGlobals.CollisionGroup.Empty):
-                targetPos = result2.getBlock().getPosition()
+
+            tr = self.camBlock(targetPos, camTarget, target)
+            if tr[0]:
+                targetPos = tr[1]
 
         # Look directly at the target.
         toTarget = camTarget - targetPos
