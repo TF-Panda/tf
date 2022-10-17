@@ -368,4 +368,6 @@ ModelPrecacheList = [
     "models/weapons/w_toolbox",
     "models/weapons/w_bonesaw",
     "models/weapons/v_bonesaw_medic",
+    "models/weapons/v_grenadelauncher_demo",
+    "models/weapons/v_minigun_heavy"
 ]

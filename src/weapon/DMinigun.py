@@ -27,7 +27,8 @@ BARREL_WIND_UP_SPEED = 20 # 1 second to wind up.
 class DMinigun(TFWeaponGun):
 
     WeaponModel = "models/weapons/c_minigun"
-    WeaponViewModel = "models/weapons/c_minigun"
+    WeaponViewModel = "models/weapons/v_minigun_heavy"
+    UsesViewModel = True
 
     SoundWindUp = 0
     SoundWindDown = 1
@@ -77,8 +78,8 @@ class DMinigun(TFWeaponGun):
         self.currSound = None
         self.weaponState = MG_STATE_IDLE
 
-        # One for the view model, another for world model.
-        self.barrelControlJoints = []
+        self.worldBarrel = None
+        self.viewBarrel = None
 
     if IS_CLIENT:
 
@@ -101,12 +102,14 @@ class DMinigun(TFWeaponGun):
             self.addTask(self.__updateMinigunBarrel, "updateMinigunBarrel", sim = False, appendTask = True)
 
         def disable(self):
-            self.barrelControlJoints = None
+            self.worldBarrel = None
+            if self.viewBarrel:
+                self.viewBarrel.removeNode()
+                self.viewBarrel = None
             self.stopWeaponSound()
             TFWeaponGun.disable(self)
 
         def __updateMinigunBarrel(self, task):
-
             if self.barrelCurrVelocity != self.barrelTargetVelocity:
                 # Update barrel velocity to bing it up to speed or to rest
                 self.barrelCurrVelocity = TFGlobals.approach(self.barrelTargetVelocity,
@@ -122,8 +125,10 @@ class DMinigun(TFWeaponGun):
 
             barrelAngleDeg = rad2Deg(self.barrelAngle)
             # Update view and world model control joints with new angle.
-            for ctrl in self.barrelControlJoints:
-                ctrl.setH(barrelAngleDeg)
+            if self.worldBarrel:
+                self.worldBarrel.setH(barrelAngleDeg)
+            if self.viewBarrel:
+                self.viewBarrel.setP(barrelAngleDeg)
 
             if not self.isOwnedByLocalPlayer():
                 self.weaponSoundUpdate()
@@ -136,11 +141,7 @@ class DMinigun(TFWeaponGun):
             self.barrelCurrVelocity = 0
             self.barrelTargetVelocity = 0
             self.barrelAccelSpeed = BARREL_WIND_UP_SPEED
-            self.barrelControlJoints = []
-            # Create a node to control the barrel joint with.  We will animate this
-            # node to spin the barrel.
-            self.barrelControlJoints.append(self.viewModelChar.controlJoint(None, "barrel"))
-            self.barrelControlJoints.append(self.controlJoint(None, "barrel"))
+            self.worldBarrel = self.controlJoint(None, "barrel")
 
         def stopWeaponSound(self):
             if self.currSound:
@@ -193,7 +194,7 @@ class DMinigun(TFWeaponGun):
             return
 
         # Play wind-up animation and sound
-        self.sendWeaponAnim(Activity.Attack_Stand_Prefire)
+        self.sendWeaponAnim(Activity.VM_Pre_Fire)
 
         # Set the appropriate firing state
         self.weaponState = MG_STATE_STARTFIRING
@@ -212,7 +213,7 @@ class DMinigun(TFWeaponGun):
         if not self.player:
             return
 
-        self.sendWeaponAnim(Activity.Attack_Stand_Postfire)
+        self.sendWeaponAnim(Activity.VM_Post_Fire)
 
         # Set the appropriate firing state.
         self.weaponState = MG_STATE_IDLE
@@ -252,31 +253,31 @@ class DMinigun(TFWeaponGun):
     def sendWeaponAnim(self, act):
         if True:#IS_CLIENT:
             # Client procedurally animates the barrel joint.
-            if act == Activity.Attack_Stand or \
-                act == Activity.Attack_Stand_Prefire:
+            if act == Activity.VM_Fire or \
+                act == Activity.VM_Pre_Fire:
 
                 self.barrelTargetVelocity = MAX_BARREL_SPIN_VELOCITY
                 self.barrelAccelSpeed = BARREL_WIND_UP_SPEED
 
-            elif act == Activity.Attack_Stand_Postfire:
+            elif act == Activity.VM_Post_Fire:
                 self.barrelTargetVelocity = 0
                 self.barrelAccelSpeed = BARREL_WIND_DOWN_SPEED
 
         # When we start firing, play the startup anim first.
         if act == Activity.VM_Fire:
             # If we're already playing the fire anim, let it continue.
-            if self.activity == Activity.Primary_VM_Fire:
+            if self.activity == Activity.VM_Fire:
                 return True
 
             # Otherwise, play from the start
-            return TFWeaponGun.sendWeaponAnim(self, Activity.Primary_VM_Fire)
+            return TFWeaponGun.sendWeaponAnim(self, Activity.VM_Fire)
 
         return TFWeaponGun.sendWeaponAnim(self, act)
 
     def handleFireOnEmpty(self):
         if self.weaponState in [MG_STATE_FIRING, MG_STATE_SPINNING]:
             self.weaponState = MG_STATE_DRYFIRE
-            self.sendWeaponAnim(Activity.Primary_VM_SecondaryFire)
+            self.sendWeaponAnim(Activity.VM_SecondaryFire)
             if self.weaponMode == TFWeaponMode.Secondary:
                 self.weaponState = MG_STATE_SPINNING
 
@@ -341,7 +342,7 @@ class DMinigun(TFWeaponGun):
                 self.weaponState = MG_STATE_FIRING
             elif self.weaponMode == TFWeaponMode.Secondary:
                 self.weaponState = MG_STATE_SPINNING
-            self.sendWeaponAnim(Activity.Primary_VM_SecondaryFire)
+            self.sendWeaponAnim(Activity.VM_SecondaryFire)
 
         elif self.weaponState == MG_STATE_SPINNING:
             self.startedFiringAt = -1
@@ -350,16 +351,27 @@ class DMinigun(TFWeaponGun):
                     self.weaponState = MG_STATE_FIRING
                 else:
                     self.weaponState = MG_STATE_DRYFIRE
-            self.sendWeaponAnim(Activity.Primary_VM_SecondaryFire)
+            self.sendWeaponAnim(Activity.VM_SecondaryFire)
 
     def itemPostFrame(self):
         TFWeaponGun.itemPostFrame(self)
         if IS_CLIENT:
             self.weaponSoundUpdate()
 
+    def activate(self):
+        TFWeaponGun.activate(self)
+        if IS_CLIENT and self.isOwnedByLocalPlayer():
+            if self.player and self.player.viewModel:
+                self.viewBarrel = self.player.viewModel.controlJoint(None, "v_minigun_barrel")
+
     def deactivate(self):
         if not IS_CLIENT or self.isOwnedByLocalPlayer():
             self.windDown()
+
+        if IS_CLIENT and self.isOwnedByLocalPlayer():
+            if self.viewBarrel:
+                self.viewBarrel.removeNode()
+                self.viewBarrel = None
 
         TFWeaponGun.deactivate(self)
 

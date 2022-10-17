@@ -8,7 +8,8 @@ from .WeaponMode import TFWeaponMode, TFProjectileType
 
 class DistributedGrenadeLauncher(TFWeaponGun):
     WeaponModel = "models/weapons/c_grenadelauncher"
-    WeaponViewModel = "models/weapons/c_grenadelauncher"
+    WeaponViewModel = "models/weapons/v_grenadelauncher_demo"
+    UsesViewModel = True
 
     def __init__(self):
         TFWeaponGun.__init__(self)
