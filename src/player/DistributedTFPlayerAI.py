@@ -158,7 +158,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 self.observerTarget = teammates[0].doId
 
     def onDamagedOther(self, other, dmg):
-        self.sendUpdate('onDamagedOther', [dmg, other.getPos() + other.viewOffset])
+        self.sendUpdate('onDamagedOther', [dmg, other.getPos() + other.viewOffset + (0, 0, 8)])
 
     def __conditionThinkAI(self, task):
         for cond, timeLeft in self.conditions.items():
