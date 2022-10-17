@@ -8,6 +8,9 @@ from .WeaponEffects import *
 
 import random
 
+if IS_CLIENT:
+    tf_client_lag_comp_debug = ConfigVariableBool("tf-client-lag-comp-debug", False)
+
 def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerOrigin = None):
     """
     Fires some bullets.  Server does damage calculations.  Client would
@@ -26,13 +29,13 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
             do.syncHitBoxes()
 
     # Client lag comp debug
-    #if IS_CLIENT and True:
-    #    from tf.player.DistributedTFPlayer import DistributedTFPlayer
-    #    positions = []
-    #    for do in base.net.doId2do.values():
-    #        if isinstance(do, DistributedTFPlayer) and do != base.localAvatar:
-    #            positions.append(do.getPos())
-    #    base.localAvatar.clientLagCompDebug(positions)
+    if IS_CLIENT and tf_client_lag_comp_debug.value:
+        from tf.player.DistributedTFPlayer import DistributedTFPlayer
+        positions = []
+        for do in base.net.doId2do.values():
+            if isinstance(do, DistributedTFPlayer) and do != base.localAvatar:
+                positions.append(do.getPos())
+        base.localAvatar.clientLagCompDebug(positions)
 
     q = Quat()
     q.setHpr(angles)
