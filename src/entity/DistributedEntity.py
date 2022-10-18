@@ -408,10 +408,7 @@ class DistributedEntity(BaseClass, NodePath):
     def fireBullets(self, info):
         clearMultiDamage()
 
-        # FIXME: horrible
-        for do in base.net.doId2do.values():
-            if isinstance(do, Actor):
-                do.syncHitBoxes()
+        base.net.syncAllHitBoxes()
 
         # Fire a bullet (ignoring the shooter).
         start = info['src']

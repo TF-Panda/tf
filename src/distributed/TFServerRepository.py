@@ -25,6 +25,10 @@ class TFServerRepository(ServerRepository):
         base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)
 
+    def syncAllHitBoxes(self):
+        from tf.actor.DistributedCharAI import DistributedCharAI
+        DistributedCharAI.syncAllHitBoxes()
+
     def __recordPlayerPositions(self, task):
         self.lagComp.recordPlayerPositions()
         return task.cont

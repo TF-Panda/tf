@@ -79,9 +79,7 @@ class DistributedWeaponShared:
     def syncAllHitBoxes(self):
         # Make sure all characters have their hit boxes synchronized.
         # FIXME: horrible
-        for do in base.net.doId2do.values():
-            if isinstance(do, Actor):
-                do.syncHitBoxes()
+        base.net.syncAllHitBoxes()
 
     def getVMSequenceLength(self):
         return self.viewModel.getCurrentAnimLength()

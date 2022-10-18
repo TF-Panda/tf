@@ -9,6 +9,8 @@ from panda3d.direct import *
 
 class DistributedChar(Actor, DistributedEntity):
 
+    AllChars = []
+
     def __init__(self):
         Actor.__init__(self)
         DistributedEntity.__init__(self)
@@ -16,6 +18,11 @@ class DistributedChar(Actor, DistributedEntity):
         # Client-side ragdoll associated with this entity.
         self.ragdoll = None
         self.processingAnimEvents = False
+
+    @staticmethod
+    def syncAllHitBoxes():
+        for char in DistributedChar.AllChars:
+            char.syncHitBoxes()
 
     def RecvProxy_skin(self, skin):
         self.setSkin(skin)
@@ -99,11 +106,16 @@ class DistributedChar(Actor, DistributedEntity):
     def setModel(self, filename):
         self.loadModel(filename)
 
+    def announceGenerate(self):
+        DistributedEntity.announceGenerate(self)
+        DistributedChar.AllChars.append(self)
+
     def disable(self):
         if self.ragdoll:
             self.ragdoll[0].cleanup()
             self.ragdoll[1].destroy()
         self.ragdoll = None
+        DistributedChar.AllChars.remove(self)
         DistributedEntity.disable(self)
 
     def delete(self):

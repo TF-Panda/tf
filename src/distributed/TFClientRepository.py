@@ -29,6 +29,10 @@ class TFClientRepository(ClientRepository, FSM):
 
         self.request("Connect", info)
 
+    def syncAllHitBoxes(self):
+        from tf.actor.DistributedChar import DistributedChar
+        DistributedChar.syncAllHitBoxes()
+
     def runPrediction(self):
         if not self.connected or not hasattr(base, 'localAvatar'):
             return

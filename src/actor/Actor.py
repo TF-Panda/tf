@@ -645,12 +645,12 @@ class Actor(Model):
         if not self.hitBoxes:
             return
 
-        now = globalClock.frame_time
-        if now == self.lastHitBoxSyncTime:
+        #now = globalClock.frame_time
+        #if now == self.lastHitBoxSyncTime:
             # We're already synchronized with the current point in time.
-            return
+        #    return
 
-        self.lastHitBoxSyncTime = now
+        #self.lastHitBoxSyncTime = now
 
         for hbox in self.hitBoxes:
             hbox.body.setTransform(

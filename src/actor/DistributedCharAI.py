@@ -8,13 +8,21 @@ from .AnimEvents import AnimEventType
 
 class DistributedCharAI(Actor, DistributedEntityAI):
 
+    AllChars = []
+
     def __init__(self):
         Actor.__init__(self)
         DistributedEntityAI.__init__(self)
 
         self.lastEventCheck = 0.0
 
+    @staticmethod
+    def syncAllHitBoxes():
+        for char in DistributedCharAI.AllChars:
+            char.syncHitBoxes()
+
     def delete(self):
+        DistributedCharAI.AllChars.remove(self)
         self.cleanup()
         DistributedEntityAI.delete(self)
 
@@ -84,6 +92,11 @@ class DistributedCharAI(Actor, DistributedEntityAI):
     def SendProxy_skin(self):
         return self.skin
 
+    def generate(self):
+        DistributedEntityAI.generate(self)
+        DistributedCharAI.AllChars.append(self)
+        self.addTask(self.__calcAnimation, 'calcAnimation', sim=True, sort=30, appendTask=True)
+
     def loadModel(self, model):
         Actor.loadModel(self, model)
         # The server doesn't blend sequence transitions or interpolate
@@ -91,10 +104,13 @@ class DistributedCharAI(Actor, DistributedEntityAI):
         self.setChannelTransition(False)
         self.setFrameBlend(False)
 
-    def simulate(self):
-        DistributedEntityAI.simulate(self)
+    def calcAnimation(self):
+        if not self.character:
+            return
 
-        if self.character:
-            # Compute the animation.   This also advances the anim time and
-            # cycle on the sequence player, which will be sent to clients.
-            self.character.update()
+        self.character.update()
+        self.invalidateHitBoxes()
+
+    def __calcAnimation(self, task):
+        self.calcAnimation()
+        return task.cont

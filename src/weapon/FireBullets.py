@@ -25,17 +25,22 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
         base.air.lagComp.startLagCompensation(player, player.currentCommand)
 
     # Sync hitboxes *after* lag compensation.
+    base.net.syncAllHitBoxes()
 
     doLagCompDebug = tf_client_lag_comp_debug.value if IS_CLIENT else tf_server_lag_comp_debug.value
-
-    from tf.actor.Actor import Actor
-    hitBoxPositions = []
-    for do in base.net.doId2do.values():
-        if isinstance(do, Actor):
-            do.syncHitBoxes()
-            if doLagCompDebug:
+    if doLagCompDebug:
+        hitBoxPositions = []
+        if IS_CLIENT:
+            from tf.actor.DistributedChar import DistributedChar
+            for do in DistributedChar.AllChars:
                 for h in do.hitBoxes:
                     hitBoxPositions.append(Point3(NodePath(h.body).getNetTransform().getPos()))
+        else:
+            from tf.actor.DistributedCharAI import DistributedCharAI
+            for do in DistributedCharAI.AllChars:
+                for h in do.hitBoxes:
+                    hitBoxPositions.append(Point3(NodePath(h.body).getNetTransform().getPos()))
+
 
     q = Quat()
     q.setHpr(angles)
@@ -67,8 +72,8 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
 
     rand = random.Random()
 
-    rayStart = fireInfo['src']
-    rayDirs = []
+    if doLagCompDebug:
+        rayDirs = []
 
     bulletsPerShot = weaponData.get('bulletsPerShot', 1)
     for i in range(bulletsPerShot):
@@ -95,11 +100,11 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
         if not IS_CLIENT:
             # Tell the client where we saw all of the player hitboxes and
             # where we shot the bullet.
-            player.sendUpdate('hitBoxDebug', [hitBoxPositions, rayStart, rayDirs])
+            player.sendUpdate('hitBoxDebug', [hitBoxPositions, fireInfo['src'], rayDirs])
         else:
             # Show how we, the client, saw all of the player hitboxes
             # at the time we shot.
-            player.clientHitBoxDebug(hitBoxPositions, rayStart, rayDirs)
+            player.clientHitBoxDebug(hitBoxPositions, fireInfo['src'], rayDirs)
 
     # Apply damage if any.
     applyMultiDamage()
