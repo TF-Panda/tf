@@ -285,6 +285,7 @@ dclass DistributedTFPlayer : DistributedChar {
   // On the client, we draw a separate set of boxes in red that show were
   // the other players were on the *client* when we fired the weapon.
   lagCompDebug(Position pos[]) ownrecv;
+  hitBoxDebug(Position pos[], Position rayStart, UnitVector rayDirs[]) ownrecv;
 
   // Sent by server when we damaged a player or object.
   // We will create text showing the damage on the client if

@@ -2,7 +2,7 @@
 from tf.tfbase.TFGlobals import DamageType
 from .TakeDamageInfo import *
 
-from panda3d.core import Quat, Vec3
+from panda3d.core import *
 
 from .WeaponEffects import *
 
@@ -10,6 +10,8 @@ import random
 
 if IS_CLIENT:
     tf_client_lag_comp_debug = ConfigVariableBool("tf-client-lag-comp-debug", False)
+else:
+    tf_server_lag_comp_debug = ConfigVariableBool("tf-server-lag-comp-debug", False)
 
 def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerOrigin = None):
     """
@@ -23,19 +25,17 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
         base.air.lagComp.startLagCompensation(player, player.currentCommand)
 
     # Sync hitboxes *after* lag compensation.
+
+    doLagCompDebug = tf_client_lag_comp_debug.value if IS_CLIENT else tf_server_lag_comp_debug.value
+
     from tf.actor.Actor import Actor
+    hitBoxPositions = []
     for do in base.net.doId2do.values():
         if isinstance(do, Actor):
             do.syncHitBoxes()
-
-    # Client lag comp debug
-    if IS_CLIENT and tf_client_lag_comp_debug.value:
-        from tf.player.DistributedTFPlayer import DistributedTFPlayer
-        positions = []
-        for do in base.net.doId2do.values():
-            if isinstance(do, DistributedTFPlayer) and do != base.localAvatar:
-                positions.append(do.getPos())
-        base.localAvatar.clientLagCompDebug(positions)
+            if doLagCompDebug:
+                for h in do.hitBoxes:
+                    hitBoxPositions.append(Point3(NodePath(h.body).getNetTransform().getPos()))
 
     q = Quat()
     q.setHpr(angles)
@@ -67,6 +67,9 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
 
     rand = random.Random()
 
+    rayStart = fireInfo['src']
+    rayDirs = []
+
     bulletsPerShot = weaponData.get('bulletsPerShot', 1)
     for i in range(bulletsPerShot):
         rand.seed(seed)
@@ -79,11 +82,24 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
         fireInfo['dirShooting'] = forward + (right * x * spread) + (up * y * spread)
         fireInfo['dirShooting'].normalize()
 
+        if doLagCompDebug:
+            rayDirs.append(fireInfo['dirShooting'])
+
         # Fire the bullet!
         player.fireBullet(fireInfo, doEffects, damageType, customDamageType)
 
         # Use new seed for next bullet.
         seed += 1
+
+    if doLagCompDebug:
+        if not IS_CLIENT:
+            # Tell the client where we saw all of the player hitboxes and
+            # where we shot the bullet.
+            player.sendUpdate('hitBoxDebug', [hitBoxPositions, rayStart, rayDirs])
+        else:
+            # Show how we, the client, saw all of the player hitboxes
+            # at the time we shot.
+            player.clientHitBoxDebug(hitBoxPositions, rayStart, rayDirs)
 
     # Apply damage if any.
     applyMultiDamage()

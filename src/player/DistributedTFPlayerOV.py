@@ -138,6 +138,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.serverLagCompDebugRoot = None
         self.clientLagCompDebugRoot = None
+        self.hitboxDebugRoot = None
+        self.clientHitboxDebugRoot = None
 
         self.respawnTimeLbl = None
 
@@ -209,6 +211,60 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
     def onDamagedOther(self, amount, pos):
         if tf_show_damage_numbers.value:
             self.dmgNumbers.addDamage(amount, pos)
+
+    def hitBoxDebug(self, positions, rayStart, rayDirs):
+        rayStart = Point3(rayStart[0], rayStart[1], rayStart[2])
+
+        if self.hitboxDebugRoot:
+            self.hitboxDebugRoot.removeNode()
+
+        self.hitboxDebugRoot = base.render.attachNewNode('hitboxDebugServer')
+        self.hitboxDebugRoot.setRenderModeWireframe()
+        self.hitboxDebugRoot.setColor(0, 0, 1, 1)
+        self.hitboxDebugRoot.setDepthWrite(False)
+        self.hitboxDebugRoot.setDepthTest(False)
+        self.hitboxDebugRoot.setBin('fixed', 10000)
+        self.hitboxDebugRoot.setTextureOff(1)
+
+        sm = loader.loadModel("models/misc/smiley")
+        for pos in positions:
+            hbox = sm.copyTo(self.hitboxDebugRoot)
+            hbox.setScale(6)
+            hbox.setPos(Point3(pos[0], pos[1], pos[2]))
+
+        segs = LineSegs('bulletRaysServer')
+        for rayDir in rayDirs:
+            rayDir = Vec3(rayDir[0], rayDir[1], rayDir[2])
+            segs.moveTo(rayStart)
+            segs.drawTo(rayStart + rayDir * 10000)
+        self.hitboxDebugRoot.attachNewNode(segs.create())
+
+    def clientHitBoxDebug(self, positions, rayStart, rayDirs):
+        rayStart = Point3(rayStart[0], rayStart[1], rayStart[2])
+
+        if self.clientHitboxDebugRoot:
+            self.clientHitboxDebugRoot.removeNode()
+
+        self.clientHitboxDebugRoot = base.render.attachNewNode('hitboxDebugClient')
+        self.clientHitboxDebugRoot.setRenderModeWireframe()
+        self.clientHitboxDebugRoot.setColor(1, 0, 0, 1)
+        self.clientHitboxDebugRoot.setDepthWrite(False)
+        self.clientHitboxDebugRoot.setDepthTest(False)
+        self.clientHitboxDebugRoot.setBin('fixed', 10000)
+        self.clientHitboxDebugRoot.setTextureOff(1)
+
+        sm = loader.loadModel("models/misc/smiley")
+        for pos in positions:
+            hbox = sm.copyTo(self.clientHitboxDebugRoot)
+            hbox.setScale(9)
+            hbox.setPos(Point3(pos[0], pos[1], pos[2]))
+
+        segs = LineSegs('bulletRaysClient')
+        for rayDir in rayDirs:
+            rayDir = Vec3(rayDir[0], rayDir[1], rayDir[2])
+            segs.moveTo(rayStart)
+            segs.drawTo(rayStart + rayDir * 10000)
+        self.clientHitboxDebugRoot.attachNewNode(segs.create())
 
     def lagCompDebug(self, positions):
         if self.serverLagCompDebugRoot:
@@ -768,6 +824,18 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.localAvatarId = self.doId
 
     def delete(self):
+        if self.clientLagCompDebugRoot:
+            self.clientLagCompDebugRoot.removeNode()
+            self.clientLagCompDebugRoot = None
+        if self.serverLagCompDebugRoot:
+            self.serverLagCompDebugRoot.removeNode()
+            self.serverLagCompDebugRoot = None
+        if self.hitboxDebugRoot:
+            self.hitboxDebugRoot.removeNode()
+            self.hitboxDebugRoot = None
+        if self.clientHitboxDebugRoot:
+            self.clientHitboxDebugRoot.removeNode()
+            self.clientHitboxDebugRoot = None
         self.disableControls()
         if self.dmgNumbers:
             self.dmgNumbers.cleanup()

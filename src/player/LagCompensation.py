@@ -7,7 +7,7 @@ from panda3d.core import *
 
 maxUnlag = 1.0
 
-tf_server_lag_comp_debug = ConfigVariableBool("tf-server-lag-comp-debug", False)
+#tf_server_lag_comp_debug = ConfigVariableBool("tf-server-lag-comp-debug", False)
 
 class PlayerSample:
     pass
@@ -88,9 +88,9 @@ class LagCompensation(DirectObject):
         self.notify.debug("current tick " + str(base.tickCount))
         self.notify.debug("delta time " + str(deltaTime))
 
-        doLagCompDebug = tf_server_lag_comp_debug.value
+        #doLagCompDebug = tf_server_lag_comp_debug.value
 
-        positions = []
+        #positions = []
 
         for doId, record in self.playerRecords.items():
             if doId == plyr.doId:
@@ -102,11 +102,11 @@ class LagCompensation(DirectObject):
 
             self.backtrackPlayer(otherPlyr, record, targetTime)
 
-            if doLagCompDebug:
-                positions.append(otherPlyr.getPos())
+            #if doLagCompDebug:
+            #    positions.append(otherPlyr.getPos())
 
-        if doLagCompDebug:
-            plyr.sendUpdate('lagCompDebug', [positions])
+        #if doLagCompDebug:
+        #    plyr.sendUpdate('lagCompDebug', [positions])
 
     def finishLagCompensation(self, plyr):
         for doId, record in self.playerRecords.items():
