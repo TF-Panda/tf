@@ -5,7 +5,7 @@ from .BaseObject import BaseObject
 
 from tf.actor.Activity import Activity
 from tf.tfbase import TFGlobals, TFLocalizer
-from tf.tfbase.TFGlobals import Contents, DamageType
+from tf.tfbase.TFGlobals import Contents, DamageType, TFTeam
 from tf.weapon.WeaponEffects import makeMuzzleFlash
 
 if not IS_CLIENT:
@@ -287,6 +287,9 @@ class SentryGun(BaseObject):
 
             return moved
 
+        def getOtherTeamContents(self):
+            return Contents.BlueTeam if self.team == TFTeam.Red else Contents.RedTeam
+
         def isValidTargetPlayer(self, player, sentryOrigin, targetCenter):
             # TODO: spies invisible pct
 
@@ -295,7 +298,7 @@ class SentryGun(BaseObject):
             # TODO: not cross water boundary
 
             # Ray trace!!!
-            return self.isEntityVisible(player, Contents.Solid | Contents.HitBox)[0]
+            return self.isEntityVisible(player, Contents.Solid | self.getOtherTeamContents())[0]
 
         def isValidTargetObject(self, obj, sentryOrigin, targetCenter):
             # TODO: is placing
@@ -305,7 +308,7 @@ class SentryGun(BaseObject):
             # TODO: not cross water boundary
 
             # Ray trace
-            return self.isEntityVisible(obj, Contents.Solid | Contents.HitBox)[0]
+            return self.isEntityVisible(obj, Contents.Solid | self.getOtherTeamContents())[0]
 
         def foundTarget(self, target, soundCenter):
             self.enemy = target
