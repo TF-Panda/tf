@@ -655,6 +655,7 @@ class Actor(Model):
         for hbox in self.hitBoxes:
             hbox.body.setTransform(
                 TransformState.makeMat(self.character.getJointNetTransform(hbox.joint)))
+            hbox.body.syncTransform()
 
     def invalidateHitBoxes(self):
         self.lastHitBoxSyncTime = 0.0
