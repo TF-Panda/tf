@@ -29,6 +29,7 @@ class DistributedSniperRifle(TFWeaponGun):
             'spread': 0.0,
             'timeFireDelay': 1.5
         })
+        self.primaryAttackInterval = 1.5
         self.usesClip = False
         self.maxAmmo = 25
         self.ammo = self.maxAmmo
@@ -160,8 +161,8 @@ class DistributedSniperRifle(TFWeaponGun):
 
         self.toggleZoom()
 
-        # At least 0.1 seconds from now, but don't stomp a previous value
-        self.nextPrimaryAttack = max(self.nextPrimaryAttack, globalClock.frame_time + 0.1)
+        # At least 0.2 seconds from now, but don't stomp a previous value
+        self.nextPrimaryAttack = max(self.nextPrimaryAttack, globalClock.frame_time + 0.2)
         self.nextSecondaryAttack = globalClock.frame_time + TF_WEAPON_SNIPERRIFLE_ZOOM_TIME
 
     def zoomOutIn(self):
