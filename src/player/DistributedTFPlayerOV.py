@@ -392,6 +392,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         # or zooming in with the sniper rifle.
         self.addPredictionField("maxSpeed", float, tolerance=0.5)
         self.addPredictionField("fallVelocity", float, noErrorCheck=True, networked=False)
+        self.addPredictionField("fov", float, noErrorCheck=True, networked=False)
 
     def setActiveWeapon(self, index):
         if self.activeWeapon == index:
@@ -469,6 +470,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         Main routine to calculate position and angles for the camera.
         """
 
+        base.camLens.setMinFov(self.fov / (4./3.))
+
         if self.playerState == TFPlayerState.Died:
             if self.observerMode == ObserverMode.DeathCam:
                 self.calcDeathCamView()
@@ -483,8 +486,13 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.camera.setPos(self.getEyePosition())
         base.camera.setHpr(self.viewAngles + self.punchAngle)
         if self.viewModel:
-            # Also calculate the viewmodel position/rotation.
-            self.viewModel.calcView(self, base.camera)
+            # Don't render the view model when zoomed.
+            if not self.inCondition(self.CondZoomed):
+                self.viewModel.show()
+                # Also calculate the viewmodel position/rotation.
+                self.viewModel.calcView(self, base.camera)
+            else:
+                self.viewModel.hide()
 
     def camBlock(self, camPos, targetPos, camTargetEntity):
         """
@@ -997,6 +1005,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         if doMovement:
             sens = mouse_sensitivity.value
+            sens *= self.fov / self.defaultFov
+            #if self.inCondition(self.CondZoomed):
+            #    sens /= 2
             sizeX = base.win.size.x
             sizeY = base.win.size.y
             if mouse_relative:

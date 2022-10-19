@@ -22,6 +22,9 @@ from .DistributedPDA import DistributedConstructionPDA, DistributedDestructionPD
 from .DistributedToolbox import DistributedToolbox
 from .DistributedBoneSaw import DistributedBoneSaw
 from .DistributedMedigun import DistributedMedigun
+from .DistributedSMG import DistributedSMG
+from .DistributedMachete import DistributedMachete
+from .DistributedSniperRifle import DistributedSniperRifle
 
 Weapons = {
   Weapon.ShotgunEngineer: DistributedShotgunEngineer,
@@ -46,5 +49,8 @@ Weapons = {
   Weapon.DestructionPDA: DistributedDestructionPDA,
   Weapon.Toolbox: DistributedToolbox,
   Weapon.BoneSaw: DistributedBoneSaw,
-  Weapon.MediGun: DistributedMedigun
+  Weapon.MediGun: DistributedMedigun,
+  Weapon.SMG: DistributedSMG,
+  Weapon.Machete: DistributedMachete,
+  Weapon.SniperRifle: DistributedSniperRifle
 }

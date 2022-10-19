@@ -45,6 +45,7 @@ class DistributedTFPlayerShared:
     CondStealthedBlink = 8
     CondInvulnerableWearingOff = 9
     CondTeleported = 10
+    CondZoomed = 11
 
     BadConditions = [
         CondBurning
@@ -120,6 +121,21 @@ class DistributedTFPlayerShared:
         self.maxMetal = 200
 
         self.respawnTime = 0.0
+
+        self.autoRezoom = False
+
+        # Current FOV
+        self.fov = 75
+        # default fov
+        self.defaultFov = 75
+        self.desiredFov = 75
+        self.fovSpeed = 0.0
+
+    def setFOV(self, fov, time):
+        if fov == 0:
+            self.fov = self.defaultFov
+        else:
+            self.fov = fov
 
     def __conditionThink(self, task):
 

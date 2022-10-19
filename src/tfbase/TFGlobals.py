@@ -267,6 +267,7 @@ ModelPrecacheList = [
     "models/char/c_engineer_arms",
     "models/char/c_heavy_arms",
     "models/char/c_soldier_arms",
+    "models/char/c_sniper_arms",
     "models/char/demo",
     "models/char/demogib001",
     "models/char/demogib002",
@@ -289,6 +290,7 @@ ModelPrecacheList = [
     "models/char/soldier",
     "models/char/spy",
     "models/char/medic",
+    "models/char/sniper",
 
     "models/buildables/sentry1",
     "models/buildables/sentry1_blueprint",
@@ -369,5 +371,10 @@ ModelPrecacheList = [
     "models/weapons/w_bonesaw",
     "models/weapons/v_bonesaw_medic",
     "models/weapons/v_grenadelauncher_demo",
-    "models/weapons/v_minigun_heavy"
+    "models/weapons/v_minigun_heavy",
+    "models/weapons/w_sniperrifle",
+    "models/weapons/v_sniperrifle_sniper",
+    "models/weapons/w_smg",
+    "models/weapons/v_smg_sniper",
+    "models/weapons/c_machete"
 ]

@@ -70,6 +70,9 @@ class Weapon:
     BoneSaw = 21
     MediGun = 22
     SyringeGun = 23
+    SniperRifle = 24
+    SMG = 25
+    Machete = 26
 
 BaseSpeed = 300
 
@@ -536,7 +539,7 @@ class MedicInfo:
         'pain': ['painSmall']
     }
 
-    HeadRotationOffset = Vec3(0, 0, 0)
+    HeadRotationOffset = Vec3(0, -80, 0)
 
     PainFilenames = [
         "Medic.PainSevere01",
@@ -579,6 +582,63 @@ class MedicInfo:
 
     Weapons = [Weapon.MediGun, Weapon.BoneSaw]
 
+class SniperInfo:
+    Name = TFLocalizer.Sniper
+    MenuWeapon = "models/weapons/w_sniperrifle"
+    PlayerModel = "models/char/sniper"
+    ViewModel = "models/char/c_sniper_arms"
+    ForwardFactor = 1.0
+    BackwardFactor = 0.9
+    CrouchFactor = 0.33
+    SwimmingFactor = 0.8
+    ViewHeight = 75
+    MaxHealth = 125
+    Phonemes = 'sniper'
+    Expressions = {
+        'idle': ['defaultFace'],
+        'specialAction': ['specialAction01'],
+        'pain': ['painSmall']
+    }
+
+    HeadRotationOffset = Vec3(0, -80, 0)
+
+    PainFilenames = [
+        "Sniper.PainSevere01",
+        "Sniper.PainSevere02",
+        "Sniper.PainSevere03",
+        "Sniper.PainSevere04"
+    ]
+    CritPainFilenames = [
+        "Sniper.PainCrticialDeath01",
+        "Sniper.PainCrticialDeath02",
+        "Sniper.PainCrticialDeath03",
+        "Sniper.PainCrticialDeath04"
+    ]
+    SharpPainFilenames = [
+        "Sniper.PainSharp01",
+        "Sniper.PainSharp02",
+        "Sniper.PainSharp03",
+        "Sniper.PainSharp04"
+    ]
+    TeleporterThanks = [
+        "Sniper.ThanksForTheTeleporter01",
+        "Sniper.ThanksForTheTeleporter02",
+        "Sniper.ThanksForTheTeleporter03"
+    ]
+    ThanksForHeal = [
+        "Sniper.ThanksForTheHeal01",
+        "Sniper.ThanksForTheHeal02",
+        "Sniper.ThanksForTheHeal03"
+    ]
+    VoiceCommands = {
+        VoiceCommand.Medic: [
+            "Sniper.Medic01",
+            "Sniper.Medic02"
+        ]
+    }
+
+    Weapons = [Weapon.SniperRifle, Weapon.SMG, Weapon.Machete]
+
 ClassInfos = {
     Class.Soldier: SoldierInfo,
     Class.Demo: DemoInfo,
@@ -587,5 +647,6 @@ ClassInfos = {
     Class.Scout: ScoutInfo,
     Class.Pyro: PyroInfo,
     Class.Spy: SpyInfo,
-    Class.Medic: MedicInfo
+    Class.Medic: MedicInfo,
+    Class.Sniper: SniperInfo
 }

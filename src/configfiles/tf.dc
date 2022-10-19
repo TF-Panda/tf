@@ -76,6 +76,9 @@ from tf.weapon.DistributedPDA import DistributedDestructionPDA/AI
 from tf.weapon.DistributedToolbox import DistributedToolbox/AI
 from tf.weapon.DistributedBoneSaw import DistributedBoneSaw/AI
 from tf.weapon.DistributedMedigun import DistributedMedigun/AI
+from tf.weapon.DistributedSMG import DistributedSMG/AI
+from tf.weapon.DistributedMachete import DistributedMachete/AI
+from tf.weapon.DistributedSniperRifle import DistributedSniperRifle/AI
 
 from tf.distributed.DistributedTeamFlag import DistributedTeamFlag/AI
 
@@ -522,4 +525,10 @@ dclass DistributedMedigun : TFWeaponGun {
   uint8 attacking;
   uint8 holstered;
   uint8 chargeRelease;
+};
+
+dclass DistributedSMG : TFWeaponGun { };
+dclass DistributedMachete : TFWeaponMelee { };
+dclass DistributedSniperRifle : TFWeaponGun {
+  float64 chargedDamage;
 };

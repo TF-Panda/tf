@@ -37,6 +37,7 @@ class TFPlayerAnimState:
         self.jumpStartTime = 0.0
         self.idealActivity = Activity.Invalid
         self.estimatedYaw = 0.0
+        self.holdDeployedPoseUntilTime = 0.0
         self.initPoseParameters()
 
     def delete(self):
@@ -49,6 +50,7 @@ class TFPlayerAnimState:
 
     def onPlayerModelChanged(self):
         self.gotPoseParameters = False
+        self.holdDeployedPoseUntilTime = 0.0
 
     def initPoseParameters(self):
         self.moveXParam = self.player.getPoseParameter("move_x")
@@ -68,12 +70,20 @@ class TFPlayerAnimState:
     def doAnimationEvent(self, event, data):
         #print("anim event", event)
         from tf.weapon.DMinigun import DMinigun
+        from tf.weapon.DistributedSniperRifle import DistributedSniperRifle
         if event == PlayerAnimEvent.AttackPrimary:
-            isMinigun = isinstance(self.player.getActiveWeaponObj(), DMinigun)
+            wpn = self.player.getActiveWeaponObj()
+            isMinigun = isinstance(wpn, DMinigun)
+            isSniperRifle = isinstance(wpn, DistributedSniperRifle)
             if isMinigun:
                 gestureActivity = Activity.Attack_Stand
                 if not self.isGestureSlotPlaying(GestureSlot.AttackAndReload, self.translateActivity(gestureActivity, GestureSlot.AttackAndReload)):
                     self.restartGesture(GestureSlot.AttackAndReload, gestureActivity)
+            elif isSniperRifle and self.player.inCondition(self.player.CondZoomed):
+                # Weapon primary fire, zoomed in.
+                # TODO: ducking
+                self.restartGesture(GestureSlot.AttackAndReload, Activity.Deployed_Attack_Stand)
+                self.holdDeployedPoseUntilTime = globalClock.frame_time + 2.0
             else:
                 # Weapon primary fire.
                 self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
@@ -274,11 +284,17 @@ class TFPlayerAnimState:
     def handleMoving(self):
         speed = self.vel.getXy().length()
 
+        if speed > 0.5:
+            self.holdDeployedPoseUntilTime = 0.0
+
         if self.player.inCondition(self.player.CondAiming):
             if speed > 0.5:
                 self.idealActivity = Activity.Deployed
             else:
                 self.idealActivity = Activity.Deployed_Idle
+            return True
+        elif self.holdDeployedPoseUntilTime > globalClock.frame_time:
+            self.idealActivity = Activity.Deployed_Idle
             return True
         elif speed > 0.5:
             self.idealActivity = Activity.Run

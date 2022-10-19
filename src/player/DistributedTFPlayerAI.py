@@ -20,6 +20,8 @@ from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType
 from tf.object.BaseObject import BaseObject
 from tf.object.ObjectType import ObjectType
 
+from tf.actor.HitBox import HitBoxGroup
+
 from panda3d.core import *
 from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
 
@@ -75,6 +77,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.viewAngles = Vec3(0, 0, 0)
         self.nextAttack = 0.0
         self.forceJoint = -1
+        # HitBox group of trace attack.
+        self.hitBoxGroup = -1
         self.bulletForce = Vec3(0)
 
         self.healers = []
@@ -556,6 +560,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             force = 1000
         return force
 
+    def onTakeCriticalHit(self, attacker):
+        if attacker != self:
+            self.emitSound("TFPlayer.CritPain", client=self.owner)
+        if attacker.isPlayer():
+            self.emitSound("TFPlayer.CritHit", client=attacker.owner)
+
     def onTakeDamage(self, inputInfo):
         info = inputInfo#copy.deepcopy(inputInfo)
 
@@ -568,6 +578,17 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         healthBefore = self.health
         if not base.game.playerCanTakeDamage(self, info.attacker):
             return
+
+        # If we're using hitboxes, make it critical if the head was hit.
+        # Sniper rifle uses this.
+        if info.damageType & DamageType.UseHitLocations:
+            if self.hitBoxGroup == HitBoxGroup.Head:
+                info.damageType |= DamageType.Critical
+
+        if info.damageType & DamageType.Critical:
+            # Critical hit.  3x damage.
+            info.setDamage(info.damage * 3)
+            self.onTakeCriticalHit(info.attacker)
 
         # If this is our own rocket, scale down the damage
         if self.tfClass == Class.Soldier and info.attacker == self:
@@ -641,6 +662,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 self.d_speak(severeFname, client=info.attacker.owner)
                 self.lastPainTime = now
 
+        self.hitBoxGroup = -1
+        self.forceJoint = -1
+
         #self.bulletForce = Vec3()
 
     def traceAttack(self, info, dir, hit):
@@ -655,8 +679,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if data:
             # Save this joint for the ragdoll.
             self.forceJoint = data[1].joint
+            self.hitBoxGroup = data[1].group
         else:
             self.forceJoint = -1
+            self.hitBoxGroup = -1
 
         attacker = info.inflictor
         if attacker:
@@ -738,7 +764,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Player died.
         if dmgType & DamageType.Fall:
             pain = None
-        elif dmgType & DamageType.Club:
+        elif dmgType & (DamageType.Club | DamageType.Slash):
             pain = random.choice(self.classInfo.CritPainFilenames)
         elif dmgType & DamageType.Blast:
             pain = random.choice(self.classInfo.SharpPainFilenames)

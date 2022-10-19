@@ -45,7 +45,8 @@ phonemeClasses = [
     'soldier',
     'scout',
     'spy',
-    'medic'
+    'medic',
+    'sniper'
 ]
 
 def loadPhonemes():

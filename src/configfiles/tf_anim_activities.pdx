@@ -282,4 +282,18 @@
   Secondary_Attack_Air_Walk_Postfire
 
   Object_Fire2
+
+  Deployed_Crouch
+  Deployed_Attack_Stand
+  Deployed_Attack_Crouch
+  Deployed_Reload_Stand
+
+  Primary_Deployed_Crouch
+  Primary_Deployed_Attack_Stand
+  Primary_Deployed_Attack_Crouch
+  Primary_Deployed_Reload_Stand
+
+  Die_Headshot
+  Die_Backstabbed
+  Die_Burned
 ]

@@ -93,6 +93,9 @@ class TFWeapon(BaseClass):
             Activity.Deployed: Activity.Primary_Deployed,
             Activity.Deployed_Idle: Activity.Primary_Deployed_Idle,
             Activity.Deployed_Idle_Crouch: Activity.Primary_Deployed_Idle_Crouch,
+            Activity.Deployed_Attack_Stand: Activity.Primary_Deployed_Attack_Stand,
+            Activity.Deployed_Attack_Crouch: Activity.Primary_Deployed_Attack_Crouch,
+            Activity.Deployed_Reload_Stand: Activity.Primary_Deployed_Reload_Stand,
             Activity.Gesture_Flinch: Activity.Primary_Gesture_Flinch
         },
 
