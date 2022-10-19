@@ -47,7 +47,6 @@ class Actor(Model):
         # Boxes parented to joints for hit detection.
         # TODO: Use an aggregate.
         self.hitBoxes = []
-        self.hitBoxRoot = None
         self.lastHitBoxSyncTime = 0.0
 
     @staticmethod
@@ -536,7 +535,6 @@ class Actor(Model):
             hbox.body.removeFromScene(base.physicsWorld)
             hbox.body = None
         self.hitBoxes = []
-        self.hitBoxRoot = None
         Model.unloadModel(self)
 
     def loadModel(self, filename, hitboxes=True):
@@ -582,13 +580,6 @@ class Actor(Model):
 
         hitBoxes = data.getAttributeValue("hit_boxes").getList()
 
-        # Create a single root node for all hitbox nodes to be parented under,
-        # and hide it from rendering.  This way the Cull traversal only has
-        # to consider the root node, and not all the individual hitbox nodes.
-        if len(hitBoxes) > 0:
-            self.hitBoxRoot = self.characterNp.attachNewNode("hitBoxRoot")
-            self.hitBoxRoot.node().setOverallHidden(True)
-
         assert self.characterNp
 
         for i in range(len(hitBoxes)):
@@ -633,8 +624,6 @@ class Actor(Model):
         body.setPythonTag("entity", self)
         body.setPythonTag("object", self)
         self.hitBoxes.append(hbox)
-        assert self.hitBoxRoot
-        self.hitBoxRoot.attachNewNode(body)
 
     def syncHitBoxes(self):
         """
@@ -642,7 +631,7 @@ class Actor(Model):
         current world-space transform of the associated joints.
         """
 
-        if not self.hitBoxes:
+        if not self.hitBoxes or not self.character:
             return
 
         #now = globalClock.frame_time
@@ -652,10 +641,10 @@ class Actor(Model):
 
         #self.lastHitBoxSyncTime = now
 
+        netTransform = self.characterNp.getNetTransform().getMat()
         for hbox in self.hitBoxes:
-            hbox.body.setTransform(
-                TransformState.makeMat(self.character.getJointNetTransform(hbox.joint)))
-            hbox.body.syncTransform()
+            hboxMat = self.character.getJointNetTransform(hbox.joint) * netTransform
+            hbox.body.setTransform(TransformState.makeMat(hboxMat))
 
     def invalidateHitBoxes(self):
         self.lastHitBoxSyncTime = 0.0
