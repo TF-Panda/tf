@@ -753,12 +753,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.abortFreezeCam = False
         self.velocity = Vec3(0)
         self.resetViewPunch()
-        self.removeAllConditions()
         if self.activeWeapon != -1:
             wpn = base.net.doId2do.get(self.weapons[self.activeWeapon])
             if wpn:
                 wpn.dropAsAmmoPack()
         self.setActiveWeapon(-1)
+        self.removeAllConditions()
         self.health = 0
 
         # Player died.
