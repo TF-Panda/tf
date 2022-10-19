@@ -227,6 +227,9 @@ class TFWeaponGun(BaseClass):
             rocket.node().setMass(5.0)
             base.net.generateObject(rocket, player.zoneId)
 
+    def getWeaponDamage(self):
+        return self.weaponData.get(self.weaponMode, {}).get('damage', 1.0)
+
     def fireBullet(self, player):
         self.playSound(self.getSingleSound())
         weaponData = self.weaponData.get(self.weaponMode, {})
@@ -263,7 +266,7 @@ class TFWeaponGun(BaseClass):
                     self.weaponMode,
                     base.net.predictionRandomSeed & 255,
                     weaponData.get('spread', 0.0),
-                    weaponData.get('damage', 1.0),
+                    self.getWeaponDamage(),
                     tracerOrigin=tracerOrigin)
 
 if not IS_CLIENT:
