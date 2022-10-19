@@ -108,9 +108,9 @@ class TFWeaponGun(BaseClass):
             return
 
         if IS_CLIENT:
-            if base.cr.prediction.inPrediction and base.cr.prediction.firstTimePredicted:
-                return
             if self.isOwnedByLocalPlayer():
+                if base.cr.prediction.hasBeenPredicted():
+                    return
                 # Get the muzzle from the view model weapon.
                 if self.UsesViewModel:
                     muzzle = self.player.viewModel.find("**/muzzle")
