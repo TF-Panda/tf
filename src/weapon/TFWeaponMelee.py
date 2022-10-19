@@ -27,6 +27,7 @@ class TFWeaponMelee(TFWeapon):
         self.meleeWeapon = True
         self.connected = False
         self.smackTime = -1.0
+        self.currentAttackIsCritical = False
 
     def deactivate(self):
         self.smackTime = -1.0
@@ -35,6 +36,7 @@ class TFWeaponMelee(TFWeapon):
     def primaryAttack(self):
         self.weaponMode = TFWeaponMode.Primary
         self.connected = False
+        self.currentAttackIsCritical = False
 
         self.swing()
 
@@ -150,6 +152,8 @@ class TFWeaponMelee(TFWeapon):
                 dmgType = DamageType.Bullet | DamageType.NeverGib | DamageType.Club
                 damage = self.getMeleeDamage(ent)
                 if damage > 0:
+                    if self.currentAttackIsCritical:
+                        dmgType |= DamageType.Critical
                     customDamage = -1
                     info = TakeDamageInfo()
                     info.attacker = self.player

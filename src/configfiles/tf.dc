@@ -466,7 +466,9 @@ dclass DistributedFists : TFWeaponMelee { };
 dclass DistributedFireAxe : TFWeaponMelee { };
 
 dclass DistributedRevolver : TFWeaponGun { };
-dclass DistributedKnife : TFWeaponMelee { };
+dclass DistributedKnife : TFWeaponMelee {
+  uint8 readyToBackstab;
+};
 
 dclass DistributedConstructionPDA : TFWeapon {
   selectBuilding(uint8) clsend airecv;
