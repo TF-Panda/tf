@@ -3,8 +3,12 @@
 from .TFWeaponGun import TFWeaponGun
 from .WeaponMode import TFWeaponType, TFWeaponMode
 from tf.tfbase import TFLocalizer
-from tf.tfbase.TFGlobals import DamageType
+from tf.tfbase.TFGlobals import DamageType, getTF2Font
 from tf.player.InputButtons import InputFlag
+
+if IS_CLIENT:
+    from direct.gui.DirectGui import OnscreenText
+    from panda3d.core import TextNode
 
 TF_WEAPON_SNIPERRIFLE_CHARGE_PER_SEC =	50.0
 TF_WEAPON_SNIPERRIFLE_UNCHARGE_PER_SEC =	75.0
@@ -38,6 +42,9 @@ class DistributedSniperRifle(TFWeaponGun):
         self.resetTimers()
         self.chargedDamage = 0.0
 
+        if IS_CLIENT:
+            self.chargeLbl = None
+
     def getName(self):
         return TFLocalizer.SniperRifle
 
@@ -57,6 +64,21 @@ class DistributedSniperRifle(TFWeaponGun):
             self.addPredictionField("rezoomTime", float, networked=False)
             self.addPredictionField("rezoomAfterShot", bool, networked=False)
             self.addPredictionField("chargedDamage", float, networked=True, tolerance=0.01)
+
+        def createChargeLbl(self):
+            self.destroyChargeLbl()
+
+            self.chargeLbl = OnscreenText('', font=getTF2Font(), fg=(1, 1, 1, 1),
+                shadow=(0, 0, 0, 1), pos=(-0.2, 0.0), align=TextNode.ARight)
+
+        def destroyChargeLbl(self):
+            if self.chargeLbl:
+                self.chargeLbl.destroy()
+                self.chargeLbl = None
+
+        def updateChargeLbl(self):
+            if base.cr.prediction.isFirstTimePredicted() and self.chargeLbl:
+                self.chargeLbl.setText(str(int((self.chargedDamage / TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX) * 100)) + "%")
 
     def resetTimers(self):
         self.unzoomTime = -1
@@ -139,7 +161,11 @@ class DistributedSniperRifle(TFWeaponGun):
             # Don't start charging in the time just after a shot before
             # we unzoom to play rack anim.
             if self.player.inCondition(self.player.CondAiming) and not self.rezoomAfterShot:
+                prevCharge = self.chargedDamage
                 self.chargedDamage = min(self.chargedDamage + globalClock.dt * TF_WEAPON_SNIPERRIFLE_CHARGE_PER_SEC, TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX)
+                if IS_CLIENT and base.cr.prediction.isFirstTimePredicted() and self.chargedDamage >= TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX and prevCharge < TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX:
+                    # Hit full charge, play sound.
+                    self.player.emitSound("TFPlayer.ReCharged")
             else:
                 self.chargedDamage = max(0, self.chargedDamage - globalClock.dt * TF_WEAPON_SNIPERRIFLE_UNCHARGE_PER_SEC)
 
@@ -152,6 +178,9 @@ class DistributedSniperRifle(TFWeaponGun):
             # No fire buttons or reloading.
             if not self.reloadOrSwitchWeapons() and not self.inReload:
                 self.weaponIdle()
+
+        if IS_CLIENT:
+            self.updateChargeLbl()
 
     def zoom(self):
         if not self.player.onGround:
@@ -184,6 +213,9 @@ class DistributedSniperRifle(TFWeaponGun):
         self.player.setCondition(self.player.CondAiming)
         self.player.updateClassSpeed()
 
+        if IS_CLIENT:
+            self.createChargeLbl()
+
     def isZoomed(self):
         return self.player.inCondition(self.player.CondZoomed)
 
@@ -201,6 +233,9 @@ class DistributedSniperRifle(TFWeaponGun):
         # If we're thinking about zooming, cancel it
         self.resetTimers()
         self.chargedDamage = 0.0
+
+        if IS_CLIENT:
+            self.destroyChargeLbl()
 
     def toggleZoom(self):
         if self.player.fov >= 75:
