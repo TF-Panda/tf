@@ -46,7 +46,7 @@ class Eyes:
     def enable(self):
         self.disable()
 
-        if len(self.eyes) == 0:
+        if not self.eyes:
             return
 
         self.eyelidsTask = base.taskMgr.add(self.__eyelids, 'eyelids')
