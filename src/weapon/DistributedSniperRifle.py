@@ -37,7 +37,7 @@ class DistributedSniperRifle(TFWeaponGun):
         self.usesClip = False
         self.maxAmmo = 25
         self.ammo = self.maxAmmo
-        self.damageType = DamageType.Bullet | DamageType.UseHitLocations
+        self.damageType = DamageType.Bullet
 
         self.resetTimers()
         self.chargedDamage = 0.0
@@ -221,6 +221,13 @@ class DistributedSniperRifle(TFWeaponGun):
 
     def getWeaponDamage(self):
         return max(self.chargedDamage, TF_WEAPON_SNIPERRIFLE_DAMAGE_MIN)
+
+    def getWeaponDamageType(self):
+        dmgType = self.damageType
+        if self.isZoomed():
+            # Do a critical hit on headshot only if we're zoomed in.
+            dmgType |= DamageType.UseHitLocations
+        return dmgType
 
     def zoomOut(self):
         #if self.player.inCondition(self.player.CondZoomed):

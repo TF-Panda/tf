@@ -230,6 +230,9 @@ class TFWeaponGun(BaseClass):
     def getWeaponDamage(self):
         return self.weaponData.get(self.weaponMode, {}).get('damage', 1.0)
 
+    def getWeaponDamageType(self):
+        return self.damageType
+
     def fireBullet(self, player):
         self.playSound(self.getSingleSound())
         weaponData = self.weaponData.get(self.weaponMode, {})
