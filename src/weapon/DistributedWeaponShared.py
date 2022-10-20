@@ -335,7 +335,7 @@ class DistributedWeaponShared:
             if self.nextEmptySoundTime < globalClock.frame_time:
                 self.playSound(self.getEmptySound())
                 self.nextEmptySoundTime = globalClock.frame_time + 0.5
-            self.fireOnEmpty = False
+            self.fireOnEmpty = True
 
     def primaryAttack(self):
         self.sendWeaponAnim(Activity.VM_Fire)
