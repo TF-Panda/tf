@@ -64,7 +64,7 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     #fireInfo['attacker'] =
 
     # Setup the bullet damage type
-    damageType = weapon.damageType
+    damageType = weapon.getWeaponDamageType()
     customDamageType = -1
 
     # Reset multi-damage structures.
