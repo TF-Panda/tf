@@ -153,7 +153,7 @@ class DistributedKnife(TFWeaponMelee):
         ownerForward.normalize()
 
         # Get target forward view vector
-        q.setHpr(target.viewAngles)
+        q.setHpr((target.eyeH * 360, target.eyeP * 360, 0.0))
         targetForward = q.getForward()
         targetForward.z = 0.0
         targetForward.normalize()
