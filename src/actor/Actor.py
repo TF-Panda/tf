@@ -680,13 +680,15 @@ class Actor(Model):
         if not self.character:
             return
 
-        assert self.modelNp
-        if (base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted) or \
-           (self.modelNp.getTop() in (base.hidden, NodePath()) or self.modelNp.isHidden()):
-            return
-
         queue = AnimEventQueue()
         self.character.getEvents(queue, eventType)
+
+        assert self.modelNp
+        if (self.modelNp.getTop() in (base.hidden, NodePath()) or self.modelNp.isHidden()):
+            return
+
+        if base.cr.prediction.hasBeenPredicted():
+            return
 
         if not queue.hasEvent():
             return
