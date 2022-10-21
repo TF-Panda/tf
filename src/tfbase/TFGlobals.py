@@ -38,6 +38,8 @@ class Contents:
     RedTeam = 1 << 1
     BlueTeam = 1 << 2
     HitBox = 1 << 3
+    # Only solid to players.
+    PlayerSolid = 1 << 4
     AnyTeam = (RedTeam | BlueTeam)
 
 class SolidShape:

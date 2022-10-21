@@ -420,12 +420,12 @@ class DistributedTFPlayerShared:
             # We are red team.
             self.controller.setContentsMask(TFGlobals.Contents.RedTeam)
             # Blue team is solid to us.
-            self.controller.setSolidMask(TFGlobals.Contents.BlueTeam | TFGlobals.Contents.Solid)
+            self.controller.setSolidMask(TFGlobals.Contents.BlueTeam | TFGlobals.Contents.Solid | TFGlobals.Contents.PlayerSolid)
         elif self.team == 1:
             # We are blue team.
             self.controller.setContentsMask(TFGlobals.Contents.BlueTeam)
             # Red team is solid to us.
-            self.controller.setSolidMask(TFGlobals.Contents.RedTeam | TFGlobals.Contents.Solid)
+            self.controller.setSolidMask(TFGlobals.Contents.RedTeam | TFGlobals.Contents.Solid | TFGlobals.Contents.PlayerSolid)
 
     def disableController(self):
         """

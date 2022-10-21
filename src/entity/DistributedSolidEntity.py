@@ -53,11 +53,12 @@ class DistributedSolidEntity(DistributedEntity):
             return shapeDatas
 
         elif self.physType == self.PTTriangles:
+            group = self.model.getTriGroup(0)
             triMesh = self.createTrianglePhysMesh()
 
             materials = []
-            for i in range(self.model.getNumSurfaceProps()):
-                materials.append(SurfaceProperties[self.model.getSurfaceProp(i).lower()].getPhysMaterial())
+            for i in range(group.getNumSurfaceProps()):
+                materials.append(SurfaceProperties[group.getSurfaceProp(i).lower()].getPhysMaterial())
 
             shape = PhysShape(triMesh, materials[0])
             shape.setLocalPos(invCenter)
@@ -120,7 +121,9 @@ class DistributedSolidEntity(DistributedEntity):
         return meshes
 
     def createTrianglePhysMesh(self):
-        return PhysTriangleMesh(PhysTriangleMeshData(self.model.getTriMeshData()))
+        # NOTE: The world handles multiple collide groups.  Non-world solid
+        # entities can only have 1 collide group.
+        return PhysTriangleMesh(PhysTriangleMeshData(self.model.getTriGroup(0).getTriMeshData()))
 
 if not IS_CLIENT:
     DistributedSolidEntityAI = DistributedSolidEntity
