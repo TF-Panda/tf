@@ -18,6 +18,10 @@ class DistributedSolidEntity(DistributedEntity):
     PTConvex = 1
     PTTriangles = 2
 
+    # True if the entity should be positioned at the center of the
+    # model's bounding box, or False to leave it at the world origin.
+    NeedOrigin = False
+
     def __init__(self):
         DistributedEntity.__init__(self, False)
         self.setLightOff(-1)
@@ -25,18 +29,26 @@ class DistributedSolidEntity(DistributedEntity):
         self.model = None
         self.physType = self.PTNone
 
+        self.modelCenter = None
+
     if not IS_CLIENT:
         def initFromLevel(self, ent, properties):
             DistributedEntity.initFromLevel(self, ent, properties)
             self.modelNum = ent.getModelIndex()
 
     def makeModelCollisionShape(self):
+        if self.modelCenter:
+            invCenter = self.modelCenter.getInverse().getPos()
+        else:
+            invCenter = Point3(0)
+
         if self.physType == self.PTConvex:
             defMat = SurfaceProperties['default'].getPhysMaterial()
             meshes = self.createConvexPhysMesh()
             shapeDatas = []
             for mesh in meshes:
                 shape = PhysShape(mesh, defMat)
+                shape.setLocalPos(invCenter)
                 shapeDatas.append((shape, mesh))
             return shapeDatas
 
@@ -48,6 +60,7 @@ class DistributedSolidEntity(DistributedEntity):
                 materials.append(SurfaceProperties[self.model.getSurfaceProp(i).lower()].getPhysMaterial())
 
             shape = PhysShape(triMesh, materials[0])
+            shape.setLocalPos(invCenter)
 
             # Append remaining materials if there are multiple.
             if len(materials) > 1:
@@ -58,16 +71,18 @@ class DistributedSolidEntity(DistributedEntity):
 
         return None
 
-    def generate(self):
-        DistributedEntity.generate(self)
-        self.setPosHpr(0, 0, 0, 0, 0, 0)
+    #def generate(self):
+        #DistributedEntity.generate(self)
+        #self.setPosHpr(0, 0, 0, 0, 0, 0)
 
     def announceGenerate(self):
         DistributedEntity.announceGenerate(self)
         self.fetchModel()
         self.parentModelToEntity()
+        if self.modelCenter:
+            self.setTransform(self.modelCenter)
         #self.flattenLight()
-        self.setPosHpr(0, 0, 0, 0, 0, 0)
+        #self.setPosHpr(0, 0, 0, 0, 0, 0)
 
     def delete(self):
         self.model = None
@@ -77,11 +92,22 @@ class DistributedSolidEntity(DistributedEntity):
         assert self.model
         gn = self.model.getGeomNode()
         if gn:
-            NodePath(gn).reparentTo(self)
+            np = NodePath(gn)
+            if self.modelCenter:
+                np.setTransform(self.modelCenter.getInverse())
+                np.flattenLight()
+            np.reparentTo(self)
 
     def fetchModel(self):
         self.model = base.game.lvlData.getModel(self.modelNum)
         assert self.model
+
+        if self.NeedOrigin:
+            mins = self.model.getMins()
+            maxs = self.model.getMaxs()
+            center = maxs + mins
+            center *= 0.5
+            self.modelCenter = TransformState.makePos(center)
 
     def getModelGeomNode(self):
         assert self.model

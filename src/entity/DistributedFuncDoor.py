@@ -17,6 +17,8 @@ class DistributedFuncDoor(DistributedSolidEntity):
     DSOpening = 2
     DSOpen = 3
 
+    NeedOrigin = True
+
     def __init__(self):
         DistributedSolidEntity.__init__(self)
 
@@ -95,7 +97,7 @@ class DistributedFuncDoor(DistributedSolidEntity):
                     self.doorState = self.DSClosed
                     self.emitSoundSpatial("DoorSound.DefaultArrive")
 
-                self.setPos(self.openPos * self.frac)
+                self.setPos(self.closedPos + self.openPos * self.frac)
 
             elif self.doorState == self.DSOpening:
                 self.frac += self.fracsPerSec * globalClock.dt
@@ -106,7 +108,7 @@ class DistributedFuncDoor(DistributedSolidEntity):
                     if self.wait >= 0.0:
                         self.closeTime = globalClock.frame_time + self.wait
 
-                self.setPos(self.openPos * self.frac)
+                self.setPos(self.closedPos + self.openPos * self.frac)
 
             elif self.doorState == self.DSOpen:
                 if self.closeTime >= 0 and globalClock.frame_time >= self.closeTime:
@@ -123,6 +125,9 @@ class DistributedFuncDoor(DistributedSolidEntity):
             extents -= self.lip
             # Modulate by move direction vector.
             extents.componentwiseMult(self.moveDir)
+            # Initial position is closed position.
+            self.closedPos = self.getPos()
+            # This is an offset to the closed position to make it open.
             self.openPos = extents
             self.moveLen = self.openPos.length()
             self.fracsPerSec = self.speed / self.moveLen
