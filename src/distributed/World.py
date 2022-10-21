@@ -8,6 +8,8 @@ from tf.tfbase.TFGlobals import Contents, TakeDamage, SolidShape, SolidFlag, Wor
 
 class World(DistributedSolidEntity):
 
+    MakeFinal = False
+
     def __init__(self):
         DistributedSolidEntity.__init__(self)
         self.takeDamageMode = TakeDamage.No

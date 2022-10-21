@@ -25,6 +25,13 @@ else:
 
 class DistributedEntity(BaseClass, NodePath):
 
+    # If true, the Cull traverser does not need to consider
+    # view culling below the root of the entity.  If the root
+    # entity node is in view, the entire entity is made in view.
+    # This is overriden to False for the world entity, because we
+    # want to view cull the individual Geoms of the world geometry.
+    MakeFinal = True
+
     def __init__(self, dynamicLighting=True):
         BaseClass.__init__(self)
         if not self.this:
@@ -127,6 +134,8 @@ class DistributedEntity(BaseClass, NodePath):
         # Add a tag on our node that links back to us.
         self.setPythonTag("entity", self)
         self.setPythonTag("object", self)
+
+        self.node().setFinal(self.MakeFinal)
 
         #self.reparentTo(self.parentEntity)
 
@@ -271,6 +280,7 @@ class DistributedEntity(BaseClass, NodePath):
             # Replace the physics node with a regular PandaNode.
             entNode = PandaNode("entity")
             entNode.replaceNode(self.node())
+            entNode.setFinal(self.MakeFinal)
         self.hasCollisions = False
 
     def makeModelCollisionShape(self):
@@ -393,6 +403,7 @@ class DistributedEntity(BaseClass, NodePath):
         body.addToScene(base.physicsWorld)
         # Make this the node that represents the entity.
         body.replaceNode(self.node())
+        body.setFinal(self.MakeFinal)
         self.node().syncTransform()
 
         self.hasCollisions = True
