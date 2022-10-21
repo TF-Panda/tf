@@ -15,7 +15,6 @@ from tf.tfgui.NotifyView import NotifyView
 from .TFPostProcess import TFPostProcess
 from .PlanarReflector import PlanarReflector
 from . import Sounds
-from . import Localizer
 
 #from .Console import Console
 
