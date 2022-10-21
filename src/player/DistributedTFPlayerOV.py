@@ -688,7 +688,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
                         text += TFLocalizer.KillerTheLate
                     text += builder.playerName
             else:
-                text = TFLocalizer.YouwereKilledBy
+                text = TFLocalizer.YouWereKilledBy
                 if target.health <= 0:
                     text += TFLocalizer.KillerTheLate
                 text += target.playerName
