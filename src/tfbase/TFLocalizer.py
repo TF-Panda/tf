@@ -8,3 +8,6 @@ notify.info("Running in language: " + language.getValue())
 
 if language == 'english':
     from .TFLocalizerEnglish import *
+    
+if language == 'french':
+    from .TFLocalizerFrench import *

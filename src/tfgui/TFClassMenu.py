@@ -5,7 +5,7 @@ from panda3d.core import *
 from direct.gui.DirectGui import *
 
 from tf.player.TFClass import *
-from tf.tfbase import TFGlobals, Sounds
+from tf.tfbase import TFGlobals, Sounds, TFLocalizer
 from tf.tfbase.SoundEmitter import SoundEmitter
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func
@@ -99,7 +99,7 @@ class TFClassMenu:
 
         self.toIdleSeq = None
 
-        self.titleLbl = OnscreenText(parent = self.frame, text = "Choose a Class", font = TFGlobals.getTF2SecondaryFont(),
+        self.titleLbl = OnscreenText(parent = self.frame, text = TFLocalizer.ChooseAClass, font = TFGlobals.getTF2SecondaryFont(),
                                      scale = 0.1, fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), pos = (0, 0.55))
         self.titleLbl.setBin('fixed', 2)
 
