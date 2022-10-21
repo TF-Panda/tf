@@ -10,7 +10,7 @@ from direct.gui.DirectGui import OnscreenText
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, Parallel, LerpPosInterval, LerpScaleInterval
 
-from tf.tfbase import Sounds
+from tf.tfbase import Sounds, TFLocalizer
 
 from .DistributedGameBase import DistributedGameBase
 from .FogManager import FogManager
@@ -496,11 +496,11 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if suicide:
             # Someone killed themselves.
             if assist:
-                text = self.getTeamFormat(assist.team) + killer.playerName + "\2 finished off " + self.getTeamFormat(killed.team) + killed.playerName + "\2"
+                text = self.getTeamFormat(assist.team) + killer.playerName + TFLocalizer.PlayerKilled + self.getTeamFormat(killed.team) + killed.playerName + "\2"
             else:
-                text = self.getTeamFormat(killed.team) + killed.playerName + "\2 bid farewell, cruel world!"
+                text = self.getTeamFormat(killed.team) + killed.playerName + TFLocalizer.PlayerSwitchTeam
         elif killer == base.world:
-            text = self.getTeamFormat(killed.team) + killed.playerName + "\2 fell to a clumsy, painful death."
+            text = self.getTeamFormat(killed.team) + killed.playerName + TFLocalizer.PlayerKillHealth
         else:
             # Someone killed someone else.
             text = ""
@@ -600,5 +600,3 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         if base.cr.prediction.inPrediction:
             base.setFrameTime(saveFrameTime)
-
-

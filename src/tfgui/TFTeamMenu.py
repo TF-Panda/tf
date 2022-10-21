@@ -16,7 +16,7 @@ class TFTeamMenu(DirectObject):
           frameColor = (0, 0, 0, 0.75))
         self.frame.setBin('fixed', 0)
 
-        self.titleLbl = OnscreenText(parent = self.frame, text = "Choose a Team", font = TFGlobals.getTF2SecondaryFont(),
+        self.titleLbl = OnscreenText(parent = self.frame, text = TFLocalizer.ChooseATeam, font = TFGlobals.getTF2SecondaryFont(),
                                      scale = 0.1, fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), pos = (0, 0.55))
         self.titleLbl.setBin('fixed', 2)
 

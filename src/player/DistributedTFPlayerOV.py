@@ -17,7 +17,7 @@ from tf.tfgui.KillFeed import KillFeed
 from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfgui import CrossHairInfo
 from tf.tfgui.DamageNumbers import DamageNumbers
-from tf.tfbase import TFGlobals, TFFilters
+from tf.tfbase import TFGlobals, TFFilters, TFLocalizer
 from .TFPlayerState import TFPlayerState
 
 from direct.distributed2.ClientConfig import *
@@ -190,15 +190,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
     def updateRespawnTimeLbl(self):
         if self.respawnTimeLbl:
-            text = "Respawn in: "
+            text = TFLocalizer.RespawnIn
             if self.respawnTime < 0:
-                text += "Wait for new round"
+                text += TFLocalizer.RespawnWaitNewRound
             else:
                 timeLeft = int(self.respawnTime - globalClock.frame_time)
                 if timeLeft <= 0:
-                    text += "Wait for respawn"
+                    text += TFLocalizer.RespawnWait
                 else:
-                    text += str(timeLeft) + " seconds"
+                    text += str(timeLeft) + TFLocalizer.RespawnSeconds
             self.respawnTimeLbl.setText(text)
 
     def __respawnLabelTask(self, task):
@@ -678,19 +678,19 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             if self.killedByLabel:
                 self.killedByLabel.destroy()
             if target.isObject():
-                text = "You were killed by the "
+                text = TFLocalizer.YouWereKilledByThe
                 if target.health <= 0:
-                    text += "late "
-                text += "Sentry Gun of "
+                    text += TFLocalizer.KillerLate
+                text += TFlocalizer.KillerSentryGun
                 builder = target.getBuilder()
                 if builder:
                     if builder.health <= 0:
-                        text += "the late "
+                        text += TFLocalizer.KillerTheLate
                     text += builder.playerName
             else:
-                text = "You were killed by "
+                text = TFLocalizer.YouwereKilledBy
                 if target.health <= 0:
-                    text += "the late "
+                    text += TFLocalizer.KillerTheLate
                 text += target.playerName
             text += "!"
 

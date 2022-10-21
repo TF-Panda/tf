@@ -33,8 +33,8 @@ class ConstructionObject(NodePath, FSM):
                                  suppressMouse = False)
 
         self.nameLbl = OnscreenText(text=objName, align=TextNode.ACenter, parent=self, pos=(0, 0.1), fg=(1, 1, 1, 1), font=TFGlobals.getTF2SecondaryFont())
-        self.metalLbl = OnscreenText(text="%i Metal" % metal, align=TextNode.ACenter, parent=self, pos=(0, 0), fg=(1, 1, 1, 1), font=TFGlobals.getTF2SecondaryFont())
-        self.hotkeyLbl = OnscreenText(text="Press %s" % hotkey, align=TextNode.ACenter, parent=self, pos=(0, -0.1), fg=(1, 1, 1, 1), font=TFGlobals.getTF2SecondaryFont())
+        self.metalLbl = OnscreenText(text=TFLocalizer.RequiredMetal % metal, align=TextNode.ACenter, parent=self, pos=(0, 0), fg=(1, 1, 1, 1), font=TFGlobals.getTF2SecondaryFont())
+        self.hotkeyLbl = OnscreenText(text=TFLocalizer.PressKey % hotkey, align=TextNode.ACenter, parent=self, pos=(0, -0.1), fg=(1, 1, 1, 1), font=TFGlobals.getTF2SecondaryFont())
 
     def frameColor(self, color):
         self.frame['frameColor'] = color
@@ -47,7 +47,7 @@ class ConstructionObject(NodePath, FSM):
     def enterAlreadyBuilt(self):
         self.frameColor((0.0, 0.0, 0.0, 0.5))
         self.textColor((0.5, 0.5, 0.5, 1.0))
-        self.metalLbl.setText("Already Built")
+        self.metalLbl.setText(TFLocalizer.ObjectAlreadyBuilt)
         self.metalLbl.show()
         self.hotkeyLbl.hide()
 
@@ -55,18 +55,18 @@ class ConstructionObject(NodePath, FSM):
         self.frameColor((0.9, 0.9, 0.9, 0.75))
         self.textColor((0.2, 0.2, 0.2, 1.0))
         self.metalLbl.show()
-        self.metalLbl.setText("%i Metal" % self.metal)
+        self.metalLbl.setText(TFLocalizer.RequiredMetal % self.metal)
         self.hotkeyLbl.show()
-        self.hotkeyLbl.setText("Press %s" % self.hotkey)
+        self.hotkeyLbl.setText(TFLocalizer.PressKey % self.hotkey)
 
     def enterNotEnoughMetal(self):
         self.frameColor((0.0, 0.0, 0.0, 0.5))
         self.textColor((0.5, 0.5, 0.5, 1.0))
         self.metalLbl.show()
-        self.metalLbl.setText("%i Metal" % self.metal)
+        self.metalLbl.setText(TFLocalizer.RequiredMetal % self.metal)
         self.hotkeyLbl.show()
         self.hotkeyLbl['fg'] = (0.75, 0, 0, 1)
-        self.hotkeyLbl.setText("Not Enough Metal")
+        self.hotkeyLbl.setText(TFLocalizer.NotEnoughMetal)
 
     def destroy(self):
         self.nameLbl.destroy()
@@ -89,27 +89,27 @@ class ConstructionScreen(DirectObject):
                         parent=base.aspect2d,
                         suppressMouse = False)
 
-        self.lbl = OnscreenText(text="BUILD", parent=self.f, pos=(-1.16, 0.34), fg=(1, 1, 1, 1), scale=0.15, align=TextNode.ALeft, font=TFGlobals.getTF2BuildFont(), shadow=(0, 0, 0, 0.7))
+        self.lbl = OnscreenText(text=TFLocalizer.BUILD, parent=self.f, pos=(-1.16, 0.34), fg=(1, 1, 1, 1), scale=0.15, align=TextNode.ALeft, font=TFGlobals.getTF2BuildFont(), shadow=(0, 0, 0, 0.7))
 
         x = -0.9
         spacing = 0.6
 
-        s = ConstructionObject(self.f, "Sentry Gun", 130, "1")
+        s = ConstructionObject(self.f, TFLocalizer.SentryGun, 130, "1")
         s.setX(x)
 
         x += spacing
 
-        d = ConstructionObject(self.f, "Dispenser", 100, "2")
+        d = ConstructionObject(self.f, TFLocalizer.Dispenser, 100, "2")
         d.setX(x)
 
         x += spacing
 
-        en = ConstructionObject(self.f, "Entrance", 50, "3")
+        en = ConstructionObject(self.f, TFLocalizer.Entrance, 50, "3")
         en.setX(x)
 
         x += spacing
 
-        ex = ConstructionObject(self.f, "Exit", 50, "4")
+        ex = ConstructionObject(self.f, TFLocalizer.Exit, 50, "4")
         ex.setX(x)
 
         self.buildings = [s, d, en, ex]

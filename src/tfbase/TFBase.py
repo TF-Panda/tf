@@ -15,6 +15,7 @@ from tf.tfgui.NotifyView import NotifyView
 from .TFPostProcess import TFPostProcess
 from .PlanarReflector import PlanarReflector
 from . import Sounds
+from . import Localizer
 
 #from .Console import Console
 
@@ -550,7 +551,7 @@ class TFBase(ShowBase, FSM):
         bg.setTexture(loader.loadTexture(tex))
         bg.setBin('background', 0)
 
-        loadingText = OnscreenText("Loading...", fg = (1, 1, 1, 1), parent = self.aspect2d)
+        loadingText = OnscreenText(TFLocalizer.Loading, fg = (1, 1, 1, 1), parent = self.aspect2d)
 
         base.graphicsEngine.renderFrame()
         base.graphicsEngine.flipFrame()

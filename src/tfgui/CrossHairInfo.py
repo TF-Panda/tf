@@ -2,7 +2,7 @@
 
 from panda3d.core import *
 
-from tf.tfbase import TFFilters, TFGlobals
+from tf.tfbase import TFFilters, TFGlobals, TFLocalizer
 from tf.player import TFClass
 from tf.object.ObjectType import ObjectType
 
@@ -71,13 +71,13 @@ class CrossHairInfo:
                 name.setText(self.ent.playerName)
             elif self.context == CTX_HEALER:
                 # Showing the healer's name.
-                name.setText("Healer: " + self.ent.playerName)
+                name.setText(TFLocalizer.Healer + self.ent.playerName)
             elif self.context == CTX_HEALING:
                 # Showing who we are healing.
-                name.setText("Healing: " + self.ent.playerName)
+                name.setText(TFLocalizer.Healing + self.ent.playerName)
         else:
             # Object built by a player.
-            name.setText(self.ent.objectName + " built by " + self.ent.getBuilder().playerName)
+            name.setText(self.ent.objectName + TFLocalizer.BuiltBy + self.ent.getBuilder().playerName)
         self.gui.elements['name'] = name
 
         self.lastText = ""
@@ -93,51 +93,51 @@ class CrossHairInfo:
         assert self.ent and self.gui
 
         if self.ent.isDead():
-            miscInfoText = "Dead"
+            miscInfoText = TFLocalizer.Dead
         else:
-            miscInfoText = "Health: %i / %i" % (self.ent.health, self.ent.maxHealth)
+            miscInfoText = TFLocalizer.HealthOutOf % (self.ent.health, self.ent.maxHealth)
             if self.ent.isPlayer():
                 wpn = self.ent.getActiveWeaponObj()
                 if wpn:
                     # Show weapon ammo
                     if wpn.usesClip and wpn.usesAmmo:
-                        miscInfoText += "\nAmmo: %i / %i" % (wpn.clip, wpn.ammo)
+                        miscInfoText += TFLocalizer.AmmoOutOf % (wpn.clip, wpn.ammo)
                     elif wpn.usesAmmo:
-                        miscInfoText += "\nAmmo: %i" % (wpn.ammo)
+                        miscInfoText += TFLocalizer.Ammo % (wpn.ammo)
                 if self.ent.tfClass == TFClass.Class.Engineer:
                     # Show engineer's metal amount.
-                    miscInfoText += "\nMetal: %i" % self.ent.metal
+                    miscInfoText += TFLocalizer.Metal % self.ent.metal
                 elif self.ent.tfClass == TFClass.Class.Medic:
                     # Show medic's charge level.
                     from tf.weapon.DistributedMedigun import DistributedMedigun
                     if isinstance(wpn, DistributedMedigun):
-                        miscInfoText += "\nCharge: " + str(int(wpn.chargeLevel * 100)) + "%"
+                        miscInfoText += TFLocalizer.Charge + str(int(wpn.chargeLevel * 100)) + "%"
             else:
                 # It's a building.
                 if not self.ent.isBuilding():
                     # Show building level.
-                    miscInfoText += "\nLevel %i" % self.ent.level
+                    miscInfoText += TFLocalizer.Level % self.ent.level
                     # If the building is less than max level, show the upgrade progress.
                     if self.ent.level < self.ent.maxLevel:
-                        miscInfoText += "\nUpgrade progress: %i / %i" % (self.ent.upgradeMetal, self.ent.upgradeMetalRequired)
+                        miscInfoText += TFLocalizer.UpgradeProgress % (self.ent.upgradeMetal, self.ent.upgradeMetalRequired)
                     if self.ent.objectType in (ObjectType.TeleporterEntrance, ObjectType.TeleporterExit):
                         # For a teleporter, show the charge level.
                         if self.ent.isTeleporterIdle():
                             if self.ent.objectType == ObjectType.TeleporterExit:
-                                miscInfoText += "\nEntrance not built"
+                                miscInfoText += "\n" + TFLocalizer.Entrance + TFLocalizer.NotBuilt
                             else:
-                                miscInfoText += "\nExit not built"
+                                miscInfoText += "\n" + TFLocalizer.Exit + TFLocalizer.NotBuilt
                         elif self.ent.isTeleporterSending():
-                            miscInfoText += "\nSending..."
+                            miscInfoText += TFLocalizer.TeleporterSending
                         elif self.ent.isTeleporterReceiving():
-                            miscInfoText += "\nReceiving..."
+                            miscInfoText += TFLocalizer.TeleporterReceiving
                         elif self.ent.isTeleporterRecharging():
                             chargeDuration = max(1, self.ent.rechargeEndTime - self.ent.rechargeStartTime)
                             chargeElapsed = max(0, base.tickCount - self.ent.rechargeStartTime)
                             chargePerct = max(0.0, min(1.0, chargeElapsed / chargeDuration))
-                            miscInfoText += "\nCharge: " + str(int(chargePerct * 100)) + "%"
+                            miscInfoText += TFLocalizer.Charge + str(int(chargePerct * 100)) + "%"
                         else:
-                            miscInfoText += "\nCharge: 100%"
+                            miscInfoText += TFLocalizer.ChargeFull
 
 
         if self.lastText != miscInfoText:
