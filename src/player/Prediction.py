@@ -303,7 +303,7 @@ class Prediction(DirectObject):
 
             base.setFrameTime(frameTime)
             base.setDeltaTime(base.intervalPerTick)
-            #base.setTickCount(cmd.tickCount)
+            base.setTickCount(cmd.tickCount)
 
             # Call untouch on any entities no longer predicted to be touching.
             #self.untouch() # TODO
@@ -347,7 +347,7 @@ class Prediction(DirectObject):
             # Always reset.
             base.setFrameTime(frameTime)
             base.setDeltaTime(base.intervalPerTick)
-            #base.setTickCount(cmd.tickCount)
+            base.setTickCount(cmd.tickCount)
 
             p = self.predictables[i]
             if not p:
@@ -420,7 +420,7 @@ class Prediction(DirectObject):
         # Set globals appropriately
         base.setFrameTime(avatar.tickBase * base.intervalPerTick)
         base.setDeltaTime(base.intervalPerTick)
-        #base.setTickCount(cmd.tickCount)
+        base.setTickCount(cmd.tickCount)
 
         if not avatar.isDead():
 
@@ -503,14 +503,14 @@ class Prediction(DirectObject):
         # Save off current timer values.
         saveDeltaTime = globalClock.dt
         saveFrameTime = globalClock.frame_time
-        #saveFrameCount = base.tickCount
+        saveFrameCount = base.tickCount
 
         self.doUpdate(receivedNewWorldUpdate, validFrame, incomingAcknowledged, outgoingCommand)
 
         # Restore true timer values.
         base.setFrameTime(saveFrameTime)
         base.setDeltaTime(saveDeltaTime)
-        #base.setTickCount(saveFrameCount)
+        base.setTickCount(saveFrameCount)
 
     def doUpdate(self, receivedNewWorldUpdate, validFrame, incomingAcknowledged, outgoingCommand):
         if not hasattr(base, 'localAvatar') or not base.localAvatar:
