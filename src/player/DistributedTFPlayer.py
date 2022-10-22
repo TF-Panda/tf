@@ -97,6 +97,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.gibs = None
 
+        self.viewOffsetNode = self.attachNewNode("viewOffset")
+
     def doBloodGoop(self, pos):
         from tf.tfbase.TFEffects import getBloodGoopEffect
         from direct.interval.IntervalGlobal import Sequence, Wait, Func
@@ -312,6 +314,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.expressions = Expressions(self.character, self.classInfo.Expressions)
             self.expressions.pushExpression('idle', 1.0, oscillation=0.4, oscillationSpeed=1.5)
         self.viewOffset = Vec3(0, 0, self.classInfo.ViewHeight)
+        self.viewOffsetNode.setPos(self.viewOffset)
 
     def onTFTeamChanged(self):
         pass
@@ -392,6 +395,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.addTask(self.__updateTalker, 'talker', appendTask=True, sim=False)
 
     def disable(self):
+        if self.viewOffsetNode:
+            self.viewOffsetNode.removeNode()
+            self.viewOffsetNode = None
         if self.expressions:
             self.expressions.cleanup()
             self.expressions = None

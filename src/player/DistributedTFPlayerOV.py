@@ -143,6 +143,46 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.respawnTimeLbl = None
 
+        self.nemesisLabels = {}
+
+    def RecvProxy_nemesisList(self, nemesisList):
+        added = [x for x in nemesisList if x not in self.nemesisList]
+        removed = [x for x in self.nemesisList if x not in nemesisList]
+
+        for doId in added:
+            self.makeNemesisLabel(doId)
+        for doId in removed:
+            self.removeNemesisLabel(doId)
+
+        self.nemesisList = nemesisList
+
+    def makeNemesisLabel(self, doId):
+        plyr = base.cr.doId2do.get(doId)
+        if not plyr:
+            return
+
+        tn = TextNode('nemesis')
+        tn.setFont(TFGlobals.getTF2BuildFont())
+        if plyr.team == TFGlobals.TFTeam.Red:
+            tn.setTextColor((0.9, 0.5, 0.5, 1))
+        else:
+            tn.setTextColor((0.5, 0.65, 1, 1))
+        tn.setText("NEMESIS!")
+        tn.setAlign(TextNode.ACenter)
+        tn.setShadowColor((0.3, 0.3, 0.3, 1))
+        tn.setShadow(0.04, 0.04)
+        tnnp = plyr.viewOffsetNode.attachNewNode(tn.generate())
+        tnnp.setPos(0, 0, 24)
+        tnnp.setBillboardPointEye(-40, True)
+        tnnp.setDepthWrite(False)
+        self.nemesisLabels[doId] = tnnp
+
+    def removeNemesisLabel(self, doId):
+        if doId not in self.nemesisLabels:
+            return
+        self.nemesisLabels[doId].removeNode()
+        del self.nemesisLabels[doId]
+
     def RecvProxy_observerTarget(self, doId):
         self.observerTarget = doId
         if self.playerState == TFPlayerState.Spectating:
@@ -832,6 +872,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.localAvatarId = self.doId
 
     def delete(self):
+        if self.nemesisLabels:
+            for lbl in self.nemesisLabels.values():
+                lbl.removeNode()
+            self.nemesisLabels = None
         if self.clientLagCompDebugRoot:
             self.clientLagCompDebugRoot.removeNode()
             self.clientLagCompDebugRoot = None

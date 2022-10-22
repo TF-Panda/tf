@@ -101,7 +101,7 @@ SyringeGun = 'Syringe Gun'
 Healer = "Healer: "
 Healing = "Healing: "
 
-# Spy Weapons 
+# Spy Weapons
 Revolver = 'Revolver'
 InvisWatch = 'Invis Watch'
 DiguiseKit = 'DisguiseKit'
@@ -147,6 +147,8 @@ PlayerKilled = "\2 finished off "
 PlayerSwitchTeam = "\2 bid farewell, cruel world!"
 PlayerKillHealth = "\2 fell to a clumsy, painful death."
 Dead = "Dead"
+PlayerIsDominating = "%s is DOMINATING %s"
+PlayerGotRevenge = "%s got REVENGE on %s"
 
 ### Shared Between Kill Screen, Engineer panel, Medic Panel ###
 

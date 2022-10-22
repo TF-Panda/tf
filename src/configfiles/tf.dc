@@ -191,6 +191,8 @@ dclass DistributedGame : DistributedObject {
   doTracers(Position start, Position ends[]) broadcast;
 
   killEvent(int32 killerDoId, int32 assistDoId, int32 weaponDoId, int32 killedDoId) broadcast;
+  domEvent(uint32 a, uint32 b) broadcast;
+  revengeEvent(uint32 a, uint32 b) broadcast;
 };
 
 dclass DistributedChar : DistributedEntity {
@@ -245,6 +247,8 @@ dclass DistributedTFPlayer : DistributedChar {
   uint8 metal;
 
   float64 respawnTime;
+
+  uint32 nemesisList[];
 
   // 46 bytes
 

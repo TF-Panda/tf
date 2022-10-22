@@ -100,6 +100,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.clientSideAnimation = True
 
+        # This tracks the number of times this player has killed other
+        # players without being killed by that player.
+        self.playerConsecutiveKills = {}
+
     def changePlayerState(self, newState, prevState):
         if prevState == TFPlayerState.Playing:
             self.disableController()
@@ -700,6 +704,42 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def isDead(self):
         return (self.playerState != TFPlayerState.Playing) or DistributedCharAI.isDead(self)
 
+    def removeNemesis(self, doId, doSound=True):
+        """
+        Called when this player got revenge on other player doId.
+        """
+        assert doId in self.nemesisList
+        self.nemesisList.remove(doId)
+        if doSound:
+            self.emitSound("Game.Revenge", client=self.owner)
+
+    def removeDomination(self, doId, doSound=True):
+        """
+        Called when player doId got revenge on me.
+        """
+        assert doId in self.dominationList
+        self.dominationList.remove(doId)
+        if doSound:
+            self.emitSound("Game.Revenge", client=self.owner)
+
+    def addDomination(self, doId, doSound=True):
+        """
+        Called when this player has started dominating other player doId.
+        """
+        assert doId not in self.dominationList
+        self.dominationList.append(doId)
+        if doSound:
+            self.emitSound("Game.Domination", client=self.owner)
+
+    def addNemesis(self, doId, doSound=True):
+        """
+        Called when player doId has started dominating me.
+        """
+        assert doId not in self.nemesisList
+        self.nemesisList.append(doId)
+        if doSound:
+            self.emitSound("Game.Nemesis", client=self.owner)
+
     def die(self, info = None):
         if self.playerState != TFPlayerState.Playing:
             return
@@ -719,7 +759,35 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 killer = info.inflictor.doId
             else:
                 killer = info.attacker.doId
+
             base.net.game.sendUpdate('killEvent', [killer, -1, -1, self.doId])
+
+            # Get player that killed me.
+            plyr = info.attacker if info.attacker.isPlayer() else info.inflictor
+            assert plyr.isPlayer()
+            # Reset the number of consecutive kills on the player that killed me.
+            self.playerConsecutiveKills[plyr.doId] = 0
+            # If we were dominating them, they got revenge.
+            if self.doId in plyr.nemesisList:
+                print(plyr.doId, "got revenge on", self.doId)
+                plyr.removeNemesis(self.doId)
+                self.removeDomination(plyr.doId)
+                base.net.game.sendUpdate('revengeEvent', [plyr.doId, self.doId])
+
+            if self.doId not in plyr.playerConsecutiveKills:
+                plyr.playerConsecutiveKills[self.doId] = 1
+            else:
+                plyr.playerConsecutiveKills[self.doId] += 1
+
+            print(plyr.doId, "has", plyr.playerConsecutiveKills[self.doId], "consecutive kills on", self.doId)
+
+            if plyr.playerConsecutiveKills[self.doId] >= 3 and plyr.doId not in self.nemesisList:
+                print(plyr.doId, "is now dominating", self.doId)
+                assert self.doId not in plyr.dominationList
+                plyr.addDomination(self.doId)
+                self.addNemesis(plyr.doId)
+                base.net.game.sendUpdate('domEvent', [plyr.doId, self.doId])
+
         else:
             # Suicide.
             base.net.game.sendUpdate('killEvent', [self.doId, -1, -1, self.doId])
@@ -916,6 +984,16 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.destroyAllObjects()
         self.stripWeapons()
 
+        # Remove nemesises that are on the team we are joining.
+        for doId in list(self.nemesisList):
+            plyr = base.air.doId2do.get(doId)
+            if plyr and plyr.team == team:
+                # Remove domination from player on team we are joining.
+                plyr.removeDomination(self.doId, False)
+                self.nemesisList.remove(doId)
+            elif not plyr:
+                self.nemesisList.remove(doId)
+
         # Remove from old team.
         if self in base.game.playersByTeam[self.team]:
             base.game.playersByTeam[self.team].remove(self)
@@ -1088,6 +1166,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Delete all weapons.
         self.stripWeapons()
+
+        # Player is leaving, so remove dominations on me.
+        for doId in self.nemesisList:
+            plyr = base.air.doId2do.get(doId)
+            if plyr:
+                plyr.removeDomination(self.doId, False)
 
         base.game.playersByTeam[self.team].remove(self)
 
