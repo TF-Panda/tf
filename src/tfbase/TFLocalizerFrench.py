@@ -83,7 +83,7 @@ Exit = 'Sortie'
 TeleporterEntrance = 'Entrée du Téléporteur'
 TeleporterExit = 'Sortie du Téléporteur'
 TeleporterSending = "\nSending..."
-TeleporterReceiving = "\nReceiving..."
+TeleporterReceiving = "\nRecevoir..."
 
 # Soldier Weapons
 RocketLauncher = 'Lance-roquettes'
@@ -140,9 +140,9 @@ RespawnWaitNewRound = "Le prochain round"
 RespawnWait = "Préparez-vous à réapparaître"
 RespawnSeconds = " seconds"
 YouWereKilledBy = "Vous avez été tué par "
-YouWereKilledByThe = "Vous avez été tué par feu "
-KillerLate = "late "
-KillerSentryGun = "Sentry Gun of "
+YouWereKilledByThe = "Vous avez été tué par "
+KillerLate = "feu "
+KillerSentryGun = "Mitrailleuse de "
 KillerTheLate = "the late "
 PlayerKilled = "\2 a achevé "
 PlayerSwitchTeam = "\2 fait ses adieux, monde cruel !"
