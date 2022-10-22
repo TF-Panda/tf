@@ -516,7 +516,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                 text += self.getTeamFormat(killer.team) + killer.playerName + "\2"
                 if assist:
                     text += " + " + self.getTeamFormat(assist.team) + assist.playerName + "\2"
-            text += " killed "
+            text += TFLocalizer.PlayerKilled
             if killed.isObject():
                 text += self.getTeamFormat(killed.team) + killed.objectName
                 builder = base.cr.doId2do.get(killed.builderDoId)
