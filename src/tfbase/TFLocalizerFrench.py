@@ -69,6 +69,7 @@ NotEnoughMetal = "Métal Insuffisant"
 BuiltBy = " monté(e) par "
 Metal = "\nMétal : %1"
 RequiredMetal = "%i Métal"
+MetalHUD = "Métal"
 # Sentry
 Shells = 'Cartouches'
 Rockets = 'Roquettes'
@@ -147,9 +148,9 @@ PlayerKilled = "\2 a achevé "
 PlayerSwitchTeam = "\2 fait ses adieux, monde cruel !"
 PlayerKillHealth = "\2 est mort bêtement dans d'atroces souffrances"
 Dead = "Mort"
-PlayerIsDominating = "%s is DOMINATING %s"
-PlayerGotRevenge = "%s got REVENGE on %s"
-NemesisText = "NEMESIS!"
+PlayerIsDominating = "%s DOMINE %s"
+PlayerGotRevenge = "%s s'est VENGÉ de %s"
+NemesisText = "NEMESIS !"
 
 ### Shared Between Kill Screen, Engineer panel, Medic Panel ###
 

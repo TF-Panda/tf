@@ -3,6 +3,8 @@ from direct.showbase.DirectObject import DirectObject
 
 from panda3d.core import *
 
+from tf.tfbase import TFLocalizer
+
 cl_crosshairscale = ConfigVariableDouble("cl-crosshair-scale", 32)
 cl_crosshairfile = ConfigVariableString("cl-crosshair-file", "crosshair5")
 cl_crosshairr = ConfigVariableDouble("cl-crosshair-r", 200)
@@ -130,7 +132,7 @@ class TFHud(DirectObject):
         else:
             self.metalLabel.show()
 
-        self.metalLabel.setText("Metal\n" + str(base.localAvatar.metal))
+        self.metalLabel.setText(TFLocalizer.MetalHUD + "\n" + str(base.localAvatar.metal))
 
     def updateAmmoLabel(self):
         if self.hidden:

@@ -69,6 +69,7 @@ NotEnoughMetal = "Not Enough Metal"
 BuiltBy = " built by "
 Metal = "\nMetal: %1"
 RequiredMetal = "%i Metal"
+MetalHUD = "Metal"
 # Sentry
 Shells = 'Shells'
 Rockets = 'Rockets'
