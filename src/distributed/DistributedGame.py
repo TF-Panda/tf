@@ -530,6 +530,42 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         base.localAvatar.killFeed.pushEvent(text, priority)
 
+    def teamFormattedString(self, team, string):
+        return self.getTeamFormat(team) + string + "\2"
+
+    def domEvent(self, a, b):
+        """
+        A is dominating B.
+        """
+
+        plyrA = base.cr.doId2do.get(a)
+        if not plyrA:
+            return
+        plyrB = base.cr.doId2do.get(b)
+        if not plyrB:
+            return
+
+        priority = base.localAvatar in (plyrA, plyrB)
+        text = TFLocalizer.PlayerIsDominating % (self.teamFormattedString(plyrA.team, plyrA.playerName),
+                                                 self.teamFormattedString(plyrB.team, plyrB.playerName))
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
+    def revengeEvent(self, a, b):
+        """
+        A got revenge on B.
+        """
+        plyrA = base.cr.doId2do.get(a)
+        if not plyrA:
+            return
+        plyrB = base.cr.doId2do.get(b)
+        if not plyrB:
+            return
+
+        priority = base.localAvatar in (plyrA, plyrB)
+        text = TFLocalizer.PlayerGotRevenge % (self.teamFormattedString(plyrA.team, plyrA.playerName),
+                                               self.teamFormattedString(plyrB.team, plyrB.playerName))
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
     def delete(self):
         del base.game
         DistributedObject.delete(self)
