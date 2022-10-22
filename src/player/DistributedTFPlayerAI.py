@@ -740,6 +740,33 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if doSound:
             self.emitSound("Game.Nemesis", client=self.owner)
 
+    def handleDominationsOnKilled(self, plyr):
+        # plyr is the player that killed me.
+        assert plyr and plyr.isPlayer()
+
+        # Reset the number of consecutive kills on the player that killed me.
+        self.playerConsecutiveKills[plyr.doId] = 0
+        # If we were dominating them, they got revenge.
+        if self.doId in plyr.nemesisList:
+            print(plyr.doId, "got revenge on", self.doId)
+            plyr.removeNemesis(self.doId)
+            self.removeDomination(plyr.doId)
+            base.net.game.sendUpdate('revengeEvent', [plyr.doId, self.doId])
+
+        if self.doId not in plyr.playerConsecutiveKills:
+            plyr.playerConsecutiveKills[self.doId] = 1
+        else:
+            plyr.playerConsecutiveKills[self.doId] += 1
+
+        print(plyr.doId, "has", plyr.playerConsecutiveKills[self.doId], "consecutive kills on", self.doId)
+
+        if plyr.playerConsecutiveKills[self.doId] >= 3 and plyr.doId not in self.nemesisList:
+            print(plyr.doId, "is now dominating", self.doId)
+            assert self.doId not in plyr.dominationList
+            plyr.addDomination(self.doId)
+            self.addNemesis(plyr.doId)
+            base.net.game.sendUpdate('domEvent', [plyr.doId, self.doId])
+
     def die(self, info = None):
         if self.playerState != TFPlayerState.Playing:
             return
@@ -763,30 +790,13 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             base.net.game.sendUpdate('killEvent', [killer, -1, -1, self.doId])
 
             # Get player that killed me.
-            plyr = info.attacker if info.attacker.isPlayer() else info.inflictor
-            assert plyr.isPlayer()
-            # Reset the number of consecutive kills on the player that killed me.
-            self.playerConsecutiveKills[plyr.doId] = 0
-            # If we were dominating them, they got revenge.
-            if self.doId in plyr.nemesisList:
-                print(plyr.doId, "got revenge on", self.doId)
-                plyr.removeNemesis(self.doId)
-                self.removeDomination(plyr.doId)
-                base.net.game.sendUpdate('revengeEvent', [plyr.doId, self.doId])
-
-            if self.doId not in plyr.playerConsecutiveKills:
-                plyr.playerConsecutiveKills[self.doId] = 1
-            else:
-                plyr.playerConsecutiveKills[self.doId] += 1
-
-            print(plyr.doId, "has", plyr.playerConsecutiveKills[self.doId], "consecutive kills on", self.doId)
-
-            if plyr.playerConsecutiveKills[self.doId] >= 3 and plyr.doId not in self.nemesisList:
-                print(plyr.doId, "is now dominating", self.doId)
-                assert self.doId not in plyr.dominationList
-                plyr.addDomination(self.doId)
-                self.addNemesis(plyr.doId)
-                base.net.game.sendUpdate('domEvent', [plyr.doId, self.doId])
+            killerPlayer = None
+            if info.inflictor and info.inflictor.isPlayer():
+                killerPlayer = info.inflictor
+            elif info.attacker and info.attacker.isPlayer():
+                killerPlayer = info.attacker
+            if killerPlayer:
+                self.handleDominationsOnKilled(killerPlayer)
 
         else:
             # Suicide.
