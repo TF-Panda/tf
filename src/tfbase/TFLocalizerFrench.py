@@ -156,7 +156,7 @@ NemesisText = "NEMESIS !"
 
 HealthOutOf = "Santé : %i / %i"
 PressKey = "Appuyez sur %s"
-AmmoOutOf = "\Munitions : %i / %i"
+AmmoOutOf = "\nMunitions : %i / %i"
 Ammo = "\nMunitions : %i"
 Charge = "\nCharge : "
 ChargeFull = "\nCharge : 100%"
