@@ -167,7 +167,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             tn.setTextColor((0.9, 0.5, 0.5, 1))
         else:
             tn.setTextColor((0.5, 0.65, 1, 1))
-        tn.setText("NEMESIS!")
+        tn.setText(TFLocalizer.NemesisText)
         tn.setAlign(TextNode.ACenter)
         tn.setShadowColor((0.3, 0.3, 0.3, 1))
         tn.setShadow(0.04, 0.04)

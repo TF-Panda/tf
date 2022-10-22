@@ -149,6 +149,7 @@ PlayerKillHealth = "\2 fell to a clumsy, painful death."
 Dead = "Dead"
 PlayerIsDominating = "%s is DOMINATING %s"
 PlayerGotRevenge = "%s got REVENGE on %s"
+NemesisText = "NEMESIS!"
 
 ### Shared Between Kill Screen, Engineer panel, Medic Panel ###
 
