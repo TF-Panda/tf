@@ -31,7 +31,7 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
         if not self.HideWeapon:
             # Parent the world model to the player.
             self.reparentTo(self.player.modelNp)
-            self.setJointMergeCharacter(self.player.character)
+            self.setJointMergeParent(self.player)
 
     def deactivate(self):
         self.active = False

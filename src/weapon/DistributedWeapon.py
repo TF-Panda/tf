@@ -134,12 +134,12 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
             if not self.HideWeapon:
                 # Make sure the world model is parented to the player.
                 self.reparentTo(self.player)
-                self.setJointMergeCharacter(self.player.character)
+                self.setJointMergeParent(self.player)
 
             if self.isActiveLocalPlayerWeapon() and self.player.viewModel and self.viewModelChar:
                 # Parent the view model to the player's view model.
                 self.viewModelChar.modelNp.reparentTo(self.player.viewModel)
-                self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
+                self.viewModelChar.setJointMergeParent(self.player.viewModel)
                 self.viewModelChar.setSkin(self.player.skin)
 
     def activate(self):
@@ -162,12 +162,12 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         if not self.HideWeapon:
             # Parent the world model to the player.
             self.reparentTo(self.player)
-            self.setJointMergeCharacter(self.player.character)
+            self.setJointMergeParent(self.player)
 
         if self.viewModelChar:
             # Parent the c-model weapon to the player's view model.
             self.viewModelChar.modelNp.reparentTo(self.player.viewModel)
-            self.viewModelChar.setJointMergeCharacter(self.player.viewModel.character)
+            self.viewModelChar.setJointMergeParent(self.player.viewModel)
 
         if self.isActiveLocalPlayerWeapon():
             base.localAvatar.hud.updateAmmoLabel()
@@ -182,8 +182,8 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         self.reparentTo(hidden)
         if self.viewModelChar:
             self.viewModelChar.modelNp.reparentTo(hidden)
-        elif self.player and self.player.viewModel and self.player.classInfo:
-            self.player.viewModel.loadModel(self.player.classInfo.ViewModel)
+        #elif self.player and self.player.viewModel and self.player.classInfo:
+        #    self.player.viewModel.loadModel(self.player.classInfo.ViewModel)
 
         #if self.isActiveLocalPlayerWeapon():
         #    DistributedWeaponShared.deactivate(self)

@@ -221,6 +221,6 @@ class TFClassMenu:
                 char = Actor()
                 char.loadModel(wpn)
                 char.modelNp.reparentTo(self.classChar.modelNp)
-                char.setJointMergeCharacter(self.classChar.character)
+                char.setJointMergeParent(self.classChar)
                 char.setSkin(base.localAvatar.team)
                 self.weaponChars.append(char)

@@ -49,6 +49,13 @@ class Actor(Model):
         self.hitBoxes = []
         self.lastHitBoxSyncTime = 0.0
 
+        # Set of Actors that are joint merged to me.
+        # When our model changes, we will redirect our children
+        # to the new character to maintain joint merges.
+        self.jointMergeChildren = set()
+        # The parent Actor that we are joint merged to.
+        self.jointMergeParent = None
+
     @staticmethod
     def updateAllAnimations():
         CharacterNode.animateCharacters(Actor.AllCharacters)
@@ -427,16 +434,61 @@ class Actor(Model):
 
         return self.character.getPoseParameter(nameOrIndex)
 
-    def setJointMergeCharacter(self, char):
+    def setJointMergeParent(self, actor):
         """
-        Sets the character that joints on this character with joint merge
-        enabled should copy their poses from.
+        Same as addJointMergeChild(), but you call this on the child, passing
+        in the parent.
+        """
 
-        For instance, the weapon's joint merge character is the hands.
+        self.clearJointMergeParent()
+
+        if not actor:
+            return
+
+        if actor.character and self.character:
+            self.character.setJointMergeCharacter(actor.character)
+        self.jointMergeParent = actor
+        actor.jointMergeChildren.add(self)
+
+    def addJointMergeChild(self, actor):
         """
+        Adds the indicated actor as a joint merge child of this Actor.
+        Makes child "actor" copy joint poses from this Actor.
+
+        Same as setJointMergeParent(), but you call this on the parent,
+        passing in the child.
+        """
+
+        assert actor
+
+        actor.clearJointMergeParent()
+
+        self.jointMergeChildren.add(actor)
+        if actor.character and self.character:
+            actor.character.setJointMergeCharacter(self.character)
+        actor.jointMergeParent = self
+
+    def clearJointMergeParent(self):
+        """
+        Breaks a joint merge relationship to the current parent, if it has
+        one.
+        """
+        if self.jointMergeParent:
+            # TODO: Remove the link on the actual character.
+            if self in self.jointMergeParent.jointMergeChildren:
+                self.jointMergeParent.jointMergeChildren.remove(self)
+            self.jointMergeParent = None
+
+    def maintainJointMerges(self):
         if not self.character:
             return
-        self.character.setJointMergeCharacter(char)
+
+        if self.jointMergeParent and self.jointMergeParent.character:
+            self.character.setJointMergeCharacter(self.jointMergeParent.character)
+
+        for child in self.jointMergeChildren:
+            if child.character:
+                child.character.setJointMergeCharacter(self.character)
 
     def getAttachment(self, attachment, net = False, update = True):
         """
@@ -520,6 +572,13 @@ class Actor(Model):
         self.lastHitBoxSyncTime = None
         self.hitBoxes = None
 
+        # Remove link to my parent.
+        self.clearJointMergeParent()
+        for child in list(self.jointMergeChildren):
+            # Remove link to children, and childrens' link to me.
+            child.clearJointMergeParent()
+        self.jointMergeChildren = set()
+
     def unloadModel(self):
         """
         Removes the current model from the scene graph and all related data.
@@ -563,6 +622,8 @@ class Actor(Model):
 
             if hitboxes:
                 self.setupHitBoxes()
+
+        self.maintainJointMerges()
 
         self.onModelChanged()
 

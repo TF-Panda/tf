@@ -45,10 +45,6 @@ class DistributedFlameThrower(TFWeaponGun):
             self.pilotLightVM = Actor()
             self.pilotLightVM.loadModel("models/weapons/c_flamethrower_pilotlight", False)
 
-        def announceGenerate(self):
-            TFWeaponGun.announceGenerate(self)
-            self.pilotLight.setJointMergeCharacter(self.character)
-
         def disable(self):
             if self.pilotLight:
                 self.pilotLight.cleanup()
@@ -116,13 +112,13 @@ class DistributedFlameThrower(TFWeaponGun):
 
             if not self.isOwnedByLocalPlayer():
                 self.addTask(self.__weaponSoundUpdateTask, 'flameThrowerSoundUpdate', appendTask=True, sim=True)
-                if self.player and self.player.character:
+                if self.player:
                     self.pilotLight.modelNp.reparentTo(self.player)
-                    self.pilotLight.setJointMergeCharacter(self.player.character)
+                    self.pilotLight.setJointMergeParent(self.player)
             else:
-                if self.viewModel and self.viewModel.character:
+                if self.viewModel:
                     self.pilotLightVM.modelNp.reparentTo(self.viewModel)
-                    self.pilotLightVM.setJointMergeCharacter(self.viewModel.character)
+                    self.pilotLightVM.setJointMergeParent(self.viewModel)
 
     def deactivate(self):
         if IS_CLIENT:
