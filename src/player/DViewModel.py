@@ -64,7 +64,7 @@ class DViewModel(DistributedChar, DViewModelShared):
 
         self.ivCycle = InterpolatedFloat()
         self.addInterpolatedVar(self.ivCycle, self.getCycle, self.setCycle)
-        #self.addPredictionField("model", int, getter=self.getModelStrID, setter=self.setModelStrID, networked=True)
+        self.addPredictionField("model", int, getter=self.getModelStrID, setter=self.setModelStrID, networked=True)
         self.addPredictionField("sequence", int, getter=self.getSequence, setter=self.setSequence, networked=False)
         self.addPredictionField("playMode", int, getter=self.getPlayMode, setter=self.setPlayMode, networked=False)
         self.addPredictionField("cActivity", int, getter=self.getCActivity, setter=self.setCActivity, networked=False)

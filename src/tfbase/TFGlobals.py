@@ -270,6 +270,7 @@ ModelPrecacheList = [
     "models/char/c_heavy_arms",
     "models/char/c_soldier_arms",
     "models/char/c_sniper_arms",
+    "models/char/c_pyro_arms",
     "models/char/demo",
     "models/char/demogib001",
     "models/char/demogib002",

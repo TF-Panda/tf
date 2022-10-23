@@ -81,6 +81,7 @@ from tf.weapon.DistributedMachete import DistributedMachete/AI
 from tf.weapon.DistributedSniperRifle import DistributedSniperRifle/AI
 from tf.weapon.DistributedStickyBombLauncher import DistributedStickyBombLauncher/AI
 from tf.weapon.DistributedStickyBomb import DistributedStickyBomb/AI
+from tf.weapon.DistributedFlameThrower import DistributedFlameThrower/AI
 
 from tf.distributed.DistributedTeamFlag import DistributedTeamFlag/AI
 
@@ -552,3 +553,7 @@ dclass DistributedStickyBomb : DistributedChar {
   gib() broadcast;
 };
 
+dclass DistributedFlameThrower : TFWeaponGun {
+  uint8 isFiring;
+  float64 startFireTime;
+};

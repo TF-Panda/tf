@@ -26,6 +26,7 @@ from .DistributedSMG import DistributedSMG
 from .DistributedMachete import DistributedMachete
 from .DistributedSniperRifle import DistributedSniperRifle
 from .DistributedStickyBombLauncher import DistributedStickyBombLauncher
+from .DistributedFlameThrower import DistributedFlameThrower
 
 Weapons = {
   Weapon.ShotgunEngineer: DistributedShotgunEngineer,
@@ -55,4 +56,5 @@ Weapons = {
   Weapon.Machete: DistributedMachete,
   Weapon.SniperRifle: DistributedSniperRifle,
   Weapon.StickyBombLauncher: DistributedStickyBombLauncher,
+  Weapon.FlameThrower: DistributedFlameThrower
 }

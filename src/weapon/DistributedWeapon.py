@@ -38,6 +38,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         self.addPredictionField("idealSequence", int, networked=False)
         self.addPredictionField("fireDuration", float, networked=False)
         self.addPredictionField("reloadsSingly", bool, networked=False)
+        #self.addPredictionField("active", bool, networked=False)
 
     def playSound(self, soundName):
         """
@@ -152,6 +153,8 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
         if self.UsesViewModel:
             self.player.viewModel.loadModel(self.WeaponViewModel)
+        else:
+            self.player.viewModel.loadModel(self.player.classInfo.ViewModel)
 
         if self.isActiveLocalPlayerWeapon():
             DistributedWeaponShared.activate(self)

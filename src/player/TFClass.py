@@ -74,6 +74,7 @@ class Weapon:
     SMG = 25
     Machete = 26
     StickyBombLauncher = 27
+    FlameThrower = 28
 
 BaseSpeed = 300
 
@@ -415,7 +416,7 @@ class PyroInfo:
     Name = TFLocalizer.Pyro
     MenuWeapon = ["models/weapons/c_flamethrower", "models/weapons/c_flamethrower_pilotlight"]
     PlayerModel = "models/char/pyro"
-    ViewModel = "models/weapons/v_shotgun_pyro"
+    ViewModel = "models/char/c_pyro_arms"
     ForwardFactor = 1.0
     BackwardFactor = 0.9
     CrouchFactor = 0.33
@@ -461,7 +462,7 @@ class PyroInfo:
         ]
     }
 
-    Weapons = [Weapon.ShotgunPyro, Weapon.FireAxe]
+    Weapons = [Weapon.FlameThrower, Weapon.ShotgunPyro, Weapon.FireAxe]
 
 class SpyInfo:
     Name = TFLocalizer.Spy
