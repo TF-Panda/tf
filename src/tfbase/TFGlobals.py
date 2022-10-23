@@ -341,6 +341,7 @@ ModelPrecacheList = [
     "models/weapons/c_rocketlauncher",
     "models/weapons/c_shotgun",
     "models/weapons/c_wrench",
+    "models/weapons/c_shovel",
     "models/weapons/shell_shotgun",
     "models/weapons/v_bat_scout",
     "models/weapons/v_bottle_demoman",
