@@ -830,7 +830,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 killerPlayer = info.inflictor
             elif info.attacker and info.attacker.isPlayer():
                 killerPlayer = info.attacker
-            if killerPlayer:
+            if killerPlayer and killerPlayer != self:
                 self.handleDominationsOnKilled(killerPlayer)
 
         else:
