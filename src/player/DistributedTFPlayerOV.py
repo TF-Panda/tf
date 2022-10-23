@@ -150,6 +150,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.numDetonateables = count
             messenger.send('localPlayerDetonateablesChanged')
 
+    def isNemesis(self, doId):
+        return doId in self.nemesisList
+
     def RecvProxy_nemesisList(self, nemesisList):
         added = [x for x in nemesisList if x not in self.nemesisList]
         removed = [x for x in self.nemesisList if x not in nemesisList]
@@ -723,24 +726,30 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             if self.killedByLabel:
                 self.killedByLabel.destroy()
             if target.isObject():
-                text = TFLocalizer.YouWereKilledByThe
-                if target.health <= 0:
-                    text += TFLocalizer.KillerLate
-                text += TFlocalizer.KillerSentryGun
                 builder = target.getBuilder()
+                if builder and self.isNemesis(builder.doId):
+                    text = TFLocalizer.YouWereKilledByTheNemesis
+                else:
+                    text = TFLocalizer.YouWereKilledByThe
+                if target.isDead():
+                    text += TFLocalizer.KillerLate
+                text += TFLocalizer.KillerSentryGun
                 if builder:
-                    if builder.health <= 0:
+                    if builder.isDead():
                         text += TFLocalizer.KillerTheLate
                     text += builder.playerName
             else:
-                text = TFLocalizer.YouWereKilledBy
-                if target.health <= 0:
+                if self.isNemesis(target.doId):
+                    text = TFLocalizer.YouWereKilledByNemesis
+                else:
+                    text = TFLocalizer.YouWereKilledBy
+                if target.isDead():
                     text += TFLocalizer.KillerTheLate
                 text += target.playerName
             text += "!"
 
-            self.killedByLabel = OnscreenText(text = text, scale = 0.09,
-                                              pos = (0, 0.9), fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1),
+            self.killedByLabel = OnscreenText(text = text,
+                                              pos = (0, 0.75), fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1),
                                               font = TFGlobals.getTF2SecondaryFont())
             self.sentFreezeFrame = True
 
