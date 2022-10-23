@@ -390,7 +390,11 @@ class TFPlayerAnimState:
             self.moveYParam.setValue(blendDir.y)
 
         bundle = self.player.character
-        chan = bundle.getChannel(bundle.getAnimLayer(0)._sequence)
+        seq = bundle.getAnimLayer(0)._sequence
+        if seq == -1:
+            return 0.0
+
+        chan = bundle.getChannel(seq)
         duration = max(0.01, chan.getLength(bundle))
         speed = chan.getRootMotionVector(bundle).getXy().length() / duration
 
