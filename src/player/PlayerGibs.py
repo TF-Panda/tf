@@ -15,7 +15,7 @@ gibForce = 350.0
 
 class PlayerGibs:
 
-    def __init__(self, pos, hpr, skin, gibInfo):
+    def __init__(self, pos, hpr, skin, gibInfo, scale=1.0):
         self.gibs = []
         self.headPiece = None
 
@@ -77,7 +77,7 @@ class PlayerGibs:
             partVel.y += random.uniform(-1.0, 1.0)
             partVel.z += random.uniform(0.0, 1.0)
             partVel.normalize()
-            partVel *= gibForce
+            partVel *= gibForce * scale
 
             #cnode.setLinearVelocity(partVel)
 

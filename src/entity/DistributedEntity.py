@@ -332,8 +332,11 @@ class DistributedEntity(BaseClass, NodePath):
     def setKinematic(self, flag):
         self.kinematic = flag
         if self.hasCollisions:
+            if flag:
+                self.node().setCcdEnabled(False)
             self.node().setKinematic(flag)
-            self.node().wakeUp()
+            if not flag:
+                self.node().wakeUp()
 
     def setMass(self, mass):
         self.mass = mass

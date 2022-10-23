@@ -104,6 +104,36 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # players without being killed by that player.
         self.playerConsecutiveKills = {}
 
+        self.maxDetonateables = 8
+        self.detonateables = []
+
+    def addDetonateable(self, det):
+        assert det not in self.detonateables
+
+        self.detonateables.append(det)
+
+        if len(self.detonateables) > self.maxDetonateables:
+            # Detonate the oldest one.
+            self.detonateables[0].detonate(True)
+
+        assert len(self.detonateables) <= self.maxDetonateables
+
+        self.numDetonateables = len(self.detonateables)
+
+    def removeDetonateable(self, det):
+        if det in self.detonateables:
+            self.detonateables.remove(det)
+        self.numDetonateables = len(self.detonateables)
+
+    def destroyDetonateables(self):
+        if not self.detonateables:
+            return
+        for det in list(self.detonateables):
+            if not det.detonating:
+                det.destroy()
+        self.detonateables = []
+        self.numDetonateables = 0
+
     def changePlayerState(self, newState, prevState):
         if prevState == TFPlayerState.Playing:
             self.disableController()
@@ -389,7 +419,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.sendUpdate('speak', [info.index], client = client, excludeClients = excludeClients)
 
     def doClassSpecialSkill(self):
-        return
+        if self.tfClass == Class.Demo:
+            for det in self.detonateables:
+                det.beginDetonate()
+            for det in list(self.detonateables):
+                if det.detonating:
+                    det.detonate(False)
 
         #if self.tfClass == Class.Engineer:
         #    self.placeSentry()
@@ -837,6 +872,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 wpn.dropAsAmmoPack()
         self.setActiveWeapon(-1)
         self.removeAllConditions()
+        self.destroyDetonateables()
         self.health = 0
 
         # Player died.
@@ -912,6 +948,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def respawn(self, sendRespawn = True):
         # Refill health
         self.health = self.maxHealth
+
+        self.destroyDetonateables()
 
         # Refill ammo
         for wpnId in self.weapons:
@@ -993,6 +1031,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.destroyAllObjects()
         self.stripWeapons()
+        self.destroyDetonateables()
 
         # Remove nemesises that are on the team we are joining.
         for doId in list(self.nemesisList):
@@ -1053,6 +1092,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Kill any objects that were built by the player.
         self.destroyAllObjects()
+        self.destroyDetonateables()
 
         self.stripWeapons()
         self.tfClass = cls
@@ -1173,6 +1213,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Destroy all built objects.
         self.destroyAllObjects()
+        self.destroyDetonateables()
 
         # Delete all weapons.
         self.stripWeapons()

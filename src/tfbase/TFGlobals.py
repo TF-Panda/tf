@@ -378,5 +378,14 @@ ModelPrecacheList = [
     "models/weapons/v_sniperrifle_sniper",
     "models/weapons/w_smg",
     "models/weapons/v_smg_sniper",
-    "models/weapons/c_machete"
+    "models/weapons/c_machete",
+    "models/weapons/w_stickybomb_launcher",
+    "models/weapons/v_stickybomb_launcher_demo",
+    "models/weapons/w_stickybomb",
+    "models/weapons/w_stickybomb_gib1",
+    "models/weapons/w_stickybomb_gib2",
+    "models/weapons/w_stickybomb_gib3",
+    "models/weapons/w_stickybomb_gib4",
+    "models/weapons/w_stickybomb_gib5",
+    "models/weapons/w_stickybomb_gib6"
 ]

@@ -145,6 +145,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.nemesisLabels = {}
 
+    def RecvProxy_numDetonateables(self, count):
+        if count != self.numDetonateables:
+            self.numDetonateables = count
+            messenger.send('localPlayerDetonateablesChanged')
+
     def RecvProxy_nemesisList(self, nemesisList):
         added = [x for x in nemesisList if x not in self.nemesisList]
         removed = [x for x in self.nemesisList if x not in nemesisList]

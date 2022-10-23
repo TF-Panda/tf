@@ -73,6 +73,7 @@ class Weapon:
     SniperRifle = 24
     SMG = 25
     Machete = 26
+    StickyBombLauncher = 27
 
 BaseSpeed = 300
 
@@ -283,7 +284,7 @@ class DemoInfo:
         ]
     }
 
-    Weapons = [Weapon.GrenadeLauncher, Weapon.Bottle]
+    Weapons = [Weapon.GrenadeLauncher, Weapon.StickyBombLauncher, Weapon.Bottle]
 
 class HeavyInfo:
     Name = TFLocalizer.Heavy

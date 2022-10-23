@@ -324,6 +324,12 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         inflictor = info.inflictor
 
         for do in list(base.net.doId2do.values()):
+            if do == info.inflictor:
+                continue
+
+            if do.isDODeleted():
+                continue
+
             if not isinstance(do, DistributedEntity):
                 continue
 
@@ -344,7 +350,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             res = PhysRayCastResult()
             dir = spot - src
             dist = dir.length()
-            dir.normalize()
+            if not dir.normalize():
+                dist = 0.0
+                dir = Vec3.forward()
             filter = PhysQueryNodeFilter(info.inflictor, PhysQueryNodeFilter.FTExclude)
             base.physicsWorld.raycast(res, src, dir, dist, mask, Contents.Empty, CollisionGroup.Projectile, filter)
             if res.hasBlock():

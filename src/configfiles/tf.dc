@@ -79,6 +79,8 @@ from tf.weapon.DistributedMedigun import DistributedMedigun/AI
 from tf.weapon.DistributedSMG import DistributedSMG/AI
 from tf.weapon.DistributedMachete import DistributedMachete/AI
 from tf.weapon.DistributedSniperRifle import DistributedSniperRifle/AI
+from tf.weapon.DistributedStickyBombLauncher import DistributedStickyBombLauncher/AI
+from tf.weapon.DistributedStickyBomb import DistributedStickyBomb/AI
 
 from tf.distributed.DistributedTeamFlag import DistributedTeamFlag/AI
 
@@ -249,6 +251,8 @@ dclass DistributedTFPlayer : DistributedChar {
   float64 respawnTime;
 
   uint32 nemesisList[];
+
+  uint8 numDetonateables;
 
   // 46 bytes
 
@@ -538,3 +542,13 @@ dclass DistributedMachete : TFWeaponMelee { };
 dclass DistributedSniperRifle : TFWeaponGun {
   float64 chargedDamage;
 };
+
+dclass DistributedStickyBombLauncher : TFWeaponGun {
+  float64 charge;
+  uint8 isCharging;
+};
+
+dclass DistributedStickyBomb : DistributedChar {
+  gib() broadcast;
+};
+

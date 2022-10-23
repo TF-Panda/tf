@@ -136,6 +136,8 @@ class DistributedTFPlayerShared:
         # List of players I am dominating.
         self.dominationList = []
 
+        self.numDetonateables = 0
+
     def setFOV(self, fov, time):
         if fov == 0:
             self.fov = self.defaultFov

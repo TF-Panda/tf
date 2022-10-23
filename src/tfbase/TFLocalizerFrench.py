@@ -70,6 +70,7 @@ BuiltBy = " monté(e) par "
 Metal = "\nMétal : %1"
 RequiredMetal = "%i Métal"
 MetalHUD = "Métal"
+StickiesHUD = "Stickies"
 # Sentry
 Shells = 'Cartouches'
 Rockets = 'Roquettes'

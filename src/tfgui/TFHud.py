@@ -4,6 +4,7 @@ from direct.showbase.DirectObject import DirectObject
 from panda3d.core import *
 
 from tf.tfbase import TFLocalizer
+from tf.player.TFClass import *
 
 cl_crosshairscale = ConfigVariableDouble("cl-crosshair-scale", 32)
 cl_crosshairfile = ConfigVariableString("cl-crosshair-file", "crosshair5")
@@ -44,6 +45,9 @@ class TFHud(DirectObject):
         self.ammoLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
                                       scale = self.AmmoScale, pos = self.AmmoPos, align = self.AmmoAlign)
 
+        self.stickiesLbl = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
+                                        scale = 0.07, pos = (-0.4, 0.12))
+
         self.crosshairTex = None
         self.crosshair = OnscreenImage()
         self.updateCrosshair()
@@ -55,6 +59,8 @@ class TFHud(DirectObject):
         self.hideHud()
 
     def destroy(self):
+        self.stickiesLbl.destroy()
+        self.stickiesLbl = None
         self.metalLabel.destroy()
         self.metalLabel = None
         self.healthLabel.destroy()
@@ -73,7 +79,9 @@ class TFHud(DirectObject):
         self.clipLabel.hide()
         self.ammoLabel.hide()
         self.metalLabel.hide()
+        self.stickiesLbl.hide()
         self.ignore('localPlayerMetalChanged')
+        self.ignore('localPlayerDetonateablesChanged')
         self.hidden = True
 
     def showHud(self):
@@ -82,7 +90,9 @@ class TFHud(DirectObject):
         self.healthLabel.show()
         self.updateAmmoLabel()
         self.updateMetalLabel()
+        self.updateStickiesLabel()
         self.accept('localPlayerMetalChanged', self.updateMetalLabel)
+        self.accept('localPlayerDetonateablesChanged', self.updateStickiesLabel)
 
     def handleWindowEvent(self, win):
         if win != base.win:
@@ -131,8 +141,17 @@ class TFHud(DirectObject):
             self.metalLabel.hide()
         else:
             self.metalLabel.show()
+            self.metalLabel.setText(TFLocalizer.MetalHUD + "\n" + str(base.localAvatar.metal))
 
-        self.metalLabel.setText(TFLocalizer.MetalHUD + "\n" + str(base.localAvatar.metal))
+    def updateStickiesLabel(self):
+        if self.hidden:
+            return
+
+        if base.localAvatar.tfClass == Class.Demo:
+            self.stickiesLbl.show()
+            self.stickiesLbl.setText(TFLocalizer.StickiesHUD + "\n" + str(base.localAvatar.numDetonateables))
+        else:
+            self.stickiesLbl.hide()
 
     def updateAmmoLabel(self):
         if self.hidden:

@@ -70,6 +70,7 @@ BuiltBy = " built by "
 Metal = "\nMetal: %1"
 RequiredMetal = "%i Metal"
 MetalHUD = "Metal"
+StickiesHUD = "Stickies"
 # Sentry
 Shells = 'Shells'
 Rockets = 'Rockets'

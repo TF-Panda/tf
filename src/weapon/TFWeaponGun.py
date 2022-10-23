@@ -15,13 +15,14 @@ from .FireBullets import fireBullets
 from .WeaponEffects import makeMuzzleFlash
 
 from tf.tfbase.TFGlobals import CollisionGroup, Contents
-from tf.tfbase import TFFilters
+from tf.tfbase import TFFilters, TFGlobals
 
 from tf.actor.Actor import Actor
 
 if not IS_CLIENT:
     from .RocketProjectile import RocketProjectileAI
     from .DPipeBombProjectile import DPipeBombProjectileAI
+    from .DistributedStickyBomb import DistributedStickyBombAI
 
 import random
 
@@ -92,6 +93,8 @@ class TFWeaponGun(BaseClass):
             self.fireRocket(player)
         elif projType == TFProjectileType.Pipebomb:
             self.firePipebomb(player)
+        elif projType == TFProjectileType.PipebombRemote:
+            self.fireStickyBomb(player)
         else:
             assert False
 
@@ -226,6 +229,32 @@ class TFWeaponGun(BaseClass):
             rocket.node().setCcdEnabled(True)
             rocket.node().setMass(5.0)
             base.net.generateObject(rocket, player.zoneId)
+
+    def fireStickyBomb(self, player):
+        self.playSound(self.getSingleSound())
+        if not IS_CLIENT:
+            src = self.player.getEyePosition()
+            q = Quat()
+            q.setHpr(self.player.viewAngles)
+            src += q.getForward() * 16.0 + q.getRight() * 8.0 + q.getUp() * -6.0
+            vel = (q.getForward() * 1200) + (q.getUp() * 200.0)
+            vel *= TFGlobals.remapValClamped(self.charge, 0.0, 1.0, 0.8, 1.5)
+            print("charge", self.charge, "vel", vel)
+            bomb = DistributedStickyBombAI()
+            bomb.setPos(src)
+            bomb.setHpr(self.player.viewAngles)
+            bomb.shooter = player
+            bomb.damage = self.getWeaponDamage()
+            bomb.damageType = self.getWeaponDamageType()
+            bomb.team = player.team
+            bomb.skin = player.team
+            bomb.setModel("models/weapons/w_stickybomb")
+            bomb.node().addForce(vel, bomb.node().FTVelocityChange)
+            bomb.node().addTorque((random.uniform(-1200, 1200), -600, 0), bomb.node().FTVelocityChange)
+            bomb.node().setCcdEnabled(True)
+            bomb.node().setMass(150.0)
+            base.net.generateObject(bomb, player.zoneId)
+            player.addDetonateable(bomb)
 
     def getWeaponDamage(self):
         return self.weaponData.get(self.weaponMode, {}).get('damage', 1.0)
