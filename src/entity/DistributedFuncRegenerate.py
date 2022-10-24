@@ -64,21 +64,16 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                 self.setSolidMask(Contents.BlueTeam)
 
         def onTriggerEnter(self, entity):
-            if not entity.isPlayer() or entity.team != self.team:
+            if not entity.isPlayer():
                 return
-
-            if entity in self.touching:
-                return
-
-            self.touching.append(entity)
+            if not entity in self.touching:
+                self.touching.append(entity)
 
         def onTriggerExit(self, entity):
-            if not entity.isPlayer() or entity.team != self.team:
+            if not entity.isPlayer():
                 return
-
-            if not entity in self.touching:
-                return
-            self.touching.remove(entity)
+            if entity in self.touching:
+                self.touching.remove(entity)
 
         def doAnimTrack(self):
             if self.isOpen:
@@ -120,9 +115,26 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                 mdl.setAnimation("close")
                 self.isOpen = False
 
+            if base.game.isStalemate():
+                # Nobody can use it in a stalemate.
+                return task.cont
+
             for entity in list(self.touching):
                 if entity.isDODeleted():
                     self.touching.remove(entity)
+                    continue
+
+                if entity.isDead():
+                    continue
+
+                # If the round is over and non-stalemate, only the
+                # winning team can use the locker.
+                if base.game.isRoundEnded():
+                    if entity.team != base.game.winTeam:
+                        continue
+                elif entity.team != self.team:
+                    continue
+
                 lastRegenTime = self.lastRegenTimes.get(entity.doId, 0.0)
                 if (now - lastRegenTime) >= self.regenInterval:
                     self.regenPlayer(entity)
