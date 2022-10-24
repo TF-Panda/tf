@@ -36,10 +36,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.waitingForPlayers = True
 
-        self.roundNumber = 0
-        self.roundTime = 320
-        self.roundTimeRemaining = 0
-        self.roundState = RoundState.Setup
+        self.roundTime = 20
+
+        self.maxPlayersPerTeam = base.sv.getMaxClients() // TFTeam.COUNT
 
         # Number of rounds won by each team.
         self.teamScores = {
@@ -57,17 +56,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.playersByTeam = {0: [], 1: []}
         self.objectsByTeam = {0: [], 1: []}
-
-    def isRespawnAllowed(self):
-        """
-        Returns true if dead players are allowed to respawn at this point in
-        the game.  If the round ended, players must wait until the new round
-        to respawn.
-        """
-        return self.roundState != RoundState.Ended
-
-    def inSetup(self):
-        return self.roundState == RoundState.Setup
 
     def playerFallDamage(self, player):
         if player.fallVelocity > 650:
@@ -90,15 +78,52 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         DistributedObjectAI.announceGenerate(self)
         self.addTask(self.__gameUpdate, "gameUpdate", appendTask=True)
 
+    def getAvailableTeam(self):
+        # Returns the team with the fewest number of players.
+
+        teams = [TFTeam.Red, TFTeam.Blue]
+        teams.sort(key=lambda x: len(self.playersByTeam[x]))
+
+        team = teams[0]
+        assert len(self.playersByTeam[team]) < self.maxPlayersPerTeam
+
+        return team
+
+    def enemySound(self, snd, team):
+        for plyr in base.game.playersByTeam[not team]:
+            base.world.emitSound(snd, client=plyr.owner)
+
+    def teamSound(self, snd, team):
+        for plyr in base.game.playersByTeam[team]:
+            base.world.emitSound(snd, client=plyr.owner)
+
+    def addRoundTime(self, time, rewardedTeam):
+        self.roundEndTime += time
+
+        if rewardedTeam not in (None, TFTeam.NoTeam):
+            if random.random() < 0.25:
+                self.teamSound("Announcer.TimeAdded", rewardedTeam)
+            else:
+                self.teamSound("Announcer.TimeAwardedForTeam", rewardedTeam)
+            self.enemySound("Announcer.TimeAddedForEnemy", rewardedTeam)
+        else:
+            base.world.emitSound("Announcer.TimeAdded")
+
     def newRound(self):
         """
         Starts a new round of the game.  Resets all players to spawn locations,
         resets health, round timer, etc.
         """
 
-        self.roundTimeRemaining = self.gameModeImpl.setupTime + 0.1
         self.roundNumber += 1
-        self.roundState = RoundState.Setup
+
+        self.winTeam = TFTeam.NoTeam
+
+        if self.gameModeImpl.needsSetup:
+            self.roundEndTime = globalClock.frame_time + self.gameModeImpl.setupTime
+            self.roundState = RoundState.Setup
+        else:
+            self.roundState = RoundState.Playing
         self.gameModeImpl.onNewRound()
 
         for players in self.playersByTeam.values():
@@ -108,27 +133,47 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.notify.info("New round %i" % self.roundNumber)
 
+        if not self.gameModeImpl.needsSetup:
+            self.beginRound()
+
     def beginRound(self):
         self.notify.info("Begin round %i" % self.roundNumber)
+        if self.roundState == RoundState.Setup:
+            base.world.emitSound("Ambient.Siren")
         self.roundState = RoundState.Playing
-        self.roundTimeRemaining = self.roundTime
-        base.world.emitSound("Ambient.Siren")
+        self.roundEndTime = globalClock.frame_time + self.roundTime
+        self.winTeam = TFTeam.NoTeam
 
         self.gameModeImpl.onBeginRound()
 
-    def endRound(self, winTeam=None):
+    def endRound(self, winTeam=TFTeam.NoTeam):
         self.notify.info("End round %i" % self.roundNumber)
         self.roundState = RoundState.Ended
-        self.roundTimeRemaining = 15
+        self.roundEndTime = globalClock.frame_time + 15.0
 
-        if winTeam is not None:
+        if winTeam is None:
+            winTeam = TFTeam.NoTeam
+
+        if winTeam != TFTeam.NoTeam:
             self.teamScores[winTeam] += 1
             for plyr in self.playersByTeam[winTeam]:
+                plyr.setCondition(plyr.CondWinner)
+                plyr.updateClassSpeed()
                 base.world.emitSound("Game.YourTeamWon", client=plyr.owner)
             for plyr in self.playersByTeam[not winTeam]:
+                plyr.setCondition(plyr.CondLoser)
+                plyr.setActiveWeapon(-1)
+                plyr.updateClassSpeed()
                 base.world.emitSound("Game.YourTeamLost", client=plyr.owner)
         else:
+            for teamPlyrs in self.playersByTeam.values():
+                for plyr in teamPlyrs:
+                    plyr.setCondition(plyr.CondLoser)
+                    plyr.setActiveWeapon(-1)
+                    plyr.updateClassSpeed()
             base.world.emitSound("Game.Stalemate")
+
+        self.winTeam = winTeam
 
         self.gameModeImpl.onEndRound()
 
@@ -137,11 +182,10 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.notify.info("Waiting for players")
             return task.cont
 
-        prevTime = self.roundTimeRemaining
-        self.roundTimeRemaining -= globalClock.dt
-        time = self.roundTimeRemaining
+        time = self.roundEndTime - globalClock.frame_time
+        prevTime = time + base.intervalPerTick
 
-        if self.roundTimeRemaining <= 0:
+        if globalClock.frame_time >= self.roundEndTime:
 
             if self.roundState == RoundState.Setup:
                 # Setup time over, start the round for real.
@@ -456,27 +500,18 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         player = DistributedTFPlayerAI()
         client.player = player
         player.playerName = name
-        #player.team = 1
-        if self.numRed > self.numBlue:
-            # Blue team
-            player.team = 1
-            self.numBlue += 1
-        else:
-            # Red team
-            player.team = 0
-            self.numRed += 1
-        player.skin = player.team
-        if self.numEngineer > self.numSoldier:
-            tfclass = Class.Soldier
-            self.numSoldier += 1
-        else:
-            tfclass = Class.Demo
-            self.numEngineer += 1
-        self.playersByTeam[player.team].append(player)
-        player.changeClass(tfclass, force = True, sendRespawn = True, giveWeapons = False)
-        # FIXME!!!!!
+        # Automatically assign to team with fewest players.
+        team = self.getAvailableTeam()
+        # This should be made somewhat cleaner.
+        # Changing class cannot force a respawn because we might join in the middle
+        # of a round end.
+        # We also can't give class weapons until we actually respawn because the
+        # player is not yet assigned a doId until we call generateObject().
+        player.doChangeTeam(team, respawn=False, giveWeapons=False)
+        player.doChangeClass(random.randint(0, Class.COUNT - 1), respawn=False, force=True,
+                             sendRespawn=False, giveWeapons=False)
         base.sv.generateObject(player, TFGlobals.GameZone, client)
-        player.giveClassWeapons()
+        player.startWaitingToRespawn()
 
         if self.waitingForPlayers:
             self.waitingForPlayers = False

@@ -9,7 +9,8 @@ class GameModeCTF:
     def __init__(self, gameMgr):
         self.gameMgr = gameMgr
 
-        self.setupTime = 60.0
+        self.needsSetup = False
+        self.setupTime = 1.0
 
         # Number of times team has to cap to win.
         self.winCapCount = 3

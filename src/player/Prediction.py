@@ -425,8 +425,9 @@ class Prediction(DirectObject):
         if not avatar.isDead():
 
             # Do weapon selection
-            if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(avatar.weapons) and cmd.weaponSelect != avatar.activeWeapon:
-                avatar.setActiveWeapon(cmd.weaponSelect)
+            if not avatar.isLoser():
+                if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(avatar.weapons) and cmd.weaponSelect != avatar.activeWeapon:
+                    avatar.setActiveWeapon(cmd.weaponSelect)
 
             avatar.updateButtonsState(cmd.buttons)
 

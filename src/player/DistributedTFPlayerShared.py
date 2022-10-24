@@ -46,6 +46,8 @@ class DistributedTFPlayerShared:
     CondInvulnerableWearingOff = 9
     CondTeleported = 10
     CondZoomed = 11
+    CondLoser = 12
+    CondWinner = 13
 
     BadConditions = [
         CondBurning
@@ -138,6 +140,9 @@ class DistributedTFPlayerShared:
 
         self.numDetonateables = 0
 
+    def isLoser(self):
+        return self.inCondition(self.CondLoser)
+
     def setFOV(self, fov, time):
         if fov == 0:
             self.fov = self.defaultFov
@@ -171,6 +176,11 @@ class DistributedTFPlayerShared:
 
     def updateClassSpeed(self):
         maxSpeed = 300 * self.classInfo.ForwardFactor
+
+        if self.inCondition(self.CondLoser):
+            maxSpeed *= 0.9
+        elif self.inCondition(self.CondWinner):
+            maxSpeed *= 1.1
 
         if self.inCondition(self.CondAiming):
             # Heavies and snipers aiming.

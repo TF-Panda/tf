@@ -71,7 +71,7 @@ class TFWeaponSelection(DirectObject):
         self.activeTime = globalClock.frame_time
 
     def hoverNextWeapon(self):
-        if base.localAvatar.isDead():
+        if base.localAvatar.isDead() or base.localAvatar.isLoser():
             return
 
         if not self.isActive:
@@ -80,7 +80,7 @@ class TFWeaponSelection(DirectObject):
         self.hoverWeapon((self.index + 1) % len(base.localAvatar.getWeapons()))
 
     def hoverPrevWeapon(self):
-        if base.localAvatar.isDead():
+        if base.localAvatar.isDead() or base.localAvatar.isLoser():
             return
 
         if not self.isActive:

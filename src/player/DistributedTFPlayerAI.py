@@ -915,12 +915,15 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if now < freezeEnd:
             return task.cont
 
-        # Spectate until we respawn.
-        self.setPlayerState(TFPlayerState.Spectating)
         self.respawnTime = now + tf_respawn_time.value
-        self.addTask(self.__respawnTask, 'respawn', appendTask=True)
+        self.startWaitingToRespawn()
 
         return task.done
+
+    def startWaitingToRespawn(self):
+        # Spectate until we respawn.
+        self.setPlayerState(TFPlayerState.Spectating)
+        self.addTask(self.__respawnTask, 'respawn', appendTask=True)
 
     def __respawnTask(self, task):
         #print("respawn task", task.time)
@@ -964,8 +967,13 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         else:
             self.metal = 100
 
+        self.removeAllConditions()
+
+        # Make sure we have all of our weapons.
+        self.stripWeapons()
+        self.giveClassWeapons()
         # Set to the primary weapon
-        self.setActiveWeapon(0)
+        #self.setActiveWeapon(0)
 
         # Select a random spawn location.
         spawnPoints = base.air.game.teamSpawns[self.team]
@@ -981,6 +989,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.d_setViewAngles((angles[1] - 90, angles[0]))
         # Make client teleport player to respawn location.
         self.teleport()
+
+        self.updateClassSpeed()
 
         #if sendRespawn:
         #    self.sendUpdate('respawn')
@@ -1004,6 +1014,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                     base.air.deleteObject(obj)
 
     def changeTeam(self, team, respawn=True):
+        if not base.game.isChangeTeamAllowed():
+            return
+
         if team == self.team:
             self.pendingChangeTeam = TFTeam.NoTeam
             return
@@ -1021,7 +1034,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.doChangeTeam(team, respawn)
 
-    def doChangeTeam(self, team, respawn=True):
+    def doChangeTeam(self, team, respawn=True, giveWeapons=True):
         if team == self.team:
             self.pendingChangeTeam = TFTeam.NoTeam
             return
@@ -1044,9 +1057,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 self.nemesisList.remove(doId)
 
         # Remove from old team.
-        if self in base.game.playersByTeam[self.team]:
+        if self.team in base.game.playersByTeam and self in base.game.playersByTeam[self.team]:
             base.game.playersByTeam[self.team].remove(self)
         # Assign to new team.
+        assert team in base.game.playersByTeam
         if not self in base.game.playersByTeam[team]:
             base.game.playersByTeam[team].append(self)
 
@@ -1057,7 +1071,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.viewModel.team = team
             self.viewModel.setSkin(team)
 
-        self.giveClassWeapons()
+        #if giveWeapons:
+        #    self.giveClassWeapons()
 
         if respawn:
             self.respawn()
@@ -1065,6 +1080,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.pendingChangeTeam = TFTeam.NoTeam
 
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
+        if not base.game.isChangeClassAllowed():
+            return
+
         if (cls == self.tfClass) and not force:
             self.pendingChangeClass = Class.Invalid
             return
@@ -1105,8 +1123,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.viewModel.loadModel(self.classInfo.ViewModel)
         #self.animState.initGestureSlots()
 
-        if giveWeapons:
-            self.giveClassWeapons()
+        #if giveWeapons:
+        #    self.giveClassWeapons()
 
         if respawn:
             self.respawn(sendRespawn)
@@ -1457,8 +1475,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if not self.isDead():
 
             # Do weapon selection.
-            if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(self.weapons) and cmd.weaponSelect != self.activeWeapon:
-                self.setActiveWeapon(cmd.weaponSelect)
+            if not self.isLoser():
+                if cmd.weaponSelect >= 0 and cmd.weaponSelect < len(self.weapons) and cmd.weaponSelect != self.activeWeapon:
+                    self.setActiveWeapon(cmd.weaponSelect)
 
             self.updateButtonsState(cmd.buttons)
 

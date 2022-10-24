@@ -20,6 +20,19 @@ class GestureSlot:
 
 class TFPlayerAnimState:
 
+    LoserStateTable = {
+        Activity.Stand: Activity.Loser_Stand,
+        Activity.Run: Activity.Loser_Run,
+        Activity.Crouch: Activity.Loser_Crouch,
+        Activity.Air_Walk: Activity.Loser_Air_Walk,
+        Activity.Jump: Activity.Loser_Jump,
+        Activity.Jump_Start: Activity.Loser_Jump_Start,
+        Activity.Jump_Float: Activity.Loser_Jump_Float,
+        Activity.Jump_Land: Activity.Loser_Jump_Land,
+        Activity.Swim: Activity.Loser_Swim,
+        Activity.Double_Jump: Activity.Loser_Double_Jump
+    }
+
     def __init__(self, player):
         self.player = player
         self.vel = Vec3()
@@ -219,9 +232,12 @@ class TFPlayerAnimState:
             elif actDesired == Activity.Reload_Stand:
                 translateActivity = Activity.Reload_Swim
 
-        wpn = self.player.getActiveWeaponObj()
-        if wpn:
-            translateActivity = wpn.translateActivity(translateActivity)
+        if self.player.isLoser():
+            translateActivity = self.LoserStateTable.get(translateActivity, translateActivity)
+        else:
+            wpn = self.player.getActiveWeaponObj()
+            if wpn:
+                translateActivity = wpn.translateActivity(translateActivity)
 
         chan = self.player.getChannelForActivity(translateActivity, layer=layer)
         if chan < 0:

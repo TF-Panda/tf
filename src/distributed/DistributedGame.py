@@ -16,6 +16,7 @@ from .DistributedGameBase import DistributedGameBase
 from .FogManager import FogManager
 from .SkyBox import SkyBox
 from tf.tfbase.Soundscapes import SoundscapeManager
+from .RoundState import RoundState
 
 from .CubemapRendering import CubemapRendering
 
@@ -38,11 +39,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         DistributedObject.__init__(self)
         DistributedGameBase.__init__(self)
 
-        self.roundNumber = 0
-        self.roundTimeRemaining = 0
-        self.roundState = 0
-
-        self.roundTimeText = OnscreenText("", pos=(0, 0.85), fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), align=TextNode.ACenter)
+        self.roundTimeText = OnscreenText("", pos=(0, 0.85 + 0.08), fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), align=TextNode.ACenter)
+        self.lastRoundTimeText = ""
 
         self.ssMgr = SoundscapeManager()
 
@@ -63,16 +61,24 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         r = CubemapRendering()
         r.renderCubemaps(self.lvlData)
 
-    def RecvProxy_roundTimeRemaining(self, time):
-        if time != self.roundTimeRemaining:
-            self.roundTimeRemaining = time
-            self.updateRoundTimer()
+    def __updateRoundTimer(self, task):
+        self.updateRoundTimer()
+        return task.cont
 
     def updateRoundTimer(self):
-        minutes = self.roundTimeRemaining // 60
-        seconds = self.roundTimeRemaining % 60
+        roundTimeRemaining = int(max(0.0, self.roundEndTime - globalClock.frame_time))
+        minutes = roundTimeRemaining // 60
+        seconds = roundTimeRemaining % 60
 
-        self.roundTimeText.setText(str(minutes) + ":" + str(seconds).zfill(2))
+        if self.inSetup():
+            text = "Setup"
+        else:
+            text = ""
+        text += "\n"
+        text += str(minutes) + ":" + str(seconds).zfill(2)
+        if text != self.lastRoundTimeText:
+            self.roundTimeText.setText(text)
+            self.lastRoundTimeText = text
 
     def toggleVisDebug(self):
         self.visDebug = not self.visDebug
@@ -175,6 +181,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         base.game = self
         self.changeLevel(self.levelName)
         self.worldLoaded()
+
+        self.addTask(self.__updateRoundTimer, 'updateRoundTimer', sim=True, appendTask=True)
 
     def __updateCascadeLight(self, task):
         if not self.clnp:

@@ -183,8 +183,9 @@ dclass DistributedGame : DistributedObject {
 
   uint8 gameMode;
   uint8 roundNumber;
-  uint16 roundTimeRemaining;
+  float64 roundEndTime;
   uint8 roundState;
+  int8 winTeam;
 
   joinGame(string name) clsend airecv;
   joinGameResp(uint32 tickCount);

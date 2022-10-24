@@ -531,16 +531,23 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.calcPlayingView()
 
     def calcPlayingView(self):
-        base.camera.setPos(self.getEyePosition())
-        base.camera.setHpr(self.viewAngles + self.punchAngle)
-        if self.viewModel:
-            # Don't render the view model when zoomed.
-            if not self.inCondition(self.CondZoomed):
-                self.viewModel.show()
-                # Also calculate the viewmodel position/rotation.
-                self.viewModel.calcView(self, base.camera)
-            else:
+        if self.isLoser():
+            self.show()
+            if self.viewModel:
                 self.viewModel.hide()
+            self.calcSpectatorView(self, 48*2)
+        else:
+            self.hide()
+            base.camera.setPos(self.getEyePosition())
+            base.camera.setHpr(self.viewAngles + self.punchAngle)
+            if self.viewModel:
+                # Don't render the view model when zoomed.
+                if not self.inCondition(self.CondZoomed):
+                    self.viewModel.show()
+                    # Also calculate the viewmodel position/rotation.
+                    self.viewModel.calcView(self, base.camera)
+                else:
+                    self.viewModel.hide()
 
     def camBlock(self, camPos, targetPos, camTargetEntity):
         """
@@ -564,12 +571,29 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             return (True, tr['pos'] - wallOffset)
         return (False, camPos)
 
-    def calcSpectatorView(self):
-        specTarget = base.net.doId2do.get(self.observerTarget)
+    def calcThirdPersonView(self):
+        maxDist = 128
+        viewQuat = Quat()
+        viewQuat.setHpr(self.viewAngles)
+        base.camera.setHpr(self.viewAngles)
+        origin = self.getEyePosition()
+        vForward = viewQuat.getForward()
+        eyeOrigin = Point3(origin + (vForward * -maxDist))
+
+        # Clip against world.
+        tr = self.camBlock(eyeOrigin, origin, self)
+        if tr[0]:
+            eyeOrigin = tr[1]
+
+        base.camera.setPos(eyeOrigin)
+
+    def calcSpectatorView(self, specTarget=None, chaseSpeed=48.0):
+        if not specTarget:
+            specTarget = base.net.doId2do.get(self.observerTarget)
         if not specTarget:
             return
 
-        self.observerChaseDistance += globalClock.dt * 48.0
+        self.observerChaseDistance += globalClock.dt * chaseSpeed
         self.observerChaseDistance = max(16, min(CHASE_CAM_DISTANCE, self.observerChaseDistance))
 
         viewQuat = Quat()
@@ -978,6 +1002,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.simTaskMgr.remove('runControls')
 
     def doChangeClass(self):
+        if not base.game.isChangeClassAllowed():
+            return
+
         if self.classMenu:
             return
         if self.teamMenu:
@@ -987,6 +1014,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.disableControls()
 
     def doChangeTeam(self):
+        if not base.game.isChangeTeamAllowed():
+            return
+
         if self.teamMenu:
             return
         if self.classMenu:

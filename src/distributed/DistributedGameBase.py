@@ -2,8 +2,9 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import Contents
+from tf.tfbase.TFGlobals import Contents, TFTeam
 from tf.tfbase.SurfaceProperties import SurfaceProperties
+from .RoundState import RoundState
 
 from direct.directbase import DirectRender
 
@@ -17,7 +18,36 @@ class DistributedGameBase:
         self.lvlData = None
         self.propRoot = None
         self.propPhysRoot = None
+
+        # Game mode/round system vars.
         self.gameMode = GameMode.Arena
+        self.roundNumber = 0
+        self.roundEndTime = 0
+        self.roundState = RoundState.Setup
+        self.winTeam = TFTeam.NoTeam
+
+    def isRespawnAllowed(self):
+        """
+        Returns true if dead players are allowed to respawn at this point in
+        the game.  If the round ended, players must wait until the new round
+        to respawn.
+        """
+        return not self.isRoundEnded()
+
+    def isChangeClassAllowed(self):
+        return not self.isRoundEnded()
+
+    def isChangeTeamAllowed(self):
+        return not self.isRoundEnded()
+
+    def inSetup(self):
+        return self.roundState == RoundState.Setup
+
+    def isRoundEnded(self):
+        return self.roundState == RoundState.Ended
+
+    def isStalemate(self):
+        return self.isRoundEnded() and self.winTeam == TFTeam.NoTeam
 
     def flatten(self, np):
         # Does a flatten even stronger than NodePath.flattenStrong()
