@@ -101,6 +101,8 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                     wpn.ammo2 = wpn.maxAmmo2
                 if wpn.usesClip:
                     wpn.clip2 = wpn.maxClip2
+            if player.inCondition(player.CondBurning):
+                player.removeCondition(player.CondBurning)
 
             self.doAnimTrack()
 

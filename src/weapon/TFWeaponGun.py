@@ -141,13 +141,14 @@ class TFWeaponGun(BaseClass):
             #print("pred tick", base.tickCount)
             #print("random seed", base.net.predictionRandomSeed & 255)
 
-    def getProjectileFireSetup(self, player, offset, hitTeammates = True):
+    def getProjectileFireSetup(self, player, offset, hitTeammates = True, shootPos=None):
         q = Quat()
         q.setHpr(player.viewAngles)
         forward = q.getForward()
         right = q.getRight()
         up = q.getUp()
-        shootPos = player.getEyePosition()
+        if not shootPos:
+            shootPos = player.getEyePosition()
 
         # Estimate end point
         endPos = shootPos + forward * 2000

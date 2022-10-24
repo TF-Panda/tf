@@ -42,6 +42,11 @@ spec_freeze_traveltime = ConfigVariableDouble("spec-freeze-travel-time", 0.4)
 tf_respawn_time = ConfigVariableDouble("tf-respawn-time", 5.0)
 tf_spectate_enemies = ConfigVariableBool("tf-spectate-enemies", True)
 
+TF_BURNING_DMG = 3
+TF_BURNING_FREQUENCY = 0.5
+TF_BURNING_FLAME_LIFE = 10.0
+TF_BURNING_FLAME_LIFE_PYRO = 0.25
+
 class CommandContext:
     def __init__(self):
         self.backupCmds = []
@@ -106,6 +111,24 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.maxDetonateables = 8
         self.detonateables = []
+
+        self.burnAttacker = -1
+        self.flameBurnTime = 0.0
+        self.nextBurningSound = 0.0
+
+    def burn(self, attacker):
+        if self.isDead():
+            return
+
+        victimIsPyro = (self.tfClass == Class.Pyro)
+
+        if self.CondBurning not in self.conditions:
+            self.setCondition(self.CondBurning)
+            self.flameBurnTime = globalClock.frame_time
+
+        flameLife = TF_BURNING_FLAME_LIFE_PYRO if victimIsPyro else TF_BURNING_FLAME_LIFE
+        self.flameRemoveTime = globalClock.frame_time + flameLife
+        self.burnAttacker = attacker.doId
 
     def addDetonateable(self, det):
         assert det not in self.detonateables
@@ -271,6 +294,26 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                     self.healFraction -= healthToDrain
                     # Manually subtract the health so we don't generate pain sounds
                     self.health -= healthToDrain
+
+        if self.CondBurning in self.conditions:
+            burnAttacker = base.air.doId2do.get(self.burnAttacker)
+            if not burnAttacker:
+                self.removeCondition(self.CondBurning)
+            else:
+                if globalClock.frame_time > self.flameRemoveTime:
+                    self.removeCondition(self.CondBurning)
+                elif globalClock.frame_time >= self.flameBurnTime and self.tfClass != Class.Pyro:
+                    # Burn the player (if not pyro, who does not take persistent burning damage).
+                    info = TakeDamageInfo()
+                    info.attacker = burnAttacker
+                    info.inflictor = burnAttacker
+                    info.setDamage(3)
+                    info.damageType = DamageType.Burn | DamageType.PreventPhysicsForce
+                    self.takeDamage(info)
+                    self.flameBurnTime = globalClock.frame_time + TF_BURNING_FREQUENCY
+
+                if self.nextBurningSound < globalClock.frame_time:
+                    self.nextBurningSound = globalClock.frame_time + 2.5
 
         return task.cont
 

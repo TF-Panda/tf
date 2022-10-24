@@ -12,14 +12,19 @@ class DHealthKitAI(DPickupItemBaseAI):
             # Only for players.
             return False
 
-        maxToGive = max(0, ent.maxHealth - ent.health)
-        if maxToGive == 0:
-            return False
+        didAnything = False
 
-        ent.health += min(maxToGive, max(1, ent.maxHealth // self.HealthRatio))
-        ent.emitSound("HealthKit.Touch", client=ent.owner)
+        if ent.inCondition(ent.CondBurning):
+            ent.removeCondition(ent.CondBurning)
+            didAnything = True
 
-        return True
+        if ent.takeHealth(max(1, ent.maxHealth // self.HealthRatio), 0):
+            didAnything = True
+
+        if didAnything:
+            ent.emitSound("HealthKit.Touch", client=ent.owner)
+
+        return didAnything
 
 class DHealthKitSmallAI(DHealthKitAI):
     HealthRatio = 5

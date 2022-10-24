@@ -53,7 +53,7 @@ class DistributedTFPlayerShared:
         CondBurning
     ]
 
-    COND_COUNT = 8
+    COND_COUNT = 13
     COND_PERMANENT = -1
 
     def __init__(self):
@@ -285,18 +285,34 @@ class DistributedTFPlayerShared:
     def addViewPunch(self, ang):
         self.punchAngle += ang * 20
 
+    def onAddCondition(self, cond):
+        pass
+
+    def onRemoveCondition(self, cond):
+        pass
+
     def removeCondition(self, cond):
+        hadIt = False
         if cond in self.conditions:
+            hadIt = True
             del self.conditions[cond]
         self.condition &= ~(1 << cond)
 
+        if hadIt:
+            self.onRemoveCondition(cond)
+
     def removeAllConditions(self):
+        for cond in self.conditions.keys():
+            self.onRemoveCondition(cond)
         self.conditions = {}
         self.condition = 0
 
     def setCondition(self, cond, time=-1):
+        hadIt = cond in self.conditions
         self.conditions[cond] = time
         self.condition |= (1 << cond)
+        if not hadIt:
+            self.onAddCondition(cond)
 
     def inCondition(self, cond):
         return self.condition & (1 << cond)

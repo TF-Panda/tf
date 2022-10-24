@@ -99,6 +99,47 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.viewOffsetNode = self.attachNewNode("viewOffset")
 
+    def RecvProxy_condition(self, cond):
+        old = self.condition
+        self.condition = cond
+
+        condChanged = old ^ cond
+
+        added = condChanged & cond
+        removed = condChanged & (~cond)
+
+        for i in range(self.COND_COUNT):
+            if added & (1 << (i + 1)):
+                self.onAddCondition(i + 1)
+            elif removed & (1 << (i + 1)):
+                self.onRemoveCondition(i + 1)
+
+    def onAddCondition(self, cond):
+        if cond == self.CondBurning:
+            self.characterNp.setShaderInput("colorAdd", Vec3(1, 0.3, 0) * 0.7)
+            self.characterNp.setShaderInput("colorAddFresnel", Vec3(0.1, 0.7, 1))
+            self.addTask(self.__updateFireEffect, 'updateFireEffect', sim=True, appendTask=True)
+            if self == base.localAvatar:
+                self.emitSound("Fire.Engulf")
+            else:
+                self.emitSoundSpatial("Fire.Engulf", (0, 0, 30))
+
+    def onRemoveCondition(self, cond):
+        if cond == self.CondBurning:
+            self.characterNp.clearShaderInput("colorAdd")
+            self.characterNp.clearShaderInput("colorAddFresnel")
+            self.removeTask('updateFireEffect')
+
+    def __updateFireEffect(self, task):
+        if not self.characterNp:
+            return task.done
+
+        import random
+        scale = random.uniform(0.85, 1.0)
+        self.characterNp.setShaderInput("colorAdd", Vec3(1, 0.3, 0) * scale * 0.7)
+        task.delayTime = random.uniform(0.02, 0.08)
+        return task.again
+
     def doBloodGoop(self, pos):
         from tf.tfbase.TFEffects import getBloodGoopEffect
         from direct.interval.IntervalGlobal import Sequence, Wait, Func
