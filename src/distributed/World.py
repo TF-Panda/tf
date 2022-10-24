@@ -27,7 +27,8 @@ class World(DistributedSolidEntity):
         collideTypeToMask = {
             "": Contents.Solid,
             "clip": Contents.PlayerSolid,
-            "playerclip": Contents.PlayerSolid
+            "playerclip": Contents.PlayerSolid,
+            "sky": Contents.Sky
         }
         for i in range(self.model.getNumTriGroups()):
             group = self.model.getTriGroup(i)

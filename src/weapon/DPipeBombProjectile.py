@@ -82,7 +82,11 @@ class DPipeBombProjectile(BaseClass):
 
             base.air.deleteObject(self)
 
-        def onContactStart(self, entity, pair, shape):
+        def onContactStart(self, entity, actor, pair, shape):
+            if actor.getContentsMask() & TFGlobals.Contents.Sky:
+                base.air.deleteObject(self)
+                return
+
             if self.doingDirectTest:
                 self.removeTask(self.uniqueName('directHitTest'))
                 self.doingDirectTest = False

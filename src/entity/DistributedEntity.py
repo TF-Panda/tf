@@ -214,10 +214,10 @@ class DistributedEntity(BaseClass, NodePath):
         else:
             self.onTriggerExit(entity)
 
-    def onContactStart(self, entity, pair, shape):
+    def onContactStart(self, entity, actor, pair, shape):
         pass
 
-    def onContactEnd(self, entity, pair, shape):
+    def onContactEnd(self, entity, actor, pair, shape):
         pass
 
     def __contactCallback(self, cbdata):
@@ -242,9 +242,9 @@ class DistributedEntity(BaseClass, NodePath):
             pair = cbdata.getContactPair(i)
             shape = pair.getShapeB() if otherIsB else pair.getShapeA()
             if pair.isContactType(PhysEnums.CTFound):
-                self.onContactStart(entity, pair, shape)
+                self.onContactStart(entity, other, pair, shape)
             elif pair.isContactType(PhysEnums.CTLost):
-                self.onContactEnd(entity, pair, shape)
+                self.onContactEnd(entity, other, pair, shape)
 
     def onWake(self):
         pass

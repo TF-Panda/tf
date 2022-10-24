@@ -22,7 +22,7 @@ class DistributedStickyBomb(BaseClass):
             self.solidFlags = TFGlobals.SolidFlag.Tangible
             self.solidShape = TFGlobals.SolidShape.Model
             self.solidMask = TFGlobals.Contents.Solid
-            self.collisionGroup = TFGlobals.CollisionGroup.Rockets
+            #self.collisionGroup = TFGlobals.CollisionGroup.Projectile
             self.kinematic = False
             self.contactCallback = True
             self.isSticking = False
@@ -30,6 +30,7 @@ class DistributedStickyBomb(BaseClass):
             self.detonating = False
             self.stickTime = 0.0
             self.numStickContacts = 0
+            self.hitSky = False
 
     if not IS_CLIENT:
         def generate(self):
@@ -67,12 +68,22 @@ class DistributedStickyBomb(BaseClass):
             if self.detonating:
                 return
             self.sendUpdate('gib')
-            base.net.deleteObject(self)
+            base.air.deleteObject(self)
 
         def canStickTo(self, entity):
-            return not (entity.isPlayer() or entity.isObject())
+            from tf.distributed.World import WorldAI
+            from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
+            # Stickies can stick to the world and dynamic props only.
+            return isinstance(entity, (WorldAI, DistributedPropDynamicAI))
 
-        def onContactStart(self, entity, pair, shape):
+        def onContactStart(self, entity, actor, pair, shape):
+            if actor.getContentsMask() & TFGlobals.Contents.Sky:
+                # Note that we hit the sky.  Our update task
+                # (outside of the physics step) will see the flag
+                # and disintegrate the bomb.
+                self.hitSky = True
+                return
+
             if entity and self.canStickTo(entity):
                 self.numStickContacts += 1
 
@@ -93,6 +104,11 @@ class DistributedStickyBomb(BaseClass):
                 self.detTime = min(self.detTime, globalClock.frame_time + 0.135)
 
         def __stickTask(self, task):
+            if self.hitSky:
+                # The bomb hit the sky, so disintegrate.
+                base.air.deleteObject(self)
+                return task.done
+
             if self.isSticking:
                 return task.cont
 
