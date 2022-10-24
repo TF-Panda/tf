@@ -504,7 +504,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if suicide:
             # Someone killed themselves.
             if assist:
-                text = self.getTeamFormat(assist.team) + killer.playerName + TFLocalizer.PlayerKilled + self.getTeamFormat(killed.team) + killed.playerName + "\2"
+                text = self.getTeamFormat(assist.team) + killer.playerName + TFLocalizer.PlayerFinishedOff + self.getTeamFormat(killed.team) + killed.playerName + "\2"
             else:
                 text = self.getTeamFormat(killed.team) + killed.playerName + TFLocalizer.PlayerSwitchTeam
         elif killer == base.world:
