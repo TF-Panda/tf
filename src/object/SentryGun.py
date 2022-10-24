@@ -202,6 +202,9 @@ class SentryGun(BaseObject):
             elif self.sentryState == SentryState.Attacking:
                 self.attack()
 
+        def simulateDisabled(self):
+            self.sentryRotate()
+
         def moveTurret(self):
             moved = False
 
