@@ -36,7 +36,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.waitingForPlayers = True
 
-        self.roundTime = 20
+        self.roundTime = 600
 
         self.maxPlayersPerTeam = base.sv.getMaxClients() // TFTeam.COUNT
 
