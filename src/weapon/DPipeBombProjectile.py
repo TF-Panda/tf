@@ -118,8 +118,7 @@ class DPipeBombProjectile(BaseClass):
                 block = result.getBlock()
                 actor = block.getActor()
                 if actor:
-                    np = NodePath(actor)
-                    ent = np.getNetPythonTag("entity")
+                    ent = actor.getPythonTag("entity")
                 else:
                     ent = None
                 if ent and ent != self.shooter:

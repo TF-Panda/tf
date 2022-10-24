@@ -163,8 +163,10 @@ class BaseRocket(BaseClass):
                 block = result.getBlock()
                 actor = block.getActor()
                 if actor:
-                    np = NodePath(actor)
-                    ent = np.getNetPythonTag("entity")
+                    if actor.getContentsMask() & Contents.Sky:
+                        base.air.deleteObject(self)
+                        return
+                    ent = actor.getPythonTag("entity")
                 else:
                     ent = None
                 if ent:

@@ -234,8 +234,7 @@ class DistributedEntity(BaseClass, NodePath):
             other = cbdata.getActorB()
             otherIsB = True
 
-        np = NodePath(other)
-        entity = np.getNetPythonTag("entity")
+        entity = other.getPythonTag("entity")
         if not entity:
             return
 
@@ -847,8 +846,7 @@ class DistributedEntity(BaseClass, NodePath):
                 block = result.getBlock()
                 node = block.getActor()
                 if node:
-                    np = NodePath(node)
-                    ent = np.getNetPythonTag("entity")
+                    ent = node.getPythonTag("entity")
                 else:
                     ent = None
                 if ent == entity:
@@ -878,8 +876,7 @@ class DistributedEntity(BaseClass, NodePath):
                 block = result.getBlock()
                 node = block.getActor()
                 if node:
-                    np = NodePath(node)
-                    ent = np.getNetPythonTag("entity")
+                    ent = node.getPythonTag("entity")
                 else:
                     ent = None
                 # LOS to point is blocked by this entity.
