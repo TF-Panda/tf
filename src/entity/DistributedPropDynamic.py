@@ -19,7 +19,7 @@ class DistributedPropDynamic(BaseClass):
         self.animation = 0
         self.solid = False
 
-        self.solidShape = SolidShape.Model
+        self.solidShape = SolidShape.Empty
         self.solidFlags = SolidFlag.Tangible
 
     if not IS_CLIENT:
@@ -34,18 +34,17 @@ class DistributedPropDynamic(BaseClass):
             if props.hasAttribute("skin"):
                 self.skin = props.getAttributeValue("skin").getInt()
 
+            if props.hasAttribute("solid"):
+                self.solid = props.getAttributeValue("solid").getBool()
+                if self.solid:
+                    self.solidShape = SolidShape.Model
+
             if props.hasAttribute("model"):
                 fname = Filename.fromOsSpecific(props.getAttributeValue("model").getString().replace(".mdl", ".bam"))
                 vfs = VirtualFileSystem.getGlobalPtr()
                 resolved = Filename(fname)
                 if vfs.resolveFilename(resolved, getModelPath().value):
                     self.setModel(fname.getFullpath())
-
-            if props.hasAttribute("solid"):
-                self.solid = props.getAttributeValue("solid").getBool()
-
-                if self.solid and self.modelNp:
-                    self.initializeCollisions()
     else:
 
         def RecvProxy_model(self, mdl):
@@ -62,7 +61,8 @@ class DistributedPropDynamic(BaseClass):
 
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
-            if self.solid and self.modelNp:
+            if self.solid:
+                self.solidShape = SolidShape.Model
                 self.initializeCollisions()
 
 if not IS_CLIENT:
