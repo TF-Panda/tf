@@ -296,4 +296,16 @@
   Die_Headshot
   Die_Backstabbed
   Die_Burned
+
+  // Loser state
+  Loser_Stand
+  Loser_Run
+  Loser_Jump
+  Loser_Jump_Start
+  Loser_Jump_Float
+  Loser_Jump_Land
+  Loser_Air_Walk
+  Loser_Crouch
+  Loser_Swim
+  Loser_Double_Jump
 ]
