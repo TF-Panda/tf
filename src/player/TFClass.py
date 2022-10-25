@@ -90,6 +90,7 @@ class EngineerInfo:
     ViewHeight = 68
     MaxHealth = 125
     Phonemes = 'engineer'
+    DontDoAirWalk = True
     Expressions = {
         'idle': ['defaultFace'],
         'specialAction': ['specialAction01'],
@@ -160,6 +161,7 @@ class SoldierInfo:
     ViewHeight = 68
     MaxHealth = 200
     Phonemes = 'soldier'
+    DontDoAirWalk = True
 
     Expressions = {
         'idle': [],
@@ -232,6 +234,7 @@ class DemoInfo:
     ViewHeight = 68
     MaxHealth = 175
     Phonemes = 'demo'
+    DontDoAirWalk = False
 
     Expressions = {
         'idle': ['defaultFace'],
@@ -299,6 +302,7 @@ class HeavyInfo:
     ViewHeight = 75
     MaxHealth = 300
     Phonemes = 'heavy'
+    DontDoAirWalk = True
     Expressions = {
         'idle': ['idleface'],
         'specialAction': ['actionfire01'],
@@ -361,6 +365,7 @@ class ScoutInfo:
     ViewHeight = 65
     MaxHealth = 125
     Phonemes = 'scout'
+    DontDoAirWalk = True
     Expressions = {
         'idle': [],
         'specialAction': ['specialAction01'],
@@ -425,6 +430,7 @@ class PyroInfo:
     MaxHealth = 175
     Phonemes = None
     Expressions = None
+    DontDoAirWalk = True
 
     HeadRotationOffset = Vec3(40, -80, 0)
 
@@ -476,6 +482,7 @@ class SpyInfo:
     ViewHeight = 75
     MaxHealth = 125
     Phonemes = 'spy'
+    DontDoAirWalk = True
     Expressions = {
         'idle': ['defaultFace'],
         'specialAction': ['specialAction01'],
@@ -535,6 +542,7 @@ class MedicInfo:
     ViewHeight = 75
     MaxHealth = 150
     Phonemes = 'medic'
+    DontDoAirWalk = True
     Expressions = {
         'idle': ['defaultFace'],
         'specialAction': ['specialAction01'],
@@ -596,6 +604,7 @@ class SniperInfo:
     ViewHeight = 75
     MaxHealth = 125
     Phonemes = 'sniper'
+    DontDoAirWalk = True
     Expressions = {
         'idle': ['defaultFace'],
         'specialAction': ['specialAction01'],

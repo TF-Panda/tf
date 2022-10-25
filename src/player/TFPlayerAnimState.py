@@ -94,8 +94,11 @@ class TFPlayerAnimState:
                     self.restartGesture(GestureSlot.AttackAndReload, gestureActivity)
             elif isSniperRifle and self.player.inCondition(self.player.CondZoomed):
                 # Weapon primary fire, zoomed in.
-                # TODO: ducking
-                self.restartGesture(GestureSlot.AttackAndReload, Activity.Deployed_Attack_Stand)
+                if self.player.ducking:
+                    act = Activity.Deployed_Attack_Crouch
+                else:
+                    act = Activity.Deployed_Attack_Stand
+                self.restartGesture(GestureSlot.AttackAndReload, act)
                 self.holdDeployedPoseUntilTime = globalClock.frame_time + 2.0
             else:
                 # Weapon primary fire.
@@ -107,14 +110,35 @@ class TFPlayerAnimState:
             # Grenade throw.
             pass
         elif event == PlayerAnimEvent.Reload:
-            # TODO: crouching, swimming
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand, blendOut=0.0)
+            if self.inAirWalk:
+                act = Activity.Reload_Air_Walk
+            elif self.inSwim:
+                act = Activity.Reload_Swim
+            elif self.player.ducking:
+                act = Activity.Reload_Crouch
+            else:
+                act = Activity.Reload_Stand
+            self.restartGesture(GestureSlot.AttackAndReload, act, blendOut=0.0)
         elif event == PlayerAnimEvent.ReloadLoop:
-            # TODO: crouching, swimming
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_Loop, blendIn=0.0, blendOut=0.0)
+            if self.inAirWalk:
+                act = Activity.Reload_Air_Walk_Loop
+            elif self.inSwim:
+                act = Activity.Reload_Swim_Loop
+            elif self.player.ducking:
+                act = Activity.Reload_Crouch_Loop
+            else:
+                act = Activity.Reload_Stand_Loop
+            self.restartGesture(GestureSlot.AttackAndReload, act, blendIn=0.0, blendOut=0.0)
         elif event == PlayerAnimEvent.ReloadEnd:
-            # TODO: crouching, swimming
-            self.restartGesture(GestureSlot.AttackAndReload, Activity.Reload_Stand_End, blendIn=0.0)
+            if self.inAirWalk:
+                act = Activity.Reload_Air_Walk_End
+            elif self.inSwim:
+                act = Activity.Reload_Swim_End
+            elif self.player.ducking:
+                act = Activity.Reload_Crouch_End
+            else:
+                act = Activity.Reload_Stand_End
+            self.restartGesture(GestureSlot.AttackAndReload, act, blendIn=0.0)
         elif event == PlayerAnimEvent.Flinch:
             if not self.player.isAnimPlaying(GestureSlot.Flinch):
                 self.restartGesture(GestureSlot.Flinch, self.translateActivity(Activity.Gesture_Flinch, GestureSlot.Flinch))
@@ -139,11 +163,9 @@ class TFPlayerAnimState:
             autoKill = False
             if isMinigun:
                 autoKill = True
-            #print("attack pre")
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand_Prefire, autoKill=autoKill)
 
         elif event == PlayerAnimEvent.AttackPost:
-            #print("attack post")
             self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand_Postfire)
 
     def angleNormalize(self, ang):
@@ -261,9 +283,22 @@ class TFPlayerAnimState:
             self.player.setCycle(0.0)
 
     def handleJumping(self):
-        # TODO: airwalk
-        if False: # airwalk
-            pass
+        classCanAirWalk = self.player.classInfo.DontDoAirWalk
+
+        if classCanAirWalk and (self.vel.z > 300.0 or self.inAirWalk):
+            # Check to see if we were in an airwalk and now we are basically
+            # on the ground.
+            if self.player.onGround and self.inAirWalk:
+                # Stop air walking.
+                self.inAirWalk = False
+                self.restartMainSequence()
+                self.restartGesture(GestureSlot.Jump, Activity.Jump_Land)
+            # TODO: handle water level
+            elif not self.player.onGround:
+                # If we're off the ground and moving up at a high enough
+                # velocity, start air walking.
+                self.idealActivity = Activity.Air_Walk
+                self.inAirWalk = True
         else:
             if self.jumping:
                 if self.firstJumpFrame:
@@ -289,7 +324,7 @@ class TFPlayerAnimState:
                     else:
                         self.idealActivity = Activity.Jump_Start
 
-        return self.jumping # or self.inAirWalk
+        return self.jumping or self.inAirWalk
 
     def handleDucking(self):
         return False
