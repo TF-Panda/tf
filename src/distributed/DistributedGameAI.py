@@ -22,6 +22,7 @@ from .DistributedGameBase import DistributedGameBase
 from .GameMode import *
 from .GameModeCTF import GameModeCTF
 from .GameModeTraining import GameModeTraining
+from .GameModePayload import GameModePayload
 from .RoundState import *
 
 class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
@@ -315,6 +316,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.gameModeImpl = GameModeCTF(self)
         elif self.gameMode == GameMode.Training:
             self.gameModeImpl = GameModeTraining(self)
+        elif self.gameMode == GameMode.Payload:
+            self.gameModeImpl = GameModePayload(self)
 
         #
         # Free up memory from the darn cube map textures embedded in the level.
