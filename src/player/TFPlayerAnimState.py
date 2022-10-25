@@ -283,7 +283,7 @@ class TFPlayerAnimState:
             self.player.setCycle(0.0)
 
     def handleJumping(self):
-        classCanAirWalk = self.player.classInfo.DontDoAirWalk
+        classCanAirWalk = not self.player.classInfo.DontDoAirWalk
 
         if classCanAirWalk and (self.vel.z > 300.0 or self.inAirWalk):
             # Check to see if we were in an airwalk and now we are basically
