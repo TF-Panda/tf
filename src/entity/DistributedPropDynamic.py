@@ -61,7 +61,7 @@ class DistributedPropDynamic(BaseClass):
 
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
-            if self.solid:
+            if self.solid and self.modelNp:
                 self.solidShape = SolidShape.Model
                 self.initializeCollisions()
 
