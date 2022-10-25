@@ -557,4 +557,6 @@ dclass DistributedStickyBomb : DistributedChar {
 dclass DistributedFlameThrower : TFWeaponGun {
   uint8 isFiring;
   float64 startFireTime;
+
+  doFlame(Position src, UnitVector dir) broadcast;
 };

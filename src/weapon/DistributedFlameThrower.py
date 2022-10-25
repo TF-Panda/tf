@@ -10,19 +10,24 @@ from tf.actor.Activity import Activity
 from tf.tfbase import TFLocalizer, Sounds, TFFilters, TFGlobals
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
-from panda3d.core import Vec3, Quat
+from panda3d.core import Vec3, Quat, Point3
+
+FLAME_SPEED = 340.0
+FLAME_LIFETIME = 1.0
+FLAME_START_SCALE = 16.0
+FLAME_END_SCALE = 85.0
 
 class FlameProjectile:
 
     def __init__(self, shooter, src, dir):
         self.shooter = shooter
-        self.srcPos = src
-        self.pos = src
+        self.srcPos = Point3(src)
+        self.pos = Point3(src)
         self.dir = dir
-        self.startSize = Vec3(8)
-        self.endSize = Vec3(32)
+        self.startSize = Vec3(FLAME_START_SCALE)
+        self.endSize = Vec3(FLAME_END_SCALE)
         self.life = 0.0
-        self.duration = 1.0
+        self.duration = FLAME_LIFETIME
         self.hitEnts = set()
         self.team = self.shooter.team
         self.task = base.simTaskMgr.add(self.__flameUpdate, 'flameUpdate')
@@ -45,7 +50,7 @@ class FlameProjectile:
             return
 
         oldPos = Vec3(self.pos)
-        self.pos += self.dir * globalClock.dt * 256.0
+        self.pos += self.dir * globalClock.dt * FLAME_SPEED
 
         dist = (self.pos - oldPos).length()
 
@@ -71,8 +76,7 @@ class FlameProjectile:
                     info.inflictor = self.shooter
                     info.attacker = self.shooter
                     info.damageType = TFGlobals.DamageType.Burn | TFGlobals.DamageType.PreventPhysicsForce
-                    distTraveled = (self.pos - self.srcPos).length()
-                    info.setDamage(TFGlobals.remapValClamped(distTraveled, 0, 256, 10, 3))
+                    info.setDamage(TFGlobals.remapValClamped(self.life, 0, FLAME_LIFETIME, 10, 3))
                     ent.takeDamage(info)
                     ent.burn(self.shooter)
                     #base.world.emitSoundSpatial("Weapon_FlameThrower.FireHit", self.pos)
@@ -107,8 +111,42 @@ class DistributedFlameThrower(TFWeaponGun):
         self.pilotLightVM = None
 
     if IS_CLIENT:
+        def getVMMuzzlePosWorld(self):
+            vm = self.viewModelChar
+            charTs = vm.characterNp.getNetTransform()
+            attachTs = vm.getAttachment("muzzle", net=False, update=False)
+            mat = attachTs.getMat() * charTs.getMat()
+            pos = mat.getRow3(3)
+            return pos
+
+        def doFlame(self, src, dir):
+            from direct.directbase import DirectRender
+            from direct.interval.IntervalGlobal import Sequence, LerpPosInterval, Func, Parallel, LerpScaleInterval
+            #src = Point3(src[0], src[1], src[2])
+            if self.isOwnedByLocalPlayer():
+                src = self.getVMMuzzlePosWorld()
+            else:
+                src = self.getMuzzlePosWorld()
+            dir = Vec3(dir[0], dir[1], dir[2])
+            end = src + dir * FLAME_SPEED * FLAME_LIFETIME
+            explScale = 20.0
+            flame = self.flameModel.copyTo(base.dynRender)
+            flame.setPos(src)
+            flame.hide(DirectRender.ShadowCameraBitmask)
+            duration = flame.node().getNumFrames() / flame.node().getFrameRate()
+            flame.node().setPlayRate(duration / FLAME_LIFETIME)
+            flame.node().play()
+            flame.setBillboardPointEye()
+            track = Sequence(
+                Parallel(
+                    LerpPosInterval(flame, FLAME_LIFETIME, end, src),
+                    LerpScaleInterval(flame, FLAME_LIFETIME, FLAME_END_SCALE / explScale, FLAME_START_SCALE / explScale)),
+                Func(flame.removeNode))
+            track.start()
+
         def generate(self):
             TFWeaponGun.generate(self)
+            self.flameModel = base.loader.loadModel("models/effects/explosion").find("**/+SequenceNode")
             self.pilotLight = Actor()
             self.pilotLight.loadModel("models/weapons/c_flamethrower_pilotlight", False)
             self.pilotLightVM = Actor()
@@ -222,6 +260,7 @@ class DistributedFlameThrower(TFWeaponGun):
             dir = q.getForward()
             proj = FlameProjectile(self.player, src, dir)
             self.nextFlameFireTime = globalClock.frame_time + 0.075
+            self.sendUpdate('doFlame', [src, dir])
 
     def getMuzzlePosWorld(self):
         charTs = self.characterNp.getNetTransform()
