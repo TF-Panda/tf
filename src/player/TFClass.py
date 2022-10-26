@@ -430,7 +430,7 @@ class PyroInfo:
     MaxHealth = 175
     Phonemes = None
     Expressions = None
-    DontDoAirWalk = True
+    DontDoAirWalk = False
 
     HeadRotationOffset = Vec3(40, -80, 0)
 
