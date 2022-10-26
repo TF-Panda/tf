@@ -140,6 +140,9 @@ class TFBase(ShowBase, FSM):
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
         self.taskMgr.add(self.ragdollUpdate, 'ragdollUpdate', sort = 35)
 
+        self.top3D = NodePath("top3D")
+        self.render.reparentTo(self.top3D)
+
         self.dynRender = self.render.attachNewNode(DynamicVisNode("dynamic"))
 
         self.sky2DTop = NodePath("sky2DTop")
@@ -155,7 +158,7 @@ class TFBase(ShowBase, FSM):
 
         # Separate 3-D skybox scene graph and display region.
         self.sky3DTop = NodePath("sky3DTop")
-        self.sky3DTop.reparentTo(base.render)
+        self.sky3DTop.reparentTo(self.top3D)
         self.sky3DRoot = self.sky3DTop.attachNewNode("sky3DRoot")
         #self.sky3DCam = Camera("sky3DCam")
         #self.sky3DCam.setLens(self.camLens)

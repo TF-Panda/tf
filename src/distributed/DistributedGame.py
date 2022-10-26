@@ -50,6 +50,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.clusterNodes = None
         self.currentCluster = -1
         self.fogMgr = None
+        self.skyFogMgr = None
         self.clnp = None
         self.waterGeomNp = None
 
@@ -195,6 +196,14 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
 
+        if self.fogMgr:
+            self.fogMgr.cleanup()
+            self.fogMgr = None
+
+        if self.skyFogMgr:
+            self.skyFogMgr.cleanup()
+            self.skyFogMgr = None
+
         if self.waterGeomNp:
             self.waterGeomNp.removeNode()
             self.waterGeomNp = None
@@ -262,7 +271,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #base.sky3DMat = skyMat
 
         # Setup sky fog.
-        """
+
         fogMgr = FogManager(base.sky3DRoot)
 
         if props.hasAttribute("fogstart"):
@@ -285,20 +294,20 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             fogMgr.color2[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
             fogMgr.color2[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
         if props.hasAttribute("fogenable"):
-            if props.getAttributeValue("fogenable").getBool():
+            if props.getAttributeValue("fogenable").getInt() == 1:
                 fogMgr.enableFog()
 
-        if props.hasAttribute("use_angles") and props.getAttributeValue("use_angles").getBool():
+        #if props.hasAttribute("use_angles") and props.getAttributeValue("use_angles").getBool():
             # Use entity angles instead of fogdir property for directional
             # blend.
-            phr = Vec3()
-            props.getAttributeValue("angles").toVec3(phr)
-            q = Quat()
-            q.setHpr((phr[1] - 90, -phr[0], phr[2]))
-            fogMgr.fogDir = q.getForward()
+        #    phr = Vec3()
+        #    props.getAttributeValue("angles").toVec3(phr)
+        #    q = Quat()
+        #    q.setHpr((phr[1] - 90, -phr[0], phr[2]))
+        #    fogMgr.fogDir = q.getForward()
 
         self.skyFogMgr = fogMgr
-        """
+
 
         #base.sky3DRoot.ls()
         #base.sky3DRoot.clearModelNodes()

@@ -19,6 +19,12 @@ class FogManager(DirectObject):
         self.enabled = False
         self.task = None
 
+    def cleanup(self):
+        if self.enabled:
+            self.disableFog()
+        self.fogNode = None
+        self.scene = None
+
     def enableFog(self):
         self.enabled = True
         self.scene.setFog(self.fogNode)

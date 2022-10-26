@@ -272,6 +272,11 @@ class DistributedGameBase:
         if self.propRoot:
             self.propRoot.removeNode()
             self.propRoot = None
+        if self.propPhysRoot:
+            for cnp in self.propPhysRoot.findAllMatches("**/+PhysRigidActorNode"):
+                cnp.node().removeFromScene(base.physicsWorld)
+            self.propPhysRoot.removeNode()
+            self.propPhysRoot = None
         if self.lvl:
             self.lvl.removeNode()
             self.lvl = None
