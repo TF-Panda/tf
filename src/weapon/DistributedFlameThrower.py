@@ -153,13 +153,13 @@ class DistributedFlameThrower(TFWeaponGun):
             self.pilotLightVM.loadModel("models/weapons/c_flamethrower_pilotlight", False)
 
         def disable(self):
+            TFWeaponGun.disable(self)
             if self.pilotLight:
                 self.pilotLight.cleanup()
                 self.pilotLight = None
             if self.pilotLightVM:
                 self.pilotLightVM.cleanup()
                 self.pilotLightVM = None
-            TFWeaponGun.disable(self)
 
         def preDataUpdate(self):
             TFWeaponGun.preDataUpdate(self)
