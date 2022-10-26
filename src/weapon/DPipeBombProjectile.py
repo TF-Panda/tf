@@ -37,6 +37,7 @@ class DPipeBombProjectile(BaseClass):
             self.solidFlags = TFGlobals.SolidFlag.Tangible
             self.solidShape = TFGlobals.SolidShape.Model
             self.solidMask = TFGlobals.Contents.Solid
+            self.collisionGroup = TFGlobals.CollisionGroup.Projectile
             self.kinematic = False
             self.directHull = Vec3(2)
             self.otherTeamMask = 0

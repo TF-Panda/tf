@@ -49,8 +49,10 @@ class TFServerBase(HostBase):
 
         self.physicsWorld.setGroupCollisionFlag(
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
-        #self.physicsWorld.setGroupCollisionFlag(
-        #    TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Rockets, False)
+        self.physicsWorld.setGroupCollisionFlag(
+            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Gibs, False)
+        self.physicsWorld.setGroupCollisionFlag(
+            TFGlobals.CollisionGroup.Gibs, TFGlobals.CollisionGroup.Gibs, False)
         self.physicsWorld.setGroupCollisionFlag(
             TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Projectile, False)
 
