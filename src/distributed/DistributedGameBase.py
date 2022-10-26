@@ -222,7 +222,7 @@ class DistributedGameBase:
                         in3DSky = True
 
                 #propModel.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
-                lightNodes.append((propModel, hasAnyVtxLight))
+                lightNodes.append((propModel, hasAnyVtxLight, in3DSky))
 
             propModel.node().setFinal(True)
             if not in3DSky:
@@ -233,13 +233,28 @@ class DistributedGameBase:
 
         #self.flatten(propRoot)
 
-        for propModel, hasVtxLight in lightNodes:
+        for propModel, hasVtxLight, in3DSky in lightNodes:
             # Also, we can flatten better by pre-computing the lighting state once.
             lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask, False)
             lightEffect.computeLighting(propModel.getNetTransform(), self.lvlData,
                                         propModel.getBounds(), propModel.getParent().getNetTransform(), hasVtxLight)
             state = propModel.getState()
             state = state.compose(lightEffect.getCurrentLightingState())
+
+            if in3DSky:
+                # Here's a bad hack.  If the prop is in the 3-D sky, it has
+                # the cascade light applied, but that is only for geometry
+                # in the regular scene, not the 3-d sky scene.  Find the light
+                # and remove it.  Later, we create a duplicate DirectionalLight
+                # with the same color and direction as the CascadeLight, for
+                # use only on geometry in the 3-d sky box.
+                la = state.getAttribDef(LightAttrib.getClassSlot())
+                for i in range(la.getNumOnLights()):
+                    light = la.getOnLight(i)
+                    if light == self.lvlData.getDirLight():
+                        la = la.removeOnLight(light)
+                        state = state.setAttrib(la)
+                        break
             propModel.setState(state)
             propModel.flattenLight()
 

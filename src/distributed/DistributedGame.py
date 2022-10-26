@@ -52,6 +52,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.fogMgr = None
         self.skyFogMgr = None
         self.clnp = None
+        self.skyClnp = None
         self.waterGeomNp = None
 
         self.accept('shift-v', self.toggleVisDebug)
@@ -211,6 +212,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             base.planarRefract.shutdown()
 
         self.clnp = None
+        if self.skyClnp:
+            base.sky3DRoot.clearLight(self.skyClnp)
+            self.skyClnp.removeNode()
+            self.skyClnp = None
         base.taskMgr.remove('updateCascadeLight')
 
         self.ssMgr.destroySoundscapes()
@@ -234,8 +239,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             sky3dNodes.append(NodePath(lvlData.getModel(idx).getGeomNode()))
 
         for np in sky3dNodes:
-            if not lvlData.getDirLight().isEmpty():
-                np.setLight(lvlData.getDirLight())
+            #if not lvlData.getDirLight().isEmpty():
+            #    np.setLight(lvlData.getDirLight())
             np.reparentTo(base.sky3DRoot)
 
         skyCamera = None
@@ -308,7 +313,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         self.skyFogMgr = fogMgr
 
-
         #base.sky3DRoot.ls()
         #base.sky3DRoot.clearModelNodes()
         #self.flatten(base.sky3DRoot)
@@ -349,6 +353,16 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             clnp.setCompass()
             base.taskMgr.add(self.__updateCascadeLight, 'updateCascadeLight', sort=49)
             self.clnp = clnp
+
+            # Add an identical sun light for the 3d-sky box, without
+            # shadows enabled.
+            skyDl = DirectionalLight('sky-dl')
+            skyDl.setColor(cl.getColor())
+            skyDl.setDirection(cl.getDirection())
+            self.skyClnp = base.sky3DRoot.attachNewNode(skyDl)
+            self.skyClnp.setHpr(self.clnp.getHpr())
+            base.sky3DRoot.setLight(self.skyClnp)
+
         #base.csmDebug.setShaderInput("cascadeSampler", cl.getShadowMap())
 
         saData = self.lvlData.getSteamAudioSceneData()
