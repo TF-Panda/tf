@@ -90,7 +90,7 @@ class EngineerInfo:
     ViewHeight = 68
     MaxHealth = 125
     Phonemes = 'engineer'
-    DontDoAirWalk = True
+    DontDoAirWalk = False
     Expressions = {
         'idle': ['defaultFace'],
         'specialAction': ['specialAction01'],
@@ -302,7 +302,7 @@ class HeavyInfo:
     ViewHeight = 75
     MaxHealth = 300
     Phonemes = 'heavy'
-    DontDoAirWalk = True
+    DontDoAirWalk = False
     Expressions = {
         'idle': ['idleface'],
         'specialAction': ['actionfire01'],
@@ -542,7 +542,7 @@ class MedicInfo:
     ViewHeight = 75
     MaxHealth = 150
     Phonemes = 'medic'
-    DontDoAirWalk = True
+    DontDoAirWalk = False
     Expressions = {
         'idle': ['defaultFace'],
         'specialAction': ['specialAction01'],
