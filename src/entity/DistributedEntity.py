@@ -202,8 +202,11 @@ class DistributedEntity(BaseClass, NodePath):
         if self.isDODeleted():
             return
 
-        np = NodePath(cbdata.getOtherNode())
-        entity = np.getPythonTag("entity")
+        other = cbdata.getOtherNode()
+        if not other:
+            return
+
+        entity = other.getPythonTag("entity")
         if not entity:
             return
         if not entity.shouldCollide(self.collisionGroup, self.solidMask):
@@ -229,10 +232,14 @@ class DistributedEntity(BaseClass, NodePath):
             return
 
         other = cbdata.getActorA()
+        if not other:
+            return
         otherIsB = False
         if other == self.node():
             other = cbdata.getActorB()
             otherIsB = True
+        if not other:
+            return
 
         entity = other.getPythonTag("entity")
         if not entity:

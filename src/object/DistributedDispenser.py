@@ -112,6 +112,8 @@ class DistributedDispenser(BaseObject):
                 return
 
             node = cbdata.getOtherNode()
+            if not node:
+                return
             entity = node.getPythonTag("entity")
             if not entity:
                 return
