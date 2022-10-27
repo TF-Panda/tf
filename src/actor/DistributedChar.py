@@ -19,6 +19,10 @@ class DistributedChar(Actor, DistributedEntity):
         self.ragdoll = None
         self.processingAnimEvents = False
 
+    def fireTracer(self, attachment, endPos):
+        srcPos = self.getAttachment(attachment, net=True, update=False).getPos()
+        base.game.doTracer(srcPos, endPos)
+
     @staticmethod
     def syncAllHitBoxes():
         for char in DistributedChar.AllChars:
