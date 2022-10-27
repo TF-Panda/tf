@@ -1034,11 +1034,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         spawnPoints = base.air.game.teamSpawns[self.team]
         origin, angles = random.choice(spawnPoints)
         # Trace player hull down to find ground.
-        tr = TFFilters.traceBox(origin + TFGlobals.VEC_HULL_MIN, origin + TFGlobals.VEC_HULL_MAX,
-                                Vec3.down(), 100, TFGlobals.Contents.Solid, 0,
+        tr = TFFilters.traceBox(origin, origin + Vec3.down() * 100,
+                                TFGlobals.VEC_HULL_MIN, TFGlobals.VEC_HULL_MAX,
+                                TFGlobals.Contents.Solid, 0,
                                 TFFilters.TFQueryFilter(self))
         if tr['hit']:
-            self.setPos(tr['pos'])
+            self.setPos(tr['endpos'])
         else:
             self.setPos(origin)
         self.d_setViewAngles((angles[1] - 90, angles[0]))

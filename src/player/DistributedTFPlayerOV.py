@@ -564,11 +564,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         # This keeps the camera 8 units away from obstructions.
 
         wallDistance = 8.0
-        toCam = (camPos - targetPos).normalized()
-        wallOffset = toCam * wallDistance
-        tr = TFFilters.traceLine(targetPos, camPos + wallOffset, TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(camTargetEntity))
+        tr = TFFilters.traceSphere(camPos, targetPos, wallDistance,
+            TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(camTargetEntity))
         if tr['hit']:
-            return (True, tr['pos'] - wallOffset)
+            return (True, tr['endpos'])
         return (False, camPos)
 
     def calcThirdPersonView(self):

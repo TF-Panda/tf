@@ -237,8 +237,9 @@ class DistributedTFPlayerShared:
 
         # Trace down to get current ground material, ignoring player.
         surfaceDef = None
-        tr = TFFilters.traceBox(TFGlobals.VEC_HULL_MIN + origin, TFGlobals.VEC_HULL_MAX + origin, Vec3.down(),
-                                64, Contents.Solid, 0, PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude))
+        tr = TFFilters.traceBox(origin, origin + Vec3.down() * 64,
+            TFGlobals.VEC_HULL_MIN, TFGlobals.VEC_HULL_MAX,
+            Contents.Solid, 0, PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude))
         mat = tr['mat']
         if mat:
             # Get the surface definition associated with the PhysMaterial

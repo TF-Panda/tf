@@ -9,6 +9,7 @@ from tf.actor.Actor import Actor
 from tf.actor.Activity import Activity
 from tf.tfbase import TFLocalizer, Sounds, TFFilters, TFGlobals
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
+from direct.directbase import DirectRender
 
 from panda3d.core import Vec3, Quat, Point3
 
@@ -19,18 +20,35 @@ FLAME_END_SCALE = 85.0
 
 class FlameProjectile:
 
+    FlameModel = None
+
     def __init__(self, shooter, src, dir):
         self.shooter = shooter
         self.srcPos = Point3(src)
         self.pos = Point3(src)
         self.dir = dir
-        self.startSize = Vec3(FLAME_START_SCALE)
-        self.endSize = Vec3(FLAME_END_SCALE)
+        self.vel = self.dir * FLAME_SPEED + self.shooter.velocity
+        self.startSize = Vec3(8.0)
+        self.endSize = Vec3(24.0)
         self.life = 0.0
         self.duration = FLAME_LIFETIME
         self.hitEnts = set()
         self.team = self.shooter.team
         self.task = base.simTaskMgr.add(self.__flameUpdate, 'flameUpdate')
+        self.filter = TFFilters.TFQueryFilter(self.shooter)
+
+        if IS_CLIENT:
+            if not self.FlameModel:
+                self.FlameModel = base.loader.loadModel("models/effects/explosion").find("**/+SequenceNode")
+            self.explScale = 20.0
+            flame = self.FlameModel.copyTo(base.dynRender)
+            flame.setPos(src)
+            flame.hide(DirectRender.ShadowCameraBitmask)
+            duration = flame.node().getNumFrames() / flame.node().getFrameRate()
+            flame.node().setPlayRate(duration / FLAME_LIFETIME)
+            flame.node().play()
+            flame.setBillboardPointEye()
+            self.flame = flame
 
     def __flameUpdate(self, task):
         self.update()
@@ -40,46 +58,60 @@ class FlameProjectile:
         if self.task:
             self.task.remove()
             self.task = None
+        self.filter = None
         self.shooter = None
+        if IS_CLIENT:
+            if self.flame:
+                self.flame.removeNode()
+                self.flame = None
 
     def update(self):
+        origDt = globalClock.dt
+        globalClock.dt = base.intervalPerTick
+
         self.life += globalClock.dt
 
         if self.life >= self.duration:
+            globalClock.dt = origDt
             self.kill()
             return
 
+        frac = max(0.0, min(1.0, self.life / self.duration))
+
         oldPos = Vec3(self.pos)
-        self.pos += self.dir * globalClock.dt * FLAME_SPEED
+        TFFilters.collideAndSlide(self.pos, self.vel, -self.endSize, self.endSize, TFGlobals.Contents.Solid, 0,
+                                  self.filter)
 
-        dist = (self.pos - oldPos).length()
+        if not IS_CLIENT:
+            dist = (self.pos - oldPos).length()
 
-        frac = self.life / self.duration
-
-        size = self.startSize * (1.0 - frac) + self.endSize * frac
-        mins = oldPos - size
-        maxs = oldPos + size
-
-        tr = TFFilters.traceBox(mins, maxs, self.dir, dist, TFGlobals.Contents.Solid | TFGlobals.Contents.AnyTeam,
-                                0, TFFilters.TFQueryFilter(self.shooter))
-        if tr['hit'] and tr['ent']:
+            size = self.startSize * (1.0 - frac) + self.endSize * frac
+            tr = TFFilters.traceBox(oldPos, self.pos, -size, size, TFGlobals.Contents.Solid | TFGlobals.Contents.AnyTeam,
+                                    0, self.filter)
             ent = tr['ent']
-            if not ent.isPlayer() and not ent.isObject():
-                # Kill the flame if we hit a non-player or object.
-                self.kill()
-                return
+            if tr['hit'] and ent:
+                #if not ent.isPlayer() and not ent.isObject():
+                    # Kill the flame if we hit a non-player or object.
+                #    self.kill()
+                #    return
 
-            if ent not in self.hitEnts:
-                self.hitEnts.add(ent)
-                if not ent.isDead() and ent.team != self.team:
-                    info = TakeDamageInfo()
-                    info.inflictor = self.shooter
-                    info.attacker = self.shooter
-                    info.damageType = TFGlobals.DamageType.Burn | TFGlobals.DamageType.PreventPhysicsForce
-                    info.setDamage(TFGlobals.remapValClamped(self.life, 0, FLAME_LIFETIME, 10, 3))
-                    ent.takeDamage(info)
-                    ent.burn(self.shooter)
-                    #base.world.emitSoundSpatial("Weapon_FlameThrower.FireHit", self.pos)
+                if ent not in self.hitEnts:
+                    self.hitEnts.add(ent)
+                    if not ent.isDead() and ent.team != self.team:
+                        info = TakeDamageInfo()
+                        info.inflictor = self.shooter
+                        info.attacker = self.shooter
+                        info.damageType = TFGlobals.DamageType.Burn | TFGlobals.DamageType.PreventPhysicsForce
+                        info.setDamage(TFGlobals.remapValClamped(self.life, 0, FLAME_LIFETIME, 10, 3))
+                        ent.takeDamage(info)
+                        if ent.isPlayer():
+                            ent.burn(self.shooter)
+                        #base.world.emitSoundSpatial("Weapon_FlameThrower.FireHit", self.pos)
+        else:
+            self.flame.setPos(self.pos)
+            self.flame.setScale((FLAME_START_SCALE / self.explScale) * (1.0 - frac) + (FLAME_END_SCALE / self.explScale) * frac)
+
+        globalClock.dt = origDt
 
 class DistributedFlameThrower(TFWeaponGun):
 
@@ -120,33 +152,17 @@ class DistributedFlameThrower(TFWeaponGun):
             return pos
 
         def doFlame(self, src, dir):
-            from direct.directbase import DirectRender
-            from direct.interval.IntervalGlobal import Sequence, LerpPosInterval, Func, Parallel, LerpScaleInterval
             #src = Point3(src[0], src[1], src[2])
             if self.isOwnedByLocalPlayer():
                 src = self.getVMMuzzlePosWorld()
             else:
                 src = self.getMuzzlePosWorld()
             dir = Vec3(dir[0], dir[1], dir[2])
-            end = src + dir * FLAME_SPEED * FLAME_LIFETIME
-            explScale = 20.0
-            flame = self.flameModel.copyTo(base.dynRender)
-            flame.setPos(src)
-            flame.hide(DirectRender.ShadowCameraBitmask)
-            duration = flame.node().getNumFrames() / flame.node().getFrameRate()
-            flame.node().setPlayRate(duration / FLAME_LIFETIME)
-            flame.node().play()
-            flame.setBillboardPointEye()
-            track = Sequence(
-                Parallel(
-                    LerpPosInterval(flame, FLAME_LIFETIME, end, src),
-                    LerpScaleInterval(flame, FLAME_LIFETIME, FLAME_END_SCALE / explScale, FLAME_START_SCALE / explScale)),
-                Func(flame.removeNode))
-            track.start()
+            FlameProjectile(self.player, src, dir)
 
         def generate(self):
             TFWeaponGun.generate(self)
-            self.flameModel = base.loader.loadModel("models/effects/explosion").find("**/+SequenceNode")
+            #self.flameModel = base.loader.loadModel("models/effects/explosion").find("**/+SequenceNode")
             self.pilotLight = Actor()
             self.pilotLight.loadModel("models/weapons/c_flamethrower_pilotlight", False)
             self.pilotLightVM = Actor()
