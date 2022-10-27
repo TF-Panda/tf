@@ -559,12 +559,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         otherwise.
         """
 
-        # Trace 8 units back from camPos, and if the line hits something
-        # move the camera 8 units in front of the hit position.
-        # This keeps the camera 8 units away from obstructions.
-
-        wallDistance = 8.0
-        tr = TFFilters.traceSphere(camPos, targetPos, wallDistance,
+        tr = TFFilters.traceSphere(targetPos, camPos, 8.0,
             TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(camTargetEntity))
         if tr['hit']:
             return (True, tr['endpos'])
