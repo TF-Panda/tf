@@ -46,6 +46,7 @@ TF_BURNING_DMG = 3
 TF_BURNING_FREQUENCY = 0.5
 TF_BURNING_FLAME_LIFE = 10.0
 TF_BURNING_FLAME_LIFE_PYRO = 0.25
+TF_DAMAGE_CRIT_MULTIPLIER = 3.0
 
 class CommandContext:
     def __init__(self):
@@ -593,7 +594,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.lastDamageTime = globalClock.frame_time
 
-        if info.attacker == self:
+        if info.damageType & DamageType.PreventPhysicsForce:
+            force = Vec3(0.0)
+        elif info.attacker == self:
             # We damaged ourselves.
             if self.tfClass == Class.Soldier:
                 force = vecDir * -self.damageForce(self.getClassSize(), info.damage, tf_damageforcescale_self_soldier)
@@ -624,6 +627,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             goopPos = info.damagePosition
         self.sendUpdate('doBloodGoop', [goopPos])
 
+        if info.damageType & DamageType.Critical:
+            self.emitSound("TFPlayer.CritPain", client=self.owner)
+
         #print("subtracting", int(info.damage + 0.5), "from tf player hp")
         self.health -= int(info.damage + 0.5)
         if self.health <= 0:
@@ -641,12 +647,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if force > 1000:
             force = 1000
         return force
-
-    def onTakeCriticalHit(self, attacker):
-        if attacker != self:
-            self.emitSound("TFPlayer.CritPain", client=self.owner)
-        if attacker.isPlayer():
-            self.emitSound("TFPlayer.CritHit", client=attacker.owner)
 
     def onTakeDamage(self, inputInfo):
         info = inputInfo#copy.deepcopy(inputInfo)
@@ -667,10 +667,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             if self.hitBoxGroup == HitBoxGroup.Head:
                 info.damageType |= DamageType.Critical
 
-        if info.damageType & DamageType.Critical:
+        #if info.damageType & DamageType.Critical:
             # Critical hit.  3x damage.
-            info.setDamage(info.damage * 3)
-            self.onTakeCriticalHit(info.attacker)
+        #    info.setDamage(info.damage * 3)
+        #    self.onTakeCriticalHit(info.attacker)
 
         # If this is our own rocket, scale down the damage
         if self.tfClass == Class.Soldier and info.attacker == self:
@@ -683,40 +683,52 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.bulletForce[1] = max(-15000, min(15000, self.bulletForce[1]))
         self.bulletForce[2] = max(-15000, min(15000, self.bulletForce[2]))
 
-        """
+
         # This is the code for random damage spread from 2007 TF2.
         # Turned off for now, might revisit.
-
-        print("pre-random dmg", info.damage)
 
         # If we're not damaging ourselves, apply randomness
         if info.attacker != self and not (info.damageType & (DamageType.Drown | DamageType.Fall)):
             damage = 0
-            randomDamage = info.damage * tf_damage_range#.getValue()
-            minFactor = 0.25
-            maxFactor = 0.75
-            if info.damageType & DamageType.UseDistanceMod:
-                distance = max(1.0, (self.getWorldSpaceCenter() - info.inflictor.getWorldSpaceCenter()).length())
-                optimalDistance = 512.0
+            if info.damageType & DamageType.Critical:
+                # 3x damage mult for crits.
+                damage = info.damage * TF_DAMAGE_CRIT_MULTIPLIER
 
-                center = TFGlobals.remapValClamped(distance / optimalDistance, 0.0, 2.0, 1.0, 0.0)
-                if info.damageType & DamageType.NoCloseDistanceMod:
-                    if center > 0.5:
-                        # Reduce the damage bonus at close rangae
-                        center = TFGlobals.remapVal(center, 0.5, 1.0, 0.5, 0.65)
-                minFactor = max(0.0, center - 0.25)
-                maxFactor = min(1.0, center + 0.25)
+                if info.attacker and info.attacker.isPlayer() and not self.inCondition(self.CondDisguised):
+                    info.attacker.emitSound("TFPlayer.CritHit", client=info.attacker.owner)
+            else:
+                damageMod = info.damage * tf_damage_range#.getValue()
+                if info.damageType & DamageType.UseDistanceMod:
+                    distance = max(1.0, (self.getWorldSpaceCenter() - info.attacker.getWorldSpaceCenter()).length())
+                    optimalDistance = 512.0
 
-            randomVal = random.uniform(minFactor, maxFactor)
+                    center = TFGlobals.remapValClamped(distance / optimalDistance, 0.0, 2.0, 1.0, 0.0)
+                    if info.damageType & DamageType.NoCloseDistanceMod:
+                        if center > 0.5:
+                            # Reduce the damage bonus at close rangae
+                            center = TFGlobals.remapVal(center, 0.5, 1.0, 0.5, 0.65)
+                    #minFactor = max(0.0, center - 0.25)
+                    #maxFactor = min(1.0, center + 0.25)
+                else:
+                    center = 1.0
 
-            #if (randomVal > 0.5):
+                if center > 0.5:
+                    if info.attacker and info.attacker.isPlayer():
+                        wpn = info.attacker.getActiveWeaponObj()
+                        from tf.weapon.DistributedRocketLauncher import DistributedRocketLauncherAI
+                        from tf.weapon.DistributedShotgun import DistributedScattergunScoutAI
+                        if isinstance(wpn, DistributedRocketLauncherAI):
+                            # Rocket launcher only has half the bonus of the other weapons at short range.
+                            damageMod *= 0.5
+                        elif isinstance(wpn, DistributedScattergunScoutAI):
+                            # Scattergun gets 50% bonus of other weapons at short range.
+                            damageMod *= 1.5
 
-            out = TFGlobals.simpleSplineRemapValClamped(randomVal, 0, 1, -randomDamage, randomDamage)
-            damage = info.damage + out
-            info.damage = damage
+                out = TFGlobals.simpleSplineRemapValClamped(center, 0, 1, -damageMod, damageMod)
+                damage = info.damage + out
 
-        print("post random damage", info.damage)
-        """
+            info.setDamage(damage)
+
 
         self.onTakeDamage_alive(info)
 
