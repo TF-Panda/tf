@@ -268,39 +268,12 @@ class TFWeaponGun(BaseClass):
         weaponData = self.weaponData.get(self.weaponMode, {})
         origin = self.player.getEyePosition()
         angles = self.player.viewAngles
-
-        tracerOrigin = None
-        char = None
-        charNP = None
-        if not self.HideWeapon:
-            if IS_CLIENT:
-                if base.cr.prediction.firstTimePredicted:
-                    if self.UsesViewModel:
-                        char = self.player.viewModel.character
-                        charNP = self.player.viewModel.characterNp
-                    else:
-                        char = self.viewModelChar.character
-                        charNP = self.viewModelChar.characterNp
-            else:
-                char = self.character
-                charNP = self.characterNp
-
-        if char is not None:
-            muzzleAttachment = char.findAttachment("muzzle")
-            if muzzleAttachment != -1:
-                tracerOrigin = char.getAttachmentTransform(muzzleAttachment).getPos()
-                tracerOrigin = charNP.getMat(NodePath()).xformPoint(tracerOrigin)
-
-                #print("VM origin is", self.player.viewModel.getNetTransform())
-
-        #print("tracer origin", tracerOrigin)
-
         fireBullets(self.player, origin, angles, self,
                     self.weaponMode,
                     base.net.predictionRandomSeed & 255,
                     weaponData.get('spread', 0.0),
                     self.getWeaponDamage(),
-                    tracerOrigin=tracerOrigin)
+                    tracerAttachment="muzzle")
 
 if not IS_CLIENT:
     TFWeaponGunAI = TFWeaponGun

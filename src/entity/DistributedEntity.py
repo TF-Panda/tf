@@ -442,14 +442,12 @@ class DistributedEntity(BaseClass, NodePath):
             # Bullet hit something!
             block = result.getBlock()
 
-            if not IS_CLIENT:
-                if self.owner is not None:
-                    exclude = [self.owner]
+            tracerAttachment = info.get('tracerAttachment', None)
+            if tracerAttachment:
+                if not IS_CLIENT:
+                    self.sendUpdate('fireTracer', [tracerAttachment, block.getPosition()])
                 else:
-                    exclude = []
-                base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
-            else:
-                base.game.doTracer(info['tracerOrigin'], block.getPosition())
+                    self.fireTracer(tracerAttachment, block.getPosition())
 
             actor = block.getActor()
             if actor:

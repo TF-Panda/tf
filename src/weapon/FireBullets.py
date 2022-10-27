@@ -13,7 +13,7 @@ if IS_CLIENT:
 else:
     tf_server_lag_comp_debug = ConfigVariableBool("tf-server-lag-comp-debug", False)
 
-def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerOrigin = None):
+def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerAttachment = None):
     """
     Fires some bullets.  Server does damage calculations.  Client would
     theoretically do the effects (when I implement it).
@@ -60,7 +60,8 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     fireInfo['shots'] = weaponData.get('bulletsPerShot', 1)
     fireInfo['spread'] = Vec3(spread, spread, 0.0)
     fireInfo['ammoType'] = 0
-    fireInfo['tracerOrigin'] = tracerOrigin
+    fireInfo['tracerAttachment'] = tracerAttachment
+    fireInfo['weapon'] = weapon
     #fireInfo['attacker'] =
 
     # Setup the bullet damage type

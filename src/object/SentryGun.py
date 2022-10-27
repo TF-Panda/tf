@@ -412,13 +412,17 @@ class SentryGun(BaseObject):
                 self.setAnim(activity = Activity.Object_Fire, layer = SENTRYGUN_BULLET_ANIM_LAYER, restart = False)
                 self.firingState = SG_FS_FIRING
 
-                if self.level > 1 and (self.ammoShells & 1):
-                    muzzleNum = 1
+                muzzleName = "muzzle"
+                muzzleNum = 0
+                if self.level > 1:
                     # level 2 and 3 turrets alternate muzzles each time they fizzy fizzy fire.
-                    trans = self.character.getAttachmentNetTransform(1)
-                else:
-                    muzzleNum = 0
-                    trans = self.character.getAttachmentNetTransform(0)
+                    if self.ammoShells & 1:
+                        muzzleName = "muzzle_r"
+                        muzzleNum = 1
+                    else:
+                        muzzleName = "muzzle_l"
+
+                trans = self.character.getAttachmentNetTransform(muzzleNum)
 
                 src = trans.getPos()
                 #ang = trans.getHpr()
@@ -440,7 +444,7 @@ class SentryGun(BaseObject):
                     'attacker': self.getBuilder(),
                     'distance': distToTarget + 100,
                     'damageType': DamageType.Bullet,
-                    'tracerOrigin': src
+                    'tracerAttachment': muzzleName
                 }
                 self.fireBullets(info)
 

@@ -617,7 +617,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         seq = Sequence(Wait(seqn.getNumFrames() / seqn.getFrameRate()), Func(root.removeNode))
         seq.start()
 
-    def doTracer(self, start, end):
+    def doTracer(self, start, end, doSound=True):
         #print("tracer", start, end)
         start = Point3(start[0], start[1], start[2])
         end = Point3(end[0], end[1], end[2])
@@ -654,8 +654,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         seq.start()
 
-        from tf.weapon import WeaponEffects
-        WeaponEffects.tracerSound(start, end)
+        if doSound:
+            from tf.weapon import WeaponEffects
+            WeaponEffects.tracerSound(start, end)
 
     def doTracers(self, origin, ends):
         if base.cr.prediction.inPrediction:

@@ -199,6 +199,8 @@ def tracerSound(start, end):
     if dist >= whizDist*whizDist:
         #print("too far")
         return
+    elif dist <= 0.0:
+        return
 
     nextWhizTime = globalClock.frame_time + 0.1
 

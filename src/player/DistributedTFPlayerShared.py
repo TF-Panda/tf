@@ -342,17 +342,12 @@ class DistributedTFPlayerShared:
             # Bullet hit something!
             block = result.getBlock()
 
-            if info.get('tracerOrigin', None) is not None:
+            tracerAttachment = info.get('tracerAttachment', None)
+            if tracerAttachment:
                 if not IS_CLIENT:
-                    if self.owner is not None:
-                        exclude = [self.owner]
-                    else:
-                        exclude = []
-                    base.air.game.d_doTracers(info['tracerOrigin'], [block.getPosition()], excludeClients=exclude)
-                #else:
-                #    if base.cr.prediction.firstTimePredicted:
-                #        # Fire tracers on first prediction only.
-                #        base.game.doTracer(info['tracerOrigin'], block.getPosition())
+                    info['weapon'].sendUpdate('fireTracer', [tracerAttachment, block.getPosition()], excludeClients=[self.owner])
+                elif base.cr.prediction.firstTimePredicted:
+                    self.viewModel.tracerRequests.append(block.getPosition())
 
             # Play bullet impact sound for material we hit.
             if not IS_CLIENT:

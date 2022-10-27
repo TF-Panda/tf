@@ -34,6 +34,8 @@ class DViewModel(DistributedChar, DViewModelShared):
         self.ivLagAngles = InterpolatedQuat()
         self.ivLagAngles.setInterpolationAmount(cl_wpn_sway_interp)
 
+        self.tracerRequests = []
+
         self.removeInterpolatedVar(self.ivPos)
         self.removeInterpolatedVar(self.ivRot)
 
@@ -246,6 +248,13 @@ class DViewModel(DistributedChar, DViewModelShared):
 
         self.setPos(info.origin)
         self.setQuat(info.angles)
+
+        # Now process tracer requests.
+        if self.tracerRequests:
+            muzzlePos = self.getAttachment("muzzle", net=True, update=False).getPos()
+            for endPos in self.tracerRequests:
+                base.game.doTracer(muzzlePos, endPos, False)
+            self.tracerRequests = []
 
         #print("vm view is", info.origin, info.angles.getHpr())
 
