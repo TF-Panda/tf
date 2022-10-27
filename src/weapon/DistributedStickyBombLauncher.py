@@ -31,7 +31,7 @@ class DistributedStickyBombLauncher(TFWeaponGun):
           'timeReload': 0.67,
           'projectile': TFProjectileType.PipebombRemote
         })
-        self.damageType = DamageType.Blast
+        self.damageType = DamageType.Blast | DamageType.HalfFalloff
 
         self.usesAmmo = True
         self.usesClip = True
