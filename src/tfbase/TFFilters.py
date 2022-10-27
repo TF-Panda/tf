@@ -159,7 +159,7 @@ def traceLine(start, end, contents, cgroup, filter):
         data['ent'] = actor.getPythonTag('entity') if actor else None
         data['frac'] = block.getDistance() / dist if dist > 0.0 else 0.0
         assert data['frac'] >= 0.0 and data['frac'] <= 1.0
-        data['endpos'] = start + dir * dist * data['frac']
+        data['endpos'] = data['pos']
     else:
         data['actor'] = None
         data['pos'] = Point3()
