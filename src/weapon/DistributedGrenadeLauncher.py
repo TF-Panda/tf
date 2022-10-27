@@ -29,7 +29,7 @@ class DistributedGrenadeLauncher(TFWeaponGun):
         self.weaponData[TFWeaponMode.Primary]['timeIdleEmpty'] = 0.6
         self.weaponData[TFWeaponMode.Primary]['timeReloadStart'] = 0.1
         self.weaponData[TFWeaponMode.Primary]['timeReload'] = 0.6
-        self.damageType = DamageType.Blast | DamageType.HalfFalloff | DamageType.UseDistanceMod
+        self.damageType = DamageType.Blast | DamageType.HalfFalloff
 
     def getName(self):
         return TFLocalizer.GrenadeLauncher
