@@ -22,12 +22,10 @@ class DistributedTrigger(DistributedSolidEntity):
 
         def onTriggerEnter(self, entity):
             if entity.isPlayer() and not entity.isDead():
-                print("Start touch", repr(entity))
                 self.connMgr.fireOutput("OnStartTouchAll", activator=entity)
 
         def onTriggerExit(self, entity):
             if entity.isPlayer() and not entity.isDead():
-                print("End touch", repr(entity))
                 self.connMgr.fireOutput("OnEndTouchAll", activator=entity)
 
 if not IS_CLIENT:

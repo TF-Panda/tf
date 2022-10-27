@@ -20,6 +20,7 @@ from direct.distributed2.DistributedObject/AI import DistributedObject/AI
 from tf.entity.DistributedEntity import DistributedEntity/AI
 from tf.entity.DistributedSolidEntity import DistributedSolidEntity/AI
 from tf.entity.DistributedTrigger import DistributedTrigger/AI
+from tf.entity.DistributedTriggerHurt import DistributedTriggerHurt/AI
 from tf.entity.DistributedFuncRegenerate import DistributedFuncRegenerate/AI
 from tf.entity.DistributedPropDynamic import DistributedPropDynamic/AI
 from tf.entity.DistributedFuncDoor import DistributedFuncDoor/AI
@@ -561,4 +562,7 @@ dclass DistributedFlameThrower : TFWeaponGun {
   float64 startFireTime;
 
   doFlame(Position src, UnitVector dir) broadcast;
+};
+
+dclass DistributedTriggerHurt : DistributedTrigger {
 };

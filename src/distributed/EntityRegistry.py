@@ -24,6 +24,7 @@ from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
 from tf.entity.DistributedFuncDoor import DistributedFuncDoorAI
 from tf.entity.DistributedFuncBrush import DistributedFuncBrushAI
 from tf.entity.DistributedPointSpotlight import DistributedPointSpotlightAI
+from tf.entity.DistributedTriggerHurt import DistributedTriggerHurtAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -40,5 +41,6 @@ EntityRegistry = {
     "item_ammopack_small": DAmmoPackSmallAI,
     "item_ammopack_medium": DAmmoPackMediumAI,
     "item_ammopack_full": DAmmoPackFullAI,
-    "item_teamflag": DistributedTeamFlagAI
+    "item_teamflag": DistributedTeamFlagAI,
+    "trigger_hurt": DistributedTriggerHurtAI
 }
