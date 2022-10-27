@@ -170,7 +170,7 @@ class BaseRocket(BaseClass):
                 else:
                     ent = None
                 if ent:
-                    self.setPos(block.getPosition() - (sweepDir * 0.01))
+                    self.setPos((currPos + sweepDir * block.getDistance()) - (sweepDir * 0.01))
                     self.explode(ent)
 
             # Don't do this if we just exploded, because the node has been
