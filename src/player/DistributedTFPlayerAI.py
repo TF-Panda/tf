@@ -400,8 +400,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             info.damageType = DamageType.Fall
             info.damagePosition = self.getPos() + (0, 0, 16)
             self.takeDamage(info)
-            self.emitSound("Player.FallDamage", client=self.owner)
-            self.emitSoundSpatial("Player.FallDamage", excludeClients=[self.owner])
 
     def voiceCommand(self, cmd):
         now = globalClock.frame_time
@@ -694,7 +692,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.bulletForce[1] = max(-15000, min(15000, self.bulletForce[1]))
         self.bulletForce[2] = max(-15000, min(15000, self.bulletForce[2]))
 
-
         # This is the code for random damage spread from 2007 TF2.
         # Turned off for now, might revisit.
 
@@ -740,7 +737,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
             info.setDamage(damage)
 
-
         self.onTakeDamage_alive(info)
 
         if self.health > 0:
@@ -755,6 +751,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             now = globalClock.frame_time
 
             if info.damageType & DamageType.Fall:
+                self.emitSound("Player.FallDamage", client=self.owner)
+                self.emitSoundSpatial("Player.FallDamage", excludeClients=[self.owner])
                 self.d_speak(random.choice(self.classInfo.PainFilenames))
                 self.lastPainTime = now
 
@@ -943,6 +941,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         # Player died.
         if dmgType & DamageType.Fall:
+            self.emitSound("Player.FallGib", client=self.owner)
+            self.emitSoundSpatial("Player.FallGib", excludeClients=[self.owner])
             pain = None
         elif dmgType & (DamageType.Club | DamageType.Slash):
             pain = random.choice(self.classInfo.CritPainFilenames)
