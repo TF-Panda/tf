@@ -553,9 +553,9 @@ class TFWeapon(BaseClass):
         if not self.player:
             return
 
-        if self.player.buttons & InputFlag.Attack2 and not self.inReload and not self.inAttack2:
-            if self.player.doClassSpecialSkill():
-                self.nextSecondaryAttack = globalClock.frame_time + 0.5
+        if (self.player.buttons & InputFlag.Attack2) and not self.inReload and not self.inAttack2:
+            #if self.player.doClassSpecialSkill():
+            #    self.nextSecondaryAttack = globalClock.frame_time + 0.5
             self.inAttack2 = True
         else:
             self.inAttack2 = False

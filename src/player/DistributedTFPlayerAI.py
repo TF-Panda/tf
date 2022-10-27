@@ -466,9 +466,17 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if self.tfClass == Class.Demo:
             for det in self.detonateables:
                 det.beginDetonate()
-            for det in list(self.detonateables):
-                if det.detonating:
-                    det.detonate(False)
+            if not self.detonateables:
+                allDetonated = False
+            else:
+                allDetonated = True
+                for det in list(self.detonateables):
+                    if det.detonating:
+                        det.detonate(False)
+                    else:
+                        allDetonated = False
+            if not allDetonated:
+                self.emitSound("Player.UseDeny", client=self.owner)
             return True
 
         return False
