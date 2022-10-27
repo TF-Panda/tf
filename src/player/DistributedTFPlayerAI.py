@@ -469,6 +469,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             for det in list(self.detonateables):
                 if det.detonating:
                     det.detonate(False)
+            return True
+
+        return False
 
         #if self.tfClass == Class.Engineer:
         #    self.placeSentry()

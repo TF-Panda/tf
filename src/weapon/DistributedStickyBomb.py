@@ -35,7 +35,7 @@ class DistributedStickyBomb(BaseClass):
     if not IS_CLIENT:
         def generate(self):
             BaseClass.generate(self)
-            self.detTime = globalClock.frame_time + 0.7
+            self.detTime = globalClock.frame_time + 0.8
             self.setContentsMask(TFGlobals.Contents.RedTeam if self.team == TFGlobals.TFTeam.Red else TFGlobals.Contents.BlueTeam)
 
             self.addTask(self.__stickTask, 'stickTask', appendTask=True, sim=True, sort=51)
@@ -101,7 +101,6 @@ class DistributedStickyBomb(BaseClass):
             if not self.isSticking and self.numStickContacts > 0:
                 self.setKinematic(True)
                 self.isSticking = True
-                self.detTime = min(self.detTime, globalClock.frame_time + 0.135)
 
         def __stickTask(self, task):
             if self.hitSky:
