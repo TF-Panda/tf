@@ -240,7 +240,6 @@ class TFWeaponGun(BaseClass):
             src += q.getForward() * 16.0 + q.getRight() * 8.0 + q.getUp() * -6.0
             vel = (q.getForward() * 1200) + (q.getUp() * 200.0)
             vel *= TFGlobals.remapValClamped(self.charge, 0.0, 1.0, 0.8, 1.5)
-            print("charge", self.charge, "vel", vel)
             bomb = DistributedStickyBombAI()
             bomb.setPos(src)
             bomb.setHpr(self.player.viewAngles)
