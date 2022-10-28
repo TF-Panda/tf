@@ -601,6 +601,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             vecDir = info.inflictor.getWorldSpaceCenter() - Vec3(0, 0, 10) - self.getWorldSpaceCenter()
             vecDir.normalize()
 
+        # TODO: check not in water
+        igniting = (info.damageType & DamageType.Ignite) != 0
+        if igniting and info.attacker:
+            self.burn(info.attacker)
+
         self.lastDamageTime = globalClock.frame_time
 
         if info.damageType & DamageType.PreventPhysicsForce:

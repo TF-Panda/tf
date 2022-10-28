@@ -157,8 +157,8 @@ def traceLine(start, end, contents, cgroup, filter):
         data['norm'] = block.getNormal()
         data['mat'] = block.getMaterial()
         data['ent'] = actor.getPythonTag('entity') if actor else None
-        data['frac'] = block.getDistance() / dist if dist > 0.0 else 0.0
-        assert data['frac'] >= 0.0 and data['frac'] <= 1.0
+        data['frac'] = (block.getDistance() / dist) if dist > 0.0 else 0.0
+        #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
         data['endpos'] = data['pos']
     else:
         data['actor'] = None
@@ -188,8 +188,8 @@ def traceBox(start, end, mins, maxs, contents, cgroup, filter):
         data['norm'] = block.getNormal()
         data['mat'] = block.getMaterial()
         data['ent'] = actor.getPythonTag('entity') if actor else None
-        data['frac'] = block.getDistance() / dist if dist > 0 else 0.0
-        assert data['frac'] >= 0.0 and data['frac'] <= 1.0
+        data['frac'] = (block.getDistance() / dist) if dist > 0 else 0.0
+        #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
         data['endpos'] = start + dir * block.getDistance()
     else:
         data['actor'] = None
@@ -219,8 +219,8 @@ def traceSphere(start, end, radius, contents, cgroup, filter):
         data['norm'] = block.getNormal()
         data['mat'] = block.getMaterial()
         data['ent'] = actor.getPythonTag('entity') if actor else None
-        data['frac'] = block.getDistance() / dist if dist > 0 else 0.0
-        assert data['frac'] >= 0.0 and data['frac'] <= 1.0
+        data['frac'] = (block.getDistance() / dist) if dist > 0 else 0.0
+        #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
         data['endpos'] = start + dir * block.getDistance()
     else:
         data['actor'] = None
