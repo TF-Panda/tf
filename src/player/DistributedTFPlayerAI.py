@@ -713,12 +713,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                     center = TFGlobals.remapValClamped(distance / optimalDistance, 0.0, 2.0, 1.0, 0.0)
                     if info.damageType & DamageType.NoCloseDistanceMod:
                         if center > 0.5:
-                            # Reduce the damage bonus at close rangae
+                            # Reduce the damage bonus at close range.
                             center = TFGlobals.remapVal(center, 0.5, 1.0, 0.5, 0.65)
                     #minFactor = max(0.0, center - 0.25)
                     #maxFactor = min(1.0, center + 0.25)
                 else:
-                    center = 1.0
+                    center = 0.5
 
                 if center > 0.5:
                     if info.attacker and info.attacker.isPlayer():
