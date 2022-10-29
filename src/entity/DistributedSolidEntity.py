@@ -5,6 +5,7 @@ from panda3d.pphysics import *
 
 from .DistributedEntity import DistributedEntity
 from tf.tfbase.SurfaceProperties import SurfaceProperties
+from tf.tfbase import TFGlobals
 
 class DistributedSolidEntity(DistributedEntity):
     """
@@ -34,6 +35,10 @@ class DistributedSolidEntity(DistributedEntity):
         def initFromLevel(self, ent, properties):
             DistributedEntity.initFromLevel(self, ent, properties)
             self.modelNum = ent.getModelIndex()
+            if properties.hasAttribute("rendermode"):
+                if properties.getAttributeValue("rendermode").getInt() == 10:
+                    # Don't render.
+                    self.parentEntityId = TFGlobals.WorldParent.Hidden
 
     def makeModelCollisionShape(self):
         invOrigin = self.modelOrigin.getInverse().getPos()
