@@ -9,6 +9,8 @@ class DistributedTriggerHurt(DistributedTrigger):
 
     if not IS_CLIENT:
         def onTriggerEnter(self, entity):
+            if not self.triggerEnabled:
+                return
             DistributedTrigger.onTriggerEnter(self, entity)
             if not entity.isDead():
                 info = TakeDamageInfo()
