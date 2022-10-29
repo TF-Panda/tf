@@ -50,8 +50,8 @@ class DPickupItemBase(DistributedEntity):
             self.solidMask = TFGlobals.Contents.Solid | TFGlobals.Contents.AnyTeam
             self.collisionGroup = TFGlobals.CollisionGroup.Debris
             # All pickups use the same hull.
-            self.hullMins = Vec3(-8)
-            self.hullMaxs = Vec3(8)
+            self.hullMins = Vec3(-8, -8, 0)
+            self.hullMaxs = Vec3(8, 8, 16)
         else:
             self.models = [
                 "models/items/ammopack_large",
