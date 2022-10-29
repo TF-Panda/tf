@@ -425,6 +425,8 @@ class DistributedTFPlayerShared:
         return base.net.doId2do.get(self.weapons[self.activeWeapon])
 
     def setupController(self):
+        self.disableController()
+
         mins = TFGlobals.VEC_HULL_MIN
         maxs = TFGlobals.VEC_HULL_MAX
         halfExts = Vec3((maxs[0] - mins[0]) / 2, (maxs[1] - mins[1]) / 2, (maxs[2] - mins[2]) / 2)
@@ -437,12 +439,11 @@ class DistributedTFPlayerShared:
         self.applyControllerMasks()
 
         self.controller.setUpDirection(Vec3.up())
-        self.controller.setFootPosition(self.getPos())
         self.controller.setStepOffset(24) # 18 HUs to inches?
         self.controller.setContactOffset(1) # 6 inches idk
+        self.controller.setFootPosition(self.getPos())
         self.controller.getActorNode().setPythonTag("entity", self)
         self.controller.getActorNode().setPythonTag("object", self)
-        self.attachNewNode(self.controller.getActorNode())
 
     def applyControllerMasks(self):
         if self.team == 0:
@@ -462,7 +463,9 @@ class DistributedTFPlayerShared:
         enableController() is called.
         """
 
-        self.controller = None
+        if self.controller:
+            self.controller.destroy()
+            self.controller = None
 
     def enableController(self):
         """
