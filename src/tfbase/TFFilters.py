@@ -255,7 +255,7 @@ def clipVelocity(inVel, normal, outVel, overBounce):
 
     return blocked
 
-def collideAndSlide(origin, velocity, mins, maxs, contents, collisionGroup, filter):
+def collideAndSlide(origin, velocity, collInfo, contents, collisionGroup, filter):
     """
     Origin: current object position.
     Velocity: desired movement offset
@@ -285,7 +285,12 @@ def collideAndSlide(origin, velocity, mins, maxs, contents, collisionGroup, filt
         # Assume we can move all the way from the current origin to the
         # end point.
         end = origin + velocity * timeLeft
-        tr = traceBox(origin, end, mins, maxs, contents, collisionGroup, filter)
+        if collInfo['type'] == 'box':
+            tr = traceBox(origin, end, collInfo['mins'], collInfo['maxs'], contents, collisionGroup, filter)
+        elif collInfo['type'] == 'sphere':
+            tr = traceSphere(origin, end, collInfo['radius'], contents, collisionGroup, filter)
+        else:
+            assert False
         fraction = tr['frac']
 
         allFraction += fraction

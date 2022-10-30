@@ -113,8 +113,9 @@ class FlameProjectile:
 
         # Now clip the velocity.
         oldPos = Vec3(self.pos)
-        blocked = TFFilters.collideAndSlide(self.pos, self.velocity, -self.size, self.size, TFGlobals.Contents.Solid, 0,
-                                  self.filter)
+        blocked = TFFilters.collideAndSlide(
+            self.pos, self.velocity, {'type': 'sphere', 'radius': FLAME_BOXSIZE},
+            TFGlobals.Contents.Solid, 0, self.filter)
         if blocked:
             self.wasBlocked = True
 
