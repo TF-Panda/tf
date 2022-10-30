@@ -14,7 +14,7 @@ class EntityManager:
         if ent.targetName:
             self.targetName2ent[ent.targetName] = ent
 
-        print(self.targetName2ent)
+        #print(self.targetName2ent)
 
     def removeEntity(self, ent):
         if ent.targetName and ent.targetName in self.targetName2ent:

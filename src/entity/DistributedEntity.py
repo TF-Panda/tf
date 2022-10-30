@@ -17,13 +17,14 @@ from tf.tfbase import TFFilters, Sounds
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
 from tf.tfbase.SoundEmitter import SoundEmitter
 from direct.directbase import DirectRender
+from .EntityBase import EntityBase
 
 if IS_CLIENT:
     from tf.player.Prediction import *
 else:
     from .EntityConnectionManager import EntityConnectionManager, OutputConnection
 
-class DistributedEntity(BaseClass, NodePath):
+class DistributedEntity(BaseClass, NodePath, EntityBase):
 
     # If true, the Cull traverser does not need to consider
     # view culling below the root of the entity.  If the root
@@ -36,6 +37,7 @@ class DistributedEntity(BaseClass, NodePath):
         BaseClass.__init__(self)
         if not self.this:
             NodePath.__init__(self, "entity")
+        EntityBase.__init__(self)
 
         self.hitBoxes = []
 
@@ -90,9 +92,6 @@ class DistributedEntity(BaseClass, NodePath):
 
         self.teleportParity = 0
 
-        self.className = ""
-        self.targetName = ""
-
         if IS_CLIENT:
             # Makes the node compute its lighting state from the lighting
             # information in the level when its rendered.
@@ -120,7 +119,6 @@ class DistributedEntity(BaseClass, NodePath):
             self.soundEmitter = SoundEmitter(self)
 
         else:
-            self.connMgr = EntityConnectionManager(self)
             self.parentEntityName = ""
 
         # Create a root node for all physics objects to live under, and hide
@@ -139,8 +137,12 @@ class DistributedEntity(BaseClass, NodePath):
 
         #self.reparentTo(self.parentEntity)
 
+    def isNetworkedEntity(self):
+        return True
+
     def announceGenerate(self):
         BaseClass.announceGenerate(self)
+        EntityBase.announceGenerate(self)
         if IS_CLIENT:
             self.updateParentEntity()
         else:
@@ -151,9 +153,9 @@ class DistributedEntity(BaseClass, NodePath):
             else:
                 self.updateParentEntity()
 
-
     def generate(self):
         BaseClass.generate(self)
+        EntityBase.generate(self)
         # Make the node for this entity recognizable.  Assign the top-level class
         # name followed by the doId.
         self.node().setName(self.uniqueName(self.__class__.__name__))
@@ -753,7 +755,9 @@ class DistributedEntity(BaseClass, NodePath):
             Called to initialize the level entity from the given property
             structure.
             """
-            self.className = ent.getClassName()
+
+            EntityBase.initFromLevel(self, ent, properties)
+
             if properties.hasAttribute("origin"):
                 origin = Vec3()
                 properties.getAttributeValue("origin").toVec3(origin)
@@ -762,28 +766,10 @@ class DistributedEntity(BaseClass, NodePath):
                 angles = Vec3()
                 properties.getAttributeValue("angles").toVec3(angles)
                 self.setHpr(angles[1] - 90, -angles[0], angles[2])
-            if properties.hasAttribute("targetname"):
-                self.targetName = properties.getAttributeValue("targetname").getString()
-                if self.targetName:
-                    base.entMgr.registerEntity(self)
             if properties.hasAttribute("TeamNum"):
                 self.team = properties.getAttributeValue("TeamNum").getInt() - 2
             if properties.hasAttribute("parentname"):
                 self.parentEntityName = properties.getAttributeValue("parentname").getString()
-
-            for i in range(ent.getNumConnections()):
-                conn = ent.getConnection(i)
-                oconn = OutputConnection()
-                # Convert wildcards to python regex wildcard.
-                oconn.targetEntityName = conn.getTargetName().replace("*", ".+")
-                oconn.inputName = conn.getInputName()
-                oconn.once = conn.getRepeat()
-                oconn.delay = conn.getDelay()
-                for j in range(conn.getNumParameters()):
-                    param = conn.getParameter(j)
-                    if param:
-                        oconn.parameters.append(param)
-                self.connMgr.addConnection(conn.getOutputName(), oconn)
 
         def takeDamage(self, info):
 
@@ -979,6 +965,10 @@ class DistributedEntity(BaseClass, NodePath):
 
             # TODO: Blood?
 
+    def disable(self):
+        BaseClass.disable(self)
+        EntityBase.disable(self)
+
     def delete(self):
         if IS_CLIENT:
             self.ivPos = None
@@ -987,10 +977,7 @@ class DistributedEntity(BaseClass, NodePath):
             self.shutdownPredictable()
             self.soundEmitter.delete()
             self.soundEmitter = None
-        else:
-            self.connMgr.cleanup()
-            self.connMgr = None
-            base.entMgr.removeEntity(self)
+        EntityBase.delete(self)
         # There's no point in replacing the physics node with a PandaNode
         # since we're about to delete it anyway.  Saves a tiny bit of time.
         self.destroyCollisions(replaceWithNormalNode=False)

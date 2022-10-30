@@ -285,9 +285,13 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 print("Generating a", ent.getClassName())
                 entObj = entCls()
                 entObj.initFromLevel(ent, ent.getProperties())
-                base.air.generateObject(entObj, GameZone, announce=False)
+                if entObj.isNetworkedEntity():
+                    base.air.generateObject(entObj, GameZone, announce=False)
+                else:
+                    entObj.generate()
                 levelEnts.append(entObj)
             else:
+                print(ent.getClassName(), "not in entity registry")
                 if ent.getClassName() != "info_player_teamspawn":
                     continue
                 props = ent.getProperties()
@@ -301,7 +305,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         for entObj in levelEnts:
             entObj.announceGenerate()
-            assert entObj.isDOAlive()
+            if entObj.isNetworkedEntity():
+                assert entObj.isDOAlive()
 
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)

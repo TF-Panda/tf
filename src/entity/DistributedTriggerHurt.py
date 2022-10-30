@@ -8,17 +8,15 @@ from tf.weapon.TakeDamageInfo import TakeDamageInfo
 class DistributedTriggerHurt(DistributedTrigger):
 
     if not IS_CLIENT:
-        def onTriggerEnter(self, entity):
-            if not self.triggerEnabled:
-                return
-            DistributedTrigger.onTriggerEnter(self, entity)
-            if not entity.isDead():
-                info = TakeDamageInfo()
-                info.setDamage(entity.health)
-                info.damageType = DamageType.Fall
-                info.inflictor = base.world
-                info.attacker = base.world
-                entity.takeDamage(info)
+        def onEntityStartTouch(self, entity):
+            DistributedTrigger.onEntityStartTouch(self, entity)
+            # It should already be an alive player.
+            info = TakeDamageInfo()
+            info.setDamage(entity.health)
+            info.damageType = DamageType.Fall
+            info.inflictor = base.world
+            info.attacker = base.world
+            entity.takeDamage(info)
 
 if not IS_CLIENT:
     DistributedTriggerHurtAI = DistributedTriggerHurt
