@@ -3,6 +3,7 @@ from panda3d.pphysics import *
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 from tf.tfbase.TFGlobals import Contents, CollisionGroup
+from tf.tfbase import TFEffects
 from tf.actor.Model import Model
 
 from direct.directbase import DirectRender
@@ -31,7 +32,7 @@ class PlayerGibs:
                 mdl.cleanup()
                 continue
 
-            mdl.modelNp.setTransparency(True)
+            #mdl.modelNp.setTransparency(True)
 
             surfaceProp = "default"
             customData = mdl.modelData
@@ -92,15 +93,32 @@ class PlayerGibs:
             if isHead:
                 self.headPiece = cnp
 
-            self.gibs.append((cnp, mdl))
+            bloodNode = mdl.modelNp.find("**/bloodpoint")
+            if bloodNode:
+                trailEffect = TFEffects.getBloodTrailEffect()
+                trailEffect.setInput(0, bloodNode, False)
+                trailEffect.start(base.dynRender)
+            else:
+                trailEffect = None
+
+            self.gibs.append((cnp, mdl, trailEffect))
 
         # Fade gibs out after 10 seconds.
-        self.track = Sequence(Wait(10.0))
+        self.track = Parallel()
+        stopParticleTrack = Sequence(Wait(1.5))
+        for _, _, effect in self.gibs:
+            if effect:
+                stopParticleTrack.append(Func(effect.softStop))
+        self.track.append(stopParticleTrack)
+
+        fadeTrackSeq = Sequence(Wait(10.0))
         fadeTrack = Parallel()
-        for _, mdl in self.gibs:
+        for _, mdl, _ in self.gibs:
+            fadeTrack.append(Func(mdl.modelNp.setTransparency, True))
             fadeTrack.append(LerpColorScaleInterval(mdl.modelNp, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
-        self.track.append(fadeTrack)
-        self.track.append(Func(self.destroy))
+        fadeTrackSeq.append(fadeTrack)
+        fadeTrackSeq.append(Func(self.destroy))
+        self.track.append(fadeTrackSeq)
         self.track.start()
 
     def getHeadPosition(self):
@@ -116,9 +134,11 @@ class PlayerGibs:
             self.track.finish()
             self.track = None
         if self.gibs:
-            for gib, mdl in self.gibs:
+            for gib, mdl, bloodEffect in self.gibs:
                 mdl.cleanup()
                 gib.node().removeFromScene(base.physicsWorld)
                 gib.removeNode()
+                if bloodEffect and bloodEffect.isRunning():
+                    bloodEffect.softStop()
             self.gibs = None
         self.headPiece = None

@@ -1,5 +1,60 @@
 from panda3d.core import *
 
+BloodTrailEffect = None
+def getBloodTrailEffect():
+    global BloodTrailEffect
+    if not BloodTrailEffect:
+        system = ParticleSystem2()
+        system.setPoolSize(25)
+
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(16)
+        system.addEmitter(emitter)
+
+        system.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 2, (1, 1, 1)))
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.34, 0.34))
+        system.addInitializer(P2_INIT_ColorRandomRange(Vec3(255/255, 31/255, 0), Vec3(192/255, 8/255, 5/255)))
+        system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(12), Vec3(21), False))
+        system.addInitializer(P2_INIT_AlphaRandomRange(160/255, 240/255))
+        system.addInitializer(P2_INIT_AnimationIndexRandom(0, 3))
+        system.addInitializer(P2_INIT_AnimationFPSRandom(41.16, 41.16))
+        system.addInitializer(P2_INIT_RotationRandomRange(0.0, 0.0, 360.0))
+        system.addInitializer(P2_INIT_RotationVelocityRandomRange(0, 4, 1, True))
+        system.addInitializer(P2_INIT_VelocityRadiate((0, 0, 0), 0, 32))
+
+        slerpFunc = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        slerp = ParticleLerpSegment()
+        slerp.type = slerp.LTLinear
+        # Fade in
+        slerp.start = 0.0
+        slerp.end = 0.1
+        slerp.start_value = 0.0
+        slerp.end_is_initial = True
+        #slerp.end_value = 1.0
+        slerpFunc.addSegment(slerp)
+        # Fade out
+        slerp.start = 0.5
+        slerp.end = 1
+        #slerp.start_value = 1.0
+        slerp.start_is_initial = True
+        slerp.end_is_initial = False
+        slerp.end_value = 0.0
+        slerpFunc.addSegment(slerp)
+        system.addFunction(slerpFunc)
+
+        system.addFunction(LinearMotionParticleFunction(0.025))
+        system.addFunction(AngularMotionParticleFunction())
+        system.addFunction(LifespanKillerParticleFunction())
+
+        system.addForce(VectorParticleForce((0, 0, -100)))
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/blood_goop3.mto")),
+                                                ColorAttrib.makeVertex()))
+        system.addRenderer(renderer)
+        BloodTrailEffect = system
+    return BloodTrailEffect.makeCopy()
+
 BloodGoopEffect = None
 def getBloodGoopEffect():
     global BloodGoopEffect
@@ -85,7 +140,7 @@ def getRocketTrailEffect():
         alphaLerp.addSegment(l0)
         system.addFunction(alphaLerp)
 
-        system.addFunction(LinearMotionParticleFunction())
+        system.addFunction(LinearMotionParticleFunction(0.5))
         system.addFunction(LifespanKillerParticleFunction())
         system.addFunction(AngularMotionParticleFunction())
 
@@ -140,7 +195,7 @@ def getOverhealedEffect(team):
         colorLerp.addSegment(l0)
         system.addFunction(colorLerp)
 
-        system.addFunction(LifespanKillerParticleFunction())
+        system.addFunction(LifespanKillerParticleFunction(0.5))
         system.addFunction(LinearMotionParticleFunction())
 
         renderer = SpriteParticleRenderer2()
