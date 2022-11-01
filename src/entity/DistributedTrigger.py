@@ -17,6 +17,7 @@ class DistributedTrigger(DistributedSolidEntity):
         self.triggerEnabled = True
         self.filterName = ""
         self.filterEnt = None
+        self.touching = []
 
     if not IS_CLIENT:
         def announceGenerate(self):
@@ -36,10 +37,19 @@ class DistributedTrigger(DistributedSolidEntity):
                 self.filterName = props.getAttributeValue("filtername").getString()
 
         def onEntityStartTouch(self, entity):
-            self.connMgr.fireOutput("OnStartTouchAll", activator=entity)
+            if not self.touching:
+                self.connMgr.fireOutput("OnStartTouchAll", activator=entity)
+
+            if not entity in self.touching:
+                self.touching.append(entity)
+                self.connMgr.fireOutput("OnStartTouch", activator=entity)
 
         def onEntityEndTouch(self, entity):
-            self.connMgr.fireOutput("OnEndTouchAll", activator=entity)
+            if entity in self.touching:
+                self.touching.remove(entity)
+                self.connMgr.fireOutput("OnEndTouch", activator=entity)
+                if not self.touching:
+                    self.connMgr.fireOutput("OnEndTouchAll", activator=entity)
 
         def onTriggerEnter(self, entity):
             if not self.triggerEnabled:
@@ -59,8 +69,6 @@ class DistributedTrigger(DistributedSolidEntity):
                 return
             if not entity.isPlayer():
                 return
-            if entity.isDead():
-                return
             if self.filterEnt:
                 if not self.filterEnt.testFilter(entity):
                     return
@@ -69,6 +77,11 @@ class DistributedTrigger(DistributedSolidEntity):
 
         def input_Enable(self, caller):
             self.triggerEnabled = True
+
+        def delete(self):
+            self.touching = None
+            self.filterEnt = None
+            DistributedSolidEntity.delete(self)
 
 if not IS_CLIENT:
     DistributedTriggerAI = DistributedTrigger
