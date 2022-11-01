@@ -345,10 +345,12 @@ class DistributedTFPlayerShared:
 
             tracerAttachment = info.get('tracerAttachment', None)
             if tracerAttachment:
+                tracerDelay = info.get('tracerDelay', 0.0)
+                tracerSpread = info.get('tracerSpread', 0.0)
                 if not IS_CLIENT:
-                    info['weapon'].sendUpdate('fireTracer', [tracerAttachment, block.getPosition()], excludeClients=[self.owner])
+                    info['weapon'].sendUpdate('fireTracer', [tracerAttachment, block.getPosition(), tracerDelay, tracerSpread], excludeClients=[self.owner])
                 elif base.cr.prediction.firstTimePredicted:
-                    self.viewModel.tracerRequests.append(block.getPosition())
+                    self.viewModel.tracerRequests.append((block.getPosition(), tracerDelay, tracerSpread))
 
             # Play bullet impact sound for material we hit.
             if not IS_CLIENT:

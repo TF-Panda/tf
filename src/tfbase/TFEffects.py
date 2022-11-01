@@ -1,5 +1,75 @@
 from panda3d.core import *
 
+MuzzleFlashEffect = [None, None]
+def getMuzzleFlashEffect(isViewModel):
+    if not MuzzleFlashEffect[isViewModel]:
+        system = ParticleSystem2()
+        system.setPoolSize(20)
+
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(10000)
+        system.addEmitter(emitter)
+
+        system.addInitializer(P2_INIT_PositionLineSegment((0, 2, 0), (0, 16, 0)))
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.2, 0.2))
+        #system.addInitializer(P2_INIT_ScaleRandomRange(10, 10))
+        if not isViewModel:
+            system.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.APos, 1, 2, 16,
+                                                        P2_INIT_RemapAttribute.AScale, 0, 4, 1))
+            system.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.APos, 1, 2, 16,
+                                                        P2_INIT_RemapAttribute.AScale, 1, 4, 1))
+        else:
+            system.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.APos, 1, 2, 16,
+                                                        P2_INIT_RemapAttribute.AScale, 0, 2.5, 1))
+            system.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.APos, 1, 2, 16,
+                                                        P2_INIT_RemapAttribute.AScale, 1, 2.5, 1))
+        system.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+        system.addInitializer(P2_INIT_ColorRandomRange((1, 0.7, 0), (1, 0.7, 0)))
+        #system.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+        #system.addInitializer(P2_INIT_RotationVelocityRandomRange())
+
+        scaleLerpFunc = LerpParticleFunction(LerpParticleFunction.CScale)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 0.25
+        seg.scale_on_initial = True
+        seg.start_value = 0.5
+        seg.end_value = 1.5
+        scaleLerpFunc.addSegment(seg)
+        seg.start = 0.25
+        seg.end = 1.0
+        seg.start_value = 1.5
+        seg.end_value = 0.5
+        scaleLerpFunc.addSegment(seg)
+        system.addFunction(scaleLerpFunc)
+
+        colorLerpFunc = LerpParticleFunction(LerpParticleFunction.CRgb)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.scale_on_initial = True
+        seg.start = 0.0
+        seg.end = 0.25
+        seg.start_value = 0.0
+        seg.end_value = 1.0
+        colorLerpFunc.addSegment(seg)
+        seg.start = 0.25
+        seg.end = 1.0
+        seg.start_value = 1.0
+        seg.end_value = 0.0
+        colorLerpFunc.addSegment(seg)
+        system.addFunction(colorLerpFunc)
+
+        system.addFunction(AngularMotionParticleFunction())
+        system.addFunction(LifespanKillerParticleFunction())
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/starflash01.mto")), ColorAttrib.makeVertex()))
+        system.addRenderer(renderer)
+
+        MuzzleFlashEffect[isViewModel] = system
+    return MuzzleFlashEffect[isViewModel].makeCopy()
+
 BloodTrailEffect = None
 def getBloodTrailEffect():
     global BloodTrailEffect

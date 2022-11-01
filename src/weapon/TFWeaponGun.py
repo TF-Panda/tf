@@ -31,6 +31,8 @@ class TFWeaponGun(BaseClass):
     def __init__(self):
         BaseClass.__init__(self)
         self.weaponMode = TFWeaponMode.Primary
+        self.staggerTracers = False
+        self.tracerSpread = 0.0
 
     def primaryAttack(self):
 
@@ -119,13 +121,13 @@ class TFWeaponGun(BaseClass):
                     muzzle = self.player.viewModel.find("**/muzzle")
                 else:
                     muzzle = self.viewModelChar.modelNp.find("**/muzzle")
-                size = 0.5
+                isViewModel = True
             else:
                 # World model.
                 muzzle = self.find("**/muzzle")
-                size = 1.0
+                isViewModel = False
             if not muzzle.isEmpty():
-                makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), size, (1, 0.75, 0, 1))
+                makeMuzzleFlash(muzzle, (0, 0, 0), (0, 0, 0), 1.0, (1, 0.75, 0, 1), isViewModel)
         else:
             # Don't send to owner, who is predicting the effect.
             self.sendUpdate('doFireEffects', excludeClients = [self.player.owner])
@@ -272,7 +274,9 @@ class TFWeaponGun(BaseClass):
                     base.net.predictionRandomSeed & 255,
                     weaponData.get('spread', 0.0),
                     self.getWeaponDamage(),
-                    tracerAttachment="muzzle")
+                    tracerAttachment="muzzle",
+                    tracerStagger=(self.primaryAttackInterval / weaponData.get('bulletsPerShot', 1)) if self.staggerTracers else 0.0,
+                    tracerSpread=self.tracerSpread)
 
 if not IS_CLIENT:
     TFWeaponGunAI = TFWeaponGun

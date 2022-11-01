@@ -207,7 +207,7 @@ dclass DistributedChar : DistributedEntity {
   // Creates a client-side ragdoll of the character.
   becomeRagdoll(int16 forceJoint, Position forcePosition, Vector forceVector, Vector initialVel) broadcast ownrecv;
 
-  fireTracer(string attachment, Position endPos) broadcast;
+  fireTracer(string attachment, Position endPos, float64 delay=0.0, float64 spread=0.0) broadcast;
 };
 
 dclass DistributedTFPlayer : DistributedChar {

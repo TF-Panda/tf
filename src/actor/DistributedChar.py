@@ -7,6 +7,8 @@ from tf.tfbase.TFGlobals import SolidShape
 from panda3d.core import *
 from panda3d.direct import *
 
+import random
+
 class DistributedChar(Actor, DistributedEntity):
 
     AllChars = []
@@ -19,9 +21,14 @@ class DistributedChar(Actor, DistributedEntity):
         self.ragdoll = None
         self.processingAnimEvents = False
 
-    def fireTracer(self, attachment, endPos):
-        srcPos = self.getAttachment(attachment, net=True, update=False).getPos()
-        base.game.doTracer(srcPos, endPos)
+    def fireTracer(self, attachment, endPos, delay=0.0, spread=0.0):
+        srcTs = self.getAttachment(attachment, net=True, update=False)
+        srcPos = Point3(srcTs.getPos())
+
+        if spread:
+            srcPos -= srcTs.getQuat().getForward() * spread
+
+        base.game.doTracer(srcPos, endPos, delay=delay)
 
     @staticmethod
     def syncAllHitBoxes():

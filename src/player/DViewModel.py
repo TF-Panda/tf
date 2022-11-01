@@ -5,6 +5,8 @@ from .DViewModelShared import DViewModelShared
 
 from panda3d.core import *
 
+import random
+
 class ViewInfo:
     pass
 
@@ -251,9 +253,12 @@ class DViewModel(DistributedChar, DViewModelShared):
 
         # Now process tracer requests.
         if self.tracerRequests:
-            muzzlePos = self.getAttachment("muzzle", net=True, update=False).getPos()
-            for endPos in self.tracerRequests:
-                base.game.doTracer(muzzlePos, endPos, False)
+            muzzleTs = self.getAttachment("muzzle", net=True, update=False)
+            for endPos, delay, spread in self.tracerRequests:
+                muzzlePos = Point3(muzzleTs.getPos())
+                if spread:
+                    muzzlePos -= muzzleTs.getQuat().getForward() * spread
+                base.game.doTracer(muzzlePos, endPos, False, delay)
             self.tracerRequests = []
 
         #print("vm view is", info.origin, info.angles.getHpr())

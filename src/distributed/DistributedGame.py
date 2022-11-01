@@ -617,12 +617,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         seq = Sequence(Wait(seqn.getNumFrames() / seqn.getFrameRate()), Func(root.removeNode))
         seq.start()
 
-    def doTracer(self, start, end, doSound=True):
+    def doTracer(self, start, end, doSound=True, delay=0.0):
         #print("tracer", start, end)
         start = Point3(start[0], start[1], start[2])
         end = Point3(end[0], end[1], end[2])
         speed = 5000
-        color = Vec4(1.0, 0.85, 0.5, 1)
+        color = Vec4(1.0, 0.9, 0.6, 1)
         traceDir = end - start
         traceLen = traceDir.length()
         traceDir /= traceLen
@@ -634,6 +634,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         segs.setThickness(2)
         np = base.dynRender.attachNewNode(segs.create())
         np.setLightOff(1)
+        np.setBin('fixed', 2)
         np.lookAt(traceDir)
         np.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
         segs.setVertexColor(1, Vec4(0.0))
@@ -641,6 +642,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         tracerScale = min(64, traceLen)
 
         seq = Sequence()
+        seq.append(Wait(delay))
+        if doSound:
+            from tf.weapon import WeaponEffects
+            seq.append(Func(WeaponEffects.tracerSound, start, end))
 
         p1 = Parallel()
         p1.append(LerpPosInterval(np, length, end, start))
@@ -654,9 +659,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         seq.start()
 
-        if doSound:
-            from tf.weapon import WeaponEffects
-            WeaponEffects.tracerSound(start, end)
 
     def doTracers(self, origin, ends):
         if base.cr.prediction.inPrediction:

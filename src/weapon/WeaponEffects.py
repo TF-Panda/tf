@@ -69,7 +69,18 @@ class MuzzleParticle(NodePath):
 
         return task.cont
 
-def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1)):
+def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1), viewModel=False):
+    from tf.tfbase import TFEffects
+    from direct.interval.IntervalGlobal import Sequence, Wait, Func
+    saveTime = globalClock.frame_time
+    base.setFrameTime(base.getRenderTime())
+    effect = TFEffects.getMuzzleFlashEffect(viewModel)
+    effect.setInput(0, node, False)
+    effect.start(node)
+    Sequence(Wait(0.1), Func(effect.softStop)).start()
+    base.setFrameTime(saveTime)
+
+    """
     import random
     from panda3d.core import Quat, Point3
     quat = Quat()
@@ -88,6 +99,7 @@ def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1)):
         p.reparentTo(node)
         p.setPos(offset)
         p.setHpr(hpr)
+    """
 
 def intersectRayWithRay(start1, end1, start2, end2):
 

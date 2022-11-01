@@ -54,6 +54,7 @@ class DMinigun(TFWeaponGun):
         self.ammo = self.maxAmmo
         self.weaponType = TFWeaponType.Primary
         self.primaryAttackInterval = 0.1
+        self.staggerTracers = True
         self.damageType = DamageType.Bullet | DamageType.UseDistanceMod
         self.weaponData[TFWeaponMode.Primary].update({
             'spread': 0.08,
@@ -63,6 +64,13 @@ class DMinigun(TFWeaponGun):
             'bulletsPerShot': 4
         })
         self.weaponReset()
+        self.tracerSpread = 8.0
+
+        if IS_CLIENT:
+            #self.muzzleFlash = Actor()
+            #self.muzzleFlash.loadModel("models/effects/minigunmuzzle", False)
+            #self.muzzleFlash.modelNp.setSy(0.75)
+            self.muzzleFlash = loader.loadModel("models/effects/minigunmuzzle")
 
     def getName(self):
         return TFLocalizer.Minigun
@@ -80,6 +88,9 @@ class DMinigun(TFWeaponGun):
 
         self.worldBarrel = None
         self.viewBarrel = None
+
+    def doFireEffects(self):
+        pass
 
     if IS_CLIENT:
 
@@ -102,6 +113,9 @@ class DMinigun(TFWeaponGun):
             self.addTask(self.__updateMinigunBarrel, "updateMinigunBarrel", sim = False, appendTask = True)
 
         def disable(self):
+            if self.muzzleFlash:
+                self.muzzleFlash.removeNode()
+                self.muzzleFlash = None
             self.worldBarrel = None
             if self.viewBarrel:
                 self.viewBarrel.removeNode()
@@ -129,6 +143,8 @@ class DMinigun(TFWeaponGun):
                 self.worldBarrel.setH(barrelAngleDeg)
             if self.viewBarrel:
                 self.viewBarrel.setP(barrelAngleDeg)
+            if self.muzzleFlash:
+                self.muzzleFlash.setR(-barrelAngleDeg)
 
             if not self.isOwnedByLocalPlayer():
                 self.weaponSoundUpdate()
@@ -147,6 +163,21 @@ class DMinigun(TFWeaponGun):
             if self.currSound:
                 self.currSound.stop()
                 self.currSound = None
+
+        def startMuzzleFlash(self):
+            self.stopMuzzleFlash()
+
+            if self.isOwnedByLocalPlayer() and self.viewModel:
+                muzzle = self.viewModel.find("**/muzzle")
+                self.muzzleFlash.setScale(0.65)
+            else:
+                muzzle = self.find("**/muzzle")
+                self.muzzleFlash.setScale(1)
+            if not muzzle.isEmpty():
+                self.muzzleFlash.reparentTo(muzzle)
+
+        def stopMuzzleFlash(self):
+            self.muzzleFlash.detachNode()
 
         def weaponSoundUpdate(self):
             if base.cr.prediction.hasBeenPredicted():
@@ -176,6 +207,11 @@ class DMinigun(TFWeaponGun):
 
             if sound == self.currSoundId:
                 return
+
+            if self.weaponState == MG_STATE_FIRING:
+                self.startMuzzleFlash()
+            else:
+                self.stopMuzzleFlash()
 
             self.stopWeaponSound()
 

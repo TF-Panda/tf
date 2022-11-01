@@ -13,7 +13,7 @@ if IS_CLIENT:
 else:
     tf_server_lag_comp_debug = ConfigVariableBool("tf-server-lag-comp-debug", False)
 
-def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerAttachment = None):
+def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerAttachment = None, tracerStagger=0.0, tracerSpread=0.0):
     """
     Fires some bullets.  Server does damage calculations.  Client would
     theoretically do the effects (when I implement it).
@@ -61,6 +61,7 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     fireInfo['spread'] = Vec3(spread, spread, 0.0)
     fireInfo['ammoType'] = 0
     fireInfo['tracerAttachment'] = tracerAttachment
+    fireInfo['tracerSpread'] = tracerSpread
     fireInfo['weapon'] = weapon
     #fireInfo['attacker'] =
 
@@ -76,6 +77,8 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     if doLagCompDebug:
         rayDirs = []
 
+    tracerDelay = 0.0
+
     bulletsPerShot = weaponData.get('bulletsPerShot', 1)
     for i in range(bulletsPerShot):
         rand.seed(seed)
@@ -87,6 +90,8 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
         # Initialize the variable firing information
         fireInfo['dirShooting'] = forward + (right * x * spread) + (up * y * spread)
         fireInfo['dirShooting'].normalize()
+        fireInfo['tracerDelay'] = tracerDelay
+        tracerDelay += tracerStagger
 
         if doLagCompDebug:
             rayDirs.append(fireInfo['dirShooting'])
