@@ -55,7 +55,7 @@ class EntityConnectionManager:
             funcName = 'input_' + connection.inputName
             params = connection.parameters + extraArgs
             for ent in ents:
-                func = getattr(ent, funcName)
+                func = getattr(ent, funcName, None)
                 if func:
                     if params:
                         func(self.entity, *params)
