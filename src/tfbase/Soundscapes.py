@@ -227,7 +227,10 @@ class Soundscape:
                     return ent
             return None
 
-        ssTargetName = props.getAttributeValue("targetname").getString()
+        if props.hasAttribute("targetname"):
+            ssTargetName = props.getAttributeValue("targetname").getString()
+        else:
+            ssTargetName = ""
 
         soundscapeName = props.getAttributeValue("soundscape").getString()
         desc = Soundscapes.get(soundscapeName)
