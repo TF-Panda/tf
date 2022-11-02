@@ -170,9 +170,9 @@ class DistributedFlameThrower(TFWeaponGun):
         self.maxAmmo = 200
         self.ammo = self.maxAmmo
         self.primaryAttackInterval = 0.105
-        self.dmgPerSec = 170
+        self.dmgPerSec = 100
         self.weaponData[TFWeaponMode.Primary].update({
-          'damage': 170, # per second
+          'damage': 100, # per second
           'timeFireDelay': 0.105,
           'timeIdle': 0.6,
           'timeIdleEmpty': 0.6
