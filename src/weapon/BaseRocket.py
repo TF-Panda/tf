@@ -57,7 +57,11 @@ class BaseRocket(BaseClass):
 
         def __unhideRocket(self, task):
             self.show()
+            self.onUnhideRocket()
             return task.done
+
+        def onUnhideRocket(self):
+            pass
 
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
