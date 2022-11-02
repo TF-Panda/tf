@@ -6,7 +6,7 @@ from .DistributedTFPlayerShared import DistributedTFPlayerShared
 from .TFClass import *
 from .TFPlayerAnimState import TFPlayerAnimState
 
-from tf.tfbase import Sounds, TFGlobals
+from tf.tfbase import Sounds, TFGlobals, TFEffects
 from tf.actor.Eyes import Eyes
 from tf.actor.Expressions import Expressions
 from .PlayerGibs import PlayerGibs
@@ -92,12 +92,28 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.currentSpeech = None
 
         self.overhealedEffect = None
+        self.burningEffect = None
 
         self.deathType = self.DTNone
 
         self.gibs = None
 
         self.viewOffsetNode = self.attachNewNode("viewOffset")
+
+    def startBurningEffect(self):
+        self.stopBurningEffect()
+
+        if self == base.localAvatar:
+            return
+
+        self.burningEffect = TFEffects.getPlayerFireEffect()
+        self.burningEffect.setInput(0, self.modelNp, False)
+        self.burningEffect.start(base.dynRender, self)
+
+    def stopBurningEffect(self):
+        if self.burningEffect:
+            self.burningEffect.softStop()
+            self.burningEffect = None
 
     def RecvProxy_condition(self, cond):
         old = self.condition
@@ -116,9 +132,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
     def onAddCondition(self, cond):
         if cond == self.CondBurning:
-            self.characterNp.setShaderInput("colorAdd", Vec3(1, 0.3, 0) * 0.7)
-            self.characterNp.setShaderInput("colorAddFresnel", Vec3(0.1, 0.7, 1))
-            self.addTask(self.__updateFireEffect, 'updateFireEffect', sim=True, appendTask=True)
+            self.startBurningEffect()
             if self == base.localAvatar:
                 self.emitSound("Fire.Engulf")
             else:
@@ -126,19 +140,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
     def onRemoveCondition(self, cond):
         if cond == self.CondBurning:
-            self.characterNp.clearShaderInput("colorAdd")
-            self.characterNp.clearShaderInput("colorAddFresnel")
-            self.removeTask('updateFireEffect')
-
-    def __updateFireEffect(self, task):
-        if not self.characterNp:
-            return task.done
-
-        import random
-        scale = random.uniform(0.85, 1.0)
-        self.characterNp.setShaderInput("colorAdd", Vec3(1, 0.3, 0) * scale * 0.7)
-        task.delayTime = random.uniform(0.02, 0.08)
-        return task.again
+            self.stopBurningEffect()
 
     def doBloodGoop(self, pos):
         from tf.tfbase.TFEffects import getBloodGoopEffect
@@ -422,7 +424,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.changePlayerState(self.playerState, self.prevPlayerState)
             self.prevPlayerState = self.playerState
 
-        if self.health > self.maxHealth:
+        if self.health > self.maxHealth and self != base.localAvatar:
             if not self.overhealedEffect and not self.isDead():
                 self.overhealedEffect = self.createOverhealedEffect()
                 self.overhealedEffect.start(base.dynRender, self)
@@ -448,6 +450,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if self.overhealedEffect:
             self.overhealedEffect.stop()
             self.overhealedEffect = None
+        self.stopBurningEffect()
         self.stopSpeech()
         self.talker = None
         self.ivPos = None

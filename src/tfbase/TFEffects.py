@@ -1,5 +1,63 @@
 from panda3d.core import *
 
+PlayerFire = None
+def getPlayerFireEffect():
+    global PlayerFire
+    if not PlayerFire:
+
+        system = ParticleSystem2()
+        system.setPoolSize(255)
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(255)
+        system.addEmitter(emitter)
+
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.8, 1.0))
+        system.addInitializer(P2_INIT_PositionModelHitBoxes(0))
+        system.addInitializer(P2_INIT_ScaleRandomRange(5, 7, False))
+        system.addInitializer(P2_INIT_AnimationIndexRandom(0, 4))
+        #system.addInitializer(P2_INIT_ColorRandomRange((0.2, 0.3, 0.8), (0.3, 0.5, 1.0)))
+
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 0.7
+        seg.start_value = Vec3(1.0)
+        seg.end_value = Vec3(1.0, 0.5, 0.0)
+        colorLerp.addSegment(seg)
+        system.addFunction(colorLerp)
+
+        alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 0.1
+        seg.start_value = 0.0
+        seg.end_value = 1.0
+        alphaLerp.addSegment(seg)
+        seg.start = 0.5
+        seg.end = 1.0
+        seg.start_value = 1.0
+        seg.end_value = 0.0
+        alphaLerp.addSegment(seg)
+        system.addFunction(alphaLerp)
+
+        system.addFunction(LinearMotionParticleFunction(0))
+        system.addFunction(LifespanKillerParticleFunction())
+
+        system.addForce(VectorParticleForce((0, 0, 64)))
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/flamethrowerfire102.pmat")),
+                             ColorAttrib.makeVertex())
+        )
+        renderer.setFitAnimationsToParticleLifespan(True)
+        system.addRenderer(renderer)
+
+        PlayerFire = system
+    return PlayerFire.makeCopy()
+
 RocketBackBlast = None
 def getRocketBackBlastEffect():
     global RocketBackBlast
