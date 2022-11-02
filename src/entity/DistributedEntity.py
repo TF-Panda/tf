@@ -447,7 +447,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             tracerAttachment = info.get('tracerAttachment', None)
             if tracerAttachment:
                 if not IS_CLIENT:
-                    self.sendUpdate('fireTracer', [tracerAttachment, block.getPosition()])
+                    self.sendUpdate('fireTracer', [tracerAttachment, block.getPosition(), 0.0, 0.0])
                 else:
                     self.fireTracer(tracerAttachment, block.getPosition())
 
