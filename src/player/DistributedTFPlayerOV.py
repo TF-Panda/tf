@@ -10,6 +10,7 @@ from .PlayerCommand import PlayerCommand
 from .InputButtons import InputFlag
 from .TFClass import *
 from .ObserverMode import ObserverMode
+from .ScreenShake import ScreenShake
 from tf.object.ObjectType import ObjectType
 
 from tf.tfgui.TFHud import TFHud
@@ -144,6 +145,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.respawnTimeLbl = None
 
         self.nemesisLabels = {}
+
+        self.screenShakes = ScreenShake()
+
+    def screenShake(self, cmd, amplitude, freq, duration):
+        self.screenShakes.addShake(cmd, amplitude, freq, duration)
 
     def RecvProxy_numDetonateables(self, count):
         if count != self.numDetonateables:
@@ -529,6 +535,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.calcSpectatorView()
         else:
             self.calcPlayingView()
+
+        # Add shake offset.
+        self.screenShakes.calcShake()
+        base.cam.setPos(self.screenShakes.shakeAppliedOffset)
+        base.cam.setR(-self.screenShakes.shakeAppliedAngle)
 
     def calcPlayingView(self):
         if self.isLoser():

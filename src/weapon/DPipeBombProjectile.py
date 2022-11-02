@@ -81,6 +81,10 @@ class DPipeBombProjectile(BaseClass):
             info.damageType = self.damageType
             base.game.radiusDamage(info, pos, PIPE_DMG_RADIUS, -1, None)
 
+            if not ent:
+                # Only shake screens if it wasn't a direct hit.
+                base.game.doScreenShake(pos, 10, 150.0, 1.0, 300.0, 0, True)
+
             base.air.deleteObject(self)
 
         def onContactStart(self, entity, actor, pair, shape):

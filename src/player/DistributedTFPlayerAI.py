@@ -1291,6 +1291,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         base.air.lagComp.registerPlayer(self)
 
+        base.game.allPlayers[self.doId] = self
+
         # Start condition update logic.
         self.addTask(self.__conditionThinkAI, 'TFPlayerConditionThinkAI', appendTask=True, sim=True)
 
@@ -1315,6 +1317,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 plyr.removeDomination(self.doId, False)
 
         base.game.playersByTeam[self.team].remove(self)
+        del base.game.allPlayers[self.doId]
 
         base.air.lagComp.unregisterPlayer(self)
 

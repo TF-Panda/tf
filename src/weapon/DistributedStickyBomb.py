@@ -145,6 +145,8 @@ class DistributedStickyBomb(BaseClass):
             info.damageType = self.damageType
             base.game.radiusDamage(info, pos, 146, -1, None)
 
+            base.game.doScreenShake(pos, 10, 150.0, 1.0, 300.0, 0, True)
+
             base.air.deleteObject(self)
 
         def delete(self):

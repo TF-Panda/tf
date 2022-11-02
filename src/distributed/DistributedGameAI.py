@@ -58,6 +58,38 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.playersByTeam = {0: [], 1: []}
         self.objectsByTeam = {0: [], 1: []}
 
+        self.allPlayers = {}
+
+    def computeShakeAmplitude(self, center, playerCenter, amplitude, radius):
+        if radius <= 0:
+            return amplitude
+
+        localAmplitude = -1
+        delta = center - playerCenter
+        distance = delta.length()
+
+        if distance <= radius:
+            # Make the amplitude fall off over distance
+            perc = 1.0 - (distance / radius)
+            localAmplitude = amplitude * perc
+        return localAmplitude
+
+    def doScreenShake(self, center, amplitude, freq, duration, radius, command, airShake):
+        amplitude = min(16.0, amplitude)
+        for player in self.allPlayers.values():
+            # Only start shakes for players that are on the ground unless doing an air shake.
+            if not airShake and not player.onGround:
+                continue
+
+            localAmplitude = self.computeShakeAmplitude(center, player.getWorldSpaceCenter(), amplitude, radius)
+            # This happens if the player is outside the radius, in which case we should ignore
+            # all commands.
+            if localAmplitude <= 0:
+                continue
+
+            # Send the shake to them.
+            player.sendUpdate('screenShake', [command, localAmplitude, freq, duration], client=player.owner)
+
     def playerFallDamage(self, player):
         if player.fallVelocity > 650:
             # Old TFC damage formula.
