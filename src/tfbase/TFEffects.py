@@ -1,5 +1,225 @@
 from panda3d.core import *
 
+StickybombPulse = [None, None]
+def getStickybombPulseEffect(team):
+    if not StickybombPulse[team]:
+        from tf.tfbase import TFGlobals
+        system = ParticleSystem2()
+        system.setPoolSize(3)
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(10)
+        emitter.setDuration(0.6)
+        system.addEmitter(emitter)
+        system.addInitializer(P2_INIT_PositionExplicit((0, 0, 0)))
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.1, 0.1))
+        if team == TFGlobals.TFTeam.Red:
+            color = Vec3(255/255, 191/255, 116/255)
+        else:
+            color = Vec3(0, 96/255, 255/255)
+        system.addInitializer(P2_INIT_ColorRandomRange(color, color))
+
+        alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        seg = ParticleLerpSegment()
+        # Fade in
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 0.2
+        seg.start_value = 0.0
+        seg.end_value = 1.0
+        alphaLerp.addSegment(seg)
+        # Fade out
+        seg.start = 0.2
+        seg.end = 1.0
+        seg.start_value = 1.0
+        seg.end_value = 0.0
+        alphaLerp.addSegment(seg)
+        system.addFunction(alphaLerp)
+
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTExponential
+        seg.exponent = 2
+        seg.start = 0.0
+        seg.end = 1.0
+        seg.start_is_initial = True
+        if team == TFGlobals.TFTeam.Red:
+            seg.end_value = Vec3(255/255, 62/255, 62/255)
+        else:
+            seg.end_value = Vec3(62/255, 171/255, 255/255)
+        colorLerp.addSegment(seg)
+        system.addFunction(colorLerp)
+
+        scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 1.0
+        seg.scale_on_initial = True
+        seg.start_value = 0.0001
+        seg.end_value = 20.0
+        scaleLerp.addSegment(seg)
+        system.addFunction(scaleLerp)
+
+        system.addFunction(FollowInputParticleFunction(0))
+        system.addFunction(LifespanKillerParticleFunction())
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/circle1.pmat")),
+                             ColorAttrib.makeVertex())
+        )
+        system.addRenderer(renderer)
+
+        StickybombPulse[team] = system
+
+    return StickybombPulse[team].makeCopy()
+
+PipebombTimer = [None, None]
+def getPipebombTimerEffect(team):
+    if not PipebombTimer[team]:
+        from tf.tfbase import TFGlobals
+
+        # Timer child
+        system2 = ParticleSystem2()
+        system2.setPoolSize(51)
+        emitter2 = ContinuousParticleEmitter()
+        emitter2.setEmissionRate(16)
+        emitter2.setDuration(2.0)
+        system2.addEmitter(emitter2)
+        system2.addInitializer(P2_INIT_LifespanRandomRange(0.4, 0.4))
+        system2.addInitializer(P2_INIT_PositionExplicit((0, 0, 0)))
+        system2.addInitializer(P2_INIT_ScaleRandomRange(20, 20, False))
+        system2.addInitializer(P2_INIT_AlphaRandomRange(200/255, 200/255))
+        if team == TFGlobals.TFTeam.Red:
+            color = Vec3(255/255, 180/255, 0)
+        else:
+            color = Vec3(0, 96/255, 255/255)
+        system2.addInitializer(P2_INIT_ColorRandomRange(color, color, False))
+
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTExponential
+        seg.exponent = 2
+        seg.start_is_initial = True
+        seg.start = 0.0
+        seg.end = 1.0
+        if team == TFGlobals.TFTeam.Red:
+            seg.end_value = Vec3(255/255, 24/255, 0)
+        else:
+            seg.end_value = Vec3(62/255, 171/255, 255/255)
+        colorLerp.addSegment(seg)
+        alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 0.2
+        seg.scale_on_initial = True
+        seg.start_value = 0.0
+        seg.end_value = 1.0
+        alphaLerp.addSegment(seg)
+        seg.start = 0.2
+        seg.end = 1.0
+        seg.start_value = 1.0
+        seg.end_value = 0.0
+        alphaLerp.addSegment(seg)
+        scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTExponential
+        seg.exponent = 2
+        seg.scale_on_initial = True
+        seg.start = 0.0
+        seg.end = 1.0
+        seg.start_value = 0.0001
+        seg.end_value = 1.0
+        scaleLerp.addSegment(seg)
+        system2.addFunction(alphaLerp)
+        system2.addFunction(colorLerp)
+        system2.addFunction(scaleLerp)
+        system2.addFunction(FollowInputParticleFunction(0))
+        system2.addFunction(LifespanKillerParticleFunction())
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/circle1.pmat")),
+                             ColorAttrib.makeVertex())
+        )
+        system2.addRenderer(renderer)
+
+        PipebombTimer[team] = system2
+    return PipebombTimer[team].makeCopy()
+
+PipebombTrail = [None, None]
+def getPipebombTrailEffect(team):
+    if not PipebombTrail[team]:
+
+        from tf.tfbase import TFGlobals
+
+        system = ParticleSystem2()
+        system.setPoolSize(124)
+
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(255)
+        emitter.setStartTime(0.2)
+        emitter.setDuration(2.0)
+        system.addEmitter(emitter)
+
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.4, 0.4))
+        system.addInitializer(P2_INIT_PositionExplicit((0, 0, 0)))
+        system.addInitializer(P2_INIT_AlphaRandomRange(60/255, 60/255))
+        system.addInitializer(P2_INIT_ScaleRandomRange(10, 10, False))
+        if team == TFGlobals.TFTeam.Red:
+            color1 = Vec3(85/255, 0, 0)
+            color2 = Vec3(255/255, 0, 0)
+        else:
+            color1 = Vec3(18/255, 0, 255/255)
+            color2 = Vec3(0, 96/255, 255/255)
+        system.addInitializer(P2_INIT_ColorRandomRange(color1, color2))
+
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 1.0
+        seg.start_is_initial = True
+        seg.end_value = Vec3(205/255, 87/255, 0)
+        colorLerp.addSegment(seg)
+        system.addFunction(colorLerp)
+
+        alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.1
+        seg.end = 1.0
+        seg.scale_on_initial = True
+        seg.start_value = 1.0
+        seg.end_value = 0.0
+        alphaLerp.addSegment(seg)
+        system.addFunction(alphaLerp)
+
+        scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 1.0
+        seg.scale_on_initial = True
+        seg.start_value = 1.0
+        seg.end_value = 0.1
+        scaleLerp.addSegment(seg)
+        system.addFunction(scaleLerp)
+
+        system.addFunction(LifespanKillerParticleFunction())
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/sc_softglow.pmat")),
+                             ColorAttrib.makeVertex())
+        )
+        system.addRenderer(renderer)
+
+        PipebombTrail[team] = system
+
+    return PipebombTrail[team].makeCopy()
+
 MuzzleFlashEffect = [None, None]
 def getMuzzleFlashEffect(isViewModel):
     if not MuzzleFlashEffect[isViewModel]:

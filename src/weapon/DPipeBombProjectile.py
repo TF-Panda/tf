@@ -15,7 +15,7 @@ else:
 from panda3d.core import NodePath, Vec3, Point3
 from panda3d.pphysics import PhysSweepResult
 
-from tf.tfbase import TFGlobals, TFFilters, Sounds
+from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
 PIPE_DMG_RADIUS = 146
@@ -44,6 +44,9 @@ class DPipeBombProjectile(BaseClass):
             self.contactCallback = True
             self.doingDirectTest = True
             self.enemy = None
+        else:
+            self.trailEffect = None
+            self.timerEffect = None
 
     if not IS_CLIENT:
         def generate(self):
@@ -147,6 +150,21 @@ class DPipeBombProjectile(BaseClass):
             # projectiles.
             self.hide()
             self.addTask(self.__showTask, self.uniqueName('showPipeBomb'), appendTask=True, delay=0.1)
+            self.trailEffect = TFEffects.getPipebombTrailEffect(self.team)
+            self.trailEffect.setInput(0, self, False)
+            self.trailEffect.start(base.dynRender)
+            self.timerEffect = TFEffects.getPipebombTimerEffect(self.team)
+            self.timerEffect.setInput(0, self, False)
+            self.timerEffect.start(base.dynRender)
+
+        def disable(self):
+            if self.trailEffect:
+                self.trailEffect.softStop()
+                self.trailEffect = None
+            if self.timerEffect:
+                self.timerEffect.softStop()
+                self.timerEffect = None
+            BaseClass.disable(self)
 
         #def RecvProxy_pos(self, x, y, z):
         #    BaseClass.RecvProxy_pos(self, x, y, z)

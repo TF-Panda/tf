@@ -7,7 +7,7 @@ else:
     from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
-from tf.tfbase import TFGlobals, TFFilters, Sounds
+from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
 from panda3d.core import *
@@ -17,6 +17,8 @@ class DistributedStickyBomb(BaseClass):
     def __init__(self):
         BaseClass.__init__(self)
         self.takeDamageMode = TFGlobals.TakeDamage.Yes
+
+        self.detTime = 0.0
 
         if not IS_CLIENT:
             self.solidFlags = TFGlobals.SolidFlag.Tangible
@@ -31,6 +33,9 @@ class DistributedStickyBomb(BaseClass):
             self.stickTime = 0.0
             self.numStickContacts = 0
             self.hitSky = False
+        else:
+            self.trailEffect = None
+            self.pulseEffect = None
 
     if not IS_CLIENT:
         def generate(self):
@@ -162,6 +167,29 @@ class DistributedStickyBomb(BaseClass):
             # projectiles.
             self.hide()
             self.addTask(self.__showTask, 'showPipeBomb', appendTask=True, delay=0.1)
+
+            if self.detTime > globalClock.frame_time:
+                self.addTask(self.__detPulseTask, 'stickyBombDetPulse', appendTask=True, sim=True, delay=(self.detTime - globalClock.frame_time))
+
+            self.trailEffect = TFEffects.getPipebombTrailEffect(self.team)
+            self.trailEffect.setInput(0, self, False)
+            self.trailEffect.start(base.dynRender)
+
+            self.pulseEffect = TFEffects.getStickybombPulseEffect(self.team)
+            self.pulseEffect.setInput(0, self, False)
+
+        def disable(self):
+            if self.pulseEffect:
+                self.pulseEffect.softStop()
+                self.pulseEffect = None
+            if self.trailEffect:
+                self.trailEffect.softStop()
+                self.trailEffect = None
+            BaseClass.disable(self)
+
+        def __detPulseTask(self, task):
+            self.pulseEffect.start(base.dynRender)
+            return task.done
 
         def gib(self):
             # Become gibs.

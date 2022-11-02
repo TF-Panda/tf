@@ -556,6 +556,7 @@ dclass DistributedStickyBombLauncher : TFWeaponGun {
 };
 
 dclass DistributedStickyBomb : DistributedChar {
+  float64 detTime;
   gib() broadcast;
 };
 
