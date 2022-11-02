@@ -1,5 +1,73 @@
 from panda3d.core import *
 
+RocketBackBlast = None
+def getRocketBackBlastEffect():
+    global RocketBackBlast
+    if not RocketBackBlast:
+        system = ParticleSystem2()
+        system.setPoolSize(12)
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(64)
+        emitter.setDuration(0.1)
+        system.addEmitter(emitter)
+        system.addInitializer(P2_INIT_LifespanRandomRange(1.5, 2))
+        system.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 1, 2))
+        system.addInitializer(P2_INIT_VelocityRadiate((0, -4, 0), 80, 100))
+        system.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+        system.addInitializer(P2_INIT_ColorRandomRange((255/255, 236/255, 77/255), (255/255, 136/255, 18/255)))
+        system.addInitializer(P2_INIT_AlphaRandomRange(128/255, 200/255))
+        system.addInitializer(P2_INIT_RotationVelocityRandomRange(10, 20, True))
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 0.05
+        seg.start_is_initial = True
+        seg.end_value = Vec3(117/255, 108/255, 108/255)
+        colorLerp.addSegment(seg)
+        system.addFunction(colorLerp)
+        alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTLinear
+        seg.start = 0.0
+        seg.end = 1.0
+        seg.start_is_initial = True
+        seg.end_value = 0.0
+        alphaLerp.addSegment(seg)
+        system.addFunction(alphaLerp)
+        scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+        seg = ParticleLerpSegment()
+        seg.type = seg.LTExponential
+        seg.exponent = 0.3
+        seg.start = 0.0
+        seg.end = 1.0
+        seg.start_value = 4
+        seg.end_value = 7
+        scaleLerp.addSegment(seg)
+        system.addFunction(scaleLerp)
+        #rotLerp = LerpParticleFunction(LerpParticleFunction.CRotation)
+        #seg = ParticleLerpSegment()
+        #seg.type = seg.LTSinusoid
+        #seg.start = 0
+        #seg.end = 1.0
+
+        system.addFunction(LinearMotionParticleFunction(5))
+        system.addFunction(AngularMotionParticleFunction())
+        system.addFunction(LifespanKillerParticleFunction())
+        system.addForce(VectorParticleForce((0, 0, 80)))
+
+        renderer = SpriteParticleRenderer2()
+        renderer.setRenderState(
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/smoke2lit.mto")),
+                             ColorAttrib.makeVertex())
+        )
+        renderer.setFitAnimationsToParticleLifespan(True)
+        system.addRenderer(renderer)
+
+        RocketBackBlast = system
+
+    return RocketBackBlast.makeCopy()
+
 StickybombPulse = [None, None]
 def getStickybombPulseEffect(team):
     if not StickybombPulse[team]:
@@ -302,12 +370,11 @@ def getBloodTrailEffect():
         system.addEmitter(emitter)
 
         system.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 2, (1, 1, 1)))
-        system.addInitializer(P2_INIT_LifespanRandomRange(0.34, 0.34))
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.34, 0.6))
         system.addInitializer(P2_INIT_ColorRandomRange(Vec3(255/255, 31/255, 0), Vec3(192/255, 8/255, 5/255)))
         system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(12), Vec3(21), False))
         system.addInitializer(P2_INIT_AlphaRandomRange(160/255, 240/255))
         system.addInitializer(P2_INIT_AnimationIndexRandom(0, 3))
-        system.addInitializer(P2_INIT_AnimationFPSRandom(41.16, 41.16))
         system.addInitializer(P2_INIT_RotationRandomRange(0.0, 0.0, 360.0))
         system.addInitializer(P2_INIT_RotationVelocityRandomRange(0, 4, 1, True))
         system.addInitializer(P2_INIT_VelocityRadiate((0, 0, 0), 0, 32))
@@ -341,6 +408,7 @@ def getBloodTrailEffect():
         renderer = SpriteParticleRenderer2()
         renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/blood_goop3.mto")),
                                                 ColorAttrib.makeVertex()))
+        renderer.setFitAnimationsToParticleLifespan(True)
         system.addRenderer(renderer)
         BloodTrailEffect = system
     return BloodTrailEffect.makeCopy()
@@ -357,11 +425,10 @@ def getBloodGoopEffect():
         system.addEmitter(emitter)
 
         system.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 1, 1, (1, 1, 1)))
-        system.addInitializer(P2_INIT_LifespanRandomRange(0.25, 0.25))
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.2, 0.3))
         system.addInitializer(P2_INIT_ColorRandomRange(Vec3(1, 0, 0), Vec3(1.0, 0.2, 0.2)))
         system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(13), Vec3(16), False))
         system.addInitializer(P2_INIT_AnimationIndexRandom(0, 3))
-        system.addInitializer(P2_INIT_AnimationFPSRandom(56, 56))
         system.addInitializer(P2_INIT_RotationRandomRange(0.0, 0.0, 360.0))
 
         slerp = ParticleLerpSegment()
@@ -379,6 +446,7 @@ def getBloodGoopEffect():
         renderer = SpriteParticleRenderer2()
         renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/blood_goop3.mto")),
                                                 ColorAttrib.makeVertex()))
+        renderer.setFitAnimationsToParticleLifespan(True)
         system.addRenderer(renderer)
 
         BloodGoopEffect = system

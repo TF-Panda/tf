@@ -30,6 +30,20 @@ class DistributedRocketLauncher(TFWeaponGun):
         self.weaponData[TFWeaponMode.Primary]['projectile'] = TFProjectileType.Rocket
         self.damageType = DamageType.Blast | DamageType.HalfFalloff | DamageType.UseDistanceMod
 
+    if IS_CLIENT:
+
+        def doFireEffects(self):
+            TFWeaponGun.doFireEffects(self)
+            if not self.isOwnedByLocalPlayer():
+                from direct.interval.IntervalGlobal import Sequence, Wait, Func
+                from tf.tfbase import TFEffects
+                node = self.find("**/backblast")
+                if not node.isEmpty():
+                    effect = TFEffects.getRocketBackBlastEffect()
+                    effect.setInput(0, node, False)
+                    effect.start(base.dynRender)
+                    Sequence(Wait(0.1), Func(effect.softStop)).start()
+
     def getName(self):
         return TFLocalizer.RocketLauncher
 
