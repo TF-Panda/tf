@@ -121,6 +121,8 @@ class PlayerGibs:
         self.track.append(fadeTrackSeq)
         self.track.start()
 
+        self.valid = True
+
     def getHeadPosition(self):
         # Return the world-space COM of the head gib.
         return self.headPiece.getMat(base.render).xformPoint(self.headPiece.node().getCenterOfMass())
@@ -130,6 +132,7 @@ class PlayerGibs:
         return self.headPiece.getMat(base.render) * LMatrix4.translateMat(self.headPiece.node().getCenterOfMass())
 
     def destroy(self):
+        self.valid = False
         if self.track:
             self.track.finish()
             self.track = None

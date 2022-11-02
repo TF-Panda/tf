@@ -611,7 +611,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             if (specTarget.deathType == self.DTRagdoll) and specTarget.ragdoll:
                 origin = specTarget.ragdoll[1].getRagdollPosition()
                 origin.z += 40
-            elif (specTarget.deathType == self.DTGibs) and specTarget.gibs:
+            elif (specTarget.deathType == self.DTGibs) and specTarget.gibs and specTarget.gibs.valid:
                 origin = specTarget.gibs.getHeadPosition()
                 origin.z += 40
 
@@ -644,7 +644,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if (self.deathType == self.DTRagdoll) and self.ragdoll:
             origin = self.ragdoll[1].getRagdollPosition()
             origin.z += 40
-        elif (self.deathType == self.DTGibs) and self.gibs:
+        elif (self.deathType == self.DTGibs) and self.gibs and self.gibs.valid:
             origin = self.gibs.getHeadPosition()
             origin.z += 40
         else:
@@ -687,7 +687,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if target.isPlayer():
             if (target.deathType == self.DTRagdoll) and target.ragdoll:
                 camDesired = target.ragdoll[1].getRagdollPosition()
-            elif (target.deathType == self.DTGibs) and target.gibs:
+            elif (target.deathType == self.DTGibs) and target.gibs and target.gibs.valid:
                 camDesired = target.gibs.getHeadPosition()
         if target.health > 0:
             camDesired[2] += target.viewOffset[2]
