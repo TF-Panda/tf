@@ -65,7 +65,7 @@ def getStickybombPulseEffect(team):
 
         renderer = SpriteParticleRenderer2()
         renderer.setRenderState(
-            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/circle1.pmat")),
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/circle1.mto")),
                              ColorAttrib.makeVertex())
         )
         system.addRenderer(renderer)
@@ -140,7 +140,7 @@ def getPipebombTimerEffect(team):
 
         renderer = SpriteParticleRenderer2()
         renderer.setRenderState(
-            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/circle1.pmat")),
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/circle1.mto")),
                              ColorAttrib.makeVertex())
         )
         system2.addRenderer(renderer)
@@ -211,7 +211,7 @@ def getPipebombTrailEffect(team):
 
         renderer = SpriteParticleRenderer2()
         renderer.setRenderState(
-            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/src/materials/sc_softglow.pmat")),
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/sc_softglow.mto")),
                              ColorAttrib.makeVertex())
         )
         system.addRenderer(renderer)
