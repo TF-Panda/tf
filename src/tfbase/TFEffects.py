@@ -431,13 +431,18 @@ def getBloodGoopEffect():
         system.addInitializer(P2_INIT_AnimationIndexRandom(0, 3))
         system.addInitializer(P2_INIT_RotationRandomRange(0.0, 0.0, 360.0))
 
+        slerpFunc = LerpParticleFunction(LerpParticleFunction.CAlpha)
         slerp = ParticleLerpSegment()
         slerp.type = slerp.LTLinear
-        slerp.start = 0.7
+        slerp.start = 0.0
+        slerp.end = 0.1
+        slerp.start_value = 0.0
+        slerp.end_value = 1.0
+        slerpFunc.addSegment(slerp)
+        slerp.start = 0.5
         slerp.end = 1.0
-        slerp.start_value = Vec3(1.0)
-        slerp.end_value = Vec3(0.0)
-        slerpFunc = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        slerp.start_value = 1.0
+        slerp.end_value = 0.0
         slerpFunc.addSegment(slerp)
         system.addFunction(slerpFunc)
 
