@@ -49,7 +49,7 @@ def getPlayerFireEffect():
 
         renderer = SpriteParticleRenderer2()
         renderer.setRenderState(
-            RenderState.make(MaterialAttrib.make(loader.loadMaterial("tfmodels/flamethrowerfire102.pmat")),
+            RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/flamethrowerfire102.mto")),
                              ColorAttrib.makeVertex())
         )
         renderer.setFitAnimationsToParticleLifespan(True)
