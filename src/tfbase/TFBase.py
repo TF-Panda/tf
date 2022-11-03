@@ -158,22 +158,21 @@ class TFBase(ShowBase, FSM):
 
         # Separate 3-D skybox scene graph and display region.
         self.sky3DTop = NodePath("sky3DTop")
-        self.sky3DTop.reparentTo(self.top3D)
         self.sky3DRoot = self.sky3DTop.attachNewNode("sky3DRoot")
-        #self.sky3DCam = Camera("sky3DCam")
-        #self.sky3DCam.setLens(self.camLens)
-        #self.sky3DCamNp = self.sky3DTop.attachNewNode(self.sky3DCam)
-        #self.sky3DDisplayRegion = self.win.makeDisplayRegion()
-        #self.sky3DDisplayRegion.setActive(False)
-        #self.sky3DDisplayRegion.disableClears()
+        self.sky3DCam = Camera("sky3DCam")
+        self.sky3DCam.setLens(self.camLens)
+        self.sky3DCamNp = self.sky3DTop.attachNewNode(self.sky3DCam)
+        self.sky3DDisplayRegion = self.win.makeDisplayRegion()
+        self.sky3DDisplayRegion.setActive(False)
+        self.sky3DDisplayRegion.disableClears()
         # Clear the depth here as this is the first display region rendered
         # for the main scene.  The actual 3D world display region clears
         # nothing.
-        #self.sky3DDisplayRegion.setClearDepthActive(True)
-        #self.sky3DDisplayRegion.setSort(-1)
-        #self.sky3DDisplayRegion.setCamera(self.sky3DCamNp)
-        #self.sky3DMat = LMatrix4.identMat()
-        #self.postProcess.addCamera(self.sky3DCamNp, 0, -1)
+        self.sky3DDisplayRegion.setClearDepthActive(True)
+        self.sky3DDisplayRegion.setSort(-1)
+        self.sky3DDisplayRegion.setCamera(self.sky3DCamNp)
+        self.sky3DMat = LMatrix4.identMat()
+        self.postProcess.addCamera(self.sky3DCamNp, 0, -1)
         self.taskMgr.add(self.__update3DSkyCam, 'update3DSkyCam', sort=49)
 
         # Set up the view model camera and scene.
@@ -203,7 +202,8 @@ class TFBase(ShowBase, FSM):
         base.accept('shift-i', self.toggleIk)
         base.accept('shift-l', self.render.ls)
         base.accept('shift-k', self.vmRender.ls)
-        base.accept('shift-j', self.printVMRenderMasks)
+        base.accept('shift-j', self.sky3DTop.ls)
+        #base.accept('shift-j', self.printVMRenderMasks)
 
         self.planarReflect = PlanarReflector(1024, "reflection", True)
         self.planarRefract = PlanarReflector(1024, "refraction", False)
@@ -261,10 +261,10 @@ class TFBase(ShowBase, FSM):
 
     def __updateDirtyDynamicNodes(self, task):
         self.dynRender.node().updateDirtyChildren()
-        if self.render.node().isBoundsStale():
-            self.render.node().getBounds()
-        if self.vmRender.node().isBoundsStale():
-            self.vmRender.node().getBounds()
+        #if self.render.node().isBoundsStale():
+        #    self.render.node().getBounds()
+        #if self.vmRender.node().isBoundsStale():
+        #    self.vmRender.node().getBounds()
         return task.cont
 
     def __updateParticles2(self, task):
@@ -286,7 +286,7 @@ class TFBase(ShowBase, FSM):
 
     def __update3DSkyCam(self, task):
         self.sky2DCamNp.setMat(self.cam.getMat(self.render))
-        #self.sky3DCamNp.setMat(self.cam.getMat(self.render) * self.sky3DMat)
+        self.sky3DCamNp.setMat(self.cam.getMat(self.render) * self.sky3DMat)
         return task.cont
 
     def toggleIk(self):

@@ -270,10 +270,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         # Build skybox matrix.
         skyMat = LMatrix4.scaleMat((scale, scale, scale))
         skyMat.setRow(3, skyCamOrigin)
-        skyMat.invertInPlace()
-        base.sky3DRoot.setMat(skyMat)
+        #skyMat.invertInPlace()
+        #base.sky3DRoot.setMat(skyMat)
 
-        #base.sky3DMat = skyMat
+        base.sky3DMat = skyMat
 
         # Setup sky fog.
 
@@ -386,9 +386,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         vmTop.replaceNode(base.vmRender.node())
         vmTop.setMapData(self.lvlData)
 
-        #skyTop = MapRender("sky3DTop")
-        #skyTop.replaceNode(base.sky3DTop.node())
-        #skyTop.setMapData(self.lvlData)
+        skyTop = MapRender("sky3DTop")
+        skyTop.replaceNode(base.sky3DTop.node())
+        skyTop.setMapData(self.lvlData)
 
         render.setAttrib(LightRampAttrib.makeHdr0())
 
