@@ -30,6 +30,7 @@ class TFServerBase(HostBase):
 
         self.render = NodePath("render")
         self.dynRender = NodePath("dynamic")
+        self.sky3DRoot = NodePath("sky3DRoot")
         self.hidden = NodePath("hidden")
 
         if self.config.GetBool("phys-enable-pvd-server", False):

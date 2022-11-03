@@ -63,6 +63,7 @@ class WorldParent:
     ViewModelCamera = -5 # Parent to view model scene camera.
     Camera = -6 # Parent to 3D scene camera.
     DynRender = -7
+    SkyBox = -8
 
 def getWorldParent(parentId):
     """
@@ -82,6 +83,8 @@ def getWorldParent(parentId):
         return base.camera
     elif parentId == WorldParent.DynRender:
         return base.dynRender
+    elif parentId == WorldParent.SkyBox:
+        return base.sky3DRoot
     else:
         return None
 

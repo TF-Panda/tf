@@ -771,6 +771,12 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             if properties.hasAttribute("parentname"):
                 self.parentEntityName = properties.getAttributeValue("parentname").getString()
 
+            # If the entity is parented to the world, parent it into the 3-D skybox
+            # if its origin is inside a 3-D skybox leaf.
+            if not self.parentEntityName:
+                if base.game.isPointIn3DSkyBox(self.getPos()):
+                    self.parentEntityId = WorldParent.SkyBox
+
         def takeDamage(self, info):
 
             # TODO: Damage filter

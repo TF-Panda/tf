@@ -26,6 +26,22 @@ class DistributedGameBase:
         self.roundState = RoundState.Setup
         self.winTeam = TFTeam.NoTeam
 
+    def isPointIn3DSkyBox(self, pos):
+        if not self.lvlData:
+            return False
+
+        tree = self.lvlData.getAreaClusterTree()
+        if not tree:
+            return False
+
+        leaf = tree.getLeafValueFromPoint(pos)
+        if leaf >= 0:
+            pvs = self.lvlData.getClusterPvs(leaf)
+            if pvs.is3dSkyCluster():
+                return True
+
+        return False
+
     def isRespawnAllowed(self):
         """
         Returns true if dead players are allowed to respawn at this point in
@@ -214,12 +230,9 @@ class DistributedGameBase:
             if IS_CLIENT:
                 # If the prop is positioned in the 3-D skybox, it needs to be
                 # parented into the 3-D skybox scene graph.
-                leaf = tree.getLeafValueFromPoint(pos)
-                if leaf >= 0:
-                    pvs = self.lvlData.getClusterPvs(leaf)
-                    if pvs.is3dSkyCluster():
-                        propModel.reparentTo(base.sky3DRoot)
-                        in3DSky = True
+                if self.isPointIn3DSkyBox(pos):
+                    propModel.reparentTo(base.sky3DRoot)
+                    in3DSky = True
 
                 #propModel.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
                 lightNodes.append((propModel, hasAnyVtxLight, in3DSky))
