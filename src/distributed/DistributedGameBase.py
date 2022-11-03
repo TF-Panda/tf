@@ -235,7 +235,7 @@ class DistributedGameBase:
 
         for propModel, hasVtxLight, in3DSky in lightNodes:
             # Also, we can flatten better by pre-computing the lighting state once.
-            lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask, False)
+            lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask, False, hasVtxLight)
             lightEffect.computeLighting(propModel.getNetTransform(), self.lvlData,
                                         propModel.getBounds(), propModel.getParent().getNetTransform(), hasVtxLight)
             state = propModel.getState()
