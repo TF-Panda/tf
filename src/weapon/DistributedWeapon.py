@@ -90,7 +90,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
     def setAmmo(self, ammo):
         changed = self.ammo != ammo
         self.ammo = ammo
-        if self.isActiveLocalPlayerWeapon():
+        if self.isActiveLocalPlayerWeapon() and changed:
             #if not base.cr.prediction.inPrediction or not base.cr.prediction.firstTimePredicted:
             #    return
             base.localAvatar.hud.updateAmmoLabel()
@@ -99,9 +99,9 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         self.setAmmo(ammo)
 
     def setClip(self, clip):
+        changed = self.clip != clip
         self.clip = clip
-        #changed = self.clip != clip
-        if self.isActiveLocalPlayerWeapon():
+        if self.isActiveLocalPlayerWeapon() and changed:
             #if not base.cr.prediction.inPrediction or not base.cr.prediction.firstTimePredicted:
             #    return
             base.localAvatar.hud.updateAmmoLabel()
@@ -170,7 +170,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
             self.viewModelChar.setJointMergeParent(self.player.viewModel)
 
         if self.isActiveLocalPlayerWeapon():
-            base.localAvatar.hud.updateAmmoLabel()
+            base.localAvatar.hud.updateAmmoLabel(True)
 
     def deactivate(self):
         """

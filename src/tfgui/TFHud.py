@@ -153,7 +153,7 @@ class TFHud(DirectObject):
         else:
             self.stickiesLbl.hide()
 
-    def updateAmmoLabel(self):
+    def updateAmmoLabel(self, properties=False):
         if self.hidden:
             return
 
@@ -161,31 +161,27 @@ class TFHud(DirectObject):
             wpnId = base.localAvatar.weapons[base.localAvatar.activeWeapon]
             wpn = base.cr.doId2do.get(wpnId)
 
-            if not wpn or (not wpn.usesAmmo):
-                # Weapon invalid or doesn't use any form of ammo.
+            if properties:
+                if not wpn or (not wpn.usesAmmo):
+                    # Weapon invalid or doesn't use any form of ammo.
+                    self.ammoLabel.hide()
+                    self.clipLabel.hide()
+                elif not wpn.usesClip:
+                    # Weapon doesn't use a clip.
+                    self.clipLabel.hide()
+                    self.ammoLabel.show()
+                    self.ammoLabel.setPos(*self.AmmoPosNoClip)
+                    self.ammoLabel.setAlign(self.AmmoAlignNoClip)
+                    self.ammoLabel.setScale(self.AmmoScaleNoClip)
+                else:
+                    # Weapon uses clip and ammo.
+                    self.ammoLabel.show()
+                    self.clipLabel.show()
+                    self.ammoLabel.setPos(*self.AmmoPos)
+                    self.ammoLabel.setAlign(self.AmmoAlign)
+                    self.ammoLabel.setScale(self.AmmoScale)
 
-                self.ammoLabel.hide()
-                self.clipLabel.hide()
-
-            elif not wpn.usesClip:
-                # Weapon doesn't use a clip.
-
-                self.clipLabel.hide()
-
-                self.ammoLabel.show()
+            if wpn and wpn.usesAmmo:
                 self.ammoLabel.setText(str(wpn.ammo))
-                self.ammoLabel.setPos(*self.AmmoPosNoClip)
-                self.ammoLabel.setAlign(self.AmmoAlignNoClip)
-                self.ammoLabel.setScale(self.AmmoScaleNoClip)
-
-            else:
-                # Weapon uses clip and ammo.
-
-                self.clipLabel.show()
-                self.clipLabel.setText(str(wpn.clip))
-
-                self.ammoLabel.show()
-                self.ammoLabel.setText(str(wpn.ammo))
-                self.ammoLabel.setPos(*self.AmmoPos)
-                self.ammoLabel.setAlign(self.AmmoAlign)
-                self.ammoLabel.setScale(self.AmmoScale)
+                if wpn.usesClip:
+                    self.clipLabel.setText(str(wpn.clip))
