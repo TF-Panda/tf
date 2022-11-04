@@ -27,6 +27,7 @@ from tf.entity.DistributedPointSpotlight import DistributedPointSpotlightAI
 from tf.entity.DistributedTriggerHurt import DistributedTriggerHurtAI
 from tf.entity.DistributedFuncRotating import DistributedFuncRotatingAI
 from tf.entity.TFEntityFilters import FilterActivatorTFTeam
+from tf.entity.Ropes import RopeKeyFrameAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -46,5 +47,7 @@ EntityRegistry = {
     "item_teamflag": DistributedTeamFlagAI,
     "trigger_hurt": DistributedTriggerHurtAI,
     "filter_activator_tfteam": FilterActivatorTFTeam,
-    "func_rotating": DistributedFuncRotatingAI
+    "func_rotating": DistributedFuncRotatingAI,
+    "keyframe_rope": RopeKeyFrameAI,
+    "move_rope": RopeKeyFrameAI
 }

@@ -10,6 +10,9 @@ class EntityManager:
     def findEntity(self, pattern):
         return [self.targetName2ent[x] for x in self.targetName2ent.keys() if re.search(pattern, x)]
 
+    def findExactEntity(self, name):
+        return self.targetName2ent.get(name, None)
+
     def registerEntity(self, ent):
         if ent.targetName:
             self.targetName2ent[ent.targetName] = ent

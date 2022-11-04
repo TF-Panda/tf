@@ -27,6 +27,7 @@ from tf.entity.DistributedFuncDoor import DistributedFuncDoor/AI
 from tf.entity.DistributedFuncBrush import DistributedFuncBrush/AI
 from tf.entity.DistributedPointSpotlight import DistributedPointSpotlight/AI
 from tf.entity.DistributedFuncRotating import DistributedFuncRotating/AI
+from tf.entity.Ropes import RopeKeyFrame/AI
 from tf.distributed.DistributedGame/AI import DistributedGame/AI
 from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
 from tf.actor.DistributedChar/AI import DistributedChar/AI
@@ -576,4 +577,11 @@ dclass DistributedTriggerHurt : DistributedTrigger {
 dclass DistributedFuncRotating : DistributedSolidEntity {
   uint32 spawnflags;
   float64 rotateSpeed;
+};
+
+dclass RopeKeyFrame : DistributedEntity {
+  int32 nextKeyFrame;
+  uint8 slack;
+  uint8 subdiv;
+  uint8 thickness;
 };
