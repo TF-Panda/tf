@@ -30,6 +30,7 @@ class DistributedSolidEntity(DistributedEntity):
         self.model = None
         self.modelNp = None
         self.physType = self.PTNone
+        self.modelPos = Point3(0)
         self.modelOrigin = TransformState.makeIdentity()
         self.renderMode = 0
 
@@ -39,6 +40,13 @@ class DistributedSolidEntity(DistributedEntity):
             self.modelNum = ent.getModelIndex()
             if properties.hasAttribute("rendermode"):
                 self.renderMode = properties.getAttributeValue("rendermode").getInt()
+
+            self.modelOrigin = self.getTransform()
+            self.modelPos = self.modelOrigin.getPos()
+    else:
+        def RecvProxy_modelPos(self, x, y, z):
+            self.modelPos = Point3(x, y, z)
+            self.modelOrigin = TransformState.makePos(self.modelPos)
 
     def makeModelCollisionShape(self):
         invOrigin = self.modelOrigin.getInverse().getPos()
@@ -78,7 +86,7 @@ class DistributedSolidEntity(DistributedEntity):
         # Initial transform should be the origin from the solid entity
         # properties.  Vertices are specified in world-space, we need
         # to move them local to the origin.
-        self.modelOrigin = self.getTransform()
+        #self.modelOrigin = self.getTransform()
         self.fetchModel()
         self.parentModelToEntity()
 

@@ -510,6 +510,7 @@ dclass DistributedTeamFlag : DistributedEntity {
 dclass DistributedSolidEntity : DistributedEntity {
   uint16 modelNum;
   uint8 renderMode;
+  Position modelPos;
 };
 
 dclass DistributedTrigger : DistributedSolidEntity {
