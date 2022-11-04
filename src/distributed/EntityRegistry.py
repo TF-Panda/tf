@@ -25,6 +25,7 @@ from tf.entity.DistributedFuncDoor import DistributedFuncDoorAI
 from tf.entity.DistributedFuncBrush import DistributedFuncBrushAI
 from tf.entity.DistributedPointSpotlight import DistributedPointSpotlightAI
 from tf.entity.DistributedTriggerHurt import DistributedTriggerHurtAI
+from tf.entity.DistributedFuncRotating import DistributedFuncRotatingAI
 from tf.entity.TFEntityFilters import FilterActivatorTFTeam
 
 EntityRegistry = {
@@ -44,5 +45,6 @@ EntityRegistry = {
     "item_ammopack_full": DAmmoPackFullAI,
     "item_teamflag": DistributedTeamFlagAI,
     "trigger_hurt": DistributedTriggerHurtAI,
-    "filter_activator_tfteam": FilterActivatorTFTeam
+    "filter_activator_tfteam": FilterActivatorTFTeam,
+    "func_rotating": DistributedFuncRotatingAI
 }
