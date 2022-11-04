@@ -57,6 +57,16 @@ class Actor(Model):
         self.jointMergeParent = None
 
     @staticmethod
+    def registerActor(actor):
+        if actor.characterNp:
+            Actor.AllCharacters.addPath(actor.characterNp)
+
+    @staticmethod
+    def unregisterActor(actor):
+        if actor.characterNp:
+            Actor.AllCharacters.removePath(actor.characterNp)
+
+    @staticmethod
     def updateAllAnimations():
         CharacterNode.animateCharacters(Actor.AllCharacters)
 
@@ -584,8 +594,7 @@ class Actor(Model):
         Removes the current model from the scene graph and all related data.
         """
         self.stopProcessingAnimationEvents()
-        if self.characterNp:
-            Actor.AllCharacters.removePath(self.characterNp)
+        Actor.unregisterActor(self)
         self.characterNp = None
         self.character = None
         self.channelsByName = {}
@@ -616,7 +625,7 @@ class Actor(Model):
             # a CharacterNode.
             self.characterNp = None
         else:
-            Actor.AllCharacters.addPath(self.characterNp)
+            Actor.registerActor(self)
             self.character = self.characterNp.node().getCharacter()
             self.buildAnimTable()
 
