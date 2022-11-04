@@ -28,17 +28,17 @@ class DistributedSolidEntity(DistributedEntity):
         self.setLightOff(-1)
         self.modelNum = 0
         self.model = None
+        self.modelNp = None
         self.physType = self.PTNone
         self.modelOrigin = TransformState.makeIdentity()
+        self.renderMode = 0
 
     if not IS_CLIENT:
         def initFromLevel(self, ent, properties):
             DistributedEntity.initFromLevel(self, ent, properties)
             self.modelNum = ent.getModelIndex()
             if properties.hasAttribute("rendermode"):
-                if properties.getAttributeValue("rendermode").getInt() == 10:
-                    # Don't render.
-                    self.parentEntityId = TFGlobals.WorldParent.Hidden
+                self.renderMode = properties.getAttributeValue("rendermode").getInt()
 
     def makeModelCollisionShape(self):
         invOrigin = self.modelOrigin.getInverse().getPos()
@@ -82,8 +82,15 @@ class DistributedSolidEntity(DistributedEntity):
         self.fetchModel()
         self.parentModelToEntity()
 
+        # 10 = Don't render
+        # Hide the model, not the overall entity, because children should
+        # show through.
+        if self.modelNp and self.renderMode == 10:
+            self.modelNp.hide()
+
     def delete(self):
         self.model = None
+        self.modelNp = None
         DistributedEntity.delete(self)
 
     def parentModelToEntity(self):
@@ -94,6 +101,7 @@ class DistributedSolidEntity(DistributedEntity):
             np.setTransform(self.modelOrigin.getInverse())
             np.flattenLight()
             np.reparentTo(self)
+            self.modelNp = np
 
     def fetchModel(self):
         self.model = base.game.lvlData.getModel(self.modelNum)
