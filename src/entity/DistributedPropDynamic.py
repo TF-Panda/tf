@@ -45,6 +45,10 @@ class DistributedPropDynamic(BaseClass):
                 resolved = Filename(fname)
                 if vfs.resolveFilename(resolved, getModelPath().value):
                     self.setModel(fname.getFullpath())
+
+                    if props.hasAttribute("DefaultAnim"):
+                        animName = props.getAttributeValue("DefaultAnim").getString()
+                        self.setAnimation(animName)
     else:
 
         def RecvProxy_model(self, mdl):
