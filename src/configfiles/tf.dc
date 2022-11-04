@@ -508,6 +508,7 @@ dclass DistributedTeamFlag : DistributedEntity {
 
 dclass DistributedSolidEntity : DistributedEntity {
   uint16 modelNum;
+  uint8 renderMode;
 };
 
 dclass DistributedTrigger : DistributedSolidEntity {
