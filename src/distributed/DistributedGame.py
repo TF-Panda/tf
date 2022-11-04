@@ -290,14 +290,14 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             fogMgr.fogBlend = props.getAttributeValue("fogblend").getInt() == 1
         if props.hasAttribute("fogcolor"):
             str_rgb = props.getAttributeValue("fogcolor").getString().split()
-            fogMgr.color[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
-            fogMgr.color[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
-            fogMgr.color[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+            fogMgr.color[0] = float(str_rgb[0]) / 255.0
+            fogMgr.color[1] = float(str_rgb[1]) / 255.0
+            fogMgr.color[2] = float(str_rgb[2]) / 255.0
         if props.hasAttribute("fogcolor2"):
             str_rgb = props.getAttributeValue("fogcolor2").getString().split()
-            fogMgr.color2[0] = pow(float(str_rgb[0]) / 255.0, 2.2)
-            fogMgr.color2[1] = pow(float(str_rgb[1]) / 255.0, 2.2)
-            fogMgr.color2[2] = pow(float(str_rgb[2]) / 255.0, 2.2)
+            fogMgr.color2[0] = float(str_rgb[0]) / 255.0
+            fogMgr.color2[1] = float(str_rgb[1]) / 255.0
+            fogMgr.color2[2] = float(str_rgb[2]) / 255.0
         if props.hasAttribute("fogenable"):
             if props.getAttributeValue("fogenable").getInt() == 1:
                 fogMgr.enableFog()
