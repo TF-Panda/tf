@@ -749,7 +749,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             # Hide the scene.  However, it needs to be done *next* frame, after the freeze
             # frame has been taken, so we add it as a task with a delay of 0, which achieves
             # that.
-            base.taskMgr.doMethodLater(0.0, self.__hideSceneFreezeFrame, 'hideSceneFreezeFrame')
+            base.taskMgr.doMethodLater(0.1, self.__hideSceneFreezeFrame, 'hideSceneFreezeFrame')
             #for mgr in base.sfxManagerList:
             #    mgr.setVolume(0.0)
             if self.killedByLabel:
