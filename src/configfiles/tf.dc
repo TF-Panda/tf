@@ -581,7 +581,7 @@ dclass DistributedFuncRotating : DistributedSolidEntity {
 
 dclass RopeKeyFrame : DistributedEntity {
   int32 nextKeyFrame;
-  uint8 slack;
+  uint16 slack;
   uint8 subdiv;
   uint8 thickness;
 };
