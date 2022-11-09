@@ -23,6 +23,7 @@ from tf.movement.MoveData import MoveData
 from .TFPlayerState import TFPlayerState
 
 import math
+import random
 
 tf_max_health_boost = 1.5
 
@@ -352,6 +353,14 @@ class DistributedTFPlayerShared:
                 elif base.cr.prediction.firstTimePredicted:
                     self.viewModel.tracerRequests.append((block.getPosition(), tracerDelay, tracerSpread))
 
+            actor = block.getActor()
+            if not actor:
+                return
+            entity = actor.getPythonTag("entity")
+            if not entity:
+                # Didn't hit an entity.  Hmm.
+                return
+
             # Play bullet impact sound for material we hit.
             if not IS_CLIENT:
                 # Don't send to client who predicted it.
@@ -364,6 +373,7 @@ class DistributedTFPlayerShared:
                 if not surfaceDef:
                     surfaceDef = SurfaceProperties['default']
                 base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=exclude, volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
+                entity.traceDecal('concrete', block, excludeClients=exclude)
             else:
                 if base.cr.prediction.firstTimePredicted:
                     physMat = block.getMaterial()
@@ -371,14 +381,7 @@ class DistributedTFPlayerShared:
                     if not surfaceDef:
                         surfaceDef = SurfaceProperties['default']
                     base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
-
-            actor = block.getActor()
-            if not actor:
-                return
-            entity = actor.getPythonTag("entity")
-            if not entity:
-                # Didn't hit an entity.  Hmm.
-                return
+                    entity.traceDecal('concrete', block)
 
             if doEffects:
                 # TODO

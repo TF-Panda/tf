@@ -798,7 +798,42 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             if not base.game.playerCanTakeDamage(self, attacker):
                 return
 
+        if self.inCondition(self.CondDisguised):
+            pass
+        elif self.inCondition(self.CondInvulnerable):
+            pass # TODO: ricochet
+        else:
+            # Blood decals
+            self.traceBleed(info.damage, dir, hit, info.damageType)
+
         addMultiDamage(info, self)
+
+    def traceBleed(self, damage, dir, hit, damageType):
+        if damage <= 0:
+            return
+
+        # Make blood decal on the wall.
+        if damage < 10:
+            noise = 0.1
+            count = 1
+        elif damage < 25:
+            noise = 0.2
+            count = 2
+        else:
+            noise = 0.3
+            count = 4
+
+        traceDist = 172
+        filter = TFFilters.TFQueryFilter(self, [TFFilters.worldOnly])
+        for i in range(count):
+            traceDir = -dir
+            traceDir.x += random.uniform(-noise, noise)
+            traceDir.y += random.uniform(-noise, noise)
+            traceDir.z += random.uniform(-noise, noise)
+
+            tr = TFFilters.traceLine(hit.getPosition(), hit.getPosition() + traceDir * -traceDist, Contents.Solid, 0, filter)
+            if tr['hit']:
+                base.world.traceDecal('blood', tr['block'])
 
     def doAnimationEvent(self, event, data = 0):
         self.animState.doAnimationEvent(event, data)

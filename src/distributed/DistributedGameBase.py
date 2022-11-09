@@ -19,6 +19,8 @@ class DistributedGameBase:
         self.propRoot = None
         self.propPhysRoot = None
 
+        self.propModels = []
+
         # Game mode/round system vars.
         self.gameMode = GameMode.Arena
         self.roundNumber = 0
@@ -224,6 +226,11 @@ class DistributedGameBase:
                 # If there's just one GeomNode under the ModelRoot, we can throw
                 # away the model root.
                 propModel = propModel.getChild(0)
+
+            propIndex = len(self.propModels)
+            self.propModels.append(propModel)
+            if cnode:
+                cnode.setPythonTag("propIndex", propIndex)
 
             propModel.reparentTo(propRoot)
             in3DSky = False

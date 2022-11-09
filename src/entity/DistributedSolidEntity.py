@@ -7,6 +7,8 @@ from .DistributedEntity import DistributedEntity
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 from tf.tfbase import TFGlobals
 
+import random
+
 class DistributedSolidEntity(DistributedEntity):
     """
     An entity associated with a solid/brush/mesh authored in the level.
@@ -34,6 +36,16 @@ class DistributedSolidEntity(DistributedEntity):
         self.modelOrigin = TransformState.makeIdentity()
         self.renderMode = 0
 
+        self.maxDecals = 64
+        self.decals = []
+
+    def traceDecal(self, decalName, block, excludeClients=[], client=None):
+        if IS_CLIENT:
+            self.projectDecal(decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360))
+        else:
+            self.sendUpdate('projectDecal', [decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360)],
+                            client=client, excludeClients=excludeClients)
+
     if not IS_CLIENT:
         def initFromLevel(self, ent, properties):
             DistributedEntity.initFromLevel(self, ent, properties)
@@ -43,10 +55,73 @@ class DistributedSolidEntity(DistributedEntity):
 
             self.modelOrigin = self.getTransform()
             self.modelPos = self.modelOrigin.getPos()
+
     else:
         def RecvProxy_modelPos(self, x, y, z):
             self.modelPos = Point3(x, y, z)
             self.modelOrigin = TransformState.makePos(self.modelPos)
+
+        def removeAllDecals(self):
+            for decalNp in self.decals:
+                decalNp.removeNode()
+            self.decals = []
+
+        def removeDecal(self, np):
+            np.removeNode()
+            self.decals.remove(np)
+
+        def addDecal(self, np):
+            np.reparentTo(self)
+            self.decals.append(np)
+
+            if len(self.decals) > self.maxDecals:
+                self.removeDecal(self.decals[0])
+
+        def projectDecal(self, decalName, position, normal, roll, root=None):
+            if not root:
+                root = self.modelNp
+
+            if not root or root.isHidden():
+                return
+
+            from tf.entity.DecalRegistry import Decals
+
+            from direct.directbase import DirectRender
+
+            info = Decals.get(decalName)
+            if not info:
+                return
+
+            print("projecting decal onto", root)
+
+            import random
+            materialFilename = random.choice(info['materials'])
+            material = loader.loadMaterial(materialFilename)
+            np = NodePath("tmp")
+            np.setMaterial(material)
+            np.setDepthOffset(1)
+            np.setDepthWrite(False)
+            np.setBin("fixed", 100)
+            np.setLightOff(1)
+
+            q = Quat()
+            lookAt(q, normal)
+            hpr = q.getHpr()
+            hpr[2] = roll
+
+            size = info['size']
+
+            proj = DecalProjector()
+            proj.setProjectorParent(base.render)
+            proj.setProjectorTransform(TransformState.makePosHpr(position, hpr))
+            proj.setProjectorBounds(-size * 0.5, size * 0.5)
+            proj.setDecalParent(self)
+            proj.setDecalRenderState(np.getState())
+            if proj.project(root):
+                decalNp = NodePath(proj.generate())
+                decalNp.hide(DirectRender.ShadowCameraBitmask)
+                decalNp.hide(DirectRender.ReflectionCameraBitmask)
+                self.addDecal(decalNp)
 
     def makeModelCollisionShape(self):
         invOrigin = self.modelOrigin.getInverse().getPos()
@@ -96,7 +171,22 @@ class DistributedSolidEntity(DistributedEntity):
         if self.modelNp and self.renderMode == 10:
             self.modelNp.hide()
 
+        if IS_CLIENT and self.modelNp:
+            # Build an octree from the triangles of the solid model,
+            # and use it to accelerate decal creation.
+            gn = self.modelNp.node()
+            for geom in gn.getGeoms():
+                octree = GeomTriangleOctree()
+                octree.build(geom, Vec3(32), 20)
+                DecalProjector.setGeomOctree(geom, octree)
+
     def delete(self):
+        if IS_CLIENT:
+            self.removeAllDecals()
+            self.decals = None
+            if self.modelNp:
+                for geom in self.modelNp.node().getGeoms():
+                    DecalProjector.clearGeomOctree(geom)
         self.model = None
         self.modelNp = None
         DistributedEntity.delete(self)

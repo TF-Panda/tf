@@ -24,6 +24,8 @@ if IS_CLIENT:
 else:
     from .EntityConnectionManager import EntityConnectionManager, OutputConnection
 
+import random
+
 class DistributedEntity(BaseClass, NodePath, EntityBase):
 
     # If true, the Cull traverser does not need to consider
@@ -136,6 +138,9 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         self.node().setFinal(self.MakeFinal)
 
         #self.reparentTo(self.parentEntity)
+
+    def traceDecal(self, decalName, block, excludeClients=[], client=None):
+        pass
 
     def isNetworkedEntity(self):
         return True
@@ -478,6 +483,8 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 else:
                     # Didn't hit a player entity, spatialize for all.
                     base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), chan=Sounds.Channel.CHAN_STATIC)
+
+                entity.traceDecal('concrete', block)
 
             if not IS_CLIENT:
                 # Server-specific.
@@ -902,6 +909,10 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
     else:
 
         # IS_CLIENT
+
+        def projectDecal(self, decalName, position, normal, roll):
+            pass
+
         def emitSound_sv(self, soundIndex, waveIndex, volume, pitch, chan, loop):
             sound = Sounds.createSoundClient(soundIndex, waveIndex, volume, pitch)
             if sound is not None:

@@ -8,6 +8,8 @@ from direct.directbase import DirectRender
 from tf.tfbase.TFGlobals import Contents, TakeDamage, SolidShape, SolidFlag, WorldParent
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 
+import random
+
 class World(DistributedSolidEntity):
 
     MakeFinal = False
@@ -22,6 +24,27 @@ class World(DistributedSolidEntity):
         self.parentEntityId = WorldParent.Render
 
         self.worldCollisions = []
+
+    def traceDecal(self, decalName, block, excludeClients=[], client=None):
+        propIndex = -1
+        actor = block.getActor()
+        if actor:
+            propIndex = actor.getPythonTag("propIndex")
+            if propIndex is None:
+                propIndex = -1
+        if IS_CLIENT:
+            self.projectDecalWorld(decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360), propIndex)
+        else:
+            self.sendUpdate('projectDecalWorld', [decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360), propIndex],
+                            client=client, excludeClients=excludeClients)
+
+    if IS_CLIENT:
+        def projectDecalWorld(self, decalName, position, normal, roll, propIndex):
+            if propIndex >= 0:
+                decalRoot = base.game.propModels[propIndex]
+            else:
+                decalRoot = self.modelNp
+            self.projectDecal(decalName, position, normal, roll, decalRoot)
 
     def initWorldCollisions(self):
         collideTypeToMask = {
