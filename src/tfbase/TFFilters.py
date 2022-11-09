@@ -101,6 +101,14 @@ def ignoreSelf(actor, mask, entity, source):
         return 0
     return 1
 
+def worldOnly(actor, mask, entity, source):
+    """
+    Only allows the world.
+    """
+    if entity == base.world:
+        return 1
+    return 0
+
 class TFQueryFilter(PythonPhysQueryFilter):
 
     def __init__(self, sourceEntity = None, filters = [], ignoreSource = True):
@@ -152,6 +160,7 @@ def traceLine(start, end, contents, cgroup, filter):
     if result.hasBlock():
         block = result.getBlock()
         actor = block.getActor()
+        data['block'] = block
         data['actor'] = actor
         data['pos'] = block.getPosition()
         data['norm'] = block.getNormal()
@@ -161,6 +170,7 @@ def traceLine(start, end, contents, cgroup, filter):
         #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
         data['endpos'] = data['pos']
     else:
+        data['block'] = None
         data['actor'] = None
         data['pos'] = Point3()
         data['norm'] = Vec3()
@@ -183,6 +193,7 @@ def traceBox(start, end, mins, maxs, contents, cgroup, filter):
     if result.hasBlock():
         block = result.getBlock()
         actor = block.getActor()
+        data['block'] = block
         data['actor'] = actor
         data['pos'] = block.getPosition()
         data['norm'] = block.getNormal()
@@ -192,6 +203,7 @@ def traceBox(start, end, mins, maxs, contents, cgroup, filter):
         #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
         data['endpos'] = start + dir * block.getDistance()
     else:
+        data['block'] = None
         data['actor'] = None
         data['pos'] = Point3()
         data['norm'] = Vec3()
@@ -214,6 +226,7 @@ def traceSphere(start, end, radius, contents, cgroup, filter):
     if result.hasBlock():
         block = result.getBlock()
         actor = block.getActor()
+        data['block'] = block
         data['actor'] = actor
         data['pos'] = block.getPosition()
         data['norm'] = block.getNormal()
@@ -223,6 +236,7 @@ def traceSphere(start, end, radius, contents, cgroup, filter):
         #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
         data['endpos'] = start + dir * block.getDistance()
     else:
+        data['block'] = None
         data['actor'] = None
         data['pos'] = Point3()
         data['norm'] = Vec3()
