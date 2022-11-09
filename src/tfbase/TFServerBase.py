@@ -82,14 +82,14 @@ class TFServerBase(HostBase):
         PStatClient.mainTick()
         HostBase.preRunFrame(self)
 
-    #def postRunFrame(self):
-    #    HostBase.postRunFrame(self)
-    #    elapsed = self.globalClock.getRealTime() - self.frameTime
-    #    # Sleep for a fraction of the simulation tick interval.  The server
-    #    # only does stuff on simulation ticks.
-    #    minDt = self.intervalPerTick * 0.1
-    #    if elapsed < minDt:
-    #        Thread.sleep(minDt - elapsed)
+    def postRunFrame(self):
+        HostBase.postRunFrame(self)
+        elapsed = self.globalClock.getRealTime() - self.frameTime
+        # Sleep for a fraction of the simulation tick interval.  The server
+        # only does stuff on simulation ticks.
+        minDt = self.intervalPerTick * 0.08
+        if elapsed < minDt:
+            Thread.sleep(minDt - elapsed)
 
     def __physicsUpdate(self, task):
         self.physicsWorld.simulate(self.clock.getFrameTime())
