@@ -75,6 +75,13 @@ class DPipeBombProjectile(BaseClass):
 
             self.enemy = ent
 
+            if not ent:
+                # Trace for scorch mark.
+                tr = TFFilters.traceLine(pos + (0, 0, 8), pos - (0, 0, 32), TFGlobals.Contents.Solid, 0,
+                                        TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
+                if tr['hit'] and tr['ent']:
+                    tr['ent'].traceDecal('scorch', tr['block'])
+
             info = TakeDamageInfo()
             info.inflictor = self
             info.attacker = self.shooter

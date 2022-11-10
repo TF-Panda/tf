@@ -33,6 +33,7 @@ class DistributedStickyBomb(BaseClass):
             self.stickTime = 0.0
             self.numStickContacts = 0
             self.hitSky = False
+            self.stickSurfaceNormal = Vec3.forward()
         else:
             self.trailEffect = None
             self.pulseEffect = None
@@ -90,6 +91,7 @@ class DistributedStickyBomb(BaseClass):
                 return
 
             if entity and self.canStickTo(entity):
+                self.stickSurfaceNormal = pair.getContactPoint(0).getNormal()
                 self.numStickContacts += 1
 
         def onContactEnd(self, entity, pair, shape):
@@ -140,6 +142,15 @@ class DistributedStickyBomb(BaseClass):
             base.world.emitSoundSpatial("Weapon_StickyBombLauncher.ModeSwitch", pos, chan=Sounds.Channel.CHAN_AUTO)
             base.world.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode", pos, chan=Sounds.Channel.CHAN_AUTO)
             base.game.d_doExplosion(pos, Vec3(7))
+
+            # Trace for scorch mark.
+            norm = Vec3.up()
+            if self.isSticking:
+                norm = self.stickSurfaceNormal
+            tr = TFFilters.traceLine(pos + norm * 8, pos - norm * 32, TFGlobals.Contents.Solid, 0,
+                                    TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
+            if tr['hit'] and tr['ent']:
+                tr['ent'].traceDecal('scorch', tr['block'])
 
             info = TakeDamageInfo()
             info.inflictor = self
