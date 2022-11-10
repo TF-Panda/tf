@@ -117,7 +117,7 @@ FireAxe = 'Fire Axe'
 # Demoman Weapons
 Bottle = 'Bottle'
 StickyBombLauncher = 'Sticky Bomb Launcher'
-GrenadeLauncher = 'GrenadeLauncher'
+GrenadeLauncher = 'Grenade Launcher'
 
 # Sniper Weapons
 SniperRifle = 'Sniper Rifle'
