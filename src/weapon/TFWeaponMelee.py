@@ -11,6 +11,8 @@ from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfbase.TFGlobals import Contents, CollisionGroup, DamageType
 from tf.tfbase import TFFilters
 
+from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
+
 SWING_MINS = Vec3(-18)
 SWING_MAXS = Vec3(18)
 
@@ -147,7 +149,16 @@ class TFWeaponMelee(TFWeapon):
             swingStart = self.player.getEyePosition()
             swingEnd = swingStart + (forward * 48)
 
+            physMat = block.getMaterial()
+            surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
+            if not surfaceDef:
+                surfaceDef = SurfaceProperties['default']
+
+            if IS_CLIENT and (ent is not None) and base.cr.prediction.isFirstTimePredicted():
+                ent.traceDecal(surfaceDef.impactDecal, block)
+
             if not IS_CLIENT and (ent is not None):
+                ent.traceDecal(surfaceDef.impactDecal, block, excludeClients=[self.player.owner])
                 dmgType = DamageType.Bullet | DamageType.NeverGib | DamageType.Club
                 damage = self.getMeleeDamage(ent)
                 if damage > 0:

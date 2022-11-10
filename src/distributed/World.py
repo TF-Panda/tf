@@ -26,6 +26,8 @@ class World(DistributedSolidEntity):
         self.worldCollisions = []
 
     def traceDecal(self, decalName, block, excludeClients=[], client=None):
+        if not decalName:
+            return
         propIndex = -1
         actor = block.getActor()
         if actor:

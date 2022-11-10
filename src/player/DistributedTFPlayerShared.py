@@ -373,7 +373,7 @@ class DistributedTFPlayerShared:
                 if not surfaceDef:
                     surfaceDef = SurfaceProperties['default']
                 base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=exclude, volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
-                entity.traceDecal('concrete', block, excludeClients=exclude)
+                entity.traceDecal(surfaceDef.impactDecal, block, excludeClients=exclude)
             else:
                 if base.cr.prediction.firstTimePredicted:
                     physMat = block.getMaterial()
@@ -381,7 +381,7 @@ class DistributedTFPlayerShared:
                     if not surfaceDef:
                         surfaceDef = SurfaceProperties['default']
                     base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
-                    entity.traceDecal('concrete', block)
+                    entity.traceDecal(surfaceDef.impactDecal, block)
 
             if doEffects:
                 # TODO

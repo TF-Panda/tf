@@ -40,6 +40,8 @@ class DistributedSolidEntity(DistributedEntity):
         self.decals = []
 
     def traceDecal(self, decalName, block, excludeClients=[], client=None):
+        if not decalName:
+            return
         if IS_CLIENT:
             self.projectDecal(decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360))
         else:
@@ -95,14 +97,30 @@ class DistributedSolidEntity(DistributedEntity):
             #print("projecting decal onto", root)
 
             import random
-            materialFilename = random.choice(info['materials'])
+            matData = random.choice(info['materials'])
+            if isinstance(matData, tuple):
+                materialFilename, texPos, texSize = matData
+            else:
+                materialFilename = matData
+                texPos = None
+                texSize = None
             material = loader.loadMaterial(materialFilename)
             np = NodePath("tmp")
             np.setMaterial(material)
             np.setDepthOffset(1)
-            np.setDepthWrite(False)
-            np.setBin("decal", 0)
-            np.setLightOff(1)
+
+            if texPos is not None and texSize is not None:
+                tex = material.getParam("base_color").getValue()
+                texSizeX = tex.getXSize()
+                texSizeY = tex.getYSize()
+                # Inverted OpenGL tex coords.
+                # Bottom of image is 0 on the Y.
+                yPos = texSizeY - texPos[1] - texSize[1]
+                uvTransform = TransformState.makePosHprScale((texPos[0] / texSizeX, yPos / texSizeY, 0),
+                                                             (0, 0, 0),
+                                                             (texSize[0] / texSizeX, texSize[1] / texSizeY, 1))
+            else:
+                uvTransform = TransformState.makeIdentity()
 
             q = Quat()
             lookAt(q, normal)
@@ -117,6 +135,7 @@ class DistributedSolidEntity(DistributedEntity):
             proj.setProjectorBounds(-size * 0.5, size * 0.5)
             proj.setDecalParent(self)
             proj.setDecalRenderState(np.getState())
+            proj.setDecalUvTransform(uvTransform)
             if proj.project(root):
                 decalNp = NodePath(proj.generate())
                 decalNp.hide(DirectRender.ShadowCameraBitmask)

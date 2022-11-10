@@ -484,7 +484,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                     # Didn't hit a player entity, spatialize for all.
                     base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), chan=Sounds.Channel.CHAN_STATIC)
 
-                entity.traceDecal('concrete', block)
+                entity.traceDecal(surfaceDef.impactDecal, block)
 
             if not IS_CLIENT:
                 # Server-specific.

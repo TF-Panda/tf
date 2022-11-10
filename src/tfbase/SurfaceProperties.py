@@ -29,6 +29,8 @@ class SurfaceDefinition:
         self.break_ = ""
         self.strain = ""
 
+        self.impactDecal = ""
+
         self.audioReflectivity = 0.0
         self.audioHardnessFactor = 0.0
         self.audioRoughnessFactor = 0.0
@@ -129,6 +131,8 @@ def loadSurfacePropertiesFile(filename):
                 sdef.break_ = value
             elif key == "strain":
                 sdef.strain = value
+            elif key == "impactdecal":
+                sdef.impactDecal = value
 
         SurfaceProperties[surfaceName] = sdef
 

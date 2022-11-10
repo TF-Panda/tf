@@ -118,7 +118,7 @@ class BaseRocket(BaseClass):
             self.sweepGeometry = None
             BaseClass.delete(self)
 
-        def explode(self, ent):
+        def explode(self, ent, block):
             self.exploded = True
 
             pos = self.getPos()
@@ -128,6 +128,7 @@ class BaseRocket(BaseClass):
             # Emit explosion from the world at rocket's current position.
             base.world.emitSoundSpatial("BaseExplosionEffect.Sound", pos, chan=Sounds.Channel.CHAN_STATIC)
             base.game.d_doExplosion(pos, Vec3(7))
+            ent.traceDecal('scorch', block)
 
             info = TakeDamageInfo()
             info.inflictor = self.inflictor if self.inflictor else self
@@ -174,8 +175,8 @@ class BaseRocket(BaseClass):
                 else:
                     ent = None
                 if ent:
-                    self.setPos((currPos + sweepDir * block.getDistance()) - (sweepDir * 0.01))
-                    self.explode(ent)
+                    self.setPos(currPos + sweepDir * block.getDistance())
+                    self.explode(ent, block)
 
             # Don't do this if we just exploded, because the node has been
             # deleted.
