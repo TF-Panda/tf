@@ -52,7 +52,7 @@ class RopeKeyFrame(DistributedEntity):
                 point += Vec3.down() * math.sin(t * math.pi) * slack
                 ps.append({'node': base.render, 'point': point, 'thickness': thick})
             self.rope.setup(4, ps)
-            self.rope.reparentTo(self.getParent())
+            #self.rope.reparentTo(self.getParent())
 
         def announceGenerate(self):
             DistributedEntity.announceGenerate(self)
