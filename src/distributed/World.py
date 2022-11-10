@@ -83,10 +83,26 @@ class World(DistributedSolidEntity):
         DistributedSolidEntity.generate(self)
         base.world = self
 
+        # Create a dedicated node for culling decals placed on the world
+        # against the PVS, since the world itself is not PVS culled.
+        # Decals on other entities are culled along with the entity
+        # implicitly.
+        self.decalVisRoot = DynamicVisNode("world-decal-root")
+        self.decalVisRoot.levelInit(base.game.lvlData.getNumClusters(), base.game.lvlData.getAreaClusterTree())
+        self.decalVisRootNp = base.render.attachNewNode(self.decalVisRoot)
+
+        self.addTask(self.__updateDecalVis, 'updateDecalVis', sim=False, appendTask=True, sort=49)
+
         # Link static prop physics to world entity.
         for np in base.game.propPhysRoot.findAllMatches("**/+PhysRigidActorNode"):
             np.setPythonTag("entity", self)
             np.setPythonTag("object", self)
+
+    def __updateDecalVis(self, task):
+        if not self.decalVisRoot:
+            return task.done
+        self.decalVisRoot.updateDirtyChildren()
+        return task.cont
 
     def announceGenerate(self):
         DistributedSolidEntity.announceGenerate(self)
@@ -99,7 +115,23 @@ class World(DistributedSolidEntity):
         self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask|DirectRender.ReflectionCameraBitmask))
         self.flattenLight()
 
+        if IS_CLIENT and self.modelNp:
+            # The world contains lots of triangles (func_details, displacements, world brushes).
+            # Build an octree out of the triangles to accelerate decal
+            # placement on the world.
+            gn = self.modelNp.node()
+            for geom in gn.getGeoms():
+                octree = GeomTriangleOctree()
+                octree.build(geom, Vec3(32), 20)
+                DecalProjector.setGeomOctree(geom, octree)
+
     def delete(self):
+        if self.modelNp:
+            for geom in self.modelNp.node().getGeoms():
+                DecalProjector.clearGeomOctree(geom)
+        self.decalVisRootNp.removeNode()
+        self.decalVisRootNp = None
+        self.decalVisRoot = None
         for body in self.worldCollisions:
             body.removeFromScene(base.physicsWorld)
         self.worldCollisions = None
