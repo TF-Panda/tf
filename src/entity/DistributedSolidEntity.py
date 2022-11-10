@@ -72,8 +72,11 @@ class DistributedSolidEntity(DistributedEntity):
             np.removeNode()
             self.decals.remove(np)
 
-        def addDecal(self, np):
+        def parentDecal(self, np):
             np.reparentTo(self)
+
+        def addDecal(self, np):
+            self.parentDecal(np)
             self.decals.append(np)
 
             if len(self.decals) > self.maxDecals:

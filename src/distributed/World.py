@@ -41,6 +41,10 @@ class World(DistributedSolidEntity):
                             client=client, excludeClients=excludeClients)
 
     if IS_CLIENT:
+
+        def parentDecal(self, np):
+            np.reparentTo(self.decalVisRootNp)
+
         def projectDecalWorld(self, decalName, position, normal, roll, propIndex):
             if propIndex >= 0:
                 decalRoot = base.game.propModels[propIndex]
