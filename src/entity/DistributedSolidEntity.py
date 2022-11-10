@@ -92,7 +92,7 @@ class DistributedSolidEntity(DistributedEntity):
             if not info:
                 return
 
-            print("projecting decal onto", root)
+            #print("projecting decal onto", root)
 
             import random
             materialFilename = random.choice(info['materials'])
@@ -101,7 +101,7 @@ class DistributedSolidEntity(DistributedEntity):
             np.setMaterial(material)
             np.setDepthOffset(1)
             np.setDepthWrite(False)
-            np.setBin("fixed", 100)
+            np.setBin("decal", 0)
             np.setLightOff(1)
 
             q = Quat()
@@ -171,22 +171,10 @@ class DistributedSolidEntity(DistributedEntity):
         if self.modelNp and self.renderMode == 10:
             self.modelNp.hide()
 
-        if IS_CLIENT and self.modelNp:
-            # Build an octree from the triangles of the solid model,
-            # and use it to accelerate decal creation.
-            gn = self.modelNp.node()
-            for geom in gn.getGeoms():
-                octree = GeomTriangleOctree()
-                octree.build(geom, Vec3(32), 20)
-                DecalProjector.setGeomOctree(geom, octree)
-
     def delete(self):
         if IS_CLIENT:
             self.removeAllDecals()
             self.decals = None
-            if self.modelNp:
-                for geom in self.modelNp.node().getGeoms():
-                    DecalProjector.clearGeomOctree(geom)
         self.model = None
         self.modelNp = None
         DistributedEntity.delete(self)
