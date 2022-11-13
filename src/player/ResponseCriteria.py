@@ -29,6 +29,9 @@ def weaponIsMelee(data):
 def isNotSentryKill(data):
     return not data['issentrykill']
 
+def isSentryKill(data):
+    return data['issentrykill']
+
 def isRevengeKill(data):
     return data.get('isrevenge', False)
 

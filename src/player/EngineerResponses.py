@@ -412,6 +412,29 @@ def makeResponseSystem(player):
         ]
       )
     )
+    # Sentry kill streak.
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isManyRecentKills, isSentryKill, percentChance30,
+          lambda data: not data.get('EngineerKillSpeech')
+        ],
+        [
+          Response(
+            [
+              ResponseLine("Engineer.SpecialCompleted09"),
+              ResponseLine("Engineer.SpecialCompleted06"),
+              ResponseLine("Engineer.SpecialCompleted08"),
+              ResponseLine("Engineer.SpecialCompleted02")
+            ]
+          )
+        ],
+        [
+          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
 
     system.addRule(
       SpeechConcept.Teleported,
