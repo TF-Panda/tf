@@ -5,7 +5,7 @@ from panda3d.pphysics import *
 
 from direct.interval.IntervalGlobal import LerpHprInterval
 
-from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, TFTeam, CollisionGroup, WorldParent
+from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, TFTeam, CollisionGroup, WorldParent, SpeechConcept
 from tf.actor.Model import Model
 from tf.entity.DistributedEntity import DistributedEntity
 
@@ -53,6 +53,7 @@ class CaptureZone:
         if cbdata.getTouchType() == PhysTriggerCallbackData.TEnter:
             if entity.flag:
                 announce = not base.game.gameModeImpl.flagCaptured(self.team)
+                entity.speakConcept(SpeechConcept.CappedObjective, {'gamemode': 'ctf'})
                 if entity.flag:
                     entity.flag.returnFlag(True, announce)
                     entity.flag = None

@@ -34,6 +34,9 @@ class TFWeaponGun(BaseClass):
         self.staggerTracers = False
         self.tracerSpread = 0.0
 
+    def speakWeaponFire(self):
+        pass
+
     def primaryAttack(self):
 
         # Check for ammunition.
@@ -54,8 +57,9 @@ class TFWeaponGun(BaseClass):
 
         #self.calcIsAttackCritical()
 
-        #if not IS_CLIENT:
-        #    pass # TODO: remove invisibility/disguise, speak weapon fire
+        if not IS_CLIENT:
+            # TODO: remove invisibility/disguise
+            self.speakWeaponFire()
 
         # Set the weapon mode
         self.weaponMode = TFWeaponMode.Primary

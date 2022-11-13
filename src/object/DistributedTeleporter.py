@@ -179,8 +179,8 @@ class DistributedTeleporter(BaseObject):
 
         def onKilled(self, info):
             bldr = self.getBuilder()
-            if bldr and not bldr.isDead():
-                bldr.d_speak("Engineer.AutoDestroyedTeleporter01")
+            if bldr:
+                bldr.speakConcept(TFGlobals.SpeechConcept.ObjectDestroyed, {'objecttype': 'teleporter'})
             BaseObject.onKilled(self, info)
 
         def delete(self):

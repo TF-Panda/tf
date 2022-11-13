@@ -28,6 +28,7 @@ from direct.gui.DirectGui import *
 
 from tf.tfgui.TFClassMenu import TFClassMenu
 from tf.tfgui.TFTeamMenu import TFTeamMenu
+from tf.tfgui.VoiceCommandMenu import VoiceCommandMenu
 
 import copy
 import random
@@ -148,6 +149,58 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.screenShakes = ScreenShake()
 
+        self.voiceCommandMenus = []
+        self.currentVoiceCommandMenu = -1
+
+    def createVoiceCommandMenus(self):
+        menu1 = VoiceCommandMenu()
+        menu1.addItem(TFLocalizer.VoiceCommandMedic, 1, VoiceCommand.Medic)
+        menu1.addItem(TFLocalizer.VoiceCommandThanks, 2, VoiceCommand.Thanks)
+        menu1.addItem(TFLocalizer.VoiceCommandGoGoGo, 3, VoiceCommand.Go)
+        menu1.addItem(TFLocalizer.VoiceCommandMoveUp, 4, VoiceCommand.MoveUp)
+        menu1.addItem(TFLocalizer.VoiceCommandGoLeft, 5, VoiceCommand.GoLeft)
+        menu1.addItem(TFLocalizer.VoiceCommandGoRight, 6, VoiceCommand.GoRight)
+        menu1.addItem(TFLocalizer.VoiceCommandYes, 7, VoiceCommand.Yes)
+        menu1.addItem(TFLocalizer.VoiceCommandNo, 8, VoiceCommand.No)
+        self.voiceCommandMenus.append(menu1)
+        menu2 = VoiceCommandMenu()
+        menu2.addItem(TFLocalizer.VoiceCommandIncoming, 1, VoiceCommand.Incoming)
+        menu2.addItem(TFLocalizer.VoiceCommandSpy, 2, VoiceCommand.Spy)
+        menu2.addItem(TFLocalizer.VoiceCommandSentryAhead, 3, VoiceCommand.SentryAhead)
+        menu2.addItem(TFLocalizer.VoiceCommandTeleporterHere, 4, VoiceCommand.TeleporterHere)
+        menu2.addItem(TFLocalizer.VoiceCommandDispenserHere, 5, VoiceCommand.DispenserHere)
+        menu2.addItem(TFLocalizer.VoiceCommandSentryHere, 6, VoiceCommand.SentryHere)
+        menu2.addItem(TFLocalizer.VoiceCommandActivateCharge, 7, VoiceCommand.ActivateCharge)
+        menu2.addItem(TFLocalizer.VoiceCommandUberChargeReady, 8, VoiceCommand.ChargeReady)
+        self.voiceCommandMenus.append(menu2)
+        menu3 = VoiceCommandMenu()
+        menu3.addItem(TFLocalizer.VoiceCommandHelp, 1, VoiceCommand.Help)
+        menu3.addItem(TFLocalizer.VoiceCommandBattleCry, 2, VoiceCommand.BattleCry)
+        menu3.addItem(TFLocalizer.VoiceCommandCheers, 3, VoiceCommand.Cheers)
+        menu3.addItem(TFLocalizer.VoiceCommandJeers, 4, VoiceCommand.Jeers)
+        menu3.addItem(TFLocalizer.VoiceCommandPositive, 5, VoiceCommand.Positive)
+        menu3.addItem(TFLocalizer.VoiceCommandNegative, 6, VoiceCommand.Negative)
+        menu3.addItem(TFLocalizer.VoiceCommandNiceShot, 7, VoiceCommand.NiceShot)
+        menu3.addItem(TFLocalizer.VoiceCommandGoodJob, 8, VoiceCommand.GoodJob)
+        self.voiceCommandMenus.append(menu3)
+
+    def disableCurrentVoiceCommandMenu(self):
+        if self.currentVoiceCommandMenu != -1:
+            self.voiceCommandMenus[self.currentVoiceCommandMenu].hide()
+            self.currentVoiceCommandMenu = -1
+
+    def toggleVoiceCommandMenu(self, index):
+        if index == self.currentVoiceCommandMenu:
+            self.voiceCommandMenus[index].hide()
+            self.currentVoiceCommandMenu = -1
+            return
+
+        elif self.currentVoiceCommandMenu != -1:
+            self.voiceCommandMenus[self.currentVoiceCommandMenu].hide(False)
+
+        self.voiceCommandMenus[index].show()
+        self.currentVoiceCommandMenu = index
+
     def screenShake(self, cmd, amplitude, freq, duration):
         self.screenShakes.addShake(cmd, amplitude, freq, duration)
 
@@ -212,8 +265,12 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.hud.hideHud()
             self.removeTask('updateCSInfo')
             self.crossHairInfo.clearEnt()
+            self.disableCurrentVoiceCommandMenu()
             self.ignore('wheel_up')
             self.ignore('wheel_down')
+            self.ignore('x')
+            self.ignore('z')
+            self.ignore('c')
             self.ignore('e')
 
         elif prevState == TFPlayerState.Spectating:
@@ -232,6 +289,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.accept('wheel_up', self.wpnSelect.hoverPrevWeapon)
             self.accept('wheel_down', self.wpnSelect.hoverNextWeapon)
             self.accept('e', self.sendUpdate, ['voiceCommand', [VoiceCommand.Medic]])
+            self.accept('z', self.toggleVoiceCommandMenu, [0])
+            self.accept('x', self.toggleVoiceCommandMenu, [1])
+            self.accept('c', self.toggleVoiceCommandMenu, [2])
 
         elif newState == TFPlayerState.Spectating:
             self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)
@@ -542,7 +602,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.cam.setR(-self.screenShakes.shakeAppliedAngle)
 
     def calcPlayingView(self):
-        if self.isLoser():
+        if self.isLoser() or self.inCondition(self.CondTaunting):
             self.show()
             if self.viewModel:
                 self.viewModel.hide()
@@ -915,6 +975,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.localAvatarId = self.doId
 
     def delete(self):
+        for menu in self.voiceCommandMenus:
+            menu.cleanup()
+        self.voiceCommandMenus = None
         if self.nemesisLabels:
             for lbl in self.nemesisLabels.values():
                 lbl.removeNode()
@@ -988,6 +1051,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.accept(',', self.doChangeClass)
         self.accept('.', self.doChangeTeam)
+        self.accept('y', self.sendUpdate, ['reloadResponses'])
+
+        self.createVoiceCommandMenus()
 
         base.taskMgr.add(self.mouseMovement, 'mouseMovement')
         base.taskMgr.add(self.calcViewTask, 'calcView', sort = 38)

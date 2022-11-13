@@ -14,6 +14,54 @@ GameZone = 2
 
 from panda3d.core import BitMask32, Vec3, DynamicTextFont, SamplerState, NodePath, LineSegs
 
+class SpeechConcept:
+
+    TakeDamage = 0
+    Killed = 1
+
+    MedicCall = 2
+    HelpMe = 3
+    Thanks = 4
+    BattleCry = 5
+    Incoming = 6
+    GoodJob = 7
+    NiceShot = 8
+    Cheers = 9
+    Positive = 10
+    Jeers = 11
+    Negative = 12
+    SentryHere = 13
+    TeleporterHere = 14
+    DispenserHere = 15
+    SentryAhead = 16
+    ChargeReady = 17
+    ActivateCharge = 18
+    Yes = 19
+    No = 20
+    Go = 21
+    MoveUp = 22
+    GoLeft = 23
+    GoRight = 24
+    SpyIdentify = 25
+
+    WeaponFire = 26
+
+    CappedObjective = 27
+    RoundEnd = 28
+    RoundStart = 29
+
+    ObjectBuilding = 30
+    ObjectMoving = 31
+    ObjectReplace = 32
+    ObjectBeingSapped = 33
+    ObjectDestroyed = 34
+
+    KilledPlayer = 35
+    KilledObject = 36
+
+    Teleported = 37
+    StoppedBeingHealed = 38
+
 class TFTeam:
     NoTeam = -1
     Red = 0

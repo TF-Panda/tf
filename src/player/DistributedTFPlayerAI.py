@@ -16,7 +16,7 @@ from .TFPlayerState import TFPlayerState
 from tf.weapon.TakeDamageInfo import addMultiDamage, TakeDamageInfo
 
 from tf.tfbase import TFGlobals, Sounds, TFFilters
-from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType, TFTeam
+from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType, TFTeam, SpeechConcept
 from tf.object.BaseObject import BaseObject
 from tf.object.ObjectType import ObjectType
 
@@ -24,6 +24,9 @@ from tf.actor.HitBox import HitBoxGroup
 
 from panda3d.core import *
 from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
+
+from . import ResponseClassRegistry
+from . import ResponseSystem
 
 import copy
 import random
@@ -116,6 +119,84 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.burnAttacker = -1
         self.flameBurnTime = 0.0
         self.nextBurningSound = 0.0
+
+        self.responseSystem = None
+
+        self.recentKills = []
+
+    def updateRecentKills(self):
+        self.recentKills = [x for x in self.recentKills if (globalClock.frame_time - x) < 20]
+
+    def speakKilledPlayer(self, player, sentryKill, domMode):
+        self.recentKills.append(globalClock.frame_time)
+        data = {
+            'killedplayer': player,
+            'withweapon': self.getActiveWeaponObj(),
+            'isrevenge': domMode == 1,
+            'isnemesis': domMode == 2,
+            'issentrykill': sentryKill
+        }
+        self.speakConcept(SpeechConcept.KilledPlayer, data)
+
+    def reloadResponses(self):
+        import importlib
+        importlib.reload(ResponseSystem)
+        importlib.reload(ResponseClassRegistry)
+        ResponseClassRegistry.reload()
+
+        print("Response system reloaded")
+        print("Classes:", ResponseClassRegistry.ResponseClasses)
+
+        self.makeClassResponseSystem()
+
+    def addConceptData(self, concept, data):
+        # These concepts care about the player we are looking at.
+        if concept in (SpeechConcept.MedicCall, SpeechConcept.SpyIdentify, SpeechConcept.BattleCry):
+            q = Quat()
+            q.setHpr(self.viewAngles)
+            fwd = q.getForward()
+            eyePos = self.getEyePosition()
+            filter = TFFilters.TFQueryFilter(self)
+            tr = TFFilters.traceLine(eyePos, eyePos + fwd * 10000,
+                Contents.Solid | Contents.AnyTeam, 0, filter)
+            if tr['hit'] and tr['ent'] and tr['ent'].isPlayer() and not tr['ent'].isDead():
+                data['crosshair_player'] = tr['ent']
+            else:
+                data['crosshair_player'] = None
+
+        if concept in (SpeechConcept.MedicCall, SpeechConcept.StoppedBeingHealed):
+            # We only ask the medic to follow when looking at them if we're
+            # relatively healthy, so we need our health percentage.
+            data['playerhealthfrac'] = self.health / self.maxHealth
+
+        if concept in (SpeechConcept.KilledPlayer, SpeechConcept.Thanks):
+            self.updateRecentKills()
+            data['recentkills'] = len(self.recentKills)
+
+    def speakConcept(self, concept, data=None):
+        if not self.responseSystem or self.isDead():
+            return
+
+        if data is None:
+            data = {}
+
+        data['concept'] = concept
+        data['player'] = self
+        self.addConceptData(concept, data)
+        line = self.responseSystem.speakConcept(data)
+        if line:
+            if self.responseSystem.speakTime == globalClock.frame_time:
+                print("Speak now")
+                self.d_speak(line)
+            else:
+                print("Speak in", self.responseSystem.speakTime - globalClock.frame_time, "seconds")
+                base.simTaskMgr.doMethodLater(self.responseSystem.speakTime - globalClock.frame_time, self.__delayedSpeak,
+                                              'delayedSpeak', extraArgs=[line], appendTask=True)
+
+    def __delayedSpeak(self, line, task):
+        if not self.isDODeleted() and not self.isDead():
+            self.d_speak(line)
+        return task.done
 
     def burn(self, attacker):
         if self.isDead():
@@ -406,13 +487,37 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if self.isDead() or (now - self.lastVoiceCmdTime) < 1.5:
             return
 
-        voiceLineList = self.classInfo.VoiceCommands.get(cmd)
-        if not voiceLineList:
+        cmdToConcept = {
+            VoiceCommand.Medic: SpeechConcept.MedicCall,
+            VoiceCommand.Help: SpeechConcept.HelpMe,
+            VoiceCommand.Thanks: SpeechConcept.Thanks,
+            VoiceCommand.BattleCry: SpeechConcept.BattleCry,
+            VoiceCommand.Incoming: SpeechConcept.Incoming,
+            VoiceCommand.GoodJob: SpeechConcept.GoodJob,
+            VoiceCommand.NiceShot: SpeechConcept.NiceShot,
+            VoiceCommand.Cheers: SpeechConcept.Cheers,
+            VoiceCommand.Positive: SpeechConcept.Positive,
+            VoiceCommand.Jeers: SpeechConcept.Jeers,
+            VoiceCommand.Negative: SpeechConcept.Negative,
+            VoiceCommand.SentryHere: SpeechConcept.SentryHere,
+            VoiceCommand.TeleporterHere: SpeechConcept.TeleporterHere,
+            VoiceCommand.DispenserHere: SpeechConcept.DispenserHere,
+            VoiceCommand.ActivateCharge: SpeechConcept.ActivateCharge,
+            VoiceCommand.ChargeReady: SpeechConcept.ChargeReady,
+            VoiceCommand.Yes: SpeechConcept.Yes,
+            VoiceCommand.No: SpeechConcept.No,
+            VoiceCommand.Go: SpeechConcept.Go,
+            VoiceCommand.MoveUp: SpeechConcept.MoveUp,
+            VoiceCommand.GoLeft: SpeechConcept.GoLeft,
+            VoiceCommand.GoRight: SpeechConcept.GoRight,
+            VoiceCommand.Spy: SpeechConcept.SpyIdentify,
+            VoiceCommand.SentryAhead: SpeechConcept.SentryAhead
+        }
+        concept = cmdToConcept.get(cmd)
+        if concept is None:
             return
 
-        voiceLine = random.choice(voiceLineList)
-        self.d_speak(voiceLine, excludeClients=[self.owner])
-        self.d_speak(voiceLine, client=self.owner)
+        self.speakConcept(concept)
 
         self.lastVoiceCmdTime = now
 
@@ -556,39 +661,19 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         #self.sentry = sg
 
         if self.selectedBuilding == 0:
-            self.d_speak(
-                random.choice(
-                    ["Engineer.AutoBuildingSentry01",
-                     "Engineer.AutoBuildingSentry02"]
-                )
-            )
+            self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': 'sentry'})
         elif self.selectedBuilding == 1:
-            self.d_speak(
-                random.choice(
-                    ["Engineer.AutoBuildingDispenser01",
-                     "Engineer.AutoBuildingDispenser02"]
-                )
-            )
+            self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': 'dispenser'})
         else:
-            self.d_speak(
-                random.choice(
-                    ["Engineer.AutoBuildingTeleporter01",
-                     "Engineer.AutoBuildingTeleporter02"]
-                )
-            )
+            self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': 'teleporter'})
 
         return True
 
     def speakTeleported(self):
-        chance = random.random()
-        if chance < 0.3:
-            self.d_speak(random.choice(self.classInfo.TeleporterThanks))
+        self.speakConcept(SpeechConcept.Teleported, {})
 
     def speakHealed(self):
-        if self.health >= self.maxHealth:
-            chance = random.random()
-            if chance < 0.5:
-                self.d_speak(random.choice(self.classInfo.ThanksForHeal))
+        self.speakConcept(SpeechConcept.StoppedBeingHealed)
 
     def getClassSize(self):
         mins = TFGlobals.VEC_HULL_MIN
@@ -883,6 +968,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # plyr is the player that killed me.
         assert plyr and plyr.isPlayer()
 
+        mode = 0
+
         # Reset the number of consecutive kills on the player that killed me.
         self.playerConsecutiveKills[plyr.doId] = 0
         # If we were dominating them, they got revenge.
@@ -891,6 +978,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             plyr.removeNemesis(self.doId)
             self.removeDomination(plyr.doId)
             base.net.game.sendUpdate('revengeEvent', [plyr.doId, self.doId])
+            mode = 1
 
         if self.doId not in plyr.playerConsecutiveKills:
             plyr.playerConsecutiveKills[self.doId] = 1
@@ -905,6 +993,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             plyr.addDomination(self.doId)
             self.addNemesis(plyr.doId)
             base.net.game.sendUpdate('domEvent', [plyr.doId, self.doId])
+            mode = 2
+
+        return mode
 
     def die(self, info = None):
         if self.playerState != TFPlayerState.Playing:
@@ -921,8 +1012,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             dmgType = DamageType.Generic
 
         if info:
+            isSentryKill = False
             if info.inflictor and info.inflictor.isObject():
                 killer = info.inflictor.doId
+                isSentryKill = True
             else:
                 killer = info.attacker.doId
 
@@ -935,7 +1028,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             elif info.attacker and info.attacker.isPlayer():
                 killerPlayer = info.attacker
             if killerPlayer and killerPlayer != self:
-                self.handleDominationsOnKilled(killerPlayer)
+                mode = self.handleDominationsOnKilled(killerPlayer)
+
+                # Have other player speak about killing me.
+                killerPlayer.speakKilledPlayer(self, isSentryKill, mode)
 
         else:
             # Suicide.
@@ -1074,6 +1170,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.metal = 100
 
         self.removeAllConditions()
+
+        self.recentKills = []
 
         # Make sure we have all of our weapons.
         self.stripWeapons()
@@ -1228,6 +1326,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.health = self.maxHealth
         self.loadModel(self.classInfo.PlayerModel)
         self.viewModel.loadModel(self.classInfo.ViewModel)
+        self.makeClassResponseSystem()
         #self.animState.initGestureSlots()
 
         #if giveWeapons:
@@ -1237,6 +1336,19 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.respawn(sendRespawn)
 
         self.pendingChangeClass = Class.Invalid
+
+    def makeClassResponseSystem(self):
+        if self.responseSystem:
+            self.responseSystem.cleanup()
+            self.responseSystem = None
+
+        mod = ResponseClassRegistry.ResponseClasses.get(self.tfClass)
+        if mod:
+            system = mod.makeResponseSystem(self)
+        else:
+            system = None
+
+        self.responseSystem = system
 
     def giveClassWeapons(self):
         from tf.weapon import WeaponRegistry
@@ -1353,6 +1465,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         base.game.playersByTeam[self.team].remove(self)
         del base.game.allPlayers[self.doId]
+
+        if self.responseSystem:
+            self.responseSystem.cleanup()
+            self.responseSystem = None
 
         base.air.lagComp.unregisterPlayer(self)
 

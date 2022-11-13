@@ -56,7 +56,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.waterGeomNp = None
 
         self.accept('shift-v', self.toggleVisDebug)
-        self.accept('c', self.renderCubeMaps)
+        #self.accept('c', self.renderCubeMaps)
 
     def renderCubeMaps(self):
         print("Rendering cube maps...")

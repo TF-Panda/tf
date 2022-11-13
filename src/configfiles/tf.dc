@@ -315,6 +315,8 @@ dclass DistributedTFPlayer : DistributedChar {
   doBloodGoop(Position pos) broadcast;
 
   screenShake(uint8 command, float64 localAmplitude, float64 frequency, float64 duration) ownrecv;
+
+  reloadResponses() ownsend airecv;
 };
 
 dclass DistributedWeapon : DistributedChar {

@@ -5,7 +5,7 @@ from .BaseObject import BaseObject
 
 from tf.actor.Activity import Activity
 from tf.tfbase import TFGlobals, TFLocalizer
-from tf.tfbase.TFGlobals import Contents, DamageType, TFTeam
+from tf.tfbase.TFGlobals import Contents, DamageType, TFTeam, SpeechConcept
 from tf.weapon.WeaponEffects import makeMuzzleFlash
 
 if not IS_CLIENT:
@@ -103,8 +103,8 @@ class SentryGun(BaseObject):
 
         def onKilled(self, info):
             bldr = self.getBuilder()
-            if bldr and not bldr.isDead():
-                bldr.d_speak("Engineer.AutoDestroyedSentry01")
+            if bldr:
+                bldr.speakConcept(SpeechConcept.ObjectDestroyed, {'objecttype': 'sentry'})
             BaseObject.onKilled(self, info)
 
         def onKillEntity(self, ent):

@@ -163,6 +163,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             for plyr in players:
                 plyr.destroyAllObjects()
                 plyr.respawn()
+                # Speak about the round starting (battle cry)
+                plyr.speakConcept(TFGlobals.SpeechConcept.RoundStart, {})
 
         self.notify.info("New round %i" % self.roundNumber)
 
@@ -187,16 +189,23 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         if winTeam is None:
             winTeam = TFTeam.NoTeam
 
+        conceptData = {
+            'isstalemate': winTeam == TFTeam.NoTeam,
+            'winteam': winTeam
+        }
+
         if winTeam != TFTeam.NoTeam:
             self.teamScores[winTeam] += 1
             for plyr in self.playersByTeam[winTeam]:
                 plyr.setCondition(plyr.CondWinner)
                 plyr.updateClassSpeed()
+                plyr.speakConcept(TFGlobals.SpeechConcept.RoundEnd, conceptData)
                 base.world.emitSound("Game.YourTeamWon", client=plyr.owner)
             for plyr in self.playersByTeam[not winTeam]:
                 plyr.setCondition(plyr.CondLoser)
                 plyr.setActiveWeapon(-1)
                 plyr.updateClassSpeed()
+                plyr.speakConcept(TFGlobals.SpeechConcept.RoundEnd, conceptData)
                 base.world.emitSound("Game.YourTeamLost", client=plyr.owner)
         else:
             for teamPlyrs in self.playersByTeam.values():
@@ -204,6 +213,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                     plyr.setCondition(plyr.CondLoser)
                     plyr.setActiveWeapon(-1)
                     plyr.updateClassSpeed()
+                    plyr.speakConcept(TFGlobals.SpeechConcept.RoundEnd, conceptData)
             base.world.emitSound("Game.Stalemate")
 
         self.winTeam = winTeam

@@ -5,7 +5,7 @@ from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
-from tf.tfbase.TFGlobals import Contents, CollisionGroup, getTF2BuildFont, TFTeam
+from tf.tfbase.TFGlobals import Contents, CollisionGroup, getTF2BuildFont, TFTeam, SpeechConcept
 from tf.tfbase import TFLocalizer
 
 from .BaseObject import BaseObject
@@ -56,8 +56,8 @@ class DistributedDispenser(BaseObject):
     if not IS_CLIENT:
         def onKilled(self, info):
             bldr = self.getBuilder()
-            if bldr and not bldr.isDead():
-                bldr.d_speak("Engineer.AutoDestroyedDispenser01")
+            if bldr:
+                bldr.speakConcept(SpeechConcept.ObjectDestroyed, {'objecttype': 'dispenser'})
             BaseObject.onKilled(self, info)
 
         def onFinishConstruction(self):

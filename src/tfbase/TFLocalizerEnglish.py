@@ -164,3 +164,34 @@ AmmoOutOf = "\nAmmo: %i / %i"
 Ammo = "\nAmmo: %i"
 Charge = "\nCharge: "
 ChargeFull = "\nCharge: 100%"
+
+
+# Voice commands
+#
+# Menu 1 (z)
+VoiceCommandMedic = "MEDIC!"
+VoiceCommandThanks = "Thanks!"
+VoiceCommandGoGoGo = "Go Go Go!"
+VoiceCommandMoveUp = "Move Up!"
+VoiceCommandGoLeft = "Go Left"
+VoiceCommandGoRight = "Go Right"
+VoiceCommandYes = "Yes"
+VoiceCommandNo = "No"
+# Menu 2 (x)
+VoiceCommandIncoming = "Incoming!"
+VoiceCommandSpy = "Spy!"
+VoiceCommandSentryAhead = "Sentry Ahead!"
+VoiceCommandTeleporterHere = "Teleporter Here"
+VoiceCommandDispenserHere = "Dispenser Here"
+VoiceCommandSentryHere = "Sentry Here"
+VoiceCommandActivateCharge = "Activate ÜberCharge!"
+VoiceCommandUberChargeReady = "MEDIC: ÜberCharge Ready"
+# Menu 3 (c)
+VoiceCommandHelp = "Help!"
+VoiceCommandBattleCry = "Battle Cry"
+VoiceCommandCheers = "Cheers"
+VoiceCommandJeers = "Jeers"
+VoiceCommandPositive = "Positive"
+VoiceCommandNegative = "Negative"
+VoiceCommandNiceShot = "Nice Shot"
+VoiceCommandGoodJob = "Good Job"
