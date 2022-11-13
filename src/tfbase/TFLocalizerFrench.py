@@ -164,3 +164,34 @@ AmmoOutOf = "\nMunitions : %i / %i"
 Ammo = "\nMunitions : %i"
 Charge = "\nCharge : "
 ChargeFull = "\nCharge : 100%"
+
+
+# Voice commands
+#
+# Menu 1 (z)
+VoiceCommandMedic = "MEDIC !"
+VoiceCommandThanks = "Merci !"
+VoiceCommandGoGoGo = "Allez, allez, allez !"
+VoiceCommandMoveUp = "Bougez !"
+VoiceCommandGoLeft = "À gauche"
+VoiceCommandGoRight = "À droite"
+VoiceCommandYes = "Oui."
+VoiceCommandNo = "Non."
+# Menu 2 (x)
+VoiceCommandIncoming = "Ils s'amènent !"
+VoiceCommandSpy = "Spy !"
+VoiceCommandSentryAhead = "Mitrailleuse droit devant !"
+VoiceCommandTeleporterHere = "Téléporteur ici"
+VoiceCommandDispenserHere = "Distributeur ici"
+VoiceCommandSentryHere = "Mitrailleuse ici"
+VoiceCommandActivateCharge = "Active la charge !"
+VoiceCommandUberChargeReady = "MEDIC : ÜberCharge prête"
+# Menu 3 (c)
+VoiceCommandHelp = "À l'aide !"
+VoiceCommandBattleCry = "Cri de bataille"
+VoiceCommandCheers = "Applaudissements"
+VoiceCommandJeers = "Huées"
+VoiceCommandPositive = "Affirmatif"
+VoiceCommandNegative = "Négatif"
+VoiceCommandNiceShot = "Joli tir"
+VoiceCommandGoodJob = "Bien joué"
