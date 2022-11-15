@@ -222,9 +222,10 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.deathType = self.DTRagdoll
         if self.ragdoll:
             self.ragdoll[0].modelNp.showThrough(DirectRender.ShadowCameraBitmask)
-            # Re-direct lip-sync to ragdoll.
             if self.talker:
-                self.talker.setCharacter(self.ragdoll[0].character)
+                # Play lip sync on the ragdoll as well.
+                talkerIndex = self.ragdoll[0].character.addChannel(self.talker)
+                self.ragdoll[0].character.loop(talkerIndex, True)
             if self.expressions:
                 self.expressions.character = self.ragdoll[0].character
                 # Remove idle expression so ragdoll goes to blank face after
@@ -345,7 +346,11 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.viewModel.loadModel(self.classInfo.ViewModel)
 
         if self.classInfo.Phonemes:
-            self.talker = CharacterTalker(self.character, phonemes[self.classInfo.Phonemes])
+            # Set up the slider-based lip sync animation channel.
+            self.talker = CharacterTalker(phonemes[self.classInfo.Phonemes])
+            self.talker.setFlags(AnimChannel.FDelta)
+            talkerIndex = self.character.addChannel(self.talker)
+            self.character.loop(talkerIndex, True, 6)
 
         self.eyes = Eyes(self.characterNp)
         self.eyes.headRotationOffset = self.classInfo.HeadRotationOffset
@@ -382,8 +387,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
     def __updateTalker(self, task):
         if self.deathType in (self.DTNone, self.DTRagdoll):
-            if self.talker:
-                self.talker.update()
             if self.expressions:
                 self.expressions.update()
 
@@ -414,8 +417,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
                 self.expressions.character = self.character
                 self.expressions.resetExpressions()
                 self.expressions.pushExpression('idle', 1.0, oscillation=0.4, oscillationSpeed=1.5)
-            if self.talker:
-                self.talker.setCharacter(self.character)
 
     def postDataUpdate(self):
         DistributedChar.postDataUpdate(self)
