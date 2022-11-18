@@ -113,7 +113,9 @@ class TFServerBase(HostBase):
             point = pair.getContactPoint(0)
 
             speed = point.getImpulse().length()
-            if speed < 100.0:#70.0:
+            a = data.getActorA()
+            speed /= a.getMass()
+            if speed < 70.0:
                 continue
 
             #a = data.getActorA()
@@ -151,7 +153,7 @@ class TFServerBase(HostBase):
                     base.world.emitSoundSpatial(surfDefA.impactHard, position, volume, chan=chan)
                 if surfDefB:
                     base.world.emitSoundSpatial(surfDefB.impactHard, position, volume, chan=chan)
-            elif speed >= 100:
+            elif speed >= 70:
                 if surfDefA:
                     base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume, chan=chan)
                 if surfDefB:
