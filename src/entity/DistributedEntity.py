@@ -804,8 +804,8 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 return
 
             if volume is not None:
-                # Overriding volume.
-                soundInfo[2] = volume
+                # Modulation on volume.
+                soundInfo[2] *= volume
 
             if chan is not None:
                 # Overriding sound channel.
@@ -820,7 +820,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             if soundInfo is None:
                 return
             if volume is not None:
-                soundInfo[2] = volume
+                soundInfo[2] *= volume
             if chan is not None:
                 soundInfo[4] = chan
             soundInfo.append(offset)
@@ -942,7 +942,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                     chan = info.channel
                 self.soundEmitter.registerSound(sound, chan)
                 if volume is not None:
-                    sound.setVolume(volume)
+                    sound.setVolume(sound.getVolume() * volume)
                 sound.setLoop(loop)
                 sound.play()
             return sound
@@ -956,7 +956,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             if sound is None:
                 return None
             if volume is not None:
-                sound.setVolume(volume)
+                sound.setVolume(sound.getVolume() * volume)
             sound.setLoop(loop)
             if chan is None:
                 chan = info.channel
