@@ -18,6 +18,7 @@ from tf.tfgui.KillFeed import KillFeed
 from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfgui import CrossHairInfo
 from tf.tfgui.DamageNumbers import DamageNumbers
+from tf.tfgui.ChatFeed import ChatFeed
 from tf.tfbase import TFGlobals, TFFilters, TFLocalizer
 from .TFPlayerState import TFPlayerState
 
@@ -151,6 +152,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.voiceCommandMenus = []
         self.currentVoiceCommandMenu = -1
+
+        self.chatFeed = ChatFeed()
 
     def createVoiceCommandMenus(self):
         menu1 = VoiceCommandMenu()
@@ -975,6 +978,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.localAvatarId = self.doId
 
     def delete(self):
+        if self.chatFeed:
+            self.chatFeed.cleanup()
+            self.chatFeed = None
         for menu in self.voiceCommandMenus:
             menu.cleanup()
         self.voiceCommandMenus = None
@@ -1051,7 +1057,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.accept(',', self.doChangeClass)
         self.accept('.', self.doChangeTeam)
-        self.accept('y', self.sendUpdate, ['reloadResponses'])
+        #self.accept('y', self.sendUpdate, ['reloadResponses'])
+        self.accept('y', self.chatFeed.showChatEntry)
 
         self.createVoiceCommandMenus()
 

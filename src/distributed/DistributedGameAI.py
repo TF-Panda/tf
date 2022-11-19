@@ -5,7 +5,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
 from tf.player.DViewModelAI import DViewModelAI
 
-from tf.tfbase import TFGlobals, Sounds
+from tf.tfbase import TFGlobals, Sounds, TFLocalizer
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
 from tf.tfbase.TFGlobals import Contents, DamageType, TakeDamage, CollisionGroup, GameZone, TFTeam
 from tf.player.TFClass import *
@@ -59,6 +59,22 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.objectsByTeam = {0: [], 1: []}
 
         self.allPlayers = {}
+
+    def getTeamName(self, team):
+        if team == TFTeam.Red:
+            return TFLocalizer.RED
+        elif team == TFTeam.Blue:
+            return TFLocalizer.BLU
+        else:
+            return ""
+
+    def d_displayChat(self, text, client=None, excludeClients=[]):
+        """
+        Chat message sent from the server to communicate game events.
+
+        TODO: Figure out how to localize these.
+        """
+        self.sendUpdate('displayChat', [text], client=client, excludeClients=excludeClients)
 
     def computeShakeAmplitude(self, center, playerCenter, amplitude, radius):
         if radius <= 0:
@@ -162,7 +178,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         for players in self.playersByTeam.values():
             for plyr in players:
                 plyr.destroyAllObjects()
-                plyr.respawn()
+                plyr.doRespawn()
                 # Speak about the round starting (battle cry)
                 plyr.speakConcept(TFGlobals.SpeechConcept.RoundStart, {})
 
@@ -546,6 +562,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
     def joinGame(self, name):
         print("Player " + name + " has joined the game.")
 
+        # TODO: Localize server chat messages.
+        self.d_displayChat("%s has joined the game." % name)
+
         client = base.sv.clientSender
         player = DistributedTFPlayerAI()
         client.player = player
@@ -557,7 +576,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         # of a round end.
         # We also can't give class weapons until we actually respawn because the
         # player is not yet assigned a doId until we call generateObject().
-        player.doChangeTeam(team, respawn=False, giveWeapons=False)
+        player.doChangeTeam(team, respawn=False, giveWeapons=False, isAuto=True)
+        #self.d_displayChat("%s was automatically assigned to team %s." % (name, self.getTeamName(team)))
         player.doChangeClass(random.randint(0, Class.COUNT - 1), respawn=False, force=True,
                              sendRespawn=False, giveWeapons=False)
         base.sv.generateObject(player, TFGlobals.GameZone, client)

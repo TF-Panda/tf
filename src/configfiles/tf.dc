@@ -202,6 +202,8 @@ dclass DistributedGame : DistributedObject {
   killEvent(int32 killerDoId, int32 assistDoId, int32 weaponDoId, int32 killedDoId) broadcast;
   domEvent(uint32 a, uint32 b) broadcast;
   revengeEvent(uint32 a, uint32 b) broadcast;
+
+  displayChat(string text) broadcast;
 };
 
 dclass DistributedChar : DistributedEntity {
@@ -317,6 +319,16 @@ dclass DistributedTFPlayer : DistributedChar {
   screenShake(uint8 command, float64 localAmplitude, float64 frequency, float64 duration) ownrecv;
 
   reloadResponses() ownsend airecv;
+
+  // Chat stuff.
+  //
+  // Sent by local player to server as a chat request.
+  say(string text, uint8 teamOnly) ownsend airecv;
+  // Sent from server proceeding a player chat request.  Received by other
+  // clients.  A chat message from this player.
+  playerChat(string text, uint8 teamOnly) broadcast;
+  // Displays chat text corresponding to a voice command.
+  voiceCommandChat(uint8 cmd);
 };
 
 dclass DistributedWeapon : DistributedChar {

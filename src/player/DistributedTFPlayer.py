@@ -100,6 +100,43 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.viewOffsetNode = self.attachNewNode("viewOffset")
 
+    def playerChat(self, chatText, teamOnly):
+        text = ""
+        if self.isDead():
+            text = TFLocalizer.ChatDeadPrefix + " "
+        if teamOnly:
+            text += base.game.teamFormattedString(self.team, TFLocalizer.ChatTeamPrefix + " " + self.playerName)
+        else:
+            text += base.game.teamFormattedString(self.team, self.playerName)
+        text += " : "
+        text += chatText
+        base.localAvatar.chatFeed.addChat(text)
+
+    def voiceCommandChat(self, cmd):
+        cmdChats = {
+            VoiceCommand.Help: TFLocalizer.VoiceCommandHelp,
+            VoiceCommand.Medic: TFLocalizer.VoiceCommandMedic,
+            VoiceCommand.Thanks: TFLocalizer.VoiceCommandThanks,
+            VoiceCommand.Incoming: TFLocalizer.VoiceCommandIncoming,
+            VoiceCommand.SentryAhead: TFLocalizer.VoiceCommandSentryAhead,
+            VoiceCommand.ActivateCharge: TFLocalizer.VoiceCommandActivateCharge,
+            VoiceCommand.Go: TFLocalizer.VoiceCommandGoGoGo,
+            VoiceCommand.Spy: TFLocalizer.VoiceCommandSpy,
+            VoiceCommand.GoLeft: TFLocalizer.VoiceCommandGoLeft,
+            VoiceCommand.GoRight: TFLocalizer.VoiceCommandGoRight,
+            VoiceCommand.MoveUp: TFLocalizer.VoiceCommandMoveUp,
+            VoiceCommand.Yes: TFLocalizer.VoiceCommandYes,
+            VoiceCommand.No: TFLocalizer.VoiceCommandNo
+        }
+        chatText = cmdChats.get(cmd)
+        if not chatText:
+            return
+
+        text = base.game.teamFormattedString(self.team, TFLocalizer.ChatVoicePrefix + " " + self.playerName)
+        text += " : "
+        text += chatText
+        base.localAvatar.chatFeed.addChat(text)
+
     def startBurningEffect(self):
         self.stopBurningEffect()
 

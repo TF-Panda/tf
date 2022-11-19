@@ -58,6 +58,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.accept('shift-v', self.toggleVisDebug)
         #self.accept('c', self.renderCubeMaps)
 
+    def displayChat(self, text):
+        # We might receive a chat message before the local avatar is created.
+        # Bleh.
+        if hasattr(base, 'localAvatar'):
+            base.localAvatar.chatFeed.addChat(text)
+
     def renderCubeMaps(self):
         print("Rendering cube maps...")
         r = CubemapRendering()

@@ -125,6 +125,19 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.recentKills = []
 
+    def say(self, text, teamOnly):
+        if not text:
+            # Prevent sending empty chats.
+            return
+
+        if teamOnly:
+            for plyr in base.game.playersByTeam[self.team]:
+                if plyr == self:
+                    continue
+                self.sendUpdate('playerChat', [text, teamOnly], client=plyr.owner)
+        else:
+            self.sendUpdate('playerChat', [text, teamOnly], excludeClients=[self.owner])
+
     def updateRecentKills(self):
         self.recentKills = [x for x in self.recentKills if (globalClock.frame_time - x) < 20]
 
@@ -177,7 +190,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
     def speakConcept(self, concept, data=None):
         if not self.responseSystem or self.isDead():
-            return
+            return False
 
         if data is None:
             data = {}
@@ -194,6 +207,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 print("Speak in", self.responseSystem.speakTime - globalClock.frame_time, "seconds")
                 base.simTaskMgr.doMethodLater(self.responseSystem.speakTime - globalClock.frame_time, self.__delayedSpeak,
                                               'delayedSpeak', extraArgs=[line], appendTask=True)
+            return True
+        return False
 
     def __delayedSpeak(self, line, task):
         if not self.isDODeleted() and not self.isDead():
@@ -519,9 +534,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if concept is None:
             return
 
-        self.speakConcept(concept)
-
-        self.lastVoiceCmdTime = now
+        if self.speakConcept(concept):
+            self.lastVoiceCmdTime = now
+            for plyr in base.game.playersByTeam[self.team]:
+                self.sendUpdate('voiceCommandChat', [cmd], client=plyr.owner)
 
     def d_setViewAngles(self, hpr):
         """
@@ -1241,7 +1257,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.doChangeTeam(team, respawn)
 
-    def doChangeTeam(self, team, respawn=True, giveWeapons=True):
+    def doChangeTeam(self, team, respawn=True, giveWeapons=True, isAuto=False):
         if team == self.team:
             self.pendingChangeTeam = TFTeam.NoTeam
             return
@@ -1286,6 +1302,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.pendingChangeTeam = TFTeam.NoTeam
 
+        if isAuto:
+            base.game.d_displayChat("%s was automatically assigned to team %s." % (self.playerName, base.game.getTeamName(self.team)))
+        else:
+            base.game.d_displayChat("%s joined team %s" % (self.playerName, base.game.getTeamName(self.team)))
+
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
         if not base.game.isChangeClassAllowed():
             return
@@ -1298,14 +1319,14 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             return
 
         if self.playerState == TFPlayerState.Playing:
+            # TODO: Check if we are in a respawn room.
             self.die()
-            self.pendingChangeClass = cls
-            return
-        elif self.playerState != TFPlayerState.Fresh:
-            self.pendingChangeClass = cls
-            return
 
-        self.doChangeClass(cls, respawn, force, sendRespawn, giveWeapons)
+        if self.playerState != TFPlayerState.Fresh:
+            self.pendingChangeClass = cls
+            base.game.d_displayChat("You will spawn as %s." % (ClassInfos[self.pendingChangeClass].Name), client=self.owner)
+        else:
+            self.doChangeClass(cls, respawn, force, sendRespawn, giveWeapons)
 
     def doChangeClass(self, cls, respawn=True, force=False, sendRespawn=True, giveWeapons=True):
         if (cls == self.tfClass) and not force:
@@ -1446,6 +1467,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.addTask(self.__conditionThinkAI, 'TFPlayerConditionThinkAI', appendTask=True, sim=True)
 
     def delete(self):
+        base.game.d_displayChat("%s left the game." % self.playerName)
+
         if self.flag:
             self.flag.drop()
 
