@@ -1303,7 +1303,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.pendingChangeTeam = TFTeam.NoTeam
 
         if isAuto:
-            base.game.d_displayChat("%s was automatically assigned to team %s." % (self.playerName, base.game.getTeamName(self.team)))
+            base.game.d_displayChat("%s was automatically assigned to team %s" % (self.playerName, base.game.getTeamName(self.team)))
         else:
             base.game.d_displayChat("%s joined team %s" % (self.playerName, base.game.getTeamName(self.team)))
 
@@ -1324,7 +1324,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         if self.playerState != TFPlayerState.Fresh:
             self.pendingChangeClass = cls
-            base.game.d_displayChat("You will spawn as %s." % (ClassInfos[self.pendingChangeClass].Name), client=self.owner)
+            base.game.d_displayChat("*You will spawn as %s" % (ClassInfos[self.pendingChangeClass].Name), client=self.owner)
         else:
             self.doChangeClass(cls, respawn, force, sendRespawn, giveWeapons)
 
@@ -1467,7 +1467,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.addTask(self.__conditionThinkAI, 'TFPlayerConditionThinkAI', appendTask=True, sim=True)
 
     def delete(self):
-        base.game.d_displayChat("%s left the game." % self.playerName)
+        base.game.d_displayChat("%s left the game" % self.playerName)
 
         if self.flag:
             self.flag.drop()
