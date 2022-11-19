@@ -54,9 +54,9 @@ class TFBase(ShowBase, FSM):
         tpm.setProperties("error", error)
         tpm.setProperties("fatal", error)
         red = TextProperties()
-        red.setTextColor(1, 0, 0, 1)
+        red.setTextColor(1, 0.239, 0.239, 1)
         blue = TextProperties()
-        blue.setTextColor(0, 0, 1, 1)
+        blue.setTextColor(0.604, 0.804, 1, 1)
         tpm.setProperties('redteam', red)
         tpm.setProperties('blueteam', blue)
 

@@ -38,6 +38,7 @@ class ChatFeed:
     ChatScale = 0.04
     ChatLifetime = 10.0
     MaxWindowSizeZ = 0.5
+    ChatColor = (0.984, 0.925, 0.796, 1.0)
 
     def __init__(self):
         self.root = base.a2dBottomLeft.attachNewNode("chatFeedRoot")
@@ -77,7 +78,7 @@ class ChatFeed:
         #self.suppressFrame.guiItem.setBackgroundFocus(1)
         #print(self.suppressFrame.guiItem.getFrame())
         self.chatEntry = DirectEntry(overflow=0, parent=self.root, scale=self.ChatScale, pos=(0, 0, -0.05), width=25,
-                                     frameColor=(0.3, 0.3, 0.3, 0.7), text_fg=(1, 1, 1, 1), text_shadow=(0, 0, 0, 1), focus=1,
+                                     frameColor=(0.3, 0.3, 0.3, 0.7), text_fg=self.ChatColor, text_shadow=(0, 0, 0, 1), focus=1,
                                      command=self.onEnterChat, entryFont=TFGlobals.getTF2SecondaryFont(), suppressKeys=1, suppressMouse=1)
 
     def onEnterChat(self, text):
@@ -120,7 +121,7 @@ class ChatFeed:
 
     def addChat(self, text, playSound=True):
         lbl = OnscreenText(text, align=TextNode.ALeft, scale=self.ChatScale, wordwrap=self.ChatWordwrap,
-                           fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), font=TFGlobals.getTF2SecondaryFont())#, bg=(0.3, 0.3, 0.3, 0.7))
+                           fg=self.ChatColor, shadow=(0, 0, 0, 1), font=TFGlobals.getTF2SecondaryFont())
         lbl.reparentTo(self.chatRoot)
         mins = Point3()
         maxs = Point3()
