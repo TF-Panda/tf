@@ -563,7 +563,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         print("Player " + name + " has joined the game.")
 
         # TODO: Localize server chat messages.
-        self.d_displayChat("%s has joined the game" % name)
+        self.d_displayChat("%s has joined the game." % name)
 
         client = base.sv.clientSender
         player = DistributedTFPlayerAI()
@@ -577,7 +577,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         # We also can't give class weapons until we actually respawn because the
         # player is not yet assigned a doId until we call generateObject().
         player.doChangeTeam(team, respawn=False, giveWeapons=False, isAuto=True)
-        #self.d_displayChat("%s was automatically assigned to team %s" % (name, self.getTeamName(team)))
+        #self.d_displayChat("%s was automatically assigned to team %s." % (name, self.getTeamName(team)))
         player.doChangeClass(random.randint(0, Class.COUNT - 1), respawn=False, force=True,
                              sendRespawn=False, giveWeapons=False)
         base.sv.generateObject(player, TFGlobals.GameZone, client)
