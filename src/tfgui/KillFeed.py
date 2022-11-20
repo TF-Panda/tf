@@ -7,10 +7,15 @@ from tf.tfbase import TFGlobals
 
 class KillFeedEvent:
 
-    def __init__(self, lbl, priority, time):
+    def __init__(self, lbl, priority, time, dur):
         self.lbl = lbl
         self.priority = priority
         self.time = time
+        self.expireTime = time + dur
+
+    def cleanup(self):
+        self.lbl.destroy()
+        self.lbl = None
 
 class KillFeed:
 
@@ -22,6 +27,7 @@ class KillFeed:
         self.priorityLife = 15
         self.defaultLife = 10
         self.events = []
+        self.priorityEvents = []
         self.maxEvents = 6
         self.latestTime = 0.0
 
@@ -36,11 +42,11 @@ class KillFeed:
         self.node = None
 
     def pushEvent(self, text, priority):
-        lbl = OnscreenText(text=text, scale=0.045, bg=(0.4, 0.4, 0.4, 1), fg=(1, 1, 1, 1),
+        lbl = OnscreenText(text=text, scale=0.045, bg=(0.3, 0.3, 0.3, 1), fg=(0.984, 0.925, 0.796, 1.0),
                            parent=self.node, align=TextNode.ARight, font=TFGlobals.getTF2SecondaryFont())
         if priority:
             lbl['fg'] = (0.0, 0.0, 0.0, 1)
-            lbl['bg'] = (1, 1, 1, 1)
+            lbl['bg'] = (0.984, 0.925, 0.796, 1.0)
         lbl.hide()
 
         time = globalClock.frame_time
@@ -50,20 +56,46 @@ class KillFeed:
             time += 0.001
         self.latestTime = time
 
-        self.events.append(KillFeedEvent(lbl, priority, time))
+        self.addEvent(KillFeedEvent(lbl, priority, time, self.defaultLife if not priority else self.priorityLife))
+
+    def addEvent(self, event):
+        self.events.append(event)
+
+        if len(self.events) > self.maxEvents:
+            # Remove oldest non-priority event.
+            # However, if they are all priority, remove the oldest.
+            remove = None
+            for ev in self.events:
+                if not ev.priority:
+                    remove = ev
+                    break
+            if not remove:
+                remove = self.events[0]
+            remove.cleanup()
+            self.events.remove(remove)
+
+        self.sortEvents()
 
     def __update(self, task):
-        self.sortEvents()
+        removedEvents = []
+
+        now = globalClock.frame_time
+        for ev in self.events:
+            if now >= ev.expireTime:
+                removedEvents.append(ev)
+
+        if removedEvents:
+            for ev in removedEvents:
+                ev.cleanup()
+                self.events.remove(ev)
+            self.sortEvents()
+
         return task.cont
 
     def sortEvents(self):
-        now = globalClock.frame_time
-
         # Collect the non-priority vs priority events.
         priorityEvents = []
         nonPriorityEvents = []
-
-        origEvents = list(self.events)
 
         for ev in self.events:
             ev.lbl.hide()
@@ -77,10 +109,6 @@ class KillFeed:
         # Sort each by time.
         priorityEvents.sort(key=lambda x: x.time)
         nonPriorityEvents.sort(key=lambda x: x.time)
-
-        # Remove expired.
-        priorityEvents[:] = [x for x in priorityEvents if now - x.time < self.priorityLife]
-        nonPriorityEvents[:] = [x for x in nonPriorityEvents if now - x.time < self.defaultLife]
 
         count = 0
         i = len(priorityEvents) - 1
@@ -106,8 +134,3 @@ class KillFeed:
             ev.lbl.show()
             ev.lbl.setPos(0, z)
             z -= self.eventSpacing
-
-        # Destroy old event labels.
-        for ev in origEvents:
-            if not ev in self.events:
-                ev.lbl.destroy()
