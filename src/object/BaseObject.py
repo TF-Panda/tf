@@ -412,6 +412,7 @@ class BaseObject(BaseClass):
                 if self.hpAccum >= 1.0:
                     self.health += int(self.hpAccum)
                     self.hpAccum -= int(self.hpAccum)
+                self.health = min(self.health, self.maxHealth)
 
                 #self.health = self.maxHealth * self.getCycle()
                 if self.isAnimFinished():
