@@ -6,15 +6,15 @@ from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
 
 from tf.tfbase import TFGlobals
+from .GuiPanel import GuiPanel
 
-class VoiceCommandMenu(DirectObject):
+class VoiceCommandMenu(GuiPanel):
 
     def __init__(self):
-        self.frame = DirectFrame(parent=base.a2dLeftCenter)
-        self.frame.setPos(0.1, 0, 0)
-        self.frame['frameColor'] = (0.1, 0.1, 0.1, 0.7)
-        self.frame['relief'] = DGG.FLAT
-        self.frame.setBin('gui-popup', 100)
+        GuiPanel.__init__(self, parent=base.a2dLeftCenter)
+        self.setPos(0.1, 0, 0)
+        self['frameColor'] = (0.1, 0.1, 0.1, 0.7)
+        self['relief'] = DGG.FLAT
         self.items = []
         self.currFade = 0.0
         self.targetFade = 0.0
@@ -22,8 +22,10 @@ class VoiceCommandMenu(DirectObject):
         self.updateTask = None
         self.frameStale = True
         self.active = False
-        self.frame.hide()
-        self.lblRoot = self.frame.attachNewNode("lblRoot")
+        GuiPanel.hide(self)
+        self.lblRoot = self.attachNewNode("lblRoot")
+
+        self.initialiseoptions(VoiceCommandMenu)
 
     def cleanup(self):
         self.stopUpdateTask()
@@ -33,15 +35,15 @@ class VoiceCommandMenu(DirectObject):
         self.ignoreAll()
         self.lblRoot.removeNode()
         self.lblRoot = None
-        self.frame.destroy()
-        self.frame = None
         self.active = None
+        self.destroy()
 
     def addItem(self, text, hotkey, cmd):
         lbl = OnscreenText(str(hotkey) + ". " + text, parent=self.lblRoot,
                            fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), font=TFGlobals.getTF2SecondaryFont(),
                            align=TextNode.ALeft, scale=0.045)
         self.items.append((lbl, hotkey, cmd))
+        self.bindButton(str(hotkey), self.__handleCommand, [cmd])
         self.frameStale = True
 
     def startUpdateTask(self):
@@ -65,7 +67,7 @@ class VoiceCommandMenu(DirectObject):
         self.lblRoot.calcTightBounds(mins, maxs)
         hPad = 0.03
         vPad = 0.03
-        self.frame['frameSize'] = (mins[0] - hPad, maxs[0] + hPad, mins[2] - vPad, maxs[2] + vPad)
+        self['frameSize'] = (mins[0] - hPad, maxs[0] + hPad, mins[2] - vPad, maxs[2] + vPad)
 
     def show(self):
         if self.frameStale:
@@ -73,9 +75,8 @@ class VoiceCommandMenu(DirectObject):
             self.frameStale = False
         self.fadingOut = False
         self.targetFade = 1.0
-        self.frame.show()
-        for _, hotkey, cmd in self.items:
-            self.accept(str(hotkey), self.__handleCommand, [cmd])
+        GuiPanel.show(self)
+        self.openPanel()
         self.startUpdateTask()
         self.active = True
 
@@ -84,10 +85,10 @@ class VoiceCommandMenu(DirectObject):
             self.targetFade = 0.0
             self.fadingOut = True
         else:
-            self.frame.hide()
+            GuiPanel.hide(self)
             self.currFade = 0.0
             self.stopUpdateTask()
-        self.ignoreAll()
+        self.closePanel()
         self.active = False
 
     def __handleCommand(self, cmd):
@@ -101,9 +102,9 @@ class VoiceCommandMenu(DirectObject):
     def __update(self, task):
         if self.currFade != self.targetFade:
             self.currFade = TFGlobals.approach(self.targetFade, self.currFade, globalClock.dt / 0.3)
-            self.frame.setAlphaScale(self.currFade)
+            self.setAlphaScale(self.currFade)
             if self.fadingOut and self.currFade <= 0:
-                self.frame.hide()
+                GuiPanel.hide(self)
                 self.stopUpdateTask()
                 return task.done
 

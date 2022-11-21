@@ -12,6 +12,7 @@ from tf.distributed.TFClientRepository import TFClientRepository
 from tf.tfbase import TFGlobals, TFLocalizer, SurfaceProperties, Soundscapes, Sounds
 from tf.tfgui.TFMainMenu import TFMainMenu
 from tf.tfgui.NotifyView import NotifyView
+from tf.tfgui.GuiPanel import GuiPanel
 from .TFPostProcess import TFPostProcess
 from .PlanarReflector import PlanarReflector
 from . import Sounds
@@ -235,6 +236,8 @@ class TFBase(ShowBase, FSM):
         self.taskMgr.add(self.__updateParticles2, 'updateParticles2', sort=48)
 
         self.taskMgr.add(self.__updateDirtyDynamicNodes, 'updateDirtyDynamicNodes', sort=49)
+
+        GuiPanel.initialize()
 
     def printVMRenderMasks(self):
         self.r_printNodeMasks(self.vmRender.node(), 0)

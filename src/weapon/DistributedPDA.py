@@ -8,6 +8,7 @@ from tf.tfbase import TFLocalizer, TFGlobals
 from direct.gui.DirectGui import *
 from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
+from tf.tfgui.GuiPanel import GuiPanel
 
 from direct.fsm.FSM import FSM
 from direct.showbase.DirectObject import DirectObject
@@ -79,37 +80,37 @@ class ConstructionObject(NodePath, FSM):
         self.frame = None
         self.removeNode()
 
-class ConstructionScreen(DirectObject):
+class ConstructionScreen(GuiPanel):
 
-    def __init__(self, player):
+    def __init__(self, player, wpn):
         self.player = player
-        self.f = DirectFrame(relief=DGG.FLAT, state=DGG.NORMAL,
-                        frameColor=(0, 0, 0, 0.5),
-                        frameSize=(-1.25, 1.25, -0.5, 0.5),
-                        parent=base.aspect2d,
-                        suppressMouse = False)
+        GuiPanel.__init__(self, relief=DGG.FLAT, state=DGG.NORMAL,
+                          frameColor=(0, 0, 0, 0.5),
+                          frameSize=(-1.25, 1.25, -0.5, 0.5),
+                          parent=base.aspect2d,
+                          suppressMouse = False)
 
-        self.lbl = OnscreenText(text=TFLocalizer.BUILD, parent=self.f, pos=(-1.16, 0.34), fg=(1, 1, 1, 1), scale=0.15, align=TextNode.ALeft, font=TFGlobals.getTF2BuildFont(), shadow=(0, 0, 0, 0.7))
+        self.lbl = OnscreenText(text=TFLocalizer.BUILD, parent=self, pos=(-1.16, 0.34), fg=(1, 1, 1, 1), scale=0.15, align=TextNode.ALeft, font=TFGlobals.getTF2BuildFont(), shadow=(0, 0, 0, 0.7))
 
         x = -0.9
         spacing = 0.6
 
-        s = ConstructionObject(self.f, TFLocalizer.SentryGun, 130, "1")
+        s = ConstructionObject(self, TFLocalizer.SentryGun, 130, "1")
         s.setX(x)
 
         x += spacing
 
-        d = ConstructionObject(self.f, TFLocalizer.Dispenser, 100, "2")
+        d = ConstructionObject(self, TFLocalizer.Dispenser, 100, "2")
         d.setX(x)
 
         x += spacing
 
-        en = ConstructionObject(self.f, TFLocalizer.Entrance, 50, "3")
+        en = ConstructionObject(self, TFLocalizer.Entrance, 50, "3")
         en.setX(x)
 
         x += spacing
 
-        ex = ConstructionObject(self.f, TFLocalizer.Exit, 50, "4")
+        ex = ConstructionObject(self, TFLocalizer.Exit, 50, "4")
         ex.setX(x)
 
         self.buildings = [s, d, en, ex]
@@ -118,6 +119,15 @@ class ConstructionScreen(DirectObject):
 
         self.accept('localPlayerMetalChanged', self.updateBuildingStates)
         self.accept('localPlayerObjectsChanged', self.updateBuildingStates)
+
+        self.bindButton('1', wpn.sendUpdate, ['selectBuilding', [0]])
+        self.bindButton('2', wpn.sendUpdate, ['selectBuilding', [1]])
+        self.bindButton('3', wpn.sendUpdate, ['selectBuilding', [2]])
+        self.bindButton('4', wpn.sendUpdate, ['selectBuilding', [3]])
+
+        self.openPanel()
+
+        self.initialiseoptions(ConstructionScreen)
 
     def updateBuildingStates(self):
         for i in range(len(self.buildings)):
@@ -137,8 +147,7 @@ class ConstructionScreen(DirectObject):
         for b in self.buildings:
             b.destroy()
         self.buildings = None
-        self.f.destroy()
-        self.f = None
+        GuiPanel.destroy(self)
 
 class DistributedConstructionPDA(TFWeapon):
 
@@ -161,26 +170,18 @@ class DistributedConstructionPDA(TFWeapon):
 
         if IS_CLIENT and self.isOwnedByLocalPlayer():
             self.createScreen()
-            self.accept('1', self.sendUpdate, ['selectBuilding', [0]])
-            self.accept('2', self.sendUpdate, ['selectBuilding', [1]])
-            self.accept('3', self.sendUpdate, ['selectBuilding', [2]])
-            self.accept('4', self.sendUpdate, ['selectBuilding', [3]])
 
     def deactivate(self):
         TFWeapon.deactivate(self)
         if IS_CLIENT and self.isOwnedByLocalPlayer():
             self.destroyScreen()
-            self.ignore('1')
-            self.ignore('2')
-            self.ignore('3')
-            self.ignore('4')
 
     def createScreen(self):
         """
         Creates the construction UI.
         """
         self.destroyScreen()
-        self.screen = ConstructionScreen(self.player)
+        self.screen = ConstructionScreen(self.player, self)
 
     def destroyScreen(self):
         if self.screen:

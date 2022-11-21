@@ -163,5 +163,6 @@ model-cache-compiled-shaders 0
 # Add specialty bins.
 cull-bin decal 29 state_sorted
 cull-bin refract 32 state_sorted
+cull-bin gui-panel 61 fixed
 
 #end 50_tf.prc
