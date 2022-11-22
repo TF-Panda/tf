@@ -325,7 +325,7 @@ class DistributedTFPlayerShared:
     def doClassSpecialSkill(self):
         pass
 
-    def doAnimationEvent(self, event, data = 0):
+    def doAnimationEvent(self, event, data = 0, predicted=True):
         pass
 
     def fireBullet(self, info, doEffects, damageType, customDamageType):

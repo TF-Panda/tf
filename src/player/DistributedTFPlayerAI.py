@@ -849,7 +849,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         if self.health > 0:
             # If still alive, flinch
-            self.doAnimationEvent(PlayerAnimEvent.Flinch)
+            self.doAnimationEvent(PlayerAnimEvent.Flinch, predicted=False)
             # Flinch the camera up.
             self.punchAngle[1] = 2
 
@@ -938,10 +938,16 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             if tr['hit']:
                 base.world.traceDecal('blood', tr['block'])
 
-    def doAnimationEvent(self, event, data = 0):
+    def doAnimationEvent(self, event, data=0, predicted=True):
         self.animState.doAnimationEvent(event, data)
+        if predicted:
+            # If this anim event is predicted, don't send it to the client
+            # predicting it.
+            exclude = [self.owner]
+        else:
+            exclude = []
         # Broadcast event to clients.
-        self.sendUpdate('playerAnimEvent', [event, data])
+        self.sendUpdate('playerAnimEvent', [event, data], excludeClients=exclude)
 
     def isDead(self):
         return (self.playerState != TFPlayerState.Playing) or DistributedCharAI.isDead(self)

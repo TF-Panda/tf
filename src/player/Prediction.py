@@ -434,6 +434,8 @@ class Prediction(DirectObject):
             oldAngles = Vec3(avatar.viewAngles)
 
             avatar.viewAngles = cmd.viewAngles
+            avatar.eyeH = avatar.viewAngles[0] % 360 / 360
+            avatar.eyeP = avatar.viewAngles[1] % 360 / 360
 
             #self.runPreThink(avatar)
             #self.runThink(avatar, base.intervalPerTick)

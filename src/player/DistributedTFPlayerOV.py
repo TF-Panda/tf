@@ -155,6 +155,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.chatFeed = ChatFeed()
 
+    def doAnimationEvent(self, event, data=0, predicted=True):
+        if predicted and base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
+            return
+        self.animState.doAnimationEvent(event, data)
+
     def createVoiceCommandMenus(self):
         menu1 = VoiceCommandMenu()
         menu1.addItem(TFLocalizer.VoiceCommandMedic, 1, VoiceCommand.Medic)
@@ -510,6 +515,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.addPredictionField("maxSpeed", float, tolerance=0.5)
         self.addPredictionField("fallVelocity", float, noErrorCheck=True, networked=False)
         self.addPredictionField("fov", float, noErrorCheck=True, networked=False)
+        self.addPredictionField("eyeH", float, tolerance=0.01)
+        self.addPredictionField("eyeP", float, tolerance=0.01)
 
     def setActiveWeapon(self, index):
         if self.activeWeapon == index:
