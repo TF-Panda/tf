@@ -2,11 +2,13 @@
 
 from . import EngineerResponses
 from . import SoldierResponses
+from . import ScoutResponses
 from tf.player.TFClass import Class
 
 ResponseClasses = {
   Class.Engineer: EngineerResponses,
-  Class.Soldier: SoldierResponses
+  Class.Soldier: SoldierResponses,
+  Class.Scout: ScoutResponses
 }
 
 def reload():
