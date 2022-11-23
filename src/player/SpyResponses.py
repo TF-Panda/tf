@@ -50,6 +50,22 @@ SpyBaseResponses = {
   'go_right': stringList('Spy.HeadRight', (1, 3)),
   'thanks': stringList('Spy.Thanks', (1, 3)),
   'assist_thanks': stringList('Spy.SpecialCompleted-AssistedKill', (1, 2)),
+  'melee_dare': [
+    'Soldier.Taunts03', 'Soldier.Taunts08', 'Soldier.Taunts14',
+    'Soldier.Taunts16', 'Soldier.Taunts19', 'Soldier.Taunts20'
+  ],
+  'revenge': [
+    'Soldier.BattleCry06', 'Soldier.Cheers01', 'Soldier.GoodJob02'
+  ],
+  'domination_scout': stringList('Soldier.DominationScout', (1, 11)),
+  'domination_soldier': stringList('Soldier.DominationSoldier', (1, 6)),
+  'domination_pyro': stringList('Soldier.DominationPyro', (1, 9)),
+  'domination_demo': stringList('Soldier.DominationDemoman', (1, 6)),
+  'domination_heavy': stringList('Soldier.DominationHeavy', (1, 7)),
+  'domination_engineer': stringList('Soldier.DominationEngineer', (1, 6)),
+  'domination_medic': stringList('Soldier.DominationMedic', (1, 7)),
+  'domination_sniper': stringList('Soldier.DominationSniper', (1, 14)),
+  'domination_spy': stringList('Soldier.DominationSpy', (1, 8))
 }
 
 def makeResponseSystem(player):

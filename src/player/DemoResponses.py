@@ -49,6 +49,22 @@ DemoBaseResponses = {
   'go_right': stringList('Demoman.HeadRight', (1, 3)),
   'thanks': stringList('Demoman.Thanks', (1, 2)),
   'assist_thanks': stringList('Demoman.SpecialCompleted-AssistedKill', (1, 2)),
+  'melee_dare': [
+    'Demoman.Taunts03', 'Demoman.Taunts05', 'Demoman.Taunts14'
+  ],
+  'revenge': [
+    'Demoman.GoodJob01', 'Demoman.Taunts16', 'Demoman.SpecialCompleted09',
+    'Demoman.PositiveVocalization02'
+  ],
+  'domination_scout': stringList('Demoman.dominationscout', (1, 8)),
+  'domination_soldier': stringList('Demoman.dominationsoldier', (1, 5)),
+  'domination_pyro': stringList('Demoman.dominationpyro', (1, 4)),
+  'domination_demo': stringList('Demoman.dominationdemoman', (1, 4)),
+  'domination_heavy': stringList('Demoman.dominationheavy', (1, 5)),
+  'domination_engineer': stringList('Demoman.dominationengineer', (1, 6)),
+  'domination_medic': stringList('Demoman.dominationmedic', (1, 4)),
+  'domination_sniper': stringList('Demoman.dominationsniper', (1, 4)),
+  'domination_spy': stringList('Demoman.dominationspy', (1, 3))
 }
 
 def makeResponseSystem(player):

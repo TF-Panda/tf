@@ -51,7 +51,28 @@ EngineerBaseResponses = {
   'go_right': stringList('Engineer.HeadRight', (1, 3)),
   'thanks': ['Engineer.Thanks01'],
   'assist_thanks': stringList('Engineer.SpecialCompleted-AssistedKill', (1, 2)),
-  'melee_dare': stringList('engineer_meleedare', (1, 3))
+  'melee_dare': stringList('engineer_meleedare', (1, 3)) + [
+    'Engineer.Taunts01', 'Engineer.Taunts03', 'Engineer.Taunts05',
+    'Engineer.Taunts06', 'Engineer.Taunts08', 'Engineer.Taunts10',
+    'Engineer.Taunts12'
+  ],
+  'domination_scout': stringList('engineer_dominationscout', (1, 12)),
+  'domination_solder': stringList('engineer_dominationsoldier', (1, 8)),
+  'domination_pyro': stringList('engineer_dominationpyro', (1, 9)),
+  'domination_demo': stringList('engineer_dominationdemoman', (1, 6)),
+  'domination_heavy': stringList('engineer_dominationheavy', (1, 15)),
+  'domination_engineer': stringList('engineer_dominationengineer', (1, 9)),
+  'domination_medic': stringList('engineer_dominationmedic', (1, 8)),
+  'domination_sniper': stringList('engineer_dominationsniper', (1, 8)),
+  'domination_spy': stringList('engineer_dominationspy', (1, 13)),
+  'revenge': [
+    'Engineer.BattleCry07', 'Engineer.Cheers01', 'Engineer.Cheers06',
+    'Engineer.Cheers07', 'Engineer.Jeers04', 'Engineer.LaughEvil01',
+    'Engineer.LaughEvil02', 'Engineer.LaughEvil05', 'Engineer.LaughEvil06',
+    'Engineer.LaughHappy01', 'Engineer.LaughHappy02', 'Engineer.LaughHappy03',
+    'Engineer.LaughLong01', 'Engineer.SpecialCompleted03', 'Engineer.Taunts02',
+    'Engineer.Taunts04', 'engineer_revenge01', 'engineer_revenge02'
+  ]
 }
 
 def makeResponseSystem(player):
@@ -157,7 +178,7 @@ def makeResponseSystem(player):
       Rule(
         [
           isManyRecentKills, percentChance30,
-          lambda data: not data.get('EngineerKillSpeech')
+          lambda data: not data.get('KillSpeech')
         ],
         [
           Response(
@@ -169,7 +190,7 @@ def makeResponseSystem(player):
           )
         ],
         [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10}
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
         ]
       )
     )
@@ -178,7 +199,7 @@ def makeResponseSystem(player):
       Rule(
         [
           isVeryManyRecentKills, percentChance50,
-          lambda data: not data.get('EngineerKillSpeech')
+          lambda data: not data.get('KillSpeech')
         ],
         [
           Response(
@@ -188,7 +209,7 @@ def makeResponseSystem(player):
           )
         ],
         [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10}
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
         ]
       )
     )
@@ -218,7 +239,7 @@ def makeResponseSystem(player):
       Rule(
         [
           isManyRecentKills, isSentryKill, percentChance30,
-          lambda data: not data.get('EngineerKillSpeech')
+          lambda data: not data.get('KillSpeech')
         ],
         [
           Response(
@@ -231,296 +252,7 @@ def makeResponseSystem(player):
           )
         ],
         [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-
-    # Revenge kill responses.
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isRevengeKill
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.BattleCry07", preDelay=2.5),
-              ResponseLine("Engineer.Cheers01", preDelay=2.5),
-              ResponseLine("Engineer.Cheers06", preDelay=2.5),
-              ResponseLine("Engineer.Cheers07", preDelay=2.5),
-              ResponseLine("Engineer.Jeers04", preDelay=2.5),
-              ResponseLine("Engineer.LaughEvil01", preDelay=2.5),
-              ResponseLine("Engineer.LaughEvil02", preDelay=2.5),
-              ResponseLine("Engineer.LaughEvil05", preDelay=2.5),
-              ResponseLine("Engineer.LaughEvil06", preDelay=2.5),
-              ResponseLine("Engineer.LaughHappy01", preDelay=2.5),
-              ResponseLine("Engineer.LaughHappy02", preDelay=2.5),
-              ResponseLine("Engineer.LaughHappy03", preDelay=2.5),
-              ResponseLine("Engineer.LaughLong01", preDelay=2.5),
-              ResponseLine("Engineer.SpecialCompleted03", preDelay=2.5),
-              ResponseLine("Engineer.Taunts02", preDelay=2.5),
-              ResponseLine("Engineer.Taunts04", preDelay=2.5),
-              ResponseLine("engineer_revenge01", preDelay=2.5),
-              ResponseLine("engineer_revenge02", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    # Domination kill responses.
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimScout
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationscout01", preDelay=2.5),
-              ResponseLine("engineer_dominationscout02", preDelay=2.5),
-              ResponseLine("engineer_dominationscout03", preDelay=2.5),
-              ResponseLine("engineer_dominationscout04", preDelay=2.5),
-              ResponseLine("engineer_dominationscout05", preDelay=2.5),
-              ResponseLine("engineer_dominationscout06", preDelay=2.5),
-              ResponseLine("engineer_dominationscout07", preDelay=2.5),
-              ResponseLine("engineer_dominationscout08", preDelay=2.5),
-              ResponseLine("engineer_dominationscout09", preDelay=2.5),
-              ResponseLine("engineer_dominationscout10", preDelay=2.5),
-              ResponseLine("engineer_dominationscout11", preDelay=2.5),
-              ResponseLine("engineer_dominationscout12", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimSoldier
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationsoldier01", preDelay=2.5),
-              ResponseLine("engineer_dominationsoldier02", preDelay=2.5),
-              ResponseLine("engineer_dominationsoldier03", preDelay=2.5),
-              ResponseLine("engineer_dominationsoldier04", preDelay=2.5),
-              ResponseLine("engineer_dominationsoldier05", preDelay=2.5),
-              ResponseLine("engineer_dominationsoldier06", preDelay=2.5),
-              ResponseLine("engineer_dominationsoldier07", preDelay=2.5),
-              ResponseLine("engineer_dominationsoldier08", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimPyro
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationpyro01", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro02", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro03", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro04", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro05", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro06", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro07", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro08", preDelay=2.5),
-              ResponseLine("engineer_dominationpyro09", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimDemo
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationdemoman01", preDelay=2.5),
-              ResponseLine("engineer_dominationdemoman02", preDelay=2.5),
-              ResponseLine("engineer_dominationdemoman03", preDelay=2.5),
-              ResponseLine("engineer_dominationdemoman04", preDelay=2.5),
-              ResponseLine("engineer_dominationdemoman05", preDelay=2.5),
-              ResponseLine("engineer_dominationdemoman06", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimHeavy
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationheavy01", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy02", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy03", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy04", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy05", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy06", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy07", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy08", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy09", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy10", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy11", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy12", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy13", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy14", preDelay=2.5),
-              ResponseLine("engineer_dominationheavy15", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimEngineer
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationengineer01", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer02", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer03", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer04", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer05", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer06", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer07", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer08", preDelay=2.5),
-              ResponseLine("engineer_dominationengineer09", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimMedic
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationmedic01", preDelay=2.5),
-              ResponseLine("engineer_dominationmedic02", preDelay=2.5),
-              ResponseLine("engineer_dominationmedic03", preDelay=2.5),
-              ResponseLine("engineer_dominationmedic04", preDelay=2.5),
-              ResponseLine("engineer_dominationmedic05", preDelay=2.5),
-              ResponseLine("engineer_dominationmedic06", preDelay=2.5),
-              ResponseLine("engineer_dominationmedic07", preDelay=2.5),
-              ResponseLine("engineer_dominationmedic08", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimSniper
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationsniper01", preDelay=2.5),
-              ResponseLine("engineer_dominationsniper02", preDelay=2.5),
-              ResponseLine("engineer_dominationsniper03", preDelay=2.5),
-              ResponseLine("engineer_dominationsniper04", preDelay=2.5),
-              ResponseLine("engineer_dominationsniper05", preDelay=2.5),
-              ResponseLine("engineer_dominationsniper06", preDelay=2.5),
-              ResponseLine("engineer_dominationsniper07", preDelay=2.5),
-              ResponseLine("engineer_dominationsniper08", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.KilledPlayer,
-      Rule(
-        [
-          isDominationKill, isVictimSpy
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_dominationspy01", preDelay=2.5),
-              ResponseLine("engineer_dominationspy02", preDelay=2.5),
-              ResponseLine("engineer_dominationspy03", preDelay=2.5),
-              ResponseLine("engineer_dominationspy04", preDelay=2.5),
-              ResponseLine("engineer_dominationspy05", preDelay=2.5),
-              ResponseLine("engineer_dominationspy06", preDelay=2.5),
-              ResponseLine("engineer_dominationspy07", preDelay=2.5),
-              ResponseLine("engineer_dominationspy08", preDelay=2.5),
-              ResponseLine("engineer_dominationspy09", preDelay=2.5),
-              ResponseLine("engineer_dominationspy10", preDelay=2.5),
-              ResponseLine("engineer_dominationspy11", preDelay=2.5),
-              ResponseLine("engineer_dominationspy12", preDelay=2.5),
-              ResponseLine("engineer_dominationspy13", preDelay=2.5)
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10},
-          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
         ]
       )
     )

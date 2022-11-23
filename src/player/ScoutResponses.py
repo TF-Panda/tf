@@ -50,6 +50,33 @@ ScoutBaseResponses = {
   'go_right': stringList('Scout.HeadRight', (1, 3)),
   'thanks': stringList('Scout.Thanks', (1, 2)),
   'assist_thanks': stringList('Scout.SpecialCompleted-AssistedKill', (1, 2)),
+  'melee_dare': stringList('Scout.MeleeDare', (1, 6)) + [
+    'Scout.Misc03', 'Scout.Taunts06', 'Scout.Taunts05',
+    'Scout.Taunts10'
+  ],
+  'revenge': stringList('Scout.Revenge', (1, 9)) + [
+    'Scout.Award12', 'Scout.Misc02', 'Scout.Misc09',
+    'Scout.NiceShot02', 'Scout.SpecialCompleted12'
+  ],
+  'domination_scout': stringList('Scout.DominationSct', (1, 3)) + [
+    'Scout.Domination13', 'Scout.Domination07', 'Scout.Domination05',
+    'Scout.Domination20', 'Scout.Domination19', 'Scout.Domination21',
+    'Scout.Misc07'
+  ],
+  'domination_soldier': stringList('Scout.DominationSol', (1, 6)),
+  'domination_pyro': stringList('Scout.DominationPyr', (1, 6)) + [
+    'Scout.Domination06', 'Scout.Misc08'
+  ],
+  'domination_demo': stringList('Scout.DominationDem', (1, 5)) + [
+    'Scout.Domination01', 'Scout.Domination10'
+  ],
+  'domination_heavy': stringList('Scout.DominationHvy', (1, 10)) + [
+    'Scout.Domination08', 'Scout.Domination09'
+  ],
+  'domination_engineer': stringList('Scout.DominationEng', (1, 6)) + ['Scout.Domination17'],
+  'domination_medic': stringList('Scout.DominationMed', (1, 6)) + ['Scout.Misc02'],
+  'domination_sniper': stringList('Scout.DominationSnp', (1, 5)) + ['Scout.Domination12'],
+  'domination_spy': stringList('Soldier.DominationSpy', (1, 4)) + ['Scout.Award10']
 }
 
 def makeResponseSystem(player):

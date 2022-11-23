@@ -638,4 +638,225 @@ def makeBaseTFResponseSystem(player, baseDef):
       )
     )
 
+  if 'domination' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_scout' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimScout
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_scout']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_soldier' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimSoldier
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_soldier']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_pyro' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimPyro
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_pyro']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_demo' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimDemo
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_demo']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_heavy' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimHeavy
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_heavy']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_engineer' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimEngineer
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_engineer']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_medic' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimMedic
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_medic']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_sniper' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimSniper
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_sniper']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'domination_spy' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isDominationKill, isVictimSpy
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['domination_spy']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+  if 'revenge' in baseDef:
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isRevengeKill
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x, preDelay=2.5) for x in baseDef['revenge']
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10},
+          {'name': 'IsDominating', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+
   return system

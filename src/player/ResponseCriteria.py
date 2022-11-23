@@ -20,6 +20,9 @@ def percentChance30(data):
 def percentChance50(data):
     return random.random() <= 0.5
 
+def percentChance75(data):
+    return random.randon() <= 0.75
+
 def superHighHealthContext(data):
     return data['playerhealthfrac'] > 1.4
 
@@ -101,6 +104,9 @@ def isHoveringSniper(data):
 def isHoveringSpy(data):
     return isHoveringPlayer(data) and data['crosshair_player'].tfClass == Class.Spy
 
+def isNotHoveringHeavy(data):
+    return not isHoveringHeavy(data)
+
 def isZoomedIn(data):
     return data['player'].inCondition(data['player'].CondZoomed)
 
@@ -109,3 +115,9 @@ def isActiveWeaponMelee(data):
     if not wpn:
         return False
     return wpn.weaponType == TFWeaponType.Melee
+
+def isActiveWeaponNotMelee(data):
+    return not isActiveWeaponMelee(data)
+
+def isOnPoint(data):
+    return False

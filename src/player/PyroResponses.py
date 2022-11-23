@@ -39,7 +39,18 @@ PyroBaseResponses = {
   'go_left': ['Pyro.HeadLeft01'],
   'go_right': ['Pyro.HeadRight01'],
   'thanks': ['Pyro.Thanks01'],
-  'assist_thanks': ['Pyro.SpecialCompleted-AssistedKill01']
+  'assist_thanks': ['Pyro.SpecialCompleted-AssistedKill01'],
+  'melee_dare': [
+    'Pyro.SpecialCompleted01', 'Pyro.AutoCappedIntelligence01',
+    'Pyro.LaughEvil02'
+  ],
+  'revenge': [
+    'Pyro.BattleCry01', 'Pyro.ActivateCharge01'
+  ],
+  'domination': [
+    'Pyro.LaughEvil01', 'Pyro.LaughEvil02',
+    'Pyro.LaughLong01', 'Pyro.LaughHappy01'
+  ]
 }
 
 def makeResponseSystem(player):

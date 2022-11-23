@@ -49,10 +49,63 @@ HeavyBaseResponses = {
   'go_left': stringList('Heavy.HeadLeft', (1, 3)),
   'go_right': stringList('Heavy.HeadRight', (1, 3)),
   'thanks': stringList('Heavy.Thanks', (1, 3)),
-  'assist_thanks': ['Heavy.SpecialCompleted-AssistedKill01']
+  'assist_thanks': ['Heavy.SpecialCompleted-AssistedKill01'],
+  'melee_dare': stringList('Heavy.MeleeDare', (1, 13)),
+  'revenge': stringList('Heavy.Revenge', (1, 15)) + [
+    'Heavy.Cheers03', 'Heavy.Cheers06', 'Heavy.PositiveVocalization03'
+  ],
+  'domination': stringList('Heavy.Domination', (1, 18)) + [
+    'Heavy.Taunts12', 'Heavy.LaughterBig02', 'Heavy.LaughHappy03',
+    'Heavy.LaughHappy04', 'Heavy.LaughHappy05', 'Heavy.LaughterBig03',
+    'Heavy.LaughterBig04', 'Heavy.GoodJob02', 'Heavy.Jeers06',
+    'Heavy.LaughEvil01', 'Heavy.LaughHappy01', 'Heavy.LaughHappy02',
+    'Heavy.LaughLong01', 'Heavy.LaughLong02', 'Heavy.PositiveVocalization01',
+    'Heavy.PositiveVocalization02'
+  ]
 }
 
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, HeavyBaseResponses)
+
+    # Custom response battle cry against an Engineer.
+    system.addRule(
+      SpeechConcept.BattleCry,
+      Rule(
+        [
+          isHoveringEnemy, isHoveringEngineer, percentChance75
+        ],
+        [
+          Response(
+            [
+              ResponseLine('Heavy.Taunts13'),
+              ResponseLine('Heavy.Taunts17')
+            ]
+          )
+        ]
+      )
+    )
+    # Custom response for taunt against non-Heavies.
+    system.addRule(
+      SpeechConcept.BattleCry,
+      Rule(
+        [
+          isHoveringEnemy, isNotHoveringHeavy, isActiveWeaponNotMelee,
+          percentChance75,
+          lambda data: not data.get('GunTauntHeavy')
+        ],
+        [
+          Response(
+            [
+              ResponseLine('Heavy.Taunts07'),
+              ResponseLine('Heavy.Taunts10'),
+              ResponseLine('Heavy.Taunts11')
+            ]
+          )
+        ],
+        [
+          {'name': 'GunTauntHeavy', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
     system.sortRules()
     return system

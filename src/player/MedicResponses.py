@@ -48,7 +48,22 @@ MedicBaseResponses = {
   'go_left': stringList('Medic.HeadLeft', (1, 3)),
   'go_right': stringList('Medic.HeadRight', (1, 3)),
   'thanks': stringList('Medic.Thanks', (1, 2)),
-  'assist_thanks': stringList('Medic.SpecialCompleted-AssistedKill', (1, 2))
+  'assist_thanks': stringList('Medic.SpecialCompleted-AssistedKill', (1, 2)),
+  'melee_dare': [
+    'Medic.Taunts01', 'Medic.Taunts04', 'Medic.Taunts05',
+    'Medic.Taunts06', 'Medic.Taunts10', 'Medic.Taunts12',
+    'Medic.Taunts13', 'Medic.Taunts15'
+  ],
+  'revenge': [
+    'Medic.GoodJob02', 'Medic.NegativeVocalization02',
+    'Medic.NegativeVocalization06', 'Medic.NegativeVocalization07'
+  ],
+  'domination': [
+    'Medic.Taunts14', 'Medic.Taunts12', 'Medic.LaughLong01',
+    'Medic.LaughLong02', 'Medic.LaughHappy01', 'Medic.LaughHappy02',
+    'Medic.LaughHappy03', 'Medic.LaughEvil02', 'Medic.LaughEvil05',
+    'Medic.LaughShort03'
+  ]
 }
 
 def makeResponseSystem(player):
