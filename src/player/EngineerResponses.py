@@ -6,61 +6,55 @@ import random
 
 from .ResponseSystem import ResponseSystem, Rule, Response, ResponseLine
 from .ResponseCriteria import *
+from .ResponseSystemBase import *
+
+# All classes share a lot of response rules but
+# with lines specific to each class.  This simplifies things.
+EngineerBaseResponses = {
+  'battle_cry': ['Engineer.BattleCry01'] + stringList('Engineer.BattleCry', (3, 7)),
+  'stalemate': stringList('Engineer.AutoDejectedTie', (1, 3)),
+  'capped_ctf': stringList('Engineer.AutoCappedIntelligence', (1, 3)),
+  'medic_call': stringList('Engineer.Medic', (1, 3)),
+  'medic_follow': stringList('engineer_medicfollow', (1, 3)),
+  'spy': stringList('Engineer.CloakedSpy', (1, 3)),
+  'spy_scout': ['Engineer.CloakedSpyIdentify01'],
+  'spy_soldier': ['Engineer.CloakedSpyIdentify02'],
+  'spy_pyro': ['Engineer.CloakedSpyIdentify04'],
+  'spy_demo': ['Engineer.CloakedSpyIdentify05'],
+  'spy_heavy': ['Engineer.CloakedSpyIdentify03'],
+  'spy_engineer': ['Engineer.CloakedSpyIdentify08'],
+  'spy_medic': ['Engineer.CloakedSpyIdentify07'],
+  'spy_sniper': ['Engineer.CloakedSpyIdentify09'],
+  'spy_spy': ['Engineer.CloakedSpyIdentify10', 'Engineer.CloakedSpyIdentify06'],
+  'teleporter_thanks': stringList('Engineer.ThanksForTheTeleporter', (1, 2)),
+  'heal_thanks': stringList('Engineer.ThanksForTheHeal', (1, 2)),
+  'help_me': stringList('Engineer.HelpMe', (1, 3)),
+  'help_capture': stringList('Engineer.HelpMeCapture', (1, 3)),
+  'help_defend': stringList('Engineer.HelpMeDefend', (1, 3)),
+  'incoming': stringList('Engineer.Incoming', (1, 3)),
+  'good_job': stringList('Engineer.GoodJob', (1, 3)),
+  'nice_shot': stringList('Engineer.NiceShot', (1, 3)),
+  'cheers': stringList('Engineer.Cheers', (1, 7)),
+  'jeers': stringList('Engineer.Jeers', (1, 4)),
+  'positive': ['Engineer.PositiveVocalization01'],
+  'negative': stringList('Engineer.NegativeVocalization', (1, 12)),
+  'need_sentry': ['Engineer.NeedSentry01'],
+  'need_dispenser': ['Engineer.NeedDispenser01'],
+  'need_teleporter': stringList('Engineer.NeedTeleporter', (1, 2)),
+  'sentry_ahead': stringList('Engineer.SentryAhead', (1, 2)),
+  'activate_charge': stringList('Engineer.ActivateCharge', (1, 3)),
+  'yes': stringList('Engineer.Yes', (1, 3)),
+  'no': stringList('Engineer.No', (1, 3)),
+  'go': stringList('Engineer.Go', (1, 3)),
+  'move_up': ['Engineer.MoveUp01'],
+  'go_left': stringList('Engineer.HeadLeft', (1, 2)),
+  'go_right': stringList('Engineer.HeadRight', (1, 3)),
+  'thanks': ['Engineer.Thanks01'],
+  'assist_thanks': stringList('Engineer.SpecialCompleted-AssistedKill', (1, 2))
+}
 
 def makeResponseSystem(player):
-    system = ResponseSystem(player)
-
-    system.addRule(
-      SpeechConcept.RoundStart,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.BattleCry01", preDelay=(1, 5)),
-              ResponseLine("Engineer.BattleCry03", preDelay=(1, 5)),
-              ResponseLine("Engineer.BattleCry04", preDelay=(1, 5)),
-              ResponseLine("Engineer.BattleCry05", preDelay=(1, 5)),
-              ResponseLine("Engineer.BattleCry06", preDelay=(1, 5)),
-              ResponseLine("Engineer.BattleCry07", preDelay=(1, 5))
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.RoundEnd,
-      Rule(
-        [
-          lambda data: data['isstalemate']
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.AutoDejectedTie01"),
-              ResponseLine("Engineer.AutoDejectedTie02"),
-              ResponseLine("Engineer.AutoDejectedTie03"),
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.CappedObjective,
-      Rule(
-        [
-          lambda data: data['gamemode'] == 'ctf'
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.AutoCappedIntelligence01"),
-              ResponseLine("Engineer.AutoCappedIntelligence02"),
-              ResponseLine("Engineer.AutoCappedIntelligence03")
-            ]
-          )
-        ]
-      )
-    )
+    system = makeBaseTFResponseSystem(player, EngineerBaseResponses)
 
     system.addRule(
       SpeechConcept.ObjectDestroyed,
@@ -155,201 +149,6 @@ def makeResponseSystem(player):
         ]
       )
     )
-    # Generic medic call
-    system.addRule(
-      SpeechConcept.MedicCall,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.Medic01"),
-              ResponseLine("Engineer.Medic02"),
-              ResponseLine("Engineer.Medic03")
-            ]
-          )
-        ]
-      )
-    )
-    # Medic call when hovering over friendly medic.
-    system.addRule(
-      SpeechConcept.MedicCall,
-      Rule(
-        [
-          isHoveringTeammate, isHoveringMedic,
-          lambda data: data['playerhealthfrac'] > 0.5
-        ],
-        [
-          Response(
-            [
-              ResponseLine("engineer_medicfollow01", preDelay=0.25),
-              ResponseLine("engineer_medicfollow02", preDelay=0.25),
-              ResponseLine("engineer_medicfollow03", preDelay=0.25)
-            ]
-          )
-        ]
-      )
-    )
-
-    # Spy identify, generic.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpy01"),
-              ResponseLine("Engineer.CloakedSpy02"),
-              ResponseLine("Engineer.CloakedSpy03")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as scout.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringScout
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify01")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as soldier.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringSoldier
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify02")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as heavy.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringHeavy
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify03")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as pyro.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringPyro
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify04")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as demoman.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringDemo
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify05")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as spy.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringSpy
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify06"),
-              ResponseLine("Engineer.CloakedSpyIdentify10")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as medic.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringMedic
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify07")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as engineer.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringEngineer
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify08")
-            ]
-          )
-        ]
-      )
-    )
-    # Identify spy as sniper.
-    system.addRule(
-      SpeechConcept.SpyIdentify,
-      Rule(
-        [
-          isHoveringSniper
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.CloakedSpyIdentify09")
-            ]
-          )
-        ]
-      )
-    )
 
     # Killed multiple players recently.
     system.addRule(
@@ -432,366 +231,6 @@ def makeResponseSystem(player):
         ],
         [
           {'name': 'EngineerKillSpeech', 'value': 1, 'expireTime': 10}
-        ]
-      )
-    )
-
-    system.addRule(
-      SpeechConcept.Teleported,
-      Rule(
-        [
-          percentChance30
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.ThanksForTheTeleporter01"),
-              ResponseLine("Engineer.ThanksForTheTeleporter02")
-            ]
-          )
-        ]
-      )
-    )
-
-    system.addRule(
-      SpeechConcept.StoppedBeingHealed,
-      Rule(
-        [
-          percentChance50, superHighHealthContext,
-          lambda data: not data.get("EngineerSaidHealThanks")
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.ThanksForTheHeal01"),
-              ResponseLine("Engineer.ThanksForTheHeal02")
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerSaidHealThanks', 'value': 1, 'expireTime': 20}
-        ]
-      )
-    )
-
-    system.addRule(
-      SpeechConcept.Thanks,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.Thanks01")
-            ]
-          )
-        ]
-      )
-    )
-    # Thanks for assist, if we have a recent kill and haven't said
-    # thanks for assist recently.
-    system.addRule(
-      SpeechConcept.Thanks,
-      Rule(
-        [
-          isARecentKill,
-          lambda data: not data.get("EngineerAssistSpeech")
-        ],
-        [
-          Response(
-            [
-              ResponseLine("Engineer.SpecialCompleted-AssistedKill01"),
-              ResponseLine("Engineer.SpecialCompleted-AssistedKill02")
-            ]
-          )
-        ],
-        [
-          {'name': 'EngineerAssistSpeech', 'value': 1, 'expireTime': 20}
-        ]
-      )
-    )
-
-    system.addRule(
-      SpeechConcept.HelpMe,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.HelpMe01"),
-              ResponseLine("Engineer.HelpMe02"),
-              ResponseLine("Engineer.HelpMe03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.BattleCry,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.BattleCry01"),
-              ResponseLine("Engineer.BattleCry03"),
-              ResponseLine("Engineer.BattleCry04"),
-              ResponseLine("Engineer.BattleCry05"),
-              ResponseLine("Engineer.BattleCry06"),
-              ResponseLine("Engineer.BattleCry07")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.Incoming,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.Incoming01"),
-              ResponseLine("Engineer.Incoming02"),
-              ResponseLine("Engineer.Incoming03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.GoodJob,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.GoodJob01"),
-              ResponseLine("Engineer.GoodJob02"),
-              ResponseLine("Engineer.GoodJob03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.NiceShot,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.NiceShot01"),
-              ResponseLine("Engineer.NiceShot02"),
-              ResponseLine("Engineer.NiceShot03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.Cheers,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.Cheers01"),
-              ResponseLine("Engineer.Cheers02"),
-              ResponseLine("Engineer.Cheers03"),
-              ResponseLine("Engineer.Cheers04"),
-              ResponseLine("Engineer.Cheers05"),
-              ResponseLine("Engineer.Cheers06"),
-              ResponseLine("Engineer.Cheers07")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.Positive,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.PositiveVocalization01")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.Jeers,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.Jeers01"),
-              ResponseLine("Engineer.Jeers02"),
-              ResponseLine("Engineer.Jeers03"),
-              ResponseLine("Engineer.Jeers04")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.Negative,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.NegativeVocalization01"),
-              ResponseLine("Engineer.NegativeVocalization02"),
-              ResponseLine("Engineer.NegativeVocalization03"),
-              ResponseLine("Engineer.NegativeVocalization04"),
-              ResponseLine("Engineer.NegativeVocalization05"),
-              ResponseLine("Engineer.NegativeVocalization06"),
-              ResponseLine("Engineer.NegativeVocalization07"),
-              ResponseLine("Engineer.NegativeVocalization08"),
-              ResponseLine("Engineer.NegativeVocalization09"),
-              ResponseLine("Engineer.NegativeVocalization10"),
-              ResponseLine("Engineer.NegativeVocalization11"),
-              ResponseLine("Engineer.NegativeVocalization12")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.SentryHere,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.NeedSentry01")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.DispenserHere,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.NeedDispenser01")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.TeleporterHere,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.NeedTeleporter01"),
-              ResponseLine("Engineer.NeedTeleporter02")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.SentryAhead,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.SentryAhead01"),
-              ResponseLine("Engineer.SentryAhead02")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.ActivateCharge,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.ActivateCharge01"),
-              ResponseLine("Engineer.ActivateCharge02"),
-              ResponseLine("Engineer.ActivateCharge03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.Yes,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.Yes01"),
-              ResponseLine("Engineer.Yes02"),
-              ResponseLine("Engineer.Yes03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.No,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.No01"),
-              ResponseLine("Engineer.No02"),
-              ResponseLine("Engineer.No03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.Go,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.Go01"),
-              ResponseLine("Engineer.Go02"),
-              ResponseLine("Engineer.Go03")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.MoveUp,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.MoveUp01")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.GoLeft,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.HeadLeft01"),
-              ResponseLine("Engineer.HeadLeft02")
-            ]
-          )
-        ]
-      )
-    )
-    system.addRule(
-      SpeechConcept.GoRight,
-      Rule(
-        responses=[
-          Response(
-            [
-              ResponseLine("Engineer.HeadRight01"),
-              ResponseLine("Engineer.HeadRight02"),
-              ResponseLine("Engineer.HeadRight03")
-            ]
-          )
         ]
       )
     )

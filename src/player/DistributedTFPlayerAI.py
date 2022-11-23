@@ -28,6 +28,7 @@ from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
 from . import ResponseClassRegistry
 from . import ResponseSystem
 from . import ResponseCriteria
+from . import ResponseSystemBase
 
 import copy
 import random
@@ -156,6 +157,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         import importlib
         importlib.reload(ResponseCriteria)
         importlib.reload(ResponseSystem)
+        importlib.reload(ResponseSystemBase)
         importlib.reload(ResponseClassRegistry)
         ResponseClassRegistry.reload()
 
