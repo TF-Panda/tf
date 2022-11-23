@@ -7,6 +7,8 @@ from . import PyroResponses
 from . import DemoResponses
 from . import HeavyResponses
 from . import MedicResponses
+from . import SniperResponses
+from . import SpyResponses
 from tf.player.TFClass import Class
 
 ResponseClasses = {
@@ -16,7 +18,9 @@ ResponseClasses = {
   Class.Pyro: PyroResponses,
   Class.Demo: DemoResponses,
   Class.HWGuy: HeavyResponses,
-  Class.Medic: MedicResponses
+  Class.Medic: MedicResponses,
+  Class.Sniper: SniperResponses,
+  Class.Spy: SpyResponses
 }
 
 def reload():

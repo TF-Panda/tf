@@ -100,3 +100,6 @@ def isHoveringSniper(data):
 
 def isHoveringSpy(data):
     return isHoveringPlayer(data) and data['crosshair_player'].tfClass == Class.Spy
+
+def isZoomedIn(data):
+    return data['player'].inCondition(data['player'].CondZoomed)
