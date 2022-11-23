@@ -49,6 +49,23 @@ def makeBaseTFResponseSystem(player, baseDef):
       )
     )
 
+  if 'melee_dare' in baseDef:
+    system.addRule(
+      SpeechConcept.BattleCry,
+      Rule(
+        [
+          isHoveringEnemy, isActiveWeaponMelee
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in baseDef['melee_dare']
+            ]
+          )
+        ]
+      )
+    )
+
   if 'stalemate' in baseDef:
     system.addRule(
       SpeechConcept.RoundEnd,

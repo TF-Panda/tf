@@ -103,3 +103,9 @@ def isHoveringSpy(data):
 
 def isZoomedIn(data):
     return data['player'].inCondition(data['player'].CondZoomed)
+
+def isActiveWeaponMelee(data):
+    wpn = data['player'].getActiveWeaponObj()
+    if not wpn:
+        return False
+    return wpn.weaponType == TFWeaponType.Melee

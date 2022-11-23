@@ -50,7 +50,8 @@ EngineerBaseResponses = {
   'go_left': stringList('Engineer.HeadLeft', (1, 2)),
   'go_right': stringList('Engineer.HeadRight', (1, 3)),
   'thanks': ['Engineer.Thanks01'],
-  'assist_thanks': stringList('Engineer.SpecialCompleted-AssistedKill', (1, 2))
+  'assist_thanks': stringList('Engineer.SpecialCompleted-AssistedKill', (1, 2)),
+  'melee_dare': stringList('engineer_meleedare', (1, 3))
 }
 
 def makeResponseSystem(player):
