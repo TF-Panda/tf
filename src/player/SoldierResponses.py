@@ -48,7 +48,7 @@ SoldierBaseResponses = {
   'move_up': stringList('Soldier.MoveUp', (1, 3)),
   'go_left': stringList('Soldier.HeadLeft', (1, 3)),
   'go_right': stringList('Soldier.HeadRight', (1, 3)),
-  'thanks': stringList('Soldier.Thanks', (1, 3)),
+  'thanks': stringList('Soldier.Thanks', (1, 2)),
   'assist_thanks': ['Soldier.SpecialCompleted-AssistedKill01']
 }
 
