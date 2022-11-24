@@ -134,7 +134,7 @@ ScatterGun = 'Fusil à dispersion'
 RED = 'RED'
 BLU = 'BLU'
 
-### Kill Screen ###
+### Kill/Feed Screen ###
 
 RespawnIn = "Réapparition dans : "
 RespawnWaitNewRound = "Le prochain round"
@@ -155,6 +155,10 @@ Dead = "Mort"
 PlayerIsDominating = "%s DOMINE %s"
 PlayerGotRevenge = "%s s'est VENGÉ de %s"
 NemesisText = "NEMESIS !"
+# CTF
+Msg_PickedUpFlag = " a récupéré les documents !"
+Msg_CapturedFlag = " a volé les documents !"
+Msg_DefendedFlag = " a défendu les documents !"
 
 ### Shared Between Kill Screen, Engineer panel, Medic Panel ###
 

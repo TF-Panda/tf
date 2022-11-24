@@ -134,7 +134,7 @@ ScatterGun = 'Scattergun'
 RED = 'RED'
 BLU = 'BLU'
 
-### Kill Screen ###
+### Kill/Feed Screen ###
 
 RespawnIn = "Respawn in: "
 RespawnWaitNewRound = "Wait for new round"
@@ -155,6 +155,10 @@ Dead = "Dead"
 PlayerIsDominating = "%s is DOMINATING %s"
 PlayerGotRevenge = "%s got REVENGE on %s"
 NemesisText = "NEMESIS!"
+# CTF
+Msg_PickedUpFlag = " picked up the intelligence!"
+Msg_CapturedFlag = " captured the intelligence!"
+Msg_DefendedFlag = " defended the intelligence!"
 
 ### Shared Between Kill Screen, Engineer panel, Medic Panel ###
 
