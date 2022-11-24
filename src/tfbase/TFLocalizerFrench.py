@@ -176,7 +176,7 @@ TF_CTF_PlayerTeamPickup = "Votre équipe a RÉCUPÉRÉ les DOCUMENTS de l'ENNEMI
 TF_CTF_OtherTeamPickup = "Vos DOCUMENTS ont été VOLÉS !"
 # Capture
 TF_CTF_PlayerCapture = "Vous avez VOLÉ les DOCUMENTS de l'ENNEMI !"
-TF_CTF_PlayerTeamCapture = "Votre équipe a VOLÉ les DOCUMENTS de l'ENNEMI! "
+TF_CTF_PlayerTeamCapture = "Votre équipe a VOLÉ les DOCUMENTS de l'ENNEMI !"
 TF_CTF_OtherTeamCapture = "Vos documents ont été VOLÉS !"
 # Drop
 TF_CTF_PlayerDrop = "Vous avez lâché les DOCUMENTS de l'ENNEMI !"
