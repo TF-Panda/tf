@@ -76,7 +76,7 @@ class DistributedTeamFlag(DistributedEntity):
         self.flagModel = None
         self.spinIval = None
 
-        self.parentEntityId = WorldParent.Unchanged
+        self.parentEntityId = WorldParent.DynRender
 
         # 32x32x32 trigger box for picking up the flag.
         self.solidShape = SolidShape.Box
@@ -86,10 +86,6 @@ class DistributedTeamFlag(DistributedEntity):
         self.triggerCallback = True
 
         self.playerWithFlag = -1
-
-        if IS_CLIENT:
-            self.removeInterpolatedVar(self.ivPos)
-            self.removeInterpolatedVar(self.ivRot)
 
     if not IS_CLIENT:
 
@@ -148,6 +144,12 @@ class DistributedTeamFlag(DistributedEntity):
             self.playerWithFlag = player.doId
             player.flag = self
 
+            # Parent the flag to the player.
+            self.setParentEntityId(player.doId)
+            # And zero out the transform.
+            self.setPosHpr(0, 0, 0, 0, 0, 0)
+            self.teleport()
+
         def onTriggerEnter(self, entity):
             if entity.isPlayer() and (entity.team != self.team) and not entity.isDead():
                 # Player on other team touched us.
@@ -173,18 +175,20 @@ class DistributedTeamFlag(DistributedEntity):
             base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Dropped, 3, self.team, self.team)
             base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Dropped, 3, self.team, not self.team)
 
+            self.setParentEntityId(WorldParent.DynRender)
+
             plyr = base.air.doId2do.get(self.playerWithFlag)
-            if plyr:
-                plyr.flag = None
-                # Drop to ground underneath player.
-                pos = plyr.getPos() + (0, 0, 32)
-                result = PhysSweepResult()
-                if base.physicsWorld.boxcast(result, Point3(-22.5, -12.75, -5.5) + pos,
-                    Point3(22.55, 13.34, 6.1) + pos, Vec3.down(), 100000,
-                    (plyr.getH(), 0, 0), Contents.Solid):
-                    self.setPos(pos + Vec3.down() * result.getBlock().getDistance())
-                    self.setHpr(plyr.getH(), 0, 0)
-                    self.teleport()
+            assert plyr
+            plyr.flag = None
+            # Drop to ground underneath player.
+            pos = plyr.getPos() + (0, 0, 32)
+            result = PhysSweepResult()
+            if base.physicsWorld.boxcast(result, Point3(-22.5, -12.75, -5.5) + pos,
+                Point3(22.55, 13.34, 6.1) + pos, Vec3.down(), 100000,
+                (plyr.getH(), 0, 0), Contents.Solid):
+                self.setPos(pos + Vec3.down() * result.getBlock().getDistance())
+                self.setHpr(plyr.getH(), 0, 0)
+                self.teleport()
 
             self.skin = self.team
 
@@ -196,6 +200,7 @@ class DistributedTeamFlag(DistributedEntity):
             self.playerWithFlag = -1
 
         def returnFlag(self, captured, announce=True):
+            self.setParentEntityId(WorldParent.DynRender)
             self.setPos(self.initialPos)
             self.setHpr(self.initialHpr)
             self.teleport()
@@ -231,46 +236,21 @@ class DistributedTeamFlag(DistributedEntity):
 
     else: # IS_CLIENT
 
-        def postDataUpdate(self):
-            DistributedEntity.postDataUpdate(self)
-            if self.playerWithFlag != -1:
-                # Ignore server position when a player is carrying the flag.
-                self.setPosHpr(0, 0, 0, 0, 0, 0)
-            elif not self.dropped:
-                self.setPos(self.initialPos)
-                self.setHpr(self.initialHpr)
-
-        def attachToPlayer(self, plyr):
-            flagNode = plyr.find("**/flag")
-            if flagNode and not flagNode.isEmpty():
-                self.reparentTo(flagNode)
-            else:
-                self.reparentTo(plyr)
-            self.setPosHpr(0, 0, 0, 0, 0, 0)
-
-        def __pollPlayer(self, task):
-            if self.playerWithFlag == -1:
-                return task.done
-
-            plyr = base.cr.doId2do.get(self.playerWithFlag)
-            if plyr:
-                self.attachToPlayer(plyr)
-                return task.done
-            return task.cont
+        def parentChanged(self):
+            from tf.player.DistributedTFPlayer import DistributedTFPlayer
+            if self.parentEntity and isinstance(self.parentEntity, DistributedTFPlayer):
+                # Flag is carried by a player, actually parent the flag to the
+                # "flag" expose joint.
+                flagNode = self.parentEntity.find("**/flag")
+                if not flagNode.isEmpty():
+                    self.reparentTo(flagNode)
 
         def RecvProxy_playerWithFlag(self, plyr):
             self.playerWithFlag = plyr
             if plyr == -1:
                 self.startSpin()
-                self.reparentTo(base.dynRender)
             else:
                 self.stopSpin()
-                player = base.cr.doId2do.get(plyr)
-                if player:
-                    # Parent to the flag expose joint.
-                    self.attachToPlayer(player)
-                else:
-                    self.addTask(self.__pollPlayer, 'pollPlayer', appendTask=True)
 
         def setFlagModel(self, model):
             self.flagModelName = model
@@ -298,7 +278,6 @@ class DistributedTeamFlag(DistributedEntity):
 
         def announceGenerate(self):
             DistributedEntity.announceGenerate(self)
-            self.reparentTo(base.dynRender)
             self.setFlagModel(self.flagModelName)
             self.startSpin()
 

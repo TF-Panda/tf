@@ -524,11 +524,8 @@ dclass DistributedToolbox : TFWeapon {
 };
 
 dclass DistributedTeamFlag : DistributedEntity {
-  Position initialPos;
-  Angles initialHpr;
   string flagModelName;
   int32 playerWithFlag;
-  uint8 dropped;
 };
 
 
