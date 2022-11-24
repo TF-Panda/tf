@@ -58,7 +58,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.accept('shift-v', self.toggleVisDebug)
         #self.accept('c', self.renderCubeMaps)
 
-        self.contextLbl = DirectLabel(text='', pos=(0, 0, 0.5), text_shadow=(0, 0, 0, 1), text_align=TextNode.ACenter, text_scale=0.065,
+        self.contextLbl = DirectLabel(text='', pos=(0, 0, 0.6), text_shadow=(0, 0, 0, 1), text_align=TextNode.ACenter, text_scale=0.06,
                                       parent=base.a2dBottomCenter, suppressKeys=False, suppressMouse=False, text_fg=(1, 1, 1, 1),
                                       text_font=TFGlobals.getTF2SecondaryFont())
         self.contextLbl.hide()
