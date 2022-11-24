@@ -134,7 +134,7 @@ ScatterGun = 'Scattergun'
 RED = 'RED'
 BLU = 'BLU'
 
-### Kill Screen
+### Kill Screen ###
 
 RespawnIn = "Respawn in: "
 RespawnWaitNewRound = "Wait for new round"
@@ -165,6 +165,28 @@ Ammo = "\nAmmo: %i"
 Charge = "\nCharge: "
 ChargeFull = "\nCharge: 100%"
 
+### Capture the Flag ###
+# Pickup
+TF_CTF_PlayerPickup = "You PICKED UP the ENEMY INTELLIGENCE!\n\nReturn to BASE!"
+TF_CTF_PlayerTeamPickup = "Your team PICKED UP the ENEMY INTELLIGENCE!"
+TF_CTF_OtherTeamPickup = "Your INTELLIGENCE has been PICKED UP!"
+# Capture
+TF_CTF_PlayerCapture = "You CAPTURED the ENEMY INTELLIGENCE!"
+TF_CTF_PlayerTeamCapture = "Your team CAPTURED the ENEMY INTELLIGENCE!"
+TF_CTF_OtherTeamCapture = "Your INTELLIGENCE was CAPTURED!"
+# Drop
+TF_CTF_PlayerDrop = "You dropped the ENEMY INTELLIGENCE!"
+TF_CTF_PlayerTeamDrop = "The ENEMY INTELLIGENCE was dropped!"
+TF_CTF_OtherTeamDrop = "Your INTELLIGENCE has been dropped!"
+# Reset
+TF_CTF_PlayerTeamReset = "Your INTELLIGENCE has been returned!"
+TF_CTF_OtherTeamReset = "The ENEMY INTELLIGENCE was returned!"
+TF_CTF_Wrong_Goal = "Take the INTELLIGENCE back to YOUR BASE."
+# Specials
+TF_CTF_No_Invuln = "You cannot be INVULNERABLE while carrying the ENEMY INTELLIGENCE!"
+TF_CTF_No_Tele = "You cannot TELEPORT while carrying the ENEMY INTELLIGENCE!"
+# Intelligence is missing
+TF_CTF_Cannot_Capture = "Cannot capture - your flag is not at base!"
 
 # Voice commands
 #

@@ -134,7 +134,7 @@ ScatterGun = 'Fusil à dispersion'
 RED = 'RED'
 BLU = 'BLU'
 
-### Kill Screen
+### Kill Screen ###
 
 RespawnIn = "Réapparition dans : "
 RespawnWaitNewRound = "Le prochain round"
@@ -165,6 +165,28 @@ Ammo = "\nMunitions : %i"
 Charge = "\nCharge : "
 ChargeFull = "\nCharge : 100%"
 
+### Capture the Flag ###
+# Pickup
+TF_CTF_PlayerPickup = "Vous avez RÉCUPÉRÉ les DOCUMENTS de l'ENNEMI.\n\nRegagnez la BASE !"
+TF_CTF_PlayerTeamPickup = "Votre équipe a RÉCUPÉRÉ les DOCUMENTS de l'ENNEMI !"
+TF_CTF_OtherTeamPickup = "Vos DOCUMENTS ont été VOLÉS !"
+# Capture
+TF_CTF_PlayerCapture = "Vous avez VOLÉ les DOCUMENTS de l'ENNEMI !"
+TF_CTF_PlayerTeamCapture = "Votre équipe a VOLÉ les DOCUMENTS de l'ENNEMI! "
+TF_CTF_OtherTeamCapture = "Vos documents ont été VOLÉS !"
+# Drop
+TF_CTF_PlayerDrop = "Vous avez lâché les DOCUMENTS de l'ENNEMI !"
+TF_CTF_PlayerTeamDrop = "Les DOCUMENTS de l'ENNEMI ont été perdus !"
+TF_CTF_OtherTeamDrop = "Vos DOCUMENTS ont été perdus !"
+# Reset
+TF_CTF_PlayerTeamReset = "Vos DOCUMENTS ont été récupérés !"
+TF_CTF_OtherTeamReset = "L'ENNEMI a récupéré ses DOCUMENTS !"
+TF_CTF_Wrong_Goal = "Ramenez les DOCUMENTS à la BASE."
+# Specials
+TF_CTF_No_Invuln = "Vous ne pouvez pas être INVULNÉRABLE quand vous avez les DOCUMENTS de l'ENNEMI !"
+TF_CTF_No_Tele = "Vous ne pouvez pas vous TÉLÉPORTER quand vous avez les DOCUMENTS de l'ENNEMI !"
+# Intelligence is missing
+TF_CTF_Cannot_Capture = "Impossible de capturer ce point de contrôle : votre drapeau n'est pas dans la base !"
 
 # Voice commands
 #
