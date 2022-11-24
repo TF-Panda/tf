@@ -42,7 +42,7 @@ class ChatFeed:
 
     def __init__(self):
         self.root = base.a2dBottomLeft.attachNewNode("chatFeedRoot")
-        self.root.setPos(0.07, 0, 0.4)
+        self.root.setPos(0.1, 0, 0.4)
         self.chatRoot = self.root.attachNewNode("chatRoot")
         self.chatRoot.setEffect(
             ScissorEffect.makeNode((0, 0, 0), (0, 0, self.ChatWindowSizeY),
