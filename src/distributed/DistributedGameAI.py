@@ -62,7 +62,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
     def d_setGameContextMessage(self, id, duration, forTeam, aboutTeam):
         for plyr in self.playersByTeam[forTeam]:
-            self.sendUpdate('setGameContextMessage', [id, duration, aboutTeam])
+            self.sendUpdate('setGameContextMessage', [id, duration, aboutTeam], client=plyr.owner)
 
     def getTeamName(self, team):
         if team == TFTeam.Red:
