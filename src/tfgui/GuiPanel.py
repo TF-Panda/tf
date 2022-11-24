@@ -27,8 +27,6 @@ class GuiPanel(DirectFrame):
 
     @staticmethod
     def __globalButtonDown(buttonName):
-        print(buttonName, "pressed")
-        handled = False
         for panel in reversed(GuiPanel.OpenPanels):
             if buttonName in panel.buttons:
                 cmd, extraArgs = panel.buttons[buttonName]
@@ -36,11 +34,7 @@ class GuiPanel(DirectFrame):
                     cmd(*extraArgs)
                 else:
                     cmd()
-                handled = True
-                print("handled by", panel)
                 break
-        if not handled:
-            print("not handled by any panel")
 
     def __init__(self, *args, **kwargs):
         DirectFrame.__init__(self, *args, **kwargs)
