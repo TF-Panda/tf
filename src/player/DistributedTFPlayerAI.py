@@ -1027,6 +1027,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if self.playerState != TFPlayerState.Playing:
             return
 
+        theFlag = self.flag
         if self.flag:
             self.flag.drop()
 
@@ -1045,8 +1046,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             else:
                 killer = info.attacker.doId
 
-            base.net.game.sendUpdate('killEvent', [killer, -1, -1, self.doId])
-
             # Get player that killed me.
             killerPlayer = None
             if info.inflictor and info.inflictor.isPlayer():
@@ -1058,6 +1057,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
                 # Have other player speak about killing me.
                 killerPlayer.speakKilledPlayer(self, isSentryKill, mode)
+
+            if killerPlayer and theFlag:
+                # The killer defended the flag.
+                theFlag.defendedBy(killerPlayer)
+            base.net.game.sendUpdate('killEvent', [killer, -1, -1, self.doId])
 
         else:
             # Suicide.

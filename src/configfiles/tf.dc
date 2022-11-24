@@ -202,6 +202,9 @@ dclass DistributedGame : DistributedObject {
   killEvent(int32 killerDoId, int32 assistDoId, int32 weaponDoId, int32 killedDoId) broadcast;
   domEvent(uint32 a, uint32 b) broadcast;
   revengeEvent(uint32 a, uint32 b) broadcast;
+  pickedUpFlagEvent(uint32 doId) broadcast;
+  capturedFlagEvent(uint32 doId) broadcast;
+  defendedFlagEvent(uint32 doId) broadcast;
 
   displayChat(string text) broadcast;
 

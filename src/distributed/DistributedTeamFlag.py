@@ -54,6 +54,7 @@ class CaptureZone:
         if cbdata.getTouchType() == PhysTriggerCallbackData.TEnter:
             if entity.flag:
                 announce = not base.game.gameModeImpl.flagCaptured(self.team)
+                base.game.sendUpdate('capturedFlagEvent', [entity.doId])
                 entity.speakConcept(SpeechConcept.CappedObjective, {'gamemode': 'ctf'})
                 if entity.flag:
                     entity.flag.returnFlag(True, announce)
@@ -134,6 +135,7 @@ class DistributedTeamFlag(DistributedEntity):
             self.teamSound("CaptureFlag.EnemyStolen")
             base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_PickedUp, 3, self.team, self.team)
             base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_PickedUp, 3, not self.team, self.team)
+            base.game.sendUpdate('pickedUpFlagEvent', [player.doId])
 
             self.skin = self.team + 3
 
@@ -154,6 +156,9 @@ class DistributedTeamFlag(DistributedEntity):
         def teamSound(self, snd):
             for plyr in base.game.playersByTeam[self.team]:
                 base.world.emitSound(snd, client=plyr.owner)
+
+        def defendedBy(self, player):
+            base.game.sendUpdate('defendedFlagEvent', [player.doId])
 
         def drop(self):
             if self.playerWithFlag == -1:

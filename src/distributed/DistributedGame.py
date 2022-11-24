@@ -628,6 +628,33 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                                                self.teamFormattedString(plyrB.team, plyrB.playerName))
         base.localAvatar.killFeed.pushEvent(text, priority)
 
+    def pickedUpFlagEvent(self, doId):
+        plyr = base.cr.doId2do.get(doId)
+        if not plyr:
+            return
+
+        priority = (plyr == base.localAvatar)
+        text = self.teamFormattedString(plyr.team, plyr.playerName) + TFLocalizer.Msg_PickedUpFlag
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
+    def capturedFlagEvent(self, doId):
+        plyr = base.cr.doId2do.get(doId)
+        if not plyr:
+            return
+
+        priority = (plyr == base.localAvatar)
+        text = self.teamFormattedString(plyr.team, plyr.playerName) + TFLocalizer.Msg_CapturedFlag
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
+    def defendedFlagEvent(self, doId):
+        plyr = base.cr.doId2do.get(doId)
+        if not plyr:
+            return
+
+        priority = (plyr == base.localAvatar)
+        text = self.teamFormattedString(plyr.team, plyr.playerName) + TFLocalizer.Msg_DefendedFlag
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
     def delete(self):
         del base.game
         DistributedObject.delete(self)
