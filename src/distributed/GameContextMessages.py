@@ -12,6 +12,7 @@ class GameContextMessage:
     CTF_Team_Dropped = 5
     CTF_Team_Captured = 6
     CTF_Team_Returned = 7
+    CTF_Player_PickedUp = 8
 
 ContextMessages = {
   GameContextMessage.CTF_Enemy_PickedUp: TFLocalizer.TF_CTF_OtherTeamPickup,
@@ -21,5 +22,6 @@ ContextMessages = {
   GameContextMessage.CTF_Team_PickedUp: TFLocalizer.TF_CTF_PlayerTeamPickup,
   GameContextMessage.CTF_Team_Dropped: TFLocalizer.TF_CTF_PlayerTeamDrop,
   GameContextMessage.CTF_Team_Captured: TFLocalizer.TF_CTF_PlayerTeamCapture,
-  GameContextMessage.CTF_Team_Returned: TFLocalizer.TF_CTF_PlayerTeamReset
+  GameContextMessage.CTF_Team_Returned: TFLocalizer.TF_CTF_PlayerTeamReset,
+  GameContextMessage.CTF_Player_PickedUp: TFLocalizer.TF_CTF_Wrong_Goal
 }

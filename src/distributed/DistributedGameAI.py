@@ -60,9 +60,15 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.allPlayers = {}
 
-    def d_setGameContextMessage(self, id, duration, forTeam, aboutTeam):
-        for plyr in self.playersByTeam[forTeam]:
-            self.sendUpdate('setGameContextMessage', [id, duration, aboutTeam], client=plyr.owner)
+    def d_setGameContextMessage(self, id, duration, aboutTeam, forTeam=None, forPlayer=None, exclude=[]):
+        if forTeam is not None:
+            for plyr in self.playersByTeam[forTeam]:
+                if plyr in exclude:
+                    continue
+                self.sendUpdate('setGameContextMessage', [id, duration, aboutTeam], client=plyr.owner)
+        else:
+            assert forPlayer is not None
+            self.sendUpdate('setGameContextMessage', [id, duration, aboutTeam], client=forPlayer.owner)
 
     def getTeamName(self, team):
         if team == TFTeam.Red:

@@ -133,8 +133,12 @@ class DistributedTeamFlag(DistributedEntity):
 
             self.enemySound("CaptureFlag.TeamStolen")
             self.teamSound("CaptureFlag.EnemyStolen")
+
             base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_PickedUp, 3, self.team, self.team)
-            base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_PickedUp, 3, not self.team, self.team)
+            # We send a specific context message to the player that picked it up.
+            base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_PickedUp, 3, self.team, not self.team, exclude=[player])
+            base.game.d_setGameContextMessage(GameContextMessage.CTF_Player_PickedUp, 3, self.team, forPlayer=player)
+
             base.game.sendUpdate('pickedUpFlagEvent', [player.doId])
 
             self.skin = self.team + 3
@@ -167,7 +171,7 @@ class DistributedTeamFlag(DistributedEntity):
             self.enemySound("CaptureFlag.TeamDropped")
             self.teamSound("CaptureFlag.EnemyDropped")
             base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Dropped, 3, self.team, self.team)
-            base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Dropped, 3, not self.team, self.team)
+            base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Dropped, 3, self.team, not self.team)
 
             plyr = base.air.doId2do.get(self.playerWithFlag)
             if plyr:
@@ -202,11 +206,11 @@ class DistributedTeamFlag(DistributedEntity):
                     self.enemySound("CaptureFlag.TeamCaptured")
                     self.teamSound("CaptureFlag.EnemyCaptured")
                     base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Captured, 3, self.team, self.team)
-                    base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Captured, 3, not self.team, self.team)
+                    base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Captured, 3, self.team, not self.team)
                 else:
                     self.enemySound("CaptureFlag.TeamReturned")
                     self.teamSound("CaptureFlag.EnemyReturned")
-                    base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Returned, 3, not self.team, self.team)
+                    base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Returned, 3, self.team, not self.team)
                     base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Returned, 3, self.team, self.team)
             if self.playerWithFlag != -1:
                 plyr = base.air.doId2do.get(self.playerWithFlag)
