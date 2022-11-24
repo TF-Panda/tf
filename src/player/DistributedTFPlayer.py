@@ -447,6 +447,11 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.gibs = None
             self.enableController()
             self.addTask(self.__updateAnimState, 'playerAnimState', appendTask=True, sort=31, sim=False)
+            # If we have a ragdoll, make sure the talker animation channel is
+            # stopped on it.  Fixes the ragdoll doing lip sync on player lines
+            # after they respawn.
+            if self.ragdoll:
+                self.ragdoll[0].character.stop()
             self.reparentTo(base.dynRender)
             if self.eyes:
                 self.eyes.enable()
