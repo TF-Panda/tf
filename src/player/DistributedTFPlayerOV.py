@@ -280,6 +280,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.ignore('z')
             self.ignore('c')
             self.ignore('e')
+            self.ignore('l')
 
         elif prevState == TFPlayerState.Spectating:
             self.crossHairInfo.clearEnt()
@@ -300,6 +301,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.accept('z', self.toggleVoiceCommandMenu, [0])
             self.accept('x', self.toggleVoiceCommandMenu, [1])
             self.accept('c', self.toggleVoiceCommandMenu, [2])
+            self.accept('l', self.sendUpdate, ['dropFlag'])
 
         elif newState == TFPlayerState.Spectating:
             self.addTask(self.crossHairInfo.update, 'updateCSInfo', appendTask=True, sim=True)

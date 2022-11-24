@@ -334,6 +334,8 @@ dclass DistributedTFPlayer : DistributedChar {
   playerChat(string text, uint8 teamOnly) broadcast;
   // Displays chat text corresponding to a voice command.
   voiceCommandChat(uint8 cmd);
+
+  dropFlag() ownsend airecv;
 };
 
 dclass DistributedWeapon : DistributedChar {

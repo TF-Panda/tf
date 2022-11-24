@@ -126,6 +126,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.recentKills = []
 
+    def dropFlag(self):
+        if self.flag:
+            self.flag.drop()
+            self.flag = None
+
     def say(self, text, teamOnly):
         if not text:
             # Prevent sending empty chats.
