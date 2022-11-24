@@ -6,11 +6,11 @@ from direct.directbase import DirectRender
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from direct.gui.DirectGui import OnscreenText
+from direct.gui.DirectGui import OnscreenText, DirectLabel, DGG
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func, Parallel, LerpPosInterval, LerpScaleInterval
 
-from tf.tfbase import Sounds, TFLocalizer
+from tf.tfbase import Sounds, TFLocalizer, TFGlobals
 
 from .DistributedGameBase import DistributedGameBase
 from .FogManager import FogManager
@@ -57,6 +57,30 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         self.accept('shift-v', self.toggleVisDebug)
         #self.accept('c', self.renderCubeMaps)
+
+        self.contextLbl = DirectLabel(text='', pos=(0, 0, 0.5), text_shadow=(0, 0, 0, 1), text_align=TextNode.ACenter, text_scale=0.065,
+                                      parent=base.a2dBottomCenter, suppressKeys=False, suppressMouse=False, text_fg=(1, 1, 1, 1),
+                                      text_font=TFGlobals.getTF2SecondaryFont())
+        self.contextLbl.hide()
+        self.contextIval = None
+
+    def setGameContextMessage(self, id, duration, team):
+        from tf.distributed.GameContextMessages import ContextMessages
+        text = ContextMessages.get(id)
+        if not text:
+            return
+        self.contextLbl.show()
+        self.contextLbl['text'] = text
+        if team == 0:
+            self.contextLbl['text_bg'] = (0.9, 0.5, 0.5, 0.75)
+        else:
+            self.contextLbl['text_bg'] = (0.5, 0.65, 1, 0.75)
+        if duration > 0:
+            if self.contextIval:
+                self.contextIval.pause()
+                self.contextIval = None
+            self.contextIval = Sequence(Wait(duration), Func(self.contextLbl.hide))
+            self.contextIval.start()
 
     def displayChat(self, text):
         # We might receive a chat message before the local avatar is created.

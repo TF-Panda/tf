@@ -60,6 +60,10 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.allPlayers = {}
 
+    def d_setGameContextMessage(self, id, duration, forTeam, aboutTeam):
+        for plyr in self.playersByTeam[forTeam]:
+            self.sendUpdate('setGameContextMessage', [id, duration, aboutTeam])
+
     def getTeamName(self, team):
         if team == TFTeam.Red:
             return TFLocalizer.RED

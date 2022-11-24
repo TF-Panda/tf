@@ -204,6 +204,8 @@ dclass DistributedGame : DistributedObject {
   revengeEvent(uint32 a, uint32 b) broadcast;
 
   displayChat(string text) broadcast;
+
+  setGameContextMessage(uint16 id, float64 duration, uint8 team) broadcast;
 };
 
 dclass DistributedChar : DistributedEntity {
