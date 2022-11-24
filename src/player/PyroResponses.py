@@ -53,7 +53,48 @@ PyroBaseResponses = {
   ]
 }
 
+pyroMeleeKillLines = [
+  'Pyro.Taunts01', 'Pyro.Taunts02', 'Pyro.Taunts03'
+]
+
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, PyroBaseResponses)
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isManyRecentKills, percentChance30, weaponIsPrimary, notKillSpeech
+        ],
+        [
+          Response(
+            [
+              ResponseLine('Pyro.Taunts04')
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          percentChance30, weaponIsMelee,
+          lambda data: not data.get('KillSpeechMelee')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in pyroMeleeKillLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
     system.sortRules()
     return system

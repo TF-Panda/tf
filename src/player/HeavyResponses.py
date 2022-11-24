@@ -64,15 +64,148 @@ HeavyBaseResponses = {
   ]
 }
 
+heavyKilledPlayerManyLines = [
+  'Heavy.SpecialCompleted09', 'Heavy.SpecialCompleted10',
+  'Heavy.SpecialCompleted11', 'Heavy.Taunts04',
+  'Heavy.Taunts05', 'Heavy.Taunts11'
+]
+heavyKilledPlayerVeryManyLines = [
+  'Heavy.SpecialCompleted07', 'Heavy.SpecialCompleted08',
+  'Heavy.Taunts01', 'Heavy.Taunts10', 'Heavy.Taunts14',
+  'Heavy.Taunts19'
+]
+heavyDestructionLines = [
+  'Heavy.SpecialCompleted02', 'Heavy.SpecialCompleted03',
+  'Heavy.SpecialCompleted01', 'Heavy.LaughterBig01'
+]
+heavyMeleeKillLines = [
+  'Heavy.LaughShort01', 'Heavy.LaughShort02'
+]
+
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, HeavyBaseResponses)
+
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isManyRecentKills, weaponIsPrimary, notKillSpeech, percentChance30
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in heavyKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isVeryManyRecentKills, weaponIsPrimary, notKillSpeech, percentChance50
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in heavyKilledPlayerVeryManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsMelee, percentChance30,
+          lambda data: not data.get('KillSpeechMelee')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in heavyMeleeKillLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledObject,
+      Rule(
+        [
+          percentChance30, isARecentKill,
+          lambda data: not data.get('KillSpeechObject')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in heavyDestructionLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechObject', 'value': 1, 'expireTime': 30}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledObject,
+      Rule(
+        [
+          percentChance10,
+          lambda data: data.get('objecttype') == 'sentry',
+          lambda data: not data.get('KillSpeechObject')
+        ],
+        [
+          Response(
+            [
+              ResponseLine('Heavy.Taunts17')
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechObject', 'value': 1, 'expireTime': 30}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledObject,
+      Rule(
+        [
+          percentChance10,
+          lambda data: data.get('objecttype') == 'dispenser',
+          lambda data: not data.get('KillSpeechObject')
+        ],
+        [
+          Response(
+            [
+              ResponseLine('Heavy.Taunts13')
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechObject', 'value': 1, 'expireTime': 30}
+        ]
+      )
+    )
 
     # Custom response battle cry against an Engineer.
     system.addRule(
       SpeechConcept.BattleCry,
       Rule(
         [
-          isHoveringEnemy, isHoveringEngineer, percentChance75
+          isHoveringEnemy, isHoveringEngineer, percentChance30
         ],
         [
           Response(

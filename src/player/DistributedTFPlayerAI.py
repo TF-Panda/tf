@@ -186,7 +186,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             # relatively healthy, so we need our health percentage.
             data['playerhealthfrac'] = self.health / self.maxHealth
 
-        if concept in (SpeechConcept.KilledPlayer, SpeechConcept.Thanks):
+        if concept in (SpeechConcept.KilledPlayer, SpeechConcept.Thanks, SpeechConcept.KilledObject):
             self.updateRecentKills()
             data['recentkills'] = len(self.recentKills)
 

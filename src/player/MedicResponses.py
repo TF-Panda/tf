@@ -66,7 +66,73 @@ MedicBaseResponses = {
   ]
 }
 
+medicKilledPlayerManyLines = [
+  'Medic.Taunts02', 'Medic.SpecialCompleted12'
+]
+medicKilledPlayerVeryManyLines = [
+  'Medic.SpecialCompleted09', 'Medic.SpecialCompleted02',
+  'Medic.SpecialCompleted10', 'Medic.SpecialCompleted11'
+]
+medicMeleeKillLines = [
+  'Medic.SpecialCompleted01'
+]
+
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, MedicBaseResponses)
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isManyRecentKills, notKillSpeech, percentChance30
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in medicKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isVeryManyRecentKills, notKillSpeech, percentChance50
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in medicKilledPlayerVeryManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsMelee, percentChance30,
+          lambda data: not data.get('KillSpeechMelee')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in medicMeleeKillLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
     system.sortRules()
     return system

@@ -22,10 +22,10 @@ SniperBaseResponses = {
   'spy_pyro': ['Sniper.CloakedSpyIdentify04'],
   'spy_demo': ['Sniper.CloakedSpyIdentify05'],
   'spy_heavy': ['Sniper.CloakedSpyIdentify03'],
-  'spy_engineer': ['Sniper.CloakedSpyIdentify08'],
-  'spy_medic': ['Sniper.CloakedSpyIdentify07'],
-  'spy_sniper': ['Sniper.CloakedSpyIdentify09'],
-  'spy_spy': ['Sniper.CloakedSpyIdentify06'],
+  'spy_engineer': ['Sniper.CloakedSpyIdentify07'],
+  'spy_medic': ['Sniper.CloakedSpyIdentify06'],
+  'spy_sniper': ['Sniper.CloakedSpyIdentify08'],
+  'spy_spy': ['Sniper.CloakedSpyIdentify09'],
   'teleporter_thanks': stringList('Sniper.ThanksForTheTeleporter', (1, 3)),
   'heal_thanks': stringList('Sniper.ThanksForTheHeal', (1, 3)),
   'help_me': stringList('Sniper.HelpMe', (1, 3)),
@@ -52,15 +52,15 @@ SniperBaseResponses = {
   'thanks': stringList('Sniper.Thanks', (1, 2)),
   'assist_thanks': stringList('Sniper.SpecialCompleted-AssistedKill', (1, 2)),
   'melee_dare': stringList('sniper.MeleeDare', (1, 9)),
-  'domination_scout': stringList('Soldier.DominationScout', (1, 11)),
-  'domination_soldier': stringList('Soldier.DominationSoldier', (1, 6)),
-  'domination_pyro': stringList('Soldier.DominationPyro', (1, 9)),
-  'domination_demo': stringList('Soldier.DominationDemoman', (1, 6)),
-  'domination_heavy': stringList('Soldier.DominationHeavy', (1, 7)),
-  'domination_engineer': stringList('Soldier.DominationEngineer', (1, 6)),
-  'domination_medic': stringList('Soldier.DominationMedic', (1, 7)),
-  'domination_sniper': stringList('Soldier.DominationSniper', (1, 14)),
-  'domination_spy': stringList('Soldier.DominationSpy', (1, 8))
+  'domination_scout': stringList('Sniper.DominationScout', (1, 5)),
+  'domination_soldier': stringList('Sniper.DominationSoldier', (1, 6)),
+  'domination_pyro': stringList('Sniper.DominationPyro', (1, 5)),
+  'domination_demo': stringList('Sniper.DominationDemoMan', (1, 5)),
+  'domination_heavy': stringList('Sniper.DominationHeavy', (1, 7)),
+  'domination_engineer': stringList('Sniper.DominationEngineer', (1, 6)),
+  'domination_medic': stringList('Sniper.DominationMedic', (1, 5)),
+  'domination_sniper': stringList('Sniper.DominationSniper', (18, 22)),
+  'domination_spy': stringList('Sniper.DominationSpy', (1, 7))
 }
 
 zoomInPositiveLines = stringList("Sniper.PositiveVocalization", (6, 10))
@@ -105,8 +105,106 @@ sniperSpyRevengeLines = [
   'sniper.Revenge10'
 ]
 
+sniperPrimaryKillLines = [
+  'Sniper.SpecialCompleted13', 'Sniper.Taunts02', 'Sniper.Taunts08',
+  'Sniper.Taunts09', 'Sniper.Taunts10', 'Sniper.Taunts13',
+  'Sniper.Taunts14', 'Sniper.Taunts17', 'Sniper.Taunts19',
+  'Sniper.Taunts22', 'Sniper.Taunts45'
+]
+sniperPrimaryKillScopedLines = [
+  'Sniper.SpecialCompleted44', 'Sniper.Taunts24', 'Sniper.Taunts27',
+  'Sniper.Taunts28', 'Sniper.Taunts29', 'Sniper.Taunts30',
+  'Sniper.Taunts31', 'Sniper.Taunts37', 'Sniper.Taunts38',
+  'Sniper.Taunts39'
+]
+sniperKilledPlayerManyLines = [
+  'Sniper.LaughEvil01', 'Sniper.LaughEvil02',
+  'Sniper.LaughHappy01', 'Sniper.LaughHappy02',
+  'Sniper.LaughLong01', 'Sniper.LaughLong02',
+  'Sniper.SpecialCompleted04', 'Sniper.SpecialCompleted15',
+  'Sniper.SpecialCompleted45'
+]
+sniperKilledPlayerVeryManyLines = [
+  'Sniper.SpecialCompleted03', 'Sniper.SpecialCompleted07',
+  'Sniper.SpecialCompleted10', 'Sniper.Taunts05',
+  'Sniper.Taunts06', 'Sniper.Taunts07',
+  'Sniper.Taunts11', 'Sniper.Taunts18'
+]
+sniperKillSoldierLines = [
+  'Sniper.SpecialCompleted08', 'Sniper.SpecialCompleted16',
+  'Sniper.SpecialCompleted20', 'Sniper.Taunts20'
+]
+sniperKillSoldierHeadshotLines = [
+  'Sniper.SpecialCompleted14', 'Sniper.SpecialCompleted38',
+  'Sniper.SpecialCompleted42', 'Sniper.Taunts42'
+]
+sniperKillHeavyLines = [
+  'Sniper.Taunts21'
+]
+sniperKillHeavyHeadshotLines = [
+  'Sniper.Taunts43'
+]
+sniperKillSpyLines = [
+  'Sniper.SpecialCompleted01', 'Sniper.SpecialCompleted12',
+  'Sniper.SpecialCompleted18', 'Sniper.SpecialCompleted21'
+]
+sniperKillSpyHeadshotLines = [
+  'Sniper.SpecialCompleted33', 'Sniper.SpecialCompleted34',
+  'Sniper.SpecialCompleted40', 'Sniper.SpecialCompleted41',
+  'Sniper.SpecialCompleted43'
+]
+sniperHeadshotLines = [
+  'Sniper.SpecialCompleted02', 'Sniper.SpecialCompleted17',
+  'Sniper.SpecialCompleted24', 'Sniper.SpecialCompleted25',
+  'Sniper.SpecialCompleted26', 'Sniper.SpecialCompleted27',
+  'Sniper.SpecialCompleted30', 'Sniper.SpecialCompleted35',
+  'Sniper.SpecialCompleted36', 'Sniper.SpecialCompleted37',
+  'Sniper.SpecialCompleted46', 'Sniper.Taunts01',
+  'Sniper.Taunts23'
+]
+#sniperMeleeKillLines = [#
+#
+#]
+
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, SniperBaseResponses)
+
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isManyRecentKills, percentChance30, weaponIsPrimary, notKillSpeech
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in sniperKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isManyRecentKills, percentChance30, weaponIsPrimary, notKillSpeech
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in sniperKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
 
     system.addRule(
       SpeechConcept.KilledPlayer,

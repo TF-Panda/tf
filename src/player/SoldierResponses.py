@@ -68,7 +68,104 @@ SoldierBaseResponses = {
   'domination_spy': stringList('Soldier.DominationSpy', (1, 8))
 }
 
+soldierMeleeKillLines = [
+  'Soldier.SpecialCompleted05', 'Soldier.DirectHitTaunt01',
+  'Soldier.DirectHitTaunt02', 'Soldier.DirectHitTaunt03',
+  'Soldier.DirectHitTaunt04'
+]
+soldierDestroyBuildingLines = [
+  'Soldier.BattleCry01', 'Soldier.BattleCry02',
+  'Soldier.SpecialCompleted04', 'Soldier.PositiveVocalization02',
+  'Soldier.PositiveVocalization01'
+]
+soldierKilledPlayerManyLines = [
+  'Soldier.SpecialCompleted03', 'Soldier.Taunts01',
+  'Soldier.Taunts09', 'Soldier.Taunts10'
+]
+soldierKilledPlayerVeryManyLines = [
+  'Soldier.Taunts02', 'Soldier.Taunts17'
+]
+
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, SoldierBaseResponses)
+    # Killed multiple players recently with primary weapon.
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsPrimary, percentChance30, isManyRecentKills, notKillSpeech
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in soldierKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    # Killed more than 3 players recently with primary.
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsPrimary, percentChance50, isVeryManyRecentKills,
+          notKillSpeech
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in soldierKilledPlayerVeryManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    # Melee kill speech.
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsMelee, percentChance30,
+          lambda data: not data.get('KillSpeechMelee')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in soldierMeleeKillLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    # Destroying engineer buildings.
+    system.addRule(
+      SpeechConcept.KilledObject,
+      Rule(
+        [
+          percentChance30, isARecentKill,
+          lambda data: not data.get('KillSpeechObject')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in soldierDestroyBuildingLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechObject', 'value': 1, 'expireTime': 30}
+        ]
+      )
+    )
     system.sortRules()
     return system

@@ -14,6 +14,9 @@ def isManyRecentKills(data):
 def isVeryManyRecentKills(data):
     return data['recentkills'] > 3
 
+def percentChance10(data):
+    return random.random() <= 0.1
+
 def percentChance30(data):
     return random.random() <= 0.3
 
@@ -21,13 +24,19 @@ def percentChance50(data):
     return random.random() <= 0.5
 
 def percentChance75(data):
-    return random.randon() <= 0.75
+    return random.random() <= 0.75
 
 def superHighHealthContext(data):
     return data['playerhealthfrac'] > 1.4
 
 def weaponIsMelee(data):
     return data.get('withweapon') and data['withweapon'].weaponType == TFWeaponType.Melee
+
+def weaponIsSecondary(data):
+    return data.get('withweapon') and data['withweapon'].weaponType == TFWeaponType.Secondary
+
+def weaponIsPrimary(data):
+    return data.get('withweapon') and data['withweapon'].weaponType == TFWeaponType.Primary
 
 def isNotSentryKill(data):
     return not data['issentrykill']
@@ -121,3 +130,6 @@ def isActiveWeaponNotMelee(data):
 
 def isOnPoint(data):
     return False
+
+def notKillSpeech(data):
+    return not data.get('KillSpeech')

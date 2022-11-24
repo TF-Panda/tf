@@ -21,10 +21,10 @@ SpyBaseResponses = {
   'spy_pyro': ['Spy.CloakedSpyIdentify04'],
   'spy_demo': ['Spy.CloakedSpyIdentify05'],
   'spy_heavy': ['Spy.CloakedSpyIdentify03'],
-  'spy_engineer': ['Spy.CloakedSpyIdentify08'],
-  'spy_medic': ['Spy.CloakedSpyIdentify07'],
-  'spy_sniper': ['Spy.CloakedSpyIdentify09'],
-  'spy_spy': ['Spy.CloakedSpyIdentify06'],
+  'spy_engineer': ['Spy.CloakedSpyIdentify09'],
+  'spy_medic': ['Spy.CloakedSpyIdentify08'],
+  'spy_sniper': ['Spy.CloakedSpyIdentify10'],
+  'spy_spy': ['Spy.CloakedSpyIdentify06', 'Spy.CloakedSpyIdentify07'],
   'teleporter_thanks': stringList('Spy.ThanksForTheTeleporter', (1, 3)),
   'heal_thanks': stringList('Spy.ThanksForTheHeal', (1, 3)),
   'help_me': stringList('Spy.HelpMe', (1, 3)),
@@ -51,24 +51,83 @@ SpyBaseResponses = {
   'thanks': stringList('Spy.Thanks', (1, 3)),
   'assist_thanks': stringList('Spy.SpecialCompleted-AssistedKill', (1, 2)),
   'melee_dare': [
-    'Soldier.Taunts03', 'Soldier.Taunts08', 'Soldier.Taunts14',
-    'Soldier.Taunts16', 'Soldier.Taunts19', 'Soldier.Taunts20'
+    'Spy.MeleeDare01', 'Spy.MeleeDare02',
+    'Spy.SpecialCompleted09', 'Spy.Taunts01', 'Spy.Taunts10',
+    'Spy.Taunts11', 'Spy.Taunts13'
   ],
   'revenge': [
-    'Soldier.BattleCry06', 'Soldier.Cheers01', 'Soldier.GoodJob02'
+    'Spy.PositiveVocalization01', 'Spy.Cheers01',
+    'Spy.GoodJob01', 'Spy.PositiveVocalization04',
+    'Spy.PositiveVocalization05', 'Spy.Revenge01',
+    'Spy.Revenge02', 'Spy.Revenge03',
+    'Spy.Taunts16'
   ],
-  'domination_scout': stringList('Soldier.DominationScout', (1, 11)),
-  'domination_soldier': stringList('Soldier.DominationSoldier', (1, 6)),
-  'domination_pyro': stringList('Soldier.DominationPyro', (1, 9)),
-  'domination_demo': stringList('Soldier.DominationDemoman', (1, 6)),
-  'domination_heavy': stringList('Soldier.DominationHeavy', (1, 7)),
-  'domination_engineer': stringList('Soldier.DominationEngineer', (1, 6)),
-  'domination_medic': stringList('Soldier.DominationMedic', (1, 7)),
-  'domination_sniper': stringList('Soldier.DominationSniper', (1, 14)),
-  'domination_spy': stringList('Soldier.DominationSpy', (1, 8))
+  'domination_scout': stringList('Spy.DominationScout', (1, 8)),
+  'domination_soldier': stringList('Spy.DominationSoldier', (1, 5)),
+  'domination_pyro': stringList('Spy.DominationPyro', (1, 5)),
+  'domination_demo': stringList('Spy.DominationDemoMan', (1, 7)),
+  'domination_heavy': stringList('Spy.DominationHeavy', (1, 8)),
+  'domination_engineer': stringList('Spy.DominationEngineer', (1, 6)),
+  'domination_medic': stringList('Spy.DominationMedic', (1, 6)),
+  'domination_sniper': stringList('Spy.DominationSniper', (1, 7)),
+  'domination_spy': stringList('Spy.DominationSpy', (1, 5))
 }
+
+spyKilledPlayerManyLines = [
+  'Spy.LaughEvil01', 'Spy.LaughEvil02', 'Spy.LaughHappy01',
+  'Spy.LaughHappy02', 'Spy.LaughHappy03', 'Spy.LaughLong01',
+  'Spy.LaughShort06', 'Spy.SpecialCompleted09',
+  'Spy.SpecialCompleted10'
+]
+spyMeleeKillLines = [
+  'Spy.SpecialCompleted11', 'Spy.SpecialCompleted02',
+  'Spy.SpecialCompleted03'
+]
 
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, SpyBaseResponses)
+
+    # Killed multiple players with revolver
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsSecondary, isManyRecentKills, percentChance30,
+          notKillSpeech
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in spyKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+
+    # Melee kill.
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsMelee, percentChance30,
+          lambda data: not data.get('KillSpeechMelee')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in spyMeleeKillLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 5}
+        ]
+      )
+    )
+
     system.sortRules()
     return system

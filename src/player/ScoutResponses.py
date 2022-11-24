@@ -79,7 +79,104 @@ ScoutBaseResponses = {
   'domination_spy': stringList('Soldier.DominationSpy', (1, 4)) + ['Scout.Award10']
 }
 
+scoutKilledPlayerManyLines = [
+  'Scout.GoodJob02', 'Scout.LaughEvil02', 'Scout.LaughHappy01',
+  'Scout.LaughHappy02', 'Scout.LaughHappy03', 'Scout.LaughHappy04',
+  'Scout.LaughLong01', 'Scout.LaughLong02', 'Scout.Taunts04',
+  'Scout.Taunts16'
+]
+scoutMeleeKillLines = [
+  'Scout.SpecialCompleted03', 'Scout.SpecialCompleted02',
+  'Scout.Taunts08', 'Scout.SpecialCompleted11',
+  # These ones are specific to the bat.
+  'Scout.SpecialCompleted04', 'Scout.SpecialCompleted06',
+  'Scout.SpecialCompleted07', 'Scout.Taunts11',
+  'Scout.SpecialCompleted09'
+]
+
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, ScoutBaseResponses)
+
+    # Killed multiple players with primary weapon.
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsPrimary, percentChance30, notKillSpeech, isManyRecentKills
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in scoutKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 5}
+        ]
+      )
+    )
+
+    # Melee kill with the bat.
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsMelee, percentChance30,
+          lambda data: not data.get('KillSpeechMelee')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in scoutMeleeKillLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    # Eat it fatty! (Melee kill on Heavy).
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsMelee, isVictimHeavy, percentChance75,
+          lambda data: not data.get('KillSpeechMeleeFat')
+        ],
+        [
+          Response(
+            [
+              ResponseLine('Scout.SpecialCompleted01')
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMeleeFat', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    # I broke your stupid crap moron! (Killed a building).
+    system.addRule(
+      SpeechConcept.KilledObject,
+      Rule(
+        [
+          percentChance30, isARecentKill,
+          lambda data: not data.get('KillSpeechObject')
+        ],
+        [
+          Response(
+            [
+              ResponseLine('Scout.SpecialCompleted10')
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechObject', 'value': 1, 'expireTime': 30}
+        ]
+      )
+    )
+
     system.sortRules()
     return system

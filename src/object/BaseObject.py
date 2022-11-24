@@ -9,8 +9,9 @@ else:
     BaseClass = DistributedCharAI
 
 from .ObjectState import ObjectState
+from .ObjectType import ObjectType
 from tf.actor.Activity import Activity
-from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, CollisionGroup, TFTeam
+from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, CollisionGroup, TFTeam, SpeechConcept
 from tf.player.TFClass import Class
 from tf.tfbase import Sounds
 
@@ -124,14 +125,27 @@ class BaseObject(BaseClass):
 
             self.health = max(0, self.health - info.damage)
 
+            playerAttacker = None
             if info.inflictor and info.inflictor.isPlayer():
+                playerAttacker = info.inflictor
                 info.inflictor.onDamagedOther(self, info.damage)
             elif info.attacker and info.attacker.isPlayer():
                 info.attacker.onDamagedOther(self, info.damage)
+                playerAttack = info.attacker
 
             if self.health <= 0:
                 # Died.
                 self.onKilled(info)
+
+                if playerAttacker:
+                    data = {}
+                    if self.objectType == ObjectType.SentryGun:
+                        data['objecttype'] = 'sentry'
+                    elif self.objecType == ObjectType.Dispenser:
+                        data['objecttype'] = 'dispenser'
+                    else:
+                        data['objecttype'] = 'teleporter'
+                    playerAttacker.speakConcept(SpeechConcept.KilledObject, data)
 
         def onKilled(self, info):
             if info.inflictor and info.inflictor.isObject():

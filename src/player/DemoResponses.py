@@ -67,7 +67,102 @@ DemoBaseResponses = {
   'domination_spy': stringList('Demoman.dominationspy', (1, 3))
 }
 
+demoKilledPlayerManyLines = [
+  'Demoman.SpecialCompleted04',
+  'Demoman.Taunts02', 'Demoman.Taunts04',
+  'Demoman.Taunts08'
+]
+demoKilledPlayerVeryManyLines = [
+  'Demoman.SpecialCompleted01', 'Demoman.SpecialCompleted03',
+  'Demoman.SpecialCompleted07', 'Demoman.SpecialCompleted08',
+  'Demoman.SpecialCompleted10', 'Demoman.Taunts12'
+]
+demoMeleeKillLines = [
+  'Demoman.gibberish01', 'Demoman.gibberish02',
+  'Demoman.gibberish04', 'Demoman.gibberish05',
+  'Demoman.gibberish06', 'Demoman.gibberish07',
+  'Demoman.gibberish08', 'Demoman.gibberish10',
+  'Demoman.SpecialCompleted02'
+]
+demoDestructionLines = [
+  'Demoman.SpecialCompleted11', 'Demoman.SpecialCompleted12'
+]
+
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, DemoBaseResponses)
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isManyRecentKills, weaponIsSecondary, notKillSpeech, percentChance30
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in demoKilledPlayerManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          isVeryManyRecentKills, weaponIsSecondary, notKillSpeech, percentChance50
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in demoKilledPlayerVeryManyLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeech', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledPlayer,
+      Rule(
+        [
+          weaponIsMelee, percentChance30,
+          lambda data: not data.get('KillSpeechMelee')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in demoMeleeKillLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    system.addRule(
+      SpeechConcept.KilledObject,
+      Rule(
+        [
+          percentChance30, isARecentKill,
+          lambda data: not data.get('KillSpeechObject')
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in demoDestructionLines
+            ]
+          )
+        ],
+        [
+          {'name': 'KillSpeechObject', 'value': 1, 'expireTime': 30}
+        ]
+      )
+    )
     system.sortRules()
     return system
