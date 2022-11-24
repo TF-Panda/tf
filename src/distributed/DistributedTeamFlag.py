@@ -178,7 +178,7 @@ class DistributedTeamFlag(DistributedEntity):
                 if base.physicsWorld.boxcast(result, Point3(-22.5, -12.75, -5.5) + pos,
                     Point3(22.55, 13.34, 6.1) + pos, Vec3.down(), 100000,
                     (plyr.getH(), 0, 0), Contents.Solid):
-                    self.setPos(result.getBlock().getPosition() + (0, 0, 5.5))
+                    self.setPos(pos + Vec3.down() * result.getBlock().getDistance())
                     self.setHpr(plyr.getH(), 0, 0)
                     self.teleport()
 
