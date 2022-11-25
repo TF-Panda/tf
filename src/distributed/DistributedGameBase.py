@@ -18,6 +18,7 @@ class DistributedGameBase:
         self.lvlData = None
         self.propRoot = None
         self.propPhysRoot = None
+        self.skyFaceRoot = None
 
         self.propModels = []
 
@@ -304,6 +305,9 @@ class DistributedGameBase:
         self.unloadLevel()
 
     def unloadLevel(self):
+        if self.skyFaceRoot:
+            self.skyFaceRoot.removeNode()
+            self.skyFaceRoot = None
         if self.propRoot:
             self.propRoot.removeNode()
             self.propRoot = None
@@ -353,6 +357,12 @@ class DistributedGameBase:
         dummyRoot = PandaNode("mapRoot")
         dummyRoot.replaceNode(lvlRoot.node())
 
+        self.skyFaceRoot = base.render.attachNewNode(GeomNode("skyBoxFaceRoot"))
+        self.skyFaceRoot.hide(DirectRender.ShadowCameraBitmask)
+        self.skyFaceRoot.setAttrib(ColorWriteAttrib.make(ColorWriteAttrib.COff), 10)
+        self.skyFaceRoot.setDepthWrite(True, 10)
+        self.skyFaceRoot.setBin("background", 0, 10)
+
         for i in range(self.lvlData.getNumModels()):
             mdl = self.lvlData.getModel(i)
             gn = mdl.getGeomNode()
@@ -364,6 +374,9 @@ class DistributedGameBase:
                     mat = mattr.getMaterial()
                     if mat and isinstance(mat, SkyBoxMaterial):
                         gn.removeGeom(i)
+                        self.skyFaceRoot.node().addGeom(geom.makeCopy(), state)
+
+        self.skyFaceRoot.flattenLight()
 
         self.preFlattenLevel()
 
