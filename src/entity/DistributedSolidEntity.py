@@ -146,6 +146,9 @@ class DistributedSolidEntity(DistributedEntity):
                 self.addDecal(decalNp)
 
     def makeModelCollisionShape(self):
+        if not self.model:
+            return None
+
         invOrigin = self.modelOrigin.getInverse().getPos()
 
         if self.physType == self.PTConvex:
@@ -202,7 +205,8 @@ class DistributedSolidEntity(DistributedEntity):
         DistributedEntity.delete(self)
 
     def parentModelToEntity(self):
-        assert self.model
+        if not self.model:
+            return
         gn = self.model.getGeomNode()
         if gn:
             np = NodePath(gn)
@@ -212,12 +216,14 @@ class DistributedSolidEntity(DistributedEntity):
             self.modelNp = np
 
     def fetchModel(self):
-        self.model = base.game.lvlData.getModel(self.modelNum)
-        assert self.model
+        if self.modelNum >= 0:
+            self.model = base.game.lvlData.getModel(self.modelNum)
+            assert self.model
 
     def getModelGeomNode(self):
-        assert self.model
-        return self.model.getGeomNode()
+        if self.model:
+            return self.model.getGeomNode()
+        return None
 
     def createConvexPhysMesh(self):
         meshes = []
