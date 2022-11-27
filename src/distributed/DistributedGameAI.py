@@ -23,6 +23,7 @@ from .GameMode import *
 from .GameModeCTF import GameModeCTF
 from .GameModeTraining import GameModeTraining
 from .GameModePayload import GameModePayload
+from .GameModeArena import GameModeArena
 from .RoundState import *
 
 class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
@@ -379,8 +380,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
 
-        self.collectTeamSpawns()
-
         pfx = lvlName.split('_')[0]
         self.gameMode = MapPrefixToGameMode.get(pfx, GameMode.Training)
         assert pfx is not None
@@ -391,6 +390,10 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.gameModeImpl = GameModeTraining(self)
         elif self.gameMode == GameMode.Payload:
             self.gameModeImpl = GameModePayload(self)
+        elif self.gameMode == GameMode.Arena:
+            self.gameModeImpl = GameModeArena(self)
+
+        self.collectTeamSpawns()
 
         #
         # Free up memory from the darn cube map textures embedded in the level.

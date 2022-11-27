@@ -28,6 +28,7 @@ from tf.entity.DistributedTriggerHurt import DistributedTriggerHurtAI
 from tf.entity.DistributedFuncRotating import DistributedFuncRotatingAI
 from tf.entity.TFEntityFilters import FilterActivatorTFTeam
 from tf.entity.Ropes import RopeKeyFrameAI
+from tf.entity.TFLogicArena import TFLogicArena
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -49,5 +50,6 @@ EntityRegistry = {
     "filter_activator_tfteam": FilterActivatorTFTeam,
     "func_rotating": DistributedFuncRotatingAI,
     "keyframe_rope": RopeKeyFrameAI,
-    "move_rope": RopeKeyFrameAI
+    "move_rope": RopeKeyFrameAI,
+    "tf_logic_arena": TFLogicArena
 }
