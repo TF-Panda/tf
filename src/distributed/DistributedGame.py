@@ -348,6 +348,33 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #self.flatten(base.sky3DRoot)
         #base.sky3DRoot.flattenStrong()
 
+    def getTestSkyFilename(self, skyName):
+        return Filename("materials/" + skyName + "ft.mto")
+
+    def doesSkyExist(self, skyName):
+        vfs = VirtualFileSystem.getGlobalPtr()
+        filename = self.getTestSkyFilename(skyName)
+        return vfs.resolveFilename(filename, getModelPath().value)
+
+    def getBestSkyName(self, skyName):
+        isHdr = skyName.endswith("_hdr")
+        if isHdr:
+            if self.doesSkyExist(skyName):
+                return skyName
+            elif self.doesSkyExist(skyName[:-4]):
+                return skyName[:-4]
+            else:
+                return "sky_upward_hdr"
+        else:
+            # If the sky name is not HDR, check if we have an HDR
+            # version, and prefer that if it exists.
+            if self.doesSkyExist(skyName + "_hdr"):
+                return skyName + "_hdr"
+            elif self.doesSkyExist(skyName):
+                return skyName
+            else:
+                return "sky_upward_hdr"
+
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
 
@@ -363,7 +390,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         skyName = "sky_upward_hdr"
         if worldData.hasAttribute("skyname"):
             skyName = worldData.getAttributeValue("skyname").getString()
-            skyName += "_hdr"
+            skyName = self.getBestSkyName(skyName)
         print("skyname:", skyName)
         self.sky = SkyBox(skyName)
 
