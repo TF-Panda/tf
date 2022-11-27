@@ -19,6 +19,8 @@ class DistributedFuncDoor(DistributedSolidEntity):
 
     NeedOrigin = True
 
+    FlagsToggle = 32
+
     def __init__(self):
         DistributedSolidEntity.__init__(self)
 
@@ -71,6 +73,10 @@ class DistributedFuncDoor(DistributedSolidEntity):
                 self.speed = props.getAttributeValue("speed").getFloat()
             if props.hasAttribute("wait"):
                 self.wait = props.getAttributeValue("wait").getFloat()
+            if props.hasAttribute("spawnflags"):
+                sf = props.getAttributeValue("spawnflags").getInt()
+                if sf & self.FlagsToggle:
+                    self.wait = -1
 
         def input_Open(self, caller):
             self.openDoor()
