@@ -581,7 +581,10 @@ class TFBase(ShowBase, FSM):
         loadingText.destroy()
         bg.removeNode()
 
-        self.demand('MainMenu')
+        if ConfigVariableBool('tf-play-immediately', False).value:
+            self.demand('Game', {'addr': 'http://' + ConfigVariableString('client-addr', '127.0.0.1').value + ':' + str(ConfigVariableInt('client-port', 6667).value)})
+        else:
+            self.demand('MainMenu')
 
     def enterMainMenu(self):
         self.mainMenu = TFMainMenu()
