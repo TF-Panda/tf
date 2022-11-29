@@ -121,6 +121,7 @@ class World(DistributedSolidEntity):
         self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask|DirectRender.ReflectionCameraBitmask))
         self.flattenLight()
 
+        """
         if IS_CLIENT and self.modelNp:
             # The world contains lots of triangles (func_details, displacements, world brushes).
             # Build an octree out of the triangles to accelerate decal
@@ -130,6 +131,7 @@ class World(DistributedSolidEntity):
                 octree = GeomTriangleOctree()
                 octree.build(geom, Vec3(32), 20)
                 DecalProjector.setGeomOctree(geom, octree)
+        """
 
     def delete(self):
         if self.modelNp:
