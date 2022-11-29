@@ -48,6 +48,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.visDebug = False
         self.loadedVisBoxes = False
         self.clusterNodes = None
+        self.clusterDebugRoot = None
         self.currentCluster = -1
         self.fogMgr = None
         self.skyFogMgr = None
@@ -127,7 +128,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             return task.cont
 
         # Hide everything first, then just show the PVS clusters.
-        self.clusterNodes.hide()
+        self.clusterNodes.stash()
 
         # If we had a previous cluster, remove its color and bin that indicates
         # it's the active one.
@@ -146,9 +147,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         # Show ourselves and the visible clusters.
         pvs = self.lvlData.getClusterPvs(cluster)
-        self.clusterNodes[cluster].show()
+        self.clusterNodes[cluster].unstash()
         for i in range(pvs.getNumVisibleClusters()):
-            self.clusterNodes[pvs.getVisibleCluster(i)].show()
+            self.clusterNodes[pvs.getVisibleCluster(i)].unstash()
 
         return task.cont
 
@@ -157,15 +158,19 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if not self.loadedVisBoxes:
             self.loadVisDebugGeometry()
 
+        self.clusterDebugRoot.unstash()
+
         base.taskMgr.add(self.updateVisDebug, 'visDebug', sort=48)
 
     def visDebugDisable(self):
-        if self.clusterNodes:
-            self.clusterNodes.hide()
+        if self.clusterDebugRoot:
+            self.clusterDebugRoot.stash()
         base.taskMgr.remove('visDebug')
 
     def loadVisDebugGeometry(self):
         self.loadedVisBoxes = True
+        self.clusterDebugRoot = base.render.attachNewNode('cluster-debug-root')
+        self.clusterDebugRoot.stash()
         self.clusterNodes = NodePathCollection()
         for i in range(self.lvlData.getNumClusters()):
             clusterData = self.lvlData.getClusterPvs(i)
@@ -191,10 +196,10 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                 lines.draw_to(LPoint3(mins.get_x(), maxs.get_y(), mins.get_z()))
                 lines.move_to(LPoint3(maxs.get_x(), maxs.get_y(), mins.get_z()))
                 lines.draw_to(LPoint3(maxs.get_x(), mins.get_y(), mins.get_z()))
-            np = self.lvl.attachNewNode(lines.create())
+            np = self.clusterDebugRoot.attachNewNode(lines.create())
             np.setDepthWrite(False)
             np.setDepthTest(False)
-            np.setBin('fixed', 0)
+            np.setBin('unsorted', 0)
             self.clusterNodes.addPath(np)
 
     def worldLoaded(self):
