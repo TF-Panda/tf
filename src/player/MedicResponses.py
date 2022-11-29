@@ -34,7 +34,7 @@ MedicBaseResponses = {
   'nice_shot': stringList('Medic.NiceShot', (1, 2)),
   'cheers': stringList('Medic.Cheers', (1, 6)),
   'jeers': stringList('Medic.Jeers', (1, 12)),
-  'positive': stringList('Medic.PositiveVocalization', (1, 6)),
+  'positive': stringList('Medic.PositiveVocalization', (1, 3)) + stringList('Medic.PositiveVocalization', (5, 6)),
   'negative': stringList('Medic.NegativeVocalization', (1, 7)),
   'need_sentry': ['Medic.NeedSentry01'],
   'need_dispenser': ['Medic.NeedDispenser01'],
