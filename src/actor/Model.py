@@ -63,6 +63,8 @@ class Model(DirectObject):
         self.modelData = None
         self.model = ""
         self.bodygroups = {}
+        self.ignore('show-bounds')
+        self.ignore('hide-bounds')
 
     def loadBodygroups(self):
         """
@@ -179,6 +181,14 @@ class Model(DirectObject):
         """
         pass
 
+    def __showModelBounds(self):
+        if self.modelNp:
+            self.modelNp.showBounds()
+
+    def __hideModelBounds(self):
+        if self.modelNp:
+            self.modelNp.hideBounds()
+
     def loadModel(self, filename, callOnChanged=True):
         """
         Loads up a model from the indicated model filename.  The existing
@@ -251,5 +261,11 @@ class Model(DirectObject):
 
         if callOnChanged:
             self.onModelChanged()
+
+        if IS_CLIENT:
+            if base.showingBounds:
+                self.modelNp.showBounds()
+            self.accept('show-bounds', self.__showModelBounds)
+            self.accept('hide-bounds', self.__hideModelBounds)
 
         return True
