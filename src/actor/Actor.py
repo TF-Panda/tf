@@ -257,8 +257,8 @@ class Actor(Model):
             return -1
 
         animLayer = self.character.getAnimLayer(layer)
-        if not animLayer.isPlaying():
-            return -1
+        #if not animLayer.isPlaying():
+        #    return -1
 
         return animLayer._sequence
 
@@ -274,8 +274,10 @@ class Actor(Model):
             return None
 
         animLayer = self.character.getAnimLayer(layer)
-        if not animLayer.isPlaying():
+        if animLayer._sequence < 0:
             return None
+        #if not animLayer.isPlaying():
+        #    return None
 
         return self.character.getChannel(animLayer._sequence)
 
@@ -294,8 +296,8 @@ class Actor(Model):
             return -1
 
         animLayer = self.character.getAnimLayer(layer)
-        if not animLayer.isPlaying():
-            return -1
+        #if not animLayer.isPlaying():
+        #    return -1
 
         return animLayer._activity
 
