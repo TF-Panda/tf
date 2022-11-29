@@ -16,7 +16,7 @@ class DistributedPropDynamic(BaseClass):
     def __init__(self):
         BaseClass.__init__(self)
         # Animation index.
-        self.animation = 0
+        self.animation = -1
         self.solid = False
 
         self.solidShape = SolidShape.Empty
@@ -49,6 +49,8 @@ class DistributedPropDynamic(BaseClass):
                     if props.hasAttribute("DefaultAnim"):
                         animName = props.getAttributeValue("DefaultAnim").getString()
                         self.setAnimation(animName)
+                    else:
+                        self.setAnimation(0)
     else:
 
         def RecvProxy_model(self, mdl):
