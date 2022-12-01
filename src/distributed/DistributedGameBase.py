@@ -279,6 +279,27 @@ class DistributedGameBase:
             propModel.setState(state)
             propModel.flattenLight()
 
+        if IS_CLIENT:
+            # Add overlays into the static prop partitioning.
+            for i in range(self.lvlData.getNumOverlays()):
+                overlay = self.lvlData.getOverlay(i)
+                if not overlay.isGeomNode():
+                    if overlay.getNumChildren() == 0:
+                        continue
+                    overlay = overlay.getChild(0)
+                    assert overlay.isGeomNode()
+                overlayNp = NodePath(overlay).copyTo(propRoot)
+                # Add a slight fudge to the bounding volume so axial
+                # decals don't have flat bounding boxes.
+                mins = Point3()
+                maxs = Point3()
+                overlayNp.calcTightBounds(mins, maxs)
+                mins -= Vec3(1)
+                maxs += Vec3(1)
+                overlayNp.node().setBounds(BoundingBox(mins, maxs))
+                #overlayNp.showBounds()
+                #base.render.attachNewNode(overlayNp)
+
         # Attempt to share vertex buffers and combine GeomPrimitives
         # across the prop GeomNodes, without actually combining the
         # GeomNodes themselves, so we can cull them effectively.
