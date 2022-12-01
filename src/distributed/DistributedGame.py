@@ -408,7 +408,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             cl = clnp.node()
             cl.setSceneCamera(base.cam)
             cl.setSoftnessFactor(1.0)
-            cl.setShadowCaster(True, 2048, 2048)
+            cl.setShadowCaster(True)
             cl.setCameraMask(DirectRender.ShadowCameraBitmask)
             cl.setupCascades()
             clnp.showThrough(DirectRender.ShadowCameraBitmask)
