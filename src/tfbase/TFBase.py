@@ -237,7 +237,25 @@ class TFBase(ShowBase, FSM):
 
         self.taskMgr.add(self.__updateDirtyDynamicNodes, 'updateDirtyDynamicNodes', sort=49)
 
+        self.taskMgr.add(self.__particleQueueTask, 'processParticleQueue')
+
         GuiPanel.initialize()
+
+        self.particleQueue = []
+
+    def __particleQueueTask(self, task):
+        self.processParticleQueue()
+        return task.cont
+
+    def queueParticleSystem(self, system, parent, duration):
+        self.particleQueue.append((system, parent, duration))
+
+    def processParticleQueue(self):
+        from direct.interval.IntervalGlobal import Sequence, Wait, Func
+        for sys, parent, duration in self.particleQueue:
+            sys.start(parent)
+            Sequence(Wait(duration), Func(sys.softStop)).start()
+        self.particleQueue = []
 
     def printVMRenderMasks(self):
         self.r_printNodeMasks(self.vmRender.node(), 0)
