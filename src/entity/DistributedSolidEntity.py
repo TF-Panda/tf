@@ -119,9 +119,9 @@ class DistributedSolidEntity(DistributedEntity):
                 # Inverted OpenGL tex coords.
                 # Bottom of image is 0 on the Y.
                 yPos = texSizeY - texPos[1] - texSize[1]
-                uvTransform = TransformState.makePosHprScale((texPos[0] / texSizeX, yPos / texSizeY, 0),
+                uvTransform = TransformState.makePosHprScale(((texPos[0] / texSizeX) + (texSize[0] / texSizeX), yPos / texSizeY, 0),
                                                              (0, 0, 0),
-                                                             (texSize[0] / texSizeX, texSize[1] / texSizeY, 1))
+                                                             (texSize[0] / -texSizeX, texSize[1] / texSizeY, 1))
             else:
                 uvTransform = TransformState.makeIdentity()
 
