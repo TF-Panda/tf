@@ -10,6 +10,8 @@ anim-activities etc/tf_anim_activities.pdx
 # TF2 on Source runs at 66 ticks per second.
 sv_tickrate 66
 
+window-title Team Fortress
+
 # Configuration for cascaded shadow maps.
 csm-distance 1600
 csm-sun-distance 8000
