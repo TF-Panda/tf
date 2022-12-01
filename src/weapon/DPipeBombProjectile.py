@@ -68,12 +68,13 @@ class DPipeBombProjectile(BaseClass):
             pos = self.getPos()
 
             base.world.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode", pos, chan=Sounds.Channel.CHAN_STATIC)
-            base.game.d_doExplosion(pos, Vec3(7))
 
             self.removeTask(self.uniqueName('explodeTask'))
             self.removeTask(self.uniqueName('directHitTask'))
 
             self.enemy = ent
+
+            explNorm = self.node().getLinearVelocity().normalized()
 
             if not ent:
                 # Trace for scorch mark.
@@ -81,6 +82,9 @@ class DPipeBombProjectile(BaseClass):
                                         TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
                 if tr['hit'] and tr['ent']:
                     tr['ent'].traceDecal('scorch', tr['block'])
+                    explNorm = tr['norm']
+
+            base.game.d_doExplosion(pos, Vec3(7), explNorm)
 
             info = TakeDamageInfo()
             info.inflictor = self

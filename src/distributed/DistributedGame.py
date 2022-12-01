@@ -692,7 +692,18 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         DistributedObject.delete(self)
         DistributedGameBase.delete(self)
 
-    def doExplosion(self, pos, scale):
+    def doExplosion(self, pos, scale, dir):
+        q = Quat()
+        lookAt(q, dir)
+        tmp = NodePath("tmp")
+        tmp.setPos(pos)
+        tmp.setQuat(q)
+        from tf.tfbase import TFEffects
+        effect = TFEffects.getExplosionWallEffect()
+        effect.setInput(0, tmp, True)
+        base.queueParticleSystem(effect, base.dynRender, 0.1)
+
+        """
         root = base.dynRender.attachNewNode("expl")
         root.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
         root.setPos(Vec3(*pos))
@@ -706,6 +717,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         expl.setBillboardPointEye()
         seq = Sequence(Wait(seqn.getNumFrames() / seqn.getFrameRate()), Func(root.removeNode))
         seq.start()
+        """
 
     def doTracer(self, start, end, doSound=True, delay=0.0):
         #print("tracer", start, end)

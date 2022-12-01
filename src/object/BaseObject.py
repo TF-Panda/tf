@@ -160,7 +160,7 @@ class BaseObject(BaseClass):
         def explode(self):
             pos = self.getPos()
             base.world.emitSoundSpatial(self.explodeSound, pos, chan=Sounds.Channel.CHAN_STATIC)
-            base.game.d_doExplosion(pos, Vec3(7))
+            base.game.d_doExplosion(pos, Vec3(7), self.getQuat().getUp())
             self.turnIntoGibs()
 
         def turnIntoGibs(self):

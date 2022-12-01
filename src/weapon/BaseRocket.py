@@ -127,7 +127,7 @@ class BaseRocket(BaseClass):
             self.enemy = ent
             # Emit explosion from the world at rocket's current position.
             base.world.emitSoundSpatial("BaseExplosionEffect.Sound", pos, chan=Sounds.Channel.CHAN_STATIC)
-            base.game.d_doExplosion(pos, Vec3(7))
+            base.game.d_doExplosion(pos, Vec3(7), block.getNormal())
             ent.traceDecal('scorch', block)
 
             info = TakeDamageInfo()

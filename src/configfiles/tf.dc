@@ -195,7 +195,7 @@ dclass DistributedGame : DistributedObject {
   joinGame(string name) clsend airecv;
   joinGameResp(uint32 tickCount);
 
-  doExplosion(Position pos, Scale scale) broadcast;
+  doExplosion(Position pos, Scale scale, UnitVector dir) broadcast;
   doTracer(Position start, Position end) broadcast;
   doTracers(Position start, Position ends[]) broadcast;
 

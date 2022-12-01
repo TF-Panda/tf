@@ -425,8 +425,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                         #print(tex, tex.getKeepRamImage())
                         tex.clearRamImage()
 
-    def d_doExplosion(self, pos, scale):
-        self.sendUpdate('doExplosion', [pos, scale])
+    def d_doExplosion(self, pos, scale, dir):
+        self.sendUpdate('doExplosion', [pos, scale, dir])
 
     def radiusDamage(self, info, origin, radius, ignoreClass, ignoreEntity):
         from tf.entity.DistributedEntity import DistributedEntity

@@ -141,7 +141,6 @@ class DistributedStickyBomb(BaseClass):
             pos = self.getPos()
             base.world.emitSoundSpatial("Weapon_StickyBombLauncher.ModeSwitch", pos, chan=Sounds.Channel.CHAN_AUTO)
             base.world.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode", pos, chan=Sounds.Channel.CHAN_AUTO)
-            base.game.d_doExplosion(pos, Vec3(7))
 
             # Trace for scorch mark.
             norm = Vec3.up()
@@ -151,6 +150,8 @@ class DistributedStickyBomb(BaseClass):
                                     TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
             if tr['hit'] and tr['ent']:
                 tr['ent'].traceDecal('scorch', tr['block'])
+
+            base.game.d_doExplosion(pos, Vec3(7), norm)
 
             info = TakeDamageInfo()
             info.inflictor = self
