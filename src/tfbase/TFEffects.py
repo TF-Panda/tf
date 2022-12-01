@@ -1,5 +1,209 @@
 from panda3d.core import *
 
+ExplosionWallEffect = None
+def getExplosionWallEffect():
+    global ExplosionWallEffect
+    if ExplosionWallEffect:
+        return ExplosionWallEffect.makeCopy()
+
+    root = ParticleSystem2()
+
+    exp1 = ParticleSystem2()
+    exp1.setPoolSize(20)
+    emitter = ContinuousParticleEmitter()
+    #emitter.setEmissionRate(100)
+    emitter.setIntervalAndLitterSize(1, 1, 20, 20)
+    emitter.setDuration(0.1)
+    exp1.addEmitter(emitter)
+
+    radiateDistance = 30
+
+
+    exp1.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+    exp1.addInitializer(P2_INIT_LifespanRandomRange(0.2, 0.3))
+    exp1.addInitializer(P2_INIT_ScaleRandomRange(1, 8, False))
+    exp1.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 30, (1, 0, 1), (1, 1, 1), (0, 1, 0)))
+    exp1.addInitializer(P2_INIT_VelocityRadiate((0, -radiateDistance, 0), 100, 200))
+    exp1.addInitializer(P2_INIT_AlphaRandomRange(100/255, 255/255))
+    exp1.addInitializer(P2_INIT_AnimationIndexRandom(0, 0))
+
+    #exp1.addForce(JitterParticleForce(200))
+
+    alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTExponential
+    seg.start = 0.0
+    seg.end = 1.0
+    seg.exponent = 9
+    seg.start_value = 1
+    seg.end_value = 0
+    alphaLerp.addSegment(seg)
+    exp1.addFunction(alphaLerp)
+    exp1.addFunction(VelocityJitterParticleFunction(10, 10))
+    exp1.addFunction(LinearMotionParticleFunction(0))
+    exp1.addFunction(LifespanKillerParticleFunction())
+
+    renderer = SpriteParticleRenderer2()
+    renderer.setRenderState(
+        RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/fire_embers1.mto")),
+                         ColorAttrib.makeVertex())
+    )
+    renderer.setFitAnimationsToParticleLifespan(True)
+    exp1.addRenderer(renderer)
+    exp1.addForce(VectorParticleForce((0, 0, -500)))
+
+    exp2 = ParticleSystem2()
+    exp2.setPoolSize(10)
+    emitter = ContinuousParticleEmitter()
+    emitter.setIntervalAndLitterSize(1, 1, 10, 10)
+    emitter.setDuration(0.1)
+    exp2.addEmitter(emitter)
+    exp2.addInitializer(P2_INIT_LifespanRandomRange(0.1, 0.1))
+    exp2.addInitializer(P2_INIT_ScaleRandomRange(30, 80, False))
+    exp2.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+    exp2.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 60, (1, 0, 1), (1, 1, 1), (0, 1, 0)))
+    exp2.addInitializer(P2_INIT_VelocityRadiate((0, -radiateDistance, 0), 200, 300))
+    exp2.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.AScale, 0, 30, 80, P2_INIT_RemapAttribute.APos, 1, 28, 78))
+    exp2.addInitializer(P2_INIT_AlphaRandomRange(100/255, 255/255))
+    alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTLinear
+    seg.start = 0.6
+    seg.end = 1
+    seg.scale_on_initial = True
+    seg.start_value = 1
+    seg.end_value = 0
+    alphaLerp.addSegment(seg)
+    exp2.addFunction(alphaLerp)
+    scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTExponential
+    seg.exponent = 0.5
+    seg.start = 0
+    seg.end = 1
+    seg.scale_on_initial = True
+    seg.start_value = 1
+    seg.end_value = 0.8
+    scaleLerp.addSegment(seg)
+    exp2.addFunction(scaleLerp)
+    exp2.addFunction(LinearMotionParticleFunction(0))
+    exp2.addFunction(LifespanKillerParticleFunction())
+    renderer = SpriteParticleRenderer2()
+    renderer.setRenderState(
+        RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/fire_cloud2.mto")),
+                         ColorAttrib.makeVertex())
+    )
+    exp2.addRenderer(renderer)
+    #renderer.setFitAnimationsToParticleLifespan(True)
+
+    exp3 = ParticleSystem2()
+    exp3.setPoolSize(12)
+    emitter = ContinuousParticleEmitter()
+    #emitter.setEmissionRate(12)
+    emitter.setIntervalAndLitterSize(1, 1, 12, 12)
+    emitter.setDuration(0.1)
+    exp3.addEmitter(emitter)
+    exp3.addInitializer(P2_INIT_LifespanRandomRange(0.1, 0.15))
+    exp3.addInitializer(P2_INIT_ScaleRandomRange((0.1, 0.33, 1), Vec3(3, 0.4, 1), True))
+    exp3.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 60, (1, 0, 1), (1, 1, 1), (0, 1, 0)))
+    exp3.addInitializer(P2_INIT_VelocityRadiate((0, -radiateDistance, 0), 900, 1200))
+    #exp3.addInitializer(P2_INIT_AlphaRandomRange(100/255, 255/255))
+    alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTLinear
+    seg.start = 0.7
+    seg.end = 1
+    seg.scale_on_initial = True
+    seg.start_value = 1
+    seg.end_value = 0
+    alphaLerp.addSegment(seg)
+    exp3.addFunction(alphaLerp)
+    scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTExponential
+    seg.exponent = 2
+    seg.start = 0.0
+    seg.end = 1
+    seg.scale_on_initial = True
+    seg.start_value = (3, 1, 1)
+    seg.end_value = (11, 1, 1)
+    scaleLerp.addSegment(seg)
+    exp3.addFunction(scaleLerp)
+    exp3.addFunction(LinearMotionParticleFunction(0))
+    exp3.addFunction(LifespanKillerParticleFunction())
+    renderer = SpriteParticleRenderer2()
+    renderer.setTrail(True)
+    renderer.setTrailLengthFadeInTime(0.0)
+    renderer.setTrailMinLength(2)
+    renderer.setTrailMaxLength(122)
+    renderer.setRenderState(
+        RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/fire_cloud2.mto")),
+                         ColorAttrib.makeVertex(),
+                         CullFaceAttrib.make(CullFaceAttrib.MCullNone))
+    )
+    exp3.addRenderer(renderer)
+
+    exp4 = ParticleSystem2()
+    exp4.setPoolSize(4)
+    emitter = ContinuousParticleEmitter()
+    emitter.setIntervalAndLitterSize(1, 1, 4, 4)
+    emitter.setDuration(0.1)
+    exp4.addEmitter(emitter)
+    exp4.addInitializer(P2_INIT_LifespanRandomRange(1, 2))
+    exp4.addInitializer(P2_INIT_ScaleRandomRange(10, 20, False))
+    exp4.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+    exp4.addInitializer(P2_INIT_RotationVelocityRandomRange(20, 45, True))
+    exp4.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 30, (1, 0, 1), (1, 1, 1), (0, 1, 0)))
+    exp4.addInitializer(P2_INIT_VelocityRadiate((0, -8, 0), 30, 75))
+    exp4.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.AScale, 0, 10, 20, P2_INIT_RemapAttribute.APos, 1, 8, 18))
+    exp4.addInitializer(P2_INIT_AlphaRandomRange(100/255, 255/255))
+    alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTLinear
+    seg.start = 0.0
+    seg.end = 0.15
+    seg.scale_on_initial = True
+    seg.start_value = 0
+    seg.end_value = 1
+    alphaLerp.addSegment(seg)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTLinear
+    seg.start = 0.15
+    seg.end = 1
+    seg.scale_on_initial = True
+    seg.start_value = 1
+    seg.end_value = 0
+    alphaLerp.addSegment(seg)
+    exp4.addFunction(alphaLerp)
+    scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTExponential
+    seg.exponent = 0.5
+    seg.start = 0
+    seg.end = 1
+    seg.scale_on_initial = True
+    seg.start_value = 1
+    seg.end_value = 4
+    scaleLerp.addSegment(seg)
+    exp4.addFunction(scaleLerp)
+    exp4.addFunction(LinearMotionParticleFunction(1.0))
+    exp4.addForce(VectorParticleForce((0, 0, 32)))
+    exp4.addFunction(AngularMotionParticleFunction())
+    exp4.addFunction(LifespanKillerParticleFunction())
+    renderer = SpriteParticleRenderer2()
+    renderer.setRenderState(
+        RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/largesmoke.mto")),
+                         ColorAttrib.makeVertex())
+    )
+    exp4.addRenderer(renderer)
+
+    root.addChild(exp1)
+    root.addChild(exp2)
+    root.addChild(exp3)
+    root.addChild(exp4)
+    ExplosionWallEffect = root
+    return ExplosionWallEffect.makeCopy()
+
 PlayerFire = None
 def getPlayerFireEffect():
     global PlayerFire
@@ -521,21 +725,23 @@ def getRocketTrailEffect():
     global RocketTrailEffect
     if not RocketTrailEffect:
         system = ParticleSystem2()
-        system.setPoolSize(190)
+        system.setPoolSize(170)
 
         emitter = ContinuousParticleEmitter()
-        emitter.setEmissionRate(125)
+        emitter.setEmissionRate(150)
         system.addEmitter(emitter)
 
         ################
         # Initializers #
         ################
-        system.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 1, 1))
-        system.addInitializer(P2_INIT_LifespanRandomRange(1, 1.5))
-        system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(4), Vec3(5)))
-        system.addInitializer(P2_INIT_ColorRandomRange(Vec3(0.6, 0.6, 0.65), Vec3(0.6, 0.6, 0.65)))
-        system.addInitializer(P2_INIT_RotationRandomRange(0, 25, 85))
-        system.addInitializer(P2_INIT_RotationVelocityRandomRange(20, 30, 1.0, True))
+        system.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 1.2))
+        system.addInitializer(P2_INIT_LifespanRandomRange(0.8, 1.2))
+        system.addInitializer(P2_INIT_ScaleRandomRange(Vec3(6), Vec3(7)))
+        system.addInitializer(P2_INIT_ColorRandomRange(Vec3(247/255, 194/255, 0/255), Vec3(251/255, 142/255, 117/255)))
+        system.addInitializer(P2_INIT_RotationRandomRange(-45, 0, 45))
+        #system.addInitializer(P2_INIT_RotationVelocityRandomRange(20, 30, 1.0, True))
+        system.addInitializer(P2_INIT_AlphaRandomRange(96/255, 128/255))
+        system.addInitializer(P2_INIT_AnimationIndexRandom(0, 4))
 
         #############
         # Functions #
@@ -543,36 +749,111 @@ def getRocketTrailEffect():
 
         scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
         l0 = ParticleLerpSegment()
-        l0.type = l0.LTLinear
+        l0.type = l0.LTExponential
+        l0.exponent = 0.5
         l0.start = 0.0
-        l0.end = 1.0
-        l0.start_is_initial = True
-        l0.end_value = Vec3(13.0)
+        l0.end = 1.5
+        l0.scale_on_initial = True
+        l0.start_value = 0.25
+        l0.end_value = 2
         scaleLerp.addSegment(l0)
         system.addFunction(scaleLerp)
 
         alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
         l0 = ParticleLerpSegment()
         l0.type = l0.LTLinear
-        l0.start = 0.5
+        l0.start = 0.0
+        l0.end = 0.05
+        l0.scale_on_initial = True
+        l0.start_value = 0
+        l0.end_value = 1
+        alphaLerp.addSegment(l0)
+        l0.start = 0.1
         l0.end = 1.0
-        l0.start_value = Vec3(1.0)
-        l0.end_value = Vec3(0.0)
+        l0.start_value = 1
+        l0.end_value = 0
         alphaLerp.addSegment(l0)
         system.addFunction(alphaLerp)
 
-        system.addFunction(LinearMotionParticleFunction(0.5))
-        system.addFunction(LifespanKillerParticleFunction())
-        system.addFunction(AngularMotionParticleFunction())
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        l0 = ParticleLerpSegment()
+        l0.type = l0.LTLinear
+        l0.start = 0
+        l0.end = 0.1
+        l0.start_is_initial = True
+        l0.end_value = Vec3(195/255, 190/255, 202/255)
+        colorLerp.addSegment(l0)
+        system.addFunction(colorLerp)
 
-        system.addForce(VectorParticleForce(Vec3.up() * 8))
+        system.addFunction(LinearMotionParticleFunction(0))
+        system.addFunction(LifespanKillerParticleFunction())
+        #system.addFunction(AngularMotionParticleFunction())
+
+        system.addForce(VectorParticleForce(Vec3.up() * 6))
 
         # Render particles as sprites with a smoke texture.
         renderer = SpriteParticleRenderer2()
-        state = RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/particle_rockettrail1.mto")),
+        state = RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/rockettrailsmoke.mto")),
                                 ColorAttrib.makeVertex())
         renderer.setRenderState(state)
         system.addRenderer(renderer)
+
+        fireSys = ParticleSystem2()
+        fireSys.setPoolSize(32)
+        emitter = ContinuousParticleEmitter()
+        emitter.setEmissionRate(128)
+        fireSys.addEmitter(emitter)
+        fireSys.addInitializer(P2_INIT_LifespanRandomRange(0.2, 0.2))
+        fireSys.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 1, 2))
+        fireSys.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+        fireSys.addInitializer(P2_INIT_AlphaRandomRange(64/255, 64/255))
+        fireSys.addInitializer(P2_INIT_ColorRandomRange((255/255, 234/255, 0/255), (255/255, 168/255, 0/255)))
+        fireSys.addInitializer(P2_INIT_ScaleRandomRange(4, 5, False))
+        alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+        l0 = ParticleLerpSegment()
+        l0.type = l0.LTLinear
+        l0.start = 0
+        l0.end = 0.1
+        l0.scale_on_initial = True
+        l0.start_value = 0
+        l0.end_value = 1
+        alphaLerp.addSegment(l0)
+        l0.start = 0.1
+        l0.end = 1.0
+        l0.start_value = 1
+        l0.end_value = 0
+        alphaLerp.addSegment(l0)
+        colorLerp = LerpParticleFunction(LerpParticleFunction.CRgb)
+        l0 = ParticleLerpSegment()
+        l0.type = l0.LTLinear
+        l0.start = 0
+        l0.end = 1
+        l0.start_is_initial = True
+        l0.end_value = Vec3(72/255, 37/255, 255/255)
+        colorLerp.addSegment(l0)
+        scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+        l0 = ParticleLerpSegment()
+        l0.type = l0.LTExponential
+        l0.exponent = 0.7
+        l0.start = 0
+        l0.end = 1
+        l0.scale_on_initial = True
+        l0.start_value = 3
+        l0.end_value = 0.001
+        scaleLerp.addSegment(l0)
+        fireSys.addFunction(scaleLerp)
+        fireSys.addFunction(colorLerp)
+        fireSys.addFunction(alphaLerp)
+        fireSys.addFunction(LinearMotionParticleFunction(0))
+        fireSys.addFunction(LifespanKillerParticleFunction())
+        fireSys.addForce(VectorParticleForce(0, 0, 6))
+        renderer = SpriteParticleRenderer2()
+        state = RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/sc_brightglow_y_nomodel.mto")),
+                                ColorAttrib.makeVertex())
+        renderer.setRenderState(state)
+        fireSys.addRenderer(renderer)
+
+        system.addChild(fireSys)
 
         RocketTrailEffect = system
 
