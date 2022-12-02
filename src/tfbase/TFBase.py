@@ -209,7 +209,7 @@ class TFBase(ShowBase, FSM):
         self.planarReflect = PlanarReflector(1024, "reflection", True)
         self.planarRefract = PlanarReflector(1024, "refraction", False)
 
-        self.enableParticles()
+        #self.enableParticles()
 
         # Play a constantly looping silence sound so the reverb always has
         # an input and doesn't go idle and cut off.
