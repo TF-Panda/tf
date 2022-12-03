@@ -17,6 +17,7 @@ Win32
 src/configfiles/50_tf.prc
 devprogress/
 *.png
+*.dcb
 
 # Python 3
 **/__pycache__
