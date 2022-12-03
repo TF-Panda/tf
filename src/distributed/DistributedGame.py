@@ -405,10 +405,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         clnp = self.lvlData.getDirLight()
         if not clnp.isEmpty():
+            csmSize = ConfigVariableInt("tf-csm-resolution", 512).value
             cl = clnp.node()
             cl.setSceneCamera(base.cam)
             cl.setSoftnessFactor(1.0)
-            cl.setShadowCaster(True)
+            cl.setUseFixedFilmSize(True)
+            cl.setShadowCaster(True, csmSize, csmSize)
             cl.setCameraMask(DirectRender.ShadowCameraBitmask)
             cl.setupCascades()
             clnp.showThrough(DirectRender.ShadowCameraBitmask)
