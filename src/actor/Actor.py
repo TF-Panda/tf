@@ -360,7 +360,13 @@ class Actor(Model):
         Note that a looping or ping-ponging animation channel is never
         finished.
         """
-        return self.getCurrentAnim(layer) == -1
+        if not self.character:
+            return True
+        elif not self.character.isValidLayerIndex(layer):
+            return True
+
+        animLayer = self.character.getAnimLayer(layer)
+        return not animLayer.isPlaying()
 
     def isAnimPlaying(self, layer = 0):
         """
