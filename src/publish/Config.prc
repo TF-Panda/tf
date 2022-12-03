@@ -2,6 +2,14 @@ plugin-path .
 model-path .
 model-path sound
 
+vfs-mount misc.mf .
+vfs-mount maps.mf .
+vfs-mount materials.mf .
+vfs-mount audio.mf .
+vfs-mount shaders.mf .
+vfs-mount models.mf .
+vfs-mount levels.mf .
+
 dc-file etc/tf.dc
 
 anim-events etc/tf_anim_events.pdx
@@ -118,7 +126,7 @@ stencil-bits 0
 # Allow loading model files without an extension.
 default-model-extension .bam
 
-tf-version client-alpha
+tf-version alpha
 
 talker-phoneme-filter 0.08
 
@@ -148,7 +156,7 @@ use-orig-source-shader 1
 threading-model /Draw
 job-system-num-worker-threads 3
 
-model-cache-dir tfcache
+model-cache-dir
 model-cache-models 0
 model-cache-textures 0
 model-cache-compiled-shaders 0
@@ -184,6 +192,9 @@ fullscreen 0
 # Set the window size of the game.  Format is <width> <height>.
 win-size 1280 720
 
+# V-sync
+sync-video 1
+
 # Sets the R/G/B color of your crosshair.
 cl-crosshair-r 200
 cl-crosshair-g 200
@@ -198,7 +209,7 @@ cl-crosshair-scale 32
 
 # Sets the resolution of the sun shadows.
 # Lower this if your GPU sucks.
-shadow-map-size 2048
+tf-csm-resolution 2048
 
 # Texture filtering settings.
 # Change these if your GPU REALLY sucks.

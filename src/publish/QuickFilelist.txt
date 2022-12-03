@@ -1,0 +1,160 @@
+multifile toplevel
+
+# WINTOOLS DLLs.
+file $WINTOOLS/built/bin/embree3.dll . WIN32
+file $WINTOOLS/built/bin/fmod.dll . WIN32
+file $WINTOOLS/built/bin/GameNetworkingSockets.dll . WIN32
+file $WINTOOLS/built/bin/GPUUtilities.dll . WIN32
+file $WINTOOLS/built/bin/phonon.dll . WIN32
+file $WINTOOLS/built/bin/phonon_fmod.dll . WIN32
+file $WINTOOLS/built/bin/PhysX_64.dll . WIN32
+file $WINTOOLS/built/bin/PhysXCommon_64.dll . WIN32
+file $WINTOOLS/built/bin/PhysXCooking_64.dll . WIN32
+file $WINTOOLS/built/bin/PhysXFoundation_64.dll . WIN32
+file $WINTOOLS/built/bin/SPIRV-Tools-shared.dll . WIN32
+file $WINTOOLS/built/bin/tbb12.dll . WIN32
+file $WINTOOLS/built/bin/TrueAudioNext.dll . WIN32
+
+# Python DLLs.
+file $PYTHON_BIN/python3.dll . WIN32
+file $PYTHON_BIN/python311.dll . WIN32
+file $PYTHON_BIN/vcruntime140.dll . WIN32
+file $PYTHON_BIN/vcruntime140_1.dll . WIN32
+file $PYTHON_BIN/DLLs/_bz2.pyd . WIN32
+file $PYTHON_BIN/DLLs/_decimal.pyd . WIN32
+file $PYTHON_BIN/DLLs/_hashlib.pyd . WIN32
+file $PYTHON_BIN/DLLs/_lzma.pyd . WIN32
+file $PYTHON_BIN/DLLs/_socket.pyd . WIN32
+file $PYTHON_BIN/DLLs/unicodedata.pyd . WIN32
+file $PYTHON_BIN/DLLs/pyexpat.pyd . WIN32
+file $PYTHON_BIN/DLLs/select.pyd . WIN32
+file $PYTHON_BIN/DLLs/libcrypto-1_1.dll . WIN32
+
+# DTOOL DLLs.
+file $DTOOL/built/lib/libdtool.dll . WIN32
+file $DTOOL/built/lib/libdtoolbase.dll . WIN32
+file $DTOOL/built/lib/libdtoolutil.dll . WIN32
+file $DTOOL/built/lib/libprc.dll . WIN32
+file $DTOOL/built/lib/libinterrogatedb.dll . WIN32
+
+# PANDA DLLs.
+file $PANDA/built/lib/libpandaexpress.dll . WIN32
+file $PANDA/built/lib/libpanda.dll . WIN32
+file $PANDA/built/lib/libpandagl.dll . WIN32
+file $PANDA/built/lib/libpandaphysics.dll . WIN32
+file $PANDA/built/lib/libanim.dll . WIN32
+file $PANDA/built/lib/libaudio.dll . WIN32
+file $PANDA/built/lib/libbsp.dll . WIN32
+file $PANDA/built/lib/libcollide.dll . WIN32
+file $PANDA/built/lib/libcull.dll . WIN32
+file $PANDA/built/lib/libdevice.dll . WIN32
+file $PANDA/built/lib/libdgraph.dll . WIN32
+file $PANDA/built/lib/libdisplay.dll . WIN32
+file $PANDA/built/lib/libdownloader.dll . WIN32
+file $PANDA/built/lib/libevent.dll . WIN32
+file $PANDA/built/lib/libexpress.dll . WIN32
+file $PANDA/built/lib/libfmod_audio.dll . WIN32
+file $PANDA/built/lib/libglgsg.dll . WIN32
+file $PANDA/built/lib/libgobj.dll . WIN32
+file $PANDA/built/lib/libgrutil.dll . WIN32
+file $PANDA/built/lib/libgsgbase.dll . WIN32
+file $PANDA/built/lib/libjobsystem.dll . WIN32
+file $PANDA/built/lib/liblinmath.dll . WIN32
+file $PANDA/built/lib/libmap.dll . WIN32
+file $PANDA/built/lib/libmaterial.dll . WIN32
+file $PANDA/built/lib/libmathutil.dll . WIN32
+file $PANDA/built/lib/libmovies.dll . WIN32
+file $PANDA/built/lib/libnet.dll . WIN32
+file $PANDA/built/lib/libnativenet.dll . WIN32
+file $PANDA/built/lib/libparametrics.dll . WIN32
+file $PANDA/built/lib/libparticlesystem.dll . WIN32
+file $PANDA/built/lib/libparticlesystem2.dll . WIN32
+file $PANDA/built/lib/libpdx.dll . WIN32
+file $PANDA/built/lib/libpgraph.dll . WIN32
+file $PANDA/built/lib/libpgraphnodes.dll . WIN32
+file $PANDA/built/lib/libpgui.dll . WIN32
+file $PANDA/built/lib/libpipeline.dll . WIN32
+file $PANDA/built/lib/libpnmimage.dll . WIN32
+file $PANDA/built/lib/libpnmimagetypes.dll . WIN32
+file $PANDA/built/lib/libpnmtext.dll . WIN32
+file $PANDA/built/lib/libpostprocess.dll . WIN32
+file $PANDA/built/lib/libpphysics.dll . WIN32
+file $PANDA/built/lib/libphysics.dll . WIN32
+file $PANDA/built/lib/libpstatclient.dll . WIN32
+file $PANDA/built/lib/libputil.dll . WIN32
+file $PANDA/built/lib/libraytrace.dll . WIN32
+file $PANDA/built/lib/librecorder.dll . WIN32
+file $PANDA/built/lib/libshader.dll . WIN32
+file $PANDA/built/lib/libsteamnet.dll . WIN32
+file $PANDA/built/lib/libtext.dll . WIN32
+file $PANDA/built/lib/libtform.dll . WIN32
+file $PANDA/built/lib/libwgldisplay.dll . WIN32
+file $PANDA/built/lib/libwindisplay.dll . WIN32
+file $DTOOL/built/lib/panda3d/core.pyd . WIN32
+file $DTOOL/built/lib/panda3d/pphysics.pyd . WIN32
+file $DTOOL/built/lib/panda3d/physics.pyd . WIN32
+
+# DIRECT DLLs.
+file $DIRECT/built/lib/libdirect.dll . WIN32
+file $DIRECT/built/lib/libactor.dll . WIN32
+file $DIRECT/built/lib/libdcparser.dll . WIN32
+file $DIRECT/built/lib/libdeadrec.dll . WIN32
+file $DIRECT/built/lib/libdistributed.dll . WIN32
+file $DIRECT/built/lib/libdistributed2.dll . WIN32
+file $DIRECT/built/lib/libfoundry.dll . WIN32
+file $DIRECT/built/lib/libinterval.dll . WIN32
+file $DIRECT/built/lib/libmotiontrail.dll . WIN32
+file $DIRECT/built/lib/libshowbase.dll . WIN32
+file $DTOOL/built/lib/panda3d/direct.pyd . WIN32
+
+# TF DLLs.
+file $TF/built/lib/libplayer.dll . WIN32
+file $DTOOL/built/lib/panda3d/tf.pyd . WIN32
+
+file $TF/src/publish/Config.prc etc
+file $TF/src/publish/run-tf-client.bat .
+file $TF/src/publish/run-tf-server.bat .
+
+# Begin the tf.exe generation (Python freezing).
+
+# Some stuff we don't want in the frozen Python code.
+forbid_module tkinter
+forbid_module Tkinter
+forbid_module Pmw
+forbid_module direct.tkpanels
+forbid_module direct.tkwidgets
+forbid_module direct.cluster
+forbid_module _dummy_threading
+forbid_module pdb
+forbid_module _ssl
+
+dc_module $TF/src/configfiles/tf.dc
+
+freeze_exe TeamFortress tf.tfbase.TFStart .
+
+multifile misc.mf.pz
+dir $TFMODELS/built/expressions expressions
+dir $TFMODELS/built/scripts scripts
+file $TF/src/configfiles/tf.dc etc
+file $TF/src/configfiles/tf_anim_events.pdx etc
+file $TF/src/configfiles/tf_anim_activities.pdx etc
+
+multifile maps.mf.pz
+dir $TFMODELS/built/maps maps
+
+multifile materials.mf.pz
+dir $TFMODELS/built/materials materials
+
+multifile audio.mf.pz
+dir $TFMODELS/built/audio audio
+dir $TFMODELS/built/sound sound
+
+multifile models.mf.pz
+dir $DMODELS/built/models/fonts models/fonts
+dir $TFMODELS/built/models models
+
+multifile shaders.mf.pz
+dir $DMODELS/built/shaders shaders
+
+multifile levels.mf.pz
+file $PLAYER/ctf_2fort.bam .
