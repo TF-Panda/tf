@@ -50,7 +50,7 @@ class ChatFeed:
                                   (self.ChatWindowSizeX, 0, 0), self.root))
         self.chats = []
 
-        self.chatSound = base.loader.loadSfx("sound/ui/chat_display_text.wav")
+        self.chatSound = base.loader.loadSfx("sound/ui/chat_display_text.ogg")
         self.chatSound.setVolume(0.5)
 
         self.task = base.taskMgr.add(self.__updateTask, 'chatFeedUpdate')
