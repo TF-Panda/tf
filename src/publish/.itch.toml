@@ -1,0 +1,18 @@
+[[actions]]
+name = "play"
+path = "run-tf-client.bat"
+console = true
+sandbox = true
+
+[[actions]]
+name = "Run Server"
+path = "run-tf-server.bat"
+console = true
+sandbox = true
+
+[[actions]]
+name = "Open Config Folder"
+path = "etc/"
+
+[[prereqs]]
+name = "vcredist-2019-x64"

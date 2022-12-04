@@ -53,7 +53,7 @@ load-sounds scripts/game_sounds_player.txt
 load-sounds scripts/game_sounds_vo.txt
 load-sounds scripts/game_sounds_physics.txt
 
-icon-filename models/gui/game.ico
+icon-filename etc/game.ico
 
 load-display pandagl
 

@@ -179,7 +179,7 @@ persistDirectory = None
 # not real security.
 #
 
-compressExtensions = ['ptf', 'dna', 'txt', 'dc']
+compressExtensions = ['ptf', 'dna', 'txt', 'dc', 'wav']
 compressFiles = []
 
 try:
@@ -574,6 +574,8 @@ class Scrubber:
         target = self.freezer.generateCode(basename, compileToExe=True)
         target = os.path.join(os.getcwd(), target)
         self.freezer = FreezeTool.Freezer(previous = self.freezer)
+        self.freezer.linkExtensionModules = True
+        self.freezer.keepTemporaryFiles = False
 
         # Now add the generated file just like any other file, except
         # we do not want to make a copy of it since it is already
@@ -588,6 +590,8 @@ class Scrubber:
         target = self.freezer.generateCode(basename)
         target = os.path.join(os.getcwd(), target)
         self.freezer = FreezeTool.Freezer(previous = self.freezer)
+        self.freezer.linkExtensionModules = True
+        self.freezer.keepTemporaryFiles = False
 
         self.parseFile(['file', target, lineList[2]])
 
