@@ -236,14 +236,14 @@ class Scrubber:
 
         # The multifiles and patches live in a subdirectory called content
         self.installDir = installDirectory
-        self.contentDir = Filename(self.installDir, Filename('content/'))
-        self.contentDir.makeDir()
+        #self.contentDir = Filename(self.installDir, Filename('content/'))
+        #self.contentDir.makeDir()
 
         if command == 'scrub':
             self.doScrubCommand()
 
-        #elif command == 'copy':
-        #    self.doCopyCommand()
+        elif command == 'copy':
+            self.doCopyCommand()
 
         else:
             print("Invalid command: %s" % (command))
@@ -252,6 +252,29 @@ class Scrubber:
     def flushIO(self):
         sys.stdout.flush()      # MAKE python flush I/O for more interactive response
 
+    def doCopyCommand(self):
+        # Get all the multifiles in the persist dir.
+        import glob
+        mfPattern = self.persistDir / '*.mf'
+        mfiles = glob.glob(mfPattern.toOsSpecific(), recursive=False)
+
+        for mfile in mfiles:
+            # Copy the mfile to the install dir.
+            # If it's the toplevel multifile, extract it into the install dir,
+            # rather than copying.
+            mFilename = Filename.fromOsSpecific(mfile)
+            if mFilename.getBasenameWoExtension() == 'toplevel':
+                self.notify.info("Extracting toplevel into install dir")
+                os.chdir(self.installDir.toOsSpecific())
+                m = Multifile()
+                m.openRead(mFilename)
+                count = m.getNumSubfiles()
+                for i in range(count):
+                    subfileName = Filename(m.getSubfileName(i))
+                    m.extractSubfile(i, subfileName)
+                m.close()
+            else:
+                self.copyFile(mFilename, self.installDir / mFilename.getBasename())
 
     def doScrubCommand(self):
 

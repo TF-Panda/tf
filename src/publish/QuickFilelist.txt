@@ -1,4 +1,4 @@
-multifile toplevel
+multifile toplevel.mf.pz
 
 # WINTOOLS DLLs.
 file $WINTOOLS/built/bin/embree3.dll . WIN32
