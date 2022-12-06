@@ -85,7 +85,7 @@ class DistributedGameBase:
         tmp.setShaderInput("bakedVertexLight", LVecBase2i(0))
 
         arrFmt = GeomVertexArrayFormat()
-        arrFmt.addColumn(InternalName.make("vertex_lighting"), 3, GeomEnums.NTFloat16, GeomEnums.COther)
+        arrFmt.addColumn(InternalName.make("vertex_lighting"), 4, GeomEnums.NTUint8, GeomEnums.COther)
         arrFmt = GeomVertexArrayFormat.registerFormat(arrFmt)
 
         for i in range(node.getNumGeoms()):
