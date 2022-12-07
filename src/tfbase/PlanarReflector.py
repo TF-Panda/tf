@@ -123,7 +123,8 @@ class PlanarReflector:
 
         #self.displayRegion.setActive(True)
 
-        #self.buffer.setActive(True)
+        if ConfigVariableBool('tf-water-reflections', False).value:
+            self.buffer.setActive(True)
 
         self.cameraNP.reparentTo(base.render)
 

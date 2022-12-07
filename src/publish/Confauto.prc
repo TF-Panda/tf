@@ -235,3 +235,7 @@ fov 75
 
 # Your mouse sensitivity (maps to original TF2).
 mouse-sensitivity 5.0
+
+# Turn this on to enable water reflections.  It is expensive
+# and currently not culled (but the threading helps).
+tf-water-reflections 0
