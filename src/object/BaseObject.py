@@ -141,7 +141,7 @@ class BaseObject(BaseClass):
                     data = {}
                     if self.objectType == ObjectType.SentryGun:
                         data['objecttype'] = 'sentry'
-                    elif self.objecType == ObjectType.Dispenser:
+                    elif self.objectType == ObjectType.Dispenser:
                         data['objecttype'] = 'dispenser'
                     else:
                         data['objecttype'] = 'teleporter'
