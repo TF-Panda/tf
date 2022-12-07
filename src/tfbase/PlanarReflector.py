@@ -27,11 +27,11 @@ class PlanarReflector:
         fbp.setFloatColor(True)
         fbp.setFloatDepth(False)
         fbp.setRgbaBits(16, 16, 16, 0)
-        if not self.reflect:
+        #if not self.reflect:
             # FIXME: pipelining workaround.. we don't actually need 32 bits for depth.
-            fbp.setDepthBits(32)
-        else:
-            fbp.setDepthBits(1)
+        #    fbp.setDepthBits(32)
+        #else:
+        fbp.setDepthBits(1)
         #fbp.setDepthBits(8)
 
         winprops = WindowProperties()
