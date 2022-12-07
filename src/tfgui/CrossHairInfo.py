@@ -124,9 +124,9 @@ class CrossHairInfo:
                         # For a teleporter, show the charge level.
                         if self.ent.isTeleporterIdle():
                             if self.ent.objectType == ObjectType.TeleporterExit:
-                                miscInfoText += "\n" + TFLocalizer.Entrance + TFLocalizer.NotBuilt
+                                miscInfoText += "\n" + TFLocalizer.Entrance + " " + TFLocalizer.NotBuilt
                             else:
-                                miscInfoText += "\n" + TFLocalizer.Exit + TFLocalizer.NotBuilt
+                                miscInfoText += "\n" + TFLocalizer.Exit + " " + TFLocalizer.NotBuilt
                         elif self.ent.isTeleporterSending():
                             miscInfoText += TFLocalizer.TeleporterSending
                         elif self.ent.isTeleporterReceiving():
