@@ -1,3 +1,0 @@
-ATTACH tfmodels
-ATTACH direct
-MODREL ETC_PATH etc
