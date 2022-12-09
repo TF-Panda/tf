@@ -149,7 +149,7 @@ class DistributedStickyBomb(BaseClass):
             tr = TFFilters.traceLine(pos + norm * 8, pos - norm * 32, TFGlobals.Contents.Solid, 0,
                                     TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
             if tr['hit'] and tr['ent']:
-                tr['ent'].traceDecal('scorch', tr['block'])
+                tr['ent'].traceDecal('scorch', tr)
 
             base.game.d_doExplosion(pos, Vec3(7), norm)
 

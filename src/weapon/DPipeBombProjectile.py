@@ -81,7 +81,7 @@ class DPipeBombProjectile(BaseClass):
                 tr = TFFilters.traceLine(pos + (0, 0, 8), pos - (0, 0, 32), TFGlobals.Contents.Solid, 0,
                                         TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
                 if tr['hit'] and tr['ent']:
-                    tr['ent'].traceDecal('scorch', tr['block'])
+                    tr['ent'].traceDecal('scorch', tr)
                     explNorm = tr['norm']
 
             base.game.d_doExplosion(pos, Vec3(7), explNorm)
@@ -123,30 +123,15 @@ class DPipeBombProjectile(BaseClass):
 
             currPos = self.getPos(base.render)
             predictedPos = currPos + (currVel * globalClock.dt)
-            testDir = predictedPos - currPos
-            testDirLen = testDir.length()
-            testDir /= testDirLen
 
-            result = PhysSweepResult()
-            filter = TFFilters.TFQueryFilter(self)
-            if base.physicsWorld.boxcast(result,
-                                         currPos - self.directHull,
-                                         currPos + self.directHull,
-                                         testDir, testDirLen,
-                                         Vec3(0),
-                                         self.otherTeamMask,
-                                         TFGlobals.Contents.Empty,
-                                         TFGlobals.CollisionGroup.Empty,
-                                         filter):
-                block = result.getBlock()
-                actor = block.getActor()
-                if actor:
-                    ent = actor.getPythonTag("entity")
-                else:
-                    ent = None
+            tr = TFFilters.traceBox(currPos, predictedPos, -self.directHull, self.directHull,
+                                    self.otherTeamMask, 0, TFFilters.TFQueryFilter(self))
+            if tr['hit']:
+                ent = tr['ent']
                 if ent and ent != self.shooter:
                     # Switch to the direct-hit damage.
                     self.damage = self.fullDamage
+                    self.setPos(tr['endpos'])
                     self.explode(ent)
                     return task.done
 

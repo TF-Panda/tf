@@ -141,6 +141,12 @@ class DistributedTFPlayerShared:
 
         self.numDetonateables = 0
 
+    def getLocalHullMins(self):
+        return TFGlobals.VEC_HULL_MIN
+
+    def getLocalHullMaxs(self):
+        return TFGlobals.VEC_HULL_MAX
+
     def isLoser(self):
         return self.inCondition(self.CondLoser)
 
@@ -240,7 +246,7 @@ class DistributedTFPlayerShared:
         surfaceDef = None
         tr = TFFilters.traceBox(origin, origin + Vec3.down() * 64,
             TFGlobals.VEC_HULL_MIN, TFGlobals.VEC_HULL_MAX,
-            Contents.Solid, 0, PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude))
+            Contents.Solid, 0, TFFilters.TFQueryFilter(self))
         mat = tr['mat']
         if mat:
             # Get the surface definition associated with the PhysMaterial
@@ -331,32 +337,24 @@ class DistributedTFPlayerShared:
     def fireBullet(self, info, doEffects, damageType, customDamageType):
         # Fire a bullet (ignoring the shooter).
         start = info['src']
-        #end = start + info['dirShooting'] * info['distance']
-        result = PhysRayCastResult()
-        filter = TFFilters.TFQueryFilter(self)
-        base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
-                                  BitMask32(Contents.HitBox | Contents.AnyTeam | Contents.Solid), BitMask32.allOff(),
-                                  CollisionGroup.Empty, filter)
+        end = start + info['dirShooting'] * info['distance']
+        tr = TFFilters.traceLine(start, end, Contents.HitBox | Contents.AnyTeam | Contents.Solid, 0, TFFilters.TFQueryFilter(self))
 
         impactVol = 1.0 / info['shots']
 
-        if result.hasBlock():
+        if tr['hit']:
             # Bullet hit something!
-            block = result.getBlock()
 
             tracerAttachment = info.get('tracerAttachment', None)
             if tracerAttachment:
                 tracerDelay = info.get('tracerDelay', 0.0)
                 tracerSpread = info.get('tracerSpread', 0.0)
                 if not IS_CLIENT:
-                    info['weapon'].sendUpdate('fireTracer', [tracerAttachment, block.getPosition(), tracerDelay, tracerSpread], excludeClients=[self.owner])
+                    info['weapon'].sendUpdate('fireTracer', [tracerAttachment, tr['endpos'], tracerDelay, tracerSpread], excludeClients=[self.owner])
                 elif base.cr.prediction.firstTimePredicted:
-                    self.viewModel.tracerRequests.append((block.getPosition(), tracerDelay, tracerSpread))
+                    self.viewModel.tracerRequests.append((tr['endpos'], tracerDelay, tracerSpread))
 
-            actor = block.getActor()
-            if not actor:
-                return
-            entity = actor.getPythonTag("entity")
+            entity = tr['ent']
             if not entity:
                 # Didn't hit an entity.  Hmm.
                 return
@@ -368,20 +366,20 @@ class DistributedTFPlayerShared:
                     exclude = [self.owner]
                 else:
                     exclude = []
-                physMat = block.getMaterial()
+                physMat = tr['mat']
                 surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
                 if not surfaceDef:
                     surfaceDef = SurfaceProperties['default']
-                base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), excludeClients=exclude, volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
-                entity.traceDecal(surfaceDef.impactDecal, block, excludeClients=exclude)
+                base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], excludeClients=exclude, volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
+                entity.traceDecal(surfaceDef.impactDecal, tr, excludeClients=exclude)
             else:
                 if base.cr.prediction.firstTimePredicted:
-                    physMat = block.getMaterial()
+                    physMat = tr['mat']
                     surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
                     if not surfaceDef:
                         surfaceDef = SurfaceProperties['default']
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
-                    entity.traceDecal(surfaceDef.impactDecal, block)
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
+                    entity.traceDecal(surfaceDef.impactDecal, tr)
 
             if doEffects:
                 # TODO
@@ -395,8 +393,8 @@ class DistributedTFPlayerShared:
                 dmgInfo.setDamage(info['damage'])
                 dmgInfo.damageType = damageType
                 dmgInfo.customDamage = customDamageType
-                calculateBulletDamageForce(dmgInfo, Vec3(info['dirShooting']), block.getPosition(), 1.0)
-                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], block)
+                calculateBulletDamageForce(dmgInfo, Vec3(info['dirShooting']), tr['endpos'], 1.0)
+                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], tr)
 
     def updateButtonsState(self, buttons):
         self.lastButtons = self.buttons

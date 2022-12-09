@@ -60,35 +60,12 @@ class DistributedWrench(TFWeaponMelee):
         forward = q.getForward()
         swingStart = self.player.getEyePosition()
         swingEnd = swingStart + (forward * 70)
-        swingDir = (swingEnd - swingStart)
-        swingDist = swingDir.length()
-        swingDir.normalize()
 
-        # See if we hit anything.
-        result = PhysRayCastResult()
-        hadHit = base.physicsWorld.raycast(
-            result, swingStart, swingDir, swingDist,
-            contents, Contents.Empty,
-            CollisionGroup.Empty, filter
-        )
-        if not hadHit:
-            result = PhysSweepResult()
-            hadHit = base.physicsWorld.boxcast(
-                result, SWING_MINS + swingStart,
-                SWING_MAXS + swingStart,
-                swingDir, swingDist,
-                self.player.viewAngles,
-                contents, Contents.Empty,
-                CollisionGroup.Empty,
-                filter
-            )
+        tr = TFFilters.traceLine(swingStart, swingEnd, contents, 0, filter)
+        if not tr['hit']:
+            tr = TFFilters.traceBox(swingStart, swingEnd, SWING_MINS, SWING_MAXS, contents, 0, filter, self.player.viewAngles)
 
-        ent = None
-        if hadHit:
-            block = result.getBlock()
-            a = block.getActor()
-            if a:
-                ent = a.getPythonTag("entity")
+        ent = tr['ent']
 
         if ent and ent.isObject() and ent.team == self.player.team:
             if not IS_CLIENT:

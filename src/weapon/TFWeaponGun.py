@@ -165,20 +165,8 @@ class TFWeaponGun(BaseClass):
 
         # Trace forward and find what's in front of us, and aim at that.
 
-        if hitTeammates:
-            filter = PhysQueryNodeFilter(player, PhysQueryNodeFilter.FTExclude)
-        else:
-            filter = TFFilters.TFQueryFilter(player, [TFFilters.ignoreTeammates])
-        res = PhysRayCastResult()
-        base.physicsWorld.raycast(res, shootPos, dir, dist, Contents.Solid | Contents.AnyTeam,
-                                  Contents.Empty, CollisionGroup.Empty, filter)
-        if res.hasBlock():
-            b = res.getBlock()
-            end = b.getPosition()
-            frac = (end - shootPos).length() / dist
-        else:
-            end = endPos
-            frac = 1.0
+        filter = TFFilters.TFQueryFilter(player, [TFFilters.ignoreTeammates] if not hitTeammates else [])
+        tr = TFFilters.traceLine(shootPos, endPos, Contents.Solid | Contents.AnyTeam, 0, filter)
 
         # Offset actual start point.
         src = shootPos + (forward * offset.x) + (right * offset.y) + (up * offset.z)
@@ -187,8 +175,8 @@ class TFWeaponGun(BaseClass):
         # Only use the trace end if it wasn't too close, which results
         # in visually bizarre forward angles
         q = Quat()
-        if frac > 0.1:
-            lookAt(q, end - src)
+        if tr['frac'] > 0.1:
+            lookAt(q, tr['endpos'] - src)
         else:
             lookAt(q, endPos - src)
 

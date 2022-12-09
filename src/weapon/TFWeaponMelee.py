@@ -1,6 +1,6 @@
 
 from panda3d.core import Vec3, Quat, NodePath
-from panda3d.pphysics import PhysSweepResult, PhysRayCastResult, PhysQueryNodeFilter
+from panda3d.pphysics import PhysSweepResult, PhysRayCastResult
 
 from .TFWeapon import TFWeapon
 
@@ -90,36 +90,17 @@ class TFWeaponMelee(TFWeapon):
         forward = q.getForward()
         swingStart = self.player.getEyePosition()
         swingEnd = swingStart + (forward * 48)
-        swingDir = (swingEnd - swingStart)
-        swingDist = swingDir.length()
-        swingDir.normalize()
 
         # See if we hit anything.
-        rayResult = PhysRayCastResult()
         filter = TFFilters.TFQueryFilter(self.player)
-        hadRayHit = base.physicsWorld.raycast(
-            rayResult, swingStart,
-            swingDir, swingDist,
-            Contents.Solid | Contents.AnyTeam | Contents.HitBox,
-            Contents.Empty,
-            CollisionGroup.Empty,
-            filter
-        )
-        if hadRayHit:
-            return (True, rayResult)
-        else:
-            sweepResult = PhysSweepResult()
-            hadSweepHit = base.physicsWorld.boxcast(
-                sweepResult, SWING_MINS + swingStart,
-                SWING_MAXS + swingStart,
-                swingDir, swingDist,
-                self.player.viewAngles,
-                Contents.Solid | Contents.AnyTeam | Contents.HitBox,
-                Contents.Empty,
-                CollisionGroup.Empty,
-                filter
-            )
-            return (hadSweepHit, sweepResult)
+        tr = TFFilters.traceLine(swingStart, swingEnd, Contents.Solid | Contents.AnyTeam | Contents.HitBox, 0, filter)
+
+        if tr['hit']:
+            return tr
+
+        return TFFilters.traceBox(swingStart, swingEnd, SWING_MINS, SWING_MAXS,
+                                  Contents.Solid | Contents.AnyTeam | Contents.HitBox,
+                                  0, filter)
 
     def getMeleeDamage(self, target):
         return self.weaponData[self.weaponMode]['damage']
@@ -130,35 +111,24 @@ class TFWeaponMelee(TFWeapon):
 
         self.syncAllHitBoxes()
 
-        hadHit, result = self.doSwingTrace()
-        if hadHit:
-            block = result.getBlock()
-            actor = block.getActor()
-            if actor:
-                ent = actor.getPythonTag("entity")
-            else:
-                ent = None
+        tr = self.doSwingTrace()
+        if tr['hit']:
+            ent = tr['ent']
             if ent and ent.isPlayer():
                 self.playSound(self.getHitPlayerSound())
             else:
                 self.playSound(self.getHitWorldSound())
 
-            q = Quat()
-            q.setHpr(self.player.viewAngles)
-            forward = q.getForward()
-            swingStart = self.player.getEyePosition()
-            swingEnd = swingStart + (forward * 48)
-
-            physMat = block.getMaterial()
+            physMat = tr['mat']
             surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
             if not surfaceDef:
                 surfaceDef = SurfaceProperties['default']
 
             if IS_CLIENT and (ent is not None) and base.cr.prediction.isFirstTimePredicted():
-                ent.traceDecal(surfaceDef.impactDecal, block)
+                ent.traceDecal(surfaceDef.impactDecal, tr)
 
             if not IS_CLIENT and (ent is not None):
-                ent.traceDecal(surfaceDef.impactDecal, block, excludeClients=[self.player.owner])
+                ent.traceDecal(surfaceDef.impactDecal, tr, excludeClients=[self.player.owner])
                 dmgType = DamageType.Bullet | DamageType.NeverGib | DamageType.Club
                 damage = self.getMeleeDamage(ent)
                 if damage > 0:
@@ -170,8 +140,8 @@ class TFWeaponMelee(TFWeapon):
                     info.inflictor = self.player
                     info.setDamage(damage)
                     info.damageType = dmgType
-                    calculateMeleeDamageForce(info, forward, swingEnd, 1.0 / damage * tf_meleeattackforcescale)
-                    ent.dispatchTraceAttack(info, forward, block)
+                    calculateMeleeDamageForce(info, tr['tracedir'], tr['endpos'], 1.0 / damage * tf_meleeattackforcescale)
+                    ent.dispatchTraceAttack(info, tr['tracedir'], tr)
                     applyMultiDamage()
 
                 self.onEntityHit(ent)

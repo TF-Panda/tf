@@ -109,13 +109,17 @@ def worldOnly(actor, mask, entity, source):
         return 1
     return 0
 
-class TFQueryFilter(PythonPhysQueryFilter):
+class TFQueryFilter:
 
     def __init__(self, sourceEntity = None, filters = [], ignoreSource = True):
-        PythonPhysQueryFilter.__init__(self, self.doFilter)
+        self.filter = CallbackObject.make(self.__doFilter)
         self.sourceEntity = sourceEntity
         self.ignoreSource = ignoreSource
         self.filters = filters
+
+    def __doFilter(self, cbdata):
+        ret = self.doFilter(cbdata.actor, cbdata.solid_mask, cbdata.collision_group, cbdata.result)
+        cbdata.result = ret
 
     def doFilter(self, actor, mask, collisionGroup, hitType):
         """
@@ -148,14 +152,13 @@ class TFQueryFilter(PythonPhysQueryFilter):
 
         return hitType
 
-def traceLine(start, end, contents, cgroup, filter):
-    result = PhysRayCastResult()
-    dir = end - start
-    dist = dir.length()
-    if not dir.normalize():
-        dir = Vec3.forward()
-    base.physicsWorld.raycast(result, start, dir, dist, contents, 0, cgroup, filter)
+def makeTraceInfo(start, end, dir, dist, result):
     data = {}
+    data['tracestart'] = start
+    data['traceend'] = end
+    data['tracedir'] = dir
+    data['tracedist'] = dist
+    data['ret'] = result
     data['hit'] = result.hasBlock()
     if result.hasBlock():
         block = result.getBlock()
@@ -168,7 +171,8 @@ def traceLine(start, end, contents, cgroup, filter):
         data['ent'] = actor.getPythonTag('entity') if actor else None
         data['frac'] = (block.getDistance() / dist) if dist > 0.0 else 0.0
         #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
-        data['endpos'] = data['pos']
+        data['endpos'] = start + dir * block.getDistance()
+        data['startsolid'] = block.getDistance() < 0
     else:
         data['block'] = None
         data['actor'] = None
@@ -178,73 +182,41 @@ def traceLine(start, end, contents, cgroup, filter):
         data['ent'] = None
         data['frac'] = 1.0
         data['endpos'] = end
+        data['startsolid'] = False
     return data
 
-def traceBox(start, end, mins, maxs, contents, cgroup, filter):
-    result = PhysSweepResult()
+def traceCalcVector(start, end):
     dir = end - start
     dist = dir.length()
     if not dir.normalize():
         dir = Vec3.forward()
+    return (dir, dist)
+
+def traceLine(start, end, contents, cgroup, filter):
+    dir, dist = traceCalcVector(start, end)
+    result = PhysRayCastResult()
+    base.physicsWorld.raycast(result, start, dir, dist, contents, 0, cgroup, filter.filter)
+    return makeTraceInfo(start, end, dir, dist, result)
+
+def traceBox(start, end, mins, maxs, contents, cgroup, filter, hpr=Vec3(0)):
+    dir, dist = traceCalcVector(start, end)
+    result = PhysSweepResult()
     base.physicsWorld.boxcast(result, start + mins, start + maxs, dir, dist,
-                              0, contents, 0, cgroup, filter)
-    data = {}
-    data['hit'] = result.hasBlock()
-    if result.hasBlock():
-        block = result.getBlock()
-        actor = block.getActor()
-        data['block'] = block
-        data['actor'] = actor
-        data['pos'] = block.getPosition()
-        data['norm'] = block.getNormal()
-        data['mat'] = block.getMaterial()
-        data['ent'] = actor.getPythonTag('entity') if actor else None
-        data['frac'] = (block.getDistance() / dist) if dist > 0 else 0.0
-        #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
-        data['endpos'] = start + dir * block.getDistance()
-    else:
-        data['block'] = None
-        data['actor'] = None
-        data['pos'] = Point3()
-        data['norm'] = Vec3()
-        data['mat'] = None
-        data['ent'] = None
-        data['frac'] = 1.0
-        data['endpos'] = end
-    return data
+                              hpr, contents, 0, cgroup, filter.filter)
+    return makeTraceInfo(start, end, dir, dist, result)
 
 def traceSphere(start, end, radius, contents, cgroup, filter):
+    dir, dist = traceCalcVector(start, end)
     result = PhysSweepResult()
-    dir = end - start
-    dist = dir.length()
-    if not dir.normalize():
-        dir = Vec3.forward()
     base.physicsWorld.sweep(result, PhysSphere(radius), start, Vec3(0), dir, dist,
-                            contents, 0, cgroup, filter)
-    data = {}
-    data['hit'] = result.hasBlock()
-    if result.hasBlock():
-        block = result.getBlock()
-        actor = block.getActor()
-        data['block'] = block
-        data['actor'] = actor
-        data['pos'] = block.getPosition()
-        data['norm'] = block.getNormal()
-        data['mat'] = block.getMaterial()
-        data['ent'] = actor.getPythonTag('entity') if actor else None
-        data['frac'] = (block.getDistance() / dist) if dist > 0 else 0.0
-        #assert data['frac'] >= 0.0 and data['frac'] <= 1.0
-        data['endpos'] = start + dir * block.getDistance()
-    else:
-        data['block'] = None
-        data['actor'] = None
-        data['pos'] = Point3()
-        data['norm'] = Vec3()
-        data['mat'] = None
-        data['ent'] = None
-        data['frac'] = 1.0
-        data['endpos'] = end
-    return data
+                            contents, 0, cgroup, filter.filter)
+    return makeTraceInfo(start, end, dir, dist, result)
+
+def traceGeometry(start, end, geom, contents, cgroup, filter, hpr=Vec3(0)):
+    dir, dist = traceCalcVector(start, end)
+    result = PhysSweepResult()
+    base.physicsWorld.sweep(result, geom, start, hpr, dir, dist, contents, 0, cgroup, filter.filter)
+    return makeTraceInfo(start, end, dir, dist, result)
 
 def clipVelocity(inVel, normal, outVel, overBounce):
     angle = normal.z

@@ -302,6 +302,41 @@ def getAxisViz():
     segs.drawTo((0, 0, 16))
     return NodePath(segs.create())
 
+def getBoxViz(mins, maxs, thickness, color):
+    segs = LineSegs('box')
+    segs.setThickness(thickness)
+    segs.setColor(color)
+    # Bottom face.
+    segs.moveTo(mins)
+    segs.drawTo(mins.x, maxs.y, mins.z)
+    segs.drawTo(maxs.x, maxs.y, mins.z)
+    segs.drawTo(maxs.x, mins.y, mins.z)
+    segs.drawTo(mins)
+    # Top face.
+    segs.moveTo(maxs)
+    segs.drawTo(maxs.x, mins.y, maxs.z)
+    segs.drawTo(mins.x, mins.y, maxs.z)
+    segs.drawTo(mins.x, maxs.y, maxs.z)
+    segs.drawTo(maxs)
+    # vertical corner edges
+    segs.moveTo(mins)
+    segs.drawTo(mins.x, mins.y, maxs.z)
+    segs.moveTo(mins.x, maxs.y, mins.z)
+    segs.drawTo(mins.x, maxs.y, maxs.z)
+    segs.moveTo(maxs.x, mins.y, mins.z)
+    segs.drawTo(maxs.x, mins.y, maxs.z)
+    segs.moveTo(maxs.x, maxs.y, mins.z)
+    segs.drawTo(maxs)
+    return NodePath(segs.create())
+
+def getLineViz(start, end, thickness, color):
+    segs = LineSegs('line')
+    segs.setThickness(thickness)
+    segs.setColor(color)
+    segs.moveTo(start)
+    segs.drawTo(end)
+    return NodePath(segs.create())
+
 # All classes use the same standing/ducking collision hulls.
 VEC_VIEW = Vec3(0, 0, 72)
 VEC_HULL_MIN = Vec3(-24, -24, 0)

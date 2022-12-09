@@ -5,7 +5,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
 from tf.player.DViewModelAI import DViewModelAI
 
-from tf.tfbase import TFGlobals, Sounds, TFLocalizer
+from tf.tfbase import TFGlobals, Sounds, TFLocalizer, TFFilters
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
 from tf.tfbase.TFGlobals import Contents, DamageType, TakeDamage, CollisionGroup, GameZone, TFTeam
 from tf.player.TFClass import *
@@ -16,7 +16,7 @@ import random
 import copy
 
 from panda3d.core import *
-from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
+from panda3d.pphysics import PhysRayCastResult
 
 from .DistributedGameBase import DistributedGameBase
 from .GameMode import *
@@ -446,6 +446,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         inflictor = info.inflictor
 
+        filter = TFFilters.TFQueryFilter(inflictor)
+
         for do in list(base.net.doId2do.values()):
             if do == info.inflictor:
                 continue
@@ -470,25 +472,13 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
             # Check that the explosion can "see" the entity.
             spot = do.getPos() + (do.viewOffset * 0.5)
-            res = PhysRayCastResult()
-            dir = spot - src
-            dist = dir.length()
-            if not dir.normalize():
-                dist = 0.0
-                dir = Vec3.forward()
-            filter = PhysQueryNodeFilter(info.inflictor, PhysQueryNodeFilter.FTExclude)
-            base.physicsWorld.raycast(res, src, dir, dist, mask, Contents.Empty, CollisionGroup.Projectile, filter)
-            if res.hasBlock():
-                b = res.getBlock()
-                act = b.getActor()
-                if act:
-                    hitEnt = act.getPythonTag("entity")
-                else:
-                    hitEnt = None
+            tr = TFFilters.traceLine(src, spot, mask, CollisionGroup.Projectile, filter)
+            if tr['hit']:
+                hitEnt = tr['ent']
                 if hitEnt and hitEnt != do:
                     # Explosion blocked by this entity.
                     continue
-                endPos = b.getPosition()
+                endPos = tr['endpos']
             else:
                 hitEnt = do
                 endPos = spot
@@ -533,18 +523,18 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
             # If we don't have a damage force, manufacture one.
             if adjustedInfo.damagePosition == Vec3() or adjustedInfo.damageForce == Vec3():
-                calculateExplosiveDamageForce(adjustedInfo, dir, src, 1.0)
+                calculateExplosiveDamageForce(adjustedInfo, tr['tracedir'], src, 1.0)
             else:
                 # Assume the force passed in is the maximum force, decay based on falloff.
                 force = adjustedInfo.damageForce.length() * falloff
-                adjustedInfo.damageForce = dir * force
+                adjustedInfo.damageForce = tr['tracedir'] * force
                 adjustedInfo.damagePosition = Vec3(src)
 
             #print("Doing radius damage to", do)
 
-            if res.hasBlock() and do == hitEnt:
+            if tr['hit'] and do == hitEnt:
                 clearMultiDamage()
-                do.dispatchTraceAttack(adjustedInfo, dir, res.getBlock())
+                do.dispatchTraceAttack(adjustedInfo, tr['tracedir'], tr)
                 applyMultiDamage()
             else:
                 do.takeDamage(adjustedInfo)

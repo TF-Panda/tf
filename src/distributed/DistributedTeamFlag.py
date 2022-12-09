@@ -6,6 +6,7 @@ from panda3d.pphysics import *
 from direct.interval.IntervalGlobal import LerpHprInterval
 
 from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, TFTeam, CollisionGroup, WorldParent, SpeechConcept
+from tf.tfbase import TFFilters
 from tf.actor.Model import Model
 from tf.entity.DistributedEntity import DistributedEntity
 from tf.distributed.GameContextMessages import GameContextMessage
@@ -182,11 +183,10 @@ class DistributedTeamFlag(DistributedEntity):
             plyr.flag = None
             # Drop to ground underneath player.
             pos = plyr.getPos() + (0, 0, 32)
-            result = PhysSweepResult()
-            if base.physicsWorld.boxcast(result, Point3(-22.5, -12.75, -5.5) + pos,
-                Point3(22.55, 13.34, 6.1) + pos, Vec3.down(), 100000,
-                (plyr.getH(), 0, 0), Contents.Solid):
-                self.setPos(pos + Vec3.down() * result.getBlock().getDistance())
+            tr = TFFilters.traceBox(pos, pos + Vec3.down() * 10000, Point3(-22.5, 12.75, -5.5), Point3(22.55, 13.34, 6.1),
+                                    Contents.Solid, 0, TFFilters.TFQueryFilter(self), Vec3(plyr.getH(), 0, 0))
+            if tr['hit']:
+                self.setPos(tr['endpos'])
                 self.setHpr(plyr.getH(), 0, 0)
                 self.teleport()
 

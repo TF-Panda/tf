@@ -23,7 +23,7 @@ from tf.object.ObjectType import ObjectType
 from tf.actor.HitBox import HitBoxGroup
 
 from panda3d.core import *
-from panda3d.pphysics import PhysRayCastResult, PhysQueryNodeFilter
+from panda3d.pphysics import PhysRayCastResult
 
 from . import ResponseClassRegistry
 from . import ResponseSystem
@@ -612,9 +612,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         #if self.tfClass == Class.Engineer:
         #    self.placeSentry()
 
-    def placeSentry(self, rotation):
+    def placeSentry(self, pos, rotation):
         if self.selectedBuilding < 0 or self.selectedBuilding > 3:
-            return
+            return False
 
         metals = [
             130,
@@ -623,44 +623,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             50
         ]
         if self.hasObject(self.selectedBuilding) or self.metal < metals[self.selectedBuilding]:
-            return
-
-        #if self.sentry:
-        #    base.net.deleteObject(self.sentry)
-        # Place a sentry in front of him.
-
-        q = Quat()
-        q.setHpr(Vec3(self.viewAngles[0], 0, 0))
-        fwd = q.getForward()
-        startPos = (self.getPos() + (fwd * 64)) + Point3(0, 0, 8)
-        # Trace down to get to the floor.
-        result = PhysRayCastResult()
-        hadHit = base.physicsWorld.raycast(
-            result, startPos, Vec3.down(), 1000000,
-            Contents.Solid, Contents.Empty, CollisionGroup.Empty,
-            TFFilters.TFQueryFilter(
-                self, [TFFilters.ignoreSelf])
-        )
-
-        good = True
-        pos = Point3()
-        if hadHit:
-            block = result.getBlock()
-            actor = block.getActor()
-            if actor:
-                ent = actor.getPythonTag("entity")
-            else:
-                ent = None
-            if not ent or ent.__class__.__name__ != 'WorldAI':
-                good = False
-            else:
-                pos = block.getPosition()
-                if (pos - startPos).length() >= 64:
-                    good = False
-        else:
-            good = False
-
-        if not good:
             return False
 
         if self.selectedBuilding == 0:
@@ -683,7 +645,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.metal -= metals[self.selectedBuilding]
 
         base.net.generateObject(sg, self.zoneId)
-        #self.sentry = sg
 
         if self.selectedBuilding == 0:
             self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': 'sentry'})
@@ -885,13 +846,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         #self.bulletForce = Vec3()
 
-    def traceAttack(self, info, dir, hit):
+    def traceAttack(self, info, dir, tr):
         if self.takeDamageMode != TakeDamage.Yes:
             return
 
-        actor = hit.getActor()
-        if actor:
-            data = actor.getPythonTag("hitbox")
+        if tr['actor']:
+            data = tr['actor'].getPythonTag("hitbox")
         else:
             data = None
         if data:
@@ -914,11 +874,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             pass # TODO: ricochet
         else:
             # Blood decals
-            self.traceBleed(info.damage, dir, hit, info.damageType)
+            self.traceBleed(info.damage, dir, tr, info.damageType)
 
         addMultiDamage(info, self)
 
-    def traceBleed(self, damage, dir, hit, damageType):
+    def traceBleed(self, damage, dir, tr, damageType):
         if damage <= 0:
             return
 
@@ -941,9 +901,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             traceDir.y += random.uniform(-noise, noise)
             traceDir.z += random.uniform(-noise, noise)
 
-            tr = TFFilters.traceLine(hit.getPosition(), hit.getPosition() + traceDir * -traceDist, Contents.Solid, 0, filter)
-            if tr['hit']:
-                base.world.traceDecal('blood', tr['block'])
+            trb = TFFilters.traceLine(tr['endpos'], tr['endpos'] + traceDir * -traceDist, Contents.Solid, 0, filter)
+            if trb['hit']:
+                base.world.traceDecal('blood', trb)
 
     def doAnimationEvent(self, event, data=0, predicted=True):
         self.animState.doAnimationEvent(event, data)

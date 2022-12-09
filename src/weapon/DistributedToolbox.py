@@ -6,7 +6,7 @@ from .TFWeapon import TFWeapon
 
 from .WeaponMode import TFWeaponType, TFWeaponMode
 
-from tf.tfbase import TFLocalizer, TFGlobals
+from tf.tfbase import TFLocalizer, TFGlobals, TFFilters
 from direct.gui.DirectGui import *
 from tf.actor.Activity import Activity
 from tf.actor.Actor import Actor
@@ -33,6 +33,18 @@ class DistributedToolbox(TFWeapon):
         "models/buildables/teleporter_blueprint_exit"
     ]
 
+    BuildHulls = [
+        # Sentry.
+        (Vec3(-17, -23, 0), Vec3(17, 20, 45)),
+        # Dispenser
+        (Vec3(-26, -15, 0), Vec3(26, 15, 56)),
+        # Teleporter
+        (Vec3(-25.5, -15, 0), Vec3(25.5, 15, 18)),
+        (Vec3(-25.5, -15, 0), Vec3(25.5, 15, 18))
+    ]
+
+    GroundClearance = 32
+
     def __init__(self):
         TFWeapon.__init__(self)
         self.weaponType = TFWeaponType.Building
@@ -42,19 +54,169 @@ class DistributedToolbox(TFWeapon):
 
         self.rotation = 0
 
+        self.buildOrigin = Vec3()
+        self.buildMins = Vec3()
+        self.buildMaxs = Vec3()
+        self.lastDenySound = 0.0
+
         if IS_CLIENT:
             self.blueprintRoot = NodePath("blueprint_root")
             self.blueprint = None
+            self.goodBuild = False
 
         self.currentRotation = 0.0
+
+    def verifyCorner(self, bottomCenter, ofs):
+        # Start slightly above the surface
+        start = Vec3(bottomCenter.x + ofs.x, bottomCenter.y + ofs.y, bottomCenter.z + 0.1)
+
+        end = start - Vec3(0, 0, self.GroundClearance)
+
+        #if IS_CLIENT:
+        #    base.addOneOffNode(TFGlobals.getLineViz(start, end, 1, (0, 0, 1, 1)))
+
+        tr = TFFilters.traceLine(start, end,
+            TFGlobals.Contents.Solid | TFGlobals.Contents.PlayerSolid,
+            TFGlobals.CollisionGroup.PlayerMovement, TFFilters.TFQueryFilter(self.player))
+        if tr['hit']:
+            # Cannot build on very steep slopes ( > 45 degrees )
+            dot = tr['norm'].dot(Vec3.up())
+            #print(tr['norm'], dot)
+            if dot < 0.65:
+                # Too steep.
+                return False
+            return tr['frac'] > 0 and tr['frac'] < 1
+        return False
+
+    def calculatePlacementPos(self):
+        hpr = Vec3(0)
+        hpr.x = self.player.viewAngles[0]
+        q = Quat()
+        q.setHpr(hpr)
+        fwd = q.getForward()
+
+        self.updateBuildRotation()
+        hpr.x += self.currentRotation
+
+        objectRadius = Vec2(
+            max(abs(self.buildMins.x), abs(self.buildMaxs.x)),
+            max(abs(self.buildMins.y), abs(self.buildMaxs.y))
+        )
+        localMins = self.player.getLocalHullMins()
+        localMaxs = self.player.getLocalHullMaxs()
+        playerRadius = Vec2(
+            max(abs(localMins.x), abs(localMaxs.x)),
+            max(abs(localMins.y), abs(localMaxs.y))
+        )
+
+        # Small safety buffer.
+        distance = objectRadius.length() + playerRadius.length() + 4
+
+        playerCenter = self.player.getWorldSpaceCenter()
+
+        buildOrigin = playerCenter + fwd * distance
+
+        self.buildOrigin = buildOrigin
+        errorOrigin = buildOrigin - (self.buildMaxs - self.buildMins) * 0.5 - self.buildMins
+
+        buildDims = self.buildMaxs - self.buildMins
+        halfBuildDims = buildDims * 0.5
+        halfBuildDimsXY = Vec3(halfBuildDims.x, halfBuildDims.y, 0.01)
+
+        halfPlayerDims = (localMaxs - localMins) * 0.5
+        boxTopZ = playerCenter.z + halfPlayerDims.z + buildDims.z
+        boxBottomZ = playerCenter.z - halfPlayerDims.z - buildDims.z
+
+        # First, find the ground (ie: where the bottom of the box goes).
+        it = 0
+        numIterations = 8
+        bottomZ = 0
+        topZ = boxTopZ
+        topZInc = (boxBottomZ - boxTopZ) / (numIterations - 1)
+        while it < numIterations:
+            tr = TFFilters.traceBox(Vec3(self.buildOrigin.x, self.buildOrigin.y, topZ),
+                                    Vec3(self.buildOrigin.x, self.buildOrigin.y, boxBottomZ),
+                                    -halfBuildDimsXY, halfBuildDimsXY, TFGlobals.Contents.Solid|TFGlobals.Contents.PlayerSolid,
+                                    TFGlobals.CollisionGroup.PlayerMovement, TFFilters.TFQueryFilter(self.player), hpr)
+
+            if not tr['hit']:
+                # If there is no ground, then we can't place here.
+                self.buildOrigin = errorOrigin
+                return False
+
+            bottomZ = tr['endpos'].z
+
+            # If we found enough space to fit our object, place here.
+            if (topZ - bottomZ > buildDims.z):
+                break
+
+            topZ += topZInc
+
+            it += 1
+
+        if it == numIterations:
+            self.buildOrigin = errorOrigin
+            return False
+
+        # Now see if the range we've got leaves us room for our box.
+        if (topZ - bottomZ < buildDims.z):
+            self.buildOrigin = errorOrigin
+            return False
+
+        # Verify that it's not too much of a slope by seeing how far the corners
+        # are from the ground.
+        buildQuat = Quat()
+        buildQuat.setHpr(hpr)
+        buildMat = LMatrix3()
+        buildQuat.extractToMatrix(buildMat)
+        bottomCenter = Vec3(self.buildOrigin.x, self.buildOrigin.y, bottomZ)
+        ll = Vec2(-halfBuildDims.x, -halfBuildDims.y)
+        ur = Vec2(halfBuildDims.x, halfBuildDims.y)
+        lr = Vec2(halfBuildDims.x, -halfBuildDims.y)
+        ul = Vec2(-halfBuildDims.x, halfBuildDims.y)
+        if not self.verifyCorner(bottomCenter, buildMat.xformVec(ll)) or \
+            not self.verifyCorner(bottomCenter, buildMat.xformVec(ur)) or \
+            not self.verifyCorner(bottomCenter, buildMat.xformVec(lr)) or \
+            not self.verifyCorner(bottomCenter, buildMat.xformVec(ul)):
+
+            self.buildOrigin = errorOrigin
+            return False
+
+        # Ok, now we know the Z range where this box can fit.
+        bottomLeft = self.buildOrigin - halfBuildDims
+        bottomLeft.z = bottomZ
+        self.buildOrigin = bottomLeft - self.buildMins
+
+        return True
+
+    def isPlacementPosValid(self):
+        valid = self.calculatePlacementPos()
+        if not valid:
+            return False
+
+        #if IS_CLIENT:
+        #    base.addOneOffNode(TFGlobals.getBoxViz(self.buildOrigin + self.buildMins, self.buildOrigin + self.buildMaxs, 1, (1, 0, 0, 1)))
+
+        eyePos = self.player.getEyePosition()
+        tr = TFFilters.traceLine(self.buildOrigin, eyePos, TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(self.player))
+        if tr['frac'] < 1:
+            return False
+        return True
 
     def primaryAttack(self):
         TFWeapon.primaryAttack(self)
 
         if not IS_CLIENT:
-            if self.player.placeSentry(self.currentRotation + self.player.viewAngles[0]):
-                # Building placed successfully, go to wrench.
-                self.player.setActiveWeapon(2)
+            valid = self.isPlacementPosValid()
+            built = False
+            if valid:
+                if self.player.placeSentry(self.buildOrigin, self.currentRotation + self.player.viewAngles[0]):
+                    # Building placed successfully, go to wrench.
+                    self.player.setActiveWeapon(2)
+                    built = True
+            if not built and (globalClock.frame_time - self.lastDenySound) >= 0.3:
+                self.player.emitSound("Player.UseDeny", client=self.player.owner)
+                self.lastDenySound = globalClock.frame_time
 
     if not IS_CLIENT:
         def itemPostFrame(self):
@@ -65,7 +227,7 @@ class DistributedToolbox(TFWeapon):
         TFWeapon.secondaryAttack(self)
 
         # Only rotate on first press of secondary attack.
-        if not IS_CLIENT and (self.player.buttonsPressed & InputFlag.Attack2) != 0:
+        if (self.player.buttonsPressed & InputFlag.Attack2) != 0:
             self.rotation += 1
             self.rotation %= 4
 
@@ -73,13 +235,18 @@ class DistributedToolbox(TFWeapon):
         if not TFWeapon.activate(self):
             return False
 
-        if not IS_CLIENT:
-            self.rotation = 0.0
+        self.rotation = 0
 
         self.currentRotation = 0.0
 
+        self.lastDenySound = 0.0
+
+        self.buildMins = self.BuildHulls[self.player.selectedBuilding][0]
+        self.buildMaxs = self.BuildHulls[self.player.selectedBuilding][1]
+
         if IS_CLIENT and self.isOwnedByLocalPlayer():
             # Load the blueprint and place in front of player.
+            self.goodBuild = True
             if self.blueprint:
                 self.blueprint.removeNode()
             self.blueprint = Actor()
@@ -109,15 +276,27 @@ class DistributedToolbox(TFWeapon):
         self.currentRotation = TFGlobals.approachAngle(targetRotation, self.currentRotation, ROTATE_SPEED * globalClock.dt)
 
     if IS_CLIENT:
+        def addPredictionFields(self):
+            TFWeapon.addPredictionFields(self)
+            self.addPredictionField("buildOrigin", Vec3, tolerance=0.01)
+            self.addPredictionField("buildMins", Vec3, tolerance=0)
+            self.addPredictionField("buildMaxs", Vec3, tolerance=0)
+            self.addPredictionField("rotation", int)
+
         def updateRotation(self, task):
-            q = Quat()
-            q.setHpr((self.player.viewAngles[0], 0, 0))
-            fwd = q.getForward()
-            self.blueprintRoot.setPos(self.player.getPos() + fwd * 64)
+            valid = self.isPlacementPosValid()
+
+            self.blueprintRoot.setPos(self.buildOrigin)
             self.blueprintRoot.setH(self.player.viewAngles[0])
 
-            self.updateBuildRotation()
-            #print("target", self.rotation * 90.0, "current", self.currentRotation)
+            if not valid:
+                if self.goodBuild:
+                    self.goodBuild = False
+                    self.blueprint.setAnim('reject', loop=True)
+            else:
+                if not self.goodBuild:
+                    self.goodBuild = True
+                    self.blueprint.setAnim('idle', loop=True)
 
             if self.blueprint:
                 self.blueprint.modelNp.setH(self.currentRotation)

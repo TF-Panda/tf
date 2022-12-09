@@ -25,19 +25,19 @@ class World(DistributedSolidEntity):
 
         self.worldCollisions = []
 
-    def traceDecal(self, decalName, block, excludeClients=[], client=None):
+    def traceDecal(self, decalName, tr, excludeClients=[], client=None):
         if not decalName:
             return
         propIndex = -1
-        actor = block.getActor()
+        actor = tr['actor']
         if actor:
             propIndex = actor.getPythonTag("propIndex")
             if propIndex is None:
                 propIndex = -1
         if IS_CLIENT:
-            self.projectDecalWorld(decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360), propIndex)
+            self.projectDecalWorld(decalName, tr['endpos'], tr['norm'], random.uniform(0, 360), propIndex)
         else:
-            self.sendUpdate('projectDecalWorld', [decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360), propIndex],
+            self.sendUpdate('projectDecalWorld', [decalName, tr['endpos'], tr['norm'], random.uniform(0, 360), propIndex],
                             client=client, excludeClients=excludeClients)
 
     if IS_CLIENT:

@@ -139,7 +139,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
         #self.reparentTo(self.parentEntity)
 
-    def traceDecal(self, decalName, block, excludeClients=[], client=None):
+    def traceDecal(self, decalName, tr, excludeClients=[], client=None):
         pass
 
     def isNetworkedEntity(self):
@@ -439,28 +439,20 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
         # Fire a bullet (ignoring the shooter).
         start = info['src']
-        #end = start + info['dirShooting'] * info['distance']
-        result = PhysRayCastResult()
-        filter = TFFilters.TFQueryFilter(self)
-        base.physicsWorld.raycast(result, start, info['dirShooting'], info['distance'],
-                                  BitMask32(Contents.HitBox | Contents.Solid | Contents.AnyTeam), BitMask32.allOff(),
-                                  CollisionGroup.Empty, filter)
-        if result.hasBlock():
+        end = start + info['dirShooting'] * info['distance']
+        tr = TFFilters.traceLine(start, end, Contents.HitBox | Contents.Solid | Contents.AnyTeam,
+                                 0, TFFilters.TFQueryFilter(self))
+        if tr['hit']:
             # Bullet hit something!
-            block = result.getBlock()
 
             tracerAttachment = info.get('tracerAttachment', None)
             if tracerAttachment:
                 if not IS_CLIENT:
-                    self.sendUpdate('fireTracer', [tracerAttachment, block.getPosition(), 0.0, 0.0])
+                    self.sendUpdate('fireTracer', [tracerAttachment, tr['endpos'], 0.0, 0.0])
                 else:
-                    self.fireTracer(tracerAttachment, block.getPosition())
+                    self.fireTracer(tracerAttachment, tr['endpos'])
 
-            actor = block.getActor()
-            if actor:
-                entity = actor.getPythonTag("entity")
-            else:
-                entity = None
+            entity = tr['ent']
             if not entity:
                 # Didn't hit an entity.  Hmm.
                 return
@@ -471,7 +463,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
             # Play bullet impact sound for material we hit.
             if not IS_CLIENT:
-                physMat = block.getMaterial()
+                physMat = tr['mat']
                 surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
                 if not surfaceDef:
                     surfaceDef = SurfaceProperties['default']
@@ -479,12 +471,12 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 if entity.owner is not None:
                     # Make it non-spatialized for the client who got hit.
                     entity.emitSound(surfaceDef.bulletImpact, client=entity.owner)
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), chan=Sounds.Channel.CHAN_STATIC, excludeClients=[entity.owner])
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], chan=Sounds.Channel.CHAN_STATIC, excludeClients=[entity.owner])
                 else:
                     # Didn't hit a player entity, spatialize for all.
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, block.getPosition(), chan=Sounds.Channel.CHAN_STATIC)
+                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], chan=Sounds.Channel.CHAN_STATIC)
 
-                entity.traceDecal(surfaceDef.impactDecal, block)
+                entity.traceDecal(surfaceDef.impactDecal, tr)
 
             if not IS_CLIENT:
                 # Server-specific.
@@ -494,9 +486,9 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 dmgInfo.setDamage(info['damage'])
                 dmgInfo.damageType = info['damageType']
                 dmgInfo.customDamage = info.get('customDamageType', -1)
-                calculateBulletDamageForce(dmgInfo, Vec3(info['dirShooting']), block.getPosition(), 1.0)
+                calculateBulletDamageForce(dmgInfo, Vec3(info['dirShooting']), tr['endpos'], 1.0)
                 wasAlive = entity.health > 0
-                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], block)
+                entity.dispatchTraceAttack(dmgInfo, info['dirShooting'], tr)
                 applyMultiDamage()
                 if wasAlive and entity.health <= 0:
                     self.onKillEntity(entity)
@@ -839,20 +831,9 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
             lookerOrigin = self.getEyePosition()
             targetOrigin = entity.getEyePosition()
-            dir = targetOrigin - lookerOrigin
-            dist = dir.length()
-            dir.normalize()
-            filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
-            result = PhysRayCastResult()
-            base.physicsWorld.raycast(result, lookerOrigin, dir, dist,
-                                      traceMask, 0, 0, filter)
-            if result.hasBlock():
-                block = result.getBlock()
-                node = block.getActor()
-                if node:
-                    ent = node.getPythonTag("entity")
-                else:
-                    ent = None
+            tr = TFFilters.traceLine(lookerOrigin, targetOrigin, traceMask, 0, TFFilters.TFQueryFilter(self))
+            if tr['hit']:
+                ent = tr['ent']
                 if ent == entity:
                     # LOS is valid.
                     return (True, ent)
@@ -870,21 +851,10 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             """
 
             lookerOrigin = self.getEyePosition()
-            dir = point - lookerOrigin
-            dist = dir.length()
-            dir.normalize()
-            filter = PhysQueryNodeFilter(self, PhysQueryNodeFilter.FTExclude)
-            result = PhysRayCastResult()
-            base.physicsWorld.raycast(result, lookerOrigin, dir, dist, traceMask, 0, 0, filter)
-            if result.hasBlock():
-                block = result.getBlock()
-                node = block.getActor()
-                if node:
-                    ent = node.getPythonTag("entity")
-                else:
-                    ent = None
+            tr = TFFilters.traceLine(lookerOrigin, point, traceMask, 0, TFFilters.TFQueryFilter(self))
+            if tr['hit']:
                 # LOS to point is blocked by this entity.
-                return (False, ent)
+                return (False, tr['ent'])
 
             # LOS is valid.
             return (True, None)
@@ -972,11 +942,11 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             # offset from this matrix.
             return self.getMat(base.render)
 
-    def dispatchTraceAttack(self, info, dir, hit):
+    def dispatchTraceAttack(self, info, dir, tr):
         # TODO: Damage filter?
-        self.traceAttack(info, dir, hit)
+        self.traceAttack(info, dir, tr)
 
-    def traceAttack(self, info, dir, hit):
+    def traceAttack(self, info, dir, tr):
         if self.takeDamageMode:
             addMultiDamage(info, self)
 

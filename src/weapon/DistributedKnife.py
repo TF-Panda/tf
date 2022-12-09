@@ -52,15 +52,10 @@ class DistributedKnife(TFWeaponMelee):
         self.weaponMode = TFWeaponMode.Primary
         self.backstabVictim = None
 
-        hadHit, result = self.doSwingTrace()
-        if hadHit:
+        tr = self.doSwingTrace()
+        if tr['hit']:
             # We will hit something with the attack.
-            block = result.getBlock()
-            actor = block.getActor()
-            if actor:
-                ent = actor.getPythonTag("entity")
-            else:
-                ent = None
+            ent = tr['ent']
             if ent and ent.isPlayer() and not ent.isDead() and ent.team != self.player.team:
                 # Deal extra damage to players when stabbing them from behind.
                 if self.canPerformBackstabAgainstTarget(ent):
@@ -94,14 +89,9 @@ class DistributedKnife(TFWeaponMelee):
             return
 
         # Are we in backstab range and not cloaked?
-        hadHit, result = self.doSwingTrace()
-        if hadHit:
-            block = result.getBlock()
-            actor = block.getActor()
-            if actor:
-                ent = actor.getPythonTag("entity")
-            else:
-                ent = None
+        tr = self.doSwingTrace()
+        if tr['hit']:
+            ent = tr['ent']
             if ent and ent.isPlayer() and ent.team != self.player.team:
                 if self.canPerformBackstabAgainstTarget(ent):
                     if not self.readyToBackstab:

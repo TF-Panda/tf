@@ -239,9 +239,28 @@ class TFBase(ShowBase, FSM):
 
         self.taskMgr.add(self.__particleQueueTask, 'processParticleQueue')
 
+        self.taskMgr.add(self.__oneOffNodeTask, 'oneOffNodesClear', sort=-1000)
+
         GuiPanel.initialize()
 
         self.particleQueue = []
+
+        # Nodes that render once and get removed at the start of the next frame.
+        self.oneOffNodes = set()
+
+    def addOneOffNode(self, node, parent=None):
+        if parent:
+            node.reparentTo(parent)
+        else:
+            node.reparentTo(self.render)
+        self.oneOffNodes.add(node)
+
+    def __oneOffNodeTask(self, task):
+        for np in self.oneOffNodes:
+            if not np.isEmpty():
+                np.removeNode()
+        self.oneOffNodes = set()
+        return task.cont
 
     def __particleQueueTask(self, task):
         self.processParticleQueue()

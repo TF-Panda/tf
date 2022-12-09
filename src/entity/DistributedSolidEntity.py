@@ -39,13 +39,13 @@ class DistributedSolidEntity(DistributedEntity):
         self.maxDecals = 64
         self.decals = []
 
-    def traceDecal(self, decalName, block, excludeClients=[], client=None):
+    def traceDecal(self, decalName, tr, excludeClients=[], client=None):
         if not decalName:
             return
         if IS_CLIENT:
-            self.projectDecal(decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360))
+            self.projectDecal(decalName, tr['endpos'], tr['norm'], random.uniform(0, 360))
         else:
-            self.sendUpdate('projectDecal', [decalName, block.getPosition(), block.getNormal(), random.uniform(0, 360)],
+            self.sendUpdate('projectDecal', [decalName, tr['endpos'], tr['norm'], random.uniform(0, 360)],
                             client=client, excludeClients=excludeClients)
 
     if not IS_CLIENT:

@@ -118,7 +118,7 @@ class BaseRocket(BaseClass):
             self.sweepGeometry = None
             BaseClass.delete(self)
 
-        def explode(self, ent, block):
+        def explode(self, ent, tr):
             self.exploded = True
 
             pos = self.getPos()
@@ -127,8 +127,8 @@ class BaseRocket(BaseClass):
             self.enemy = ent
             # Emit explosion from the world at rocket's current position.
             base.world.emitSoundSpatial("BaseExplosionEffect.Sound", pos, chan=Sounds.Channel.CHAN_STATIC)
-            base.game.d_doExplosion(pos, Vec3(7), block.getNormal())
-            ent.traceDecal('scorch', block)
+            base.game.d_doExplosion(pos, Vec3(7), tr['norm'])
+            ent.traceDecal('scorch', tr)
 
             info = TakeDamageInfo()
             info.inflictor = self.inflictor if self.inflictor else self
@@ -155,28 +155,17 @@ class BaseRocket(BaseClass):
             currPos = self.getPos()
             newPos = currPos + (self.velocity * globalClock.dt)
 
-            sweepDir = newPos - currPos
-            sweepLen = sweepDir.length()
-            sweepDir /= sweepLen
-
             # Sweep from current pos to new pos.  Check for hits.
-            result = PhysSweepResult()
             filter = TFFilters.TFQueryFilter(self.shooter)
-            if base.physicsWorld.sweep(result, self.sweepGeometry, currPos, self.getHpr(),
-                                       sweepDir, sweepLen, self.solidMask, BitMask32.allOff(),
-                                       self.collisionGroup):
-                block = result.getBlock()
-                actor = block.getActor()
-                if actor:
-                    if actor.getContentsMask() & Contents.Sky:
+            tr = TFFilters.traceGeometry(currPos, newPos, self.sweepGeometry, self.solidMask, self.collisionGroup, filter, self.getHpr())
+            if tr['hit']:
+                if tr['actor']:
+                    if tr['actor'].getContentsMask() & Contents.Sky:
                         base.air.deleteObject(self)
                         return
-                    ent = actor.getPythonTag("entity")
-                else:
-                    ent = None
-                if ent:
-                    self.setPos(currPos + sweepDir * block.getDistance())
-                    self.explode(ent, block)
+                if tr['ent']:
+                    self.setPos(tr['endpos'])
+                    self.explode(tr['ent'], tr)
 
             # Don't do this if we just exploded, because the node has been
             # deleted.

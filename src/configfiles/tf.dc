@@ -521,6 +521,9 @@ dclass DistributedDestructionPDA : TFWeapon {
 
 dclass DistributedToolbox : TFWeapon {
   uint8 rotation;
+  //Position buildOrigin;
+  Position buildMins;
+  Position buildMaxs;
 };
 
 dclass DistributedTeamFlag : DistributedEntity {
