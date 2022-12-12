@@ -2,7 +2,7 @@
 
 from panda3d.core import *
 
-from tf.tfbase import TFFilters, TFGlobals, TFLocalizer
+from tf.tfbase import TFFilters, TFGlobals, TFLocalizer, CollisionGroups
 from tf.player import TFClass
 from tf.object.ObjectType import ObjectType
 
@@ -179,7 +179,7 @@ class CrossHairInfo:
         q.setHpr(plyr.viewAngles)
         end = src + q.getForward() * 1000000
         filter = TFFilters.TFQueryFilter(plyr)
-        tr = TFFilters.traceLine(src, end, TFGlobals.Contents.Solid | TFGlobals.Contents.AnyTeam, 0, filter)
+        tr = TFFilters.traceLine(src, end, CollisionGroups.World | CollisionGroups.Mask_AllTeam, filter)
         csEnt = None
         if tr['hit'] and tr['ent']:
             ent = tr['ent']

@@ -11,9 +11,9 @@ from panda3d.pphysics import *
 from panda3d.tf import PredictedObject, PredictionField, PredictionCopy
 
 from tf.actor.Actor import Actor
-from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, Contents, CollisionGroup, SolidShape, SolidFlag, angleMod
+from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, SolidShape, SolidFlag, angleMod
 from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
-from tf.tfbase import TFFilters, Sounds
+from tf.tfbase import TFFilters, Sounds, CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
 from tf.tfbase.SoundEmitter import SoundEmitter
 from direct.directbase import DirectRender
@@ -75,11 +75,16 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         self.viewOffset = Vec3()
 
         # Collision stuff
-        self.collisionGroup = CollisionGroup.Empty
-        self.contentsMask = Contents.Solid
-        self.solidMask = Contents.Solid
+        self.fromCollideMask = CollisionGroups.World
+        self.intoCollideMask = BitMask32.allOn()
         self.solidShape = SolidShape.Empty
         self.solidFlags = SolidFlag.Intangible
+        # If an entity uses both tangible collision *and* a separate
+        # trigger for overlap tests, you can specify a dedicated
+        # into mask for the trigger.  So the trigger can overlap
+        # with stuff that the tangible shape shouldn't collide with.
+        self.useSeparateTriggerMask = False
+        self.triggerIntoMask = BitMask32.allOn()
         self.mass = -1
         self.damping = 0.0
         self.rotDamping = 0.0
@@ -192,9 +197,6 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         # We can't be dead if we don't have any health to begin with.
         return self.maxHealth > 0 and self.health <= 0
 
-    def shouldCollide(self, collisionGroup, contentsMask):
-        return True
-
     def onTriggerEnter(self, entity):
         pass
 
@@ -216,9 +218,6 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         entity = other.getPythonTag("entity")
         if not entity:
             return
-        if not entity.shouldCollide(self.collisionGroup, self.solidMask):
-            return
-        #print(entity.__class__.__name__, "enters trigger")
         if cbdata.getTouchType() == PhysTriggerCallbackData.TEnter:
             self.onTriggerEnter(entity)
         else:
@@ -327,20 +326,15 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         else:
             return None
 
-    def setSolidMask(self, mask):
-        self.solidMask = mask
+    def setIntoCollideMask(self, mask):
+        self.intoCollideMask = mask
         if self.hasCollisions:
-            self.node().setSolidMask(mask)
+            self.node().setIntoCollideMask(mask)
 
-    def setCollisionGroup(self, group):
-        self.collisionGroup = group
+    def setFromCollideMask(self, mask):
+        self.fromCollideMask = mask
         if self.hasCollisions:
-            self.node().setCollisionGroup(group)
-
-    def setContentsMask(self, mask):
-        self.contentsMask = mask
-        if self.hasCollisions:
-            self.node().setContentsMask(mask)
+            self.node().setFromCollideMask(mask)
 
     def setKinematic(self, flag):
         self.kinematic = flag
@@ -364,9 +358,8 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             return
 
         body = PhysRigidDynamicNode(self.node().getName())
-        body.setCollisionGroup(self.collisionGroup)
-        body.setContentsMask(self.contentsMask)
-        body.setSolidMask(self.solidMask)
+        body.setFromCollideMask(self.fromCollideMask)
+        body.setIntoCollideMask(self.intoCollideMask)
         body.setKinematic(self.kinematic)
 
         shapeDatas = self.makeCollisionShape()
@@ -402,6 +395,8 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 tshape.setSimulationShape(False)
                 tshape.setTriggerShape(True)
                 body.addShape(tshape)
+                if self.useSeparateTriggerMask:
+                    tshape.setIntoCollideMask(self.triggerIntoMask)
 
         if (self.solidFlags & SolidFlag.Trigger) and self.triggerCallback:
             body.setTriggerCallback(CallbackObject.make(self.__triggerCallback))
@@ -440,8 +435,8 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         # Fire a bullet (ignoring the shooter).
         start = info['src']
         end = start + info['dirShooting'] * info['distance']
-        tr = TFFilters.traceLine(start, end, Contents.HitBox | Contents.Solid | Contents.AnyTeam,
-                                 0, TFFilters.TFQueryFilter(self))
+        tr = TFFilters.traceLine(start, end, CollisionGroups.Mask_BulletCollide,
+                                 TFFilters.TFQueryFilter(self))
         if tr['hit']:
             # Bullet hit something!
 
@@ -831,7 +826,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
             lookerOrigin = self.getEyePosition()
             targetOrigin = entity.getEyePosition()
-            tr = TFFilters.traceLine(lookerOrigin, targetOrigin, traceMask, 0, TFFilters.TFQueryFilter(self))
+            tr = TFFilters.traceLine(lookerOrigin, targetOrigin, traceMask, TFFilters.TFQueryFilter(self))
             if tr['hit']:
                 ent = tr['ent']
                 if ent == entity:
@@ -851,7 +846,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             """
 
             lookerOrigin = self.getEyePosition()
-            tr = TFFilters.traceLine(lookerOrigin, point, traceMask, 0, TFFilters.TFQueryFilter(self))
+            tr = TFFilters.traceLine(lookerOrigin, point, traceMask, TFFilters.TFQueryFilter(self))
             if tr['hit']:
                 # LOS to point is blocked by this entity.
                 return (False, tr['ent'])

@@ -48,15 +48,6 @@ class TFServerBase(HostBase):
         self.physicsWorld.setGravity((0, 0, -800)) # 9.81 m/s as inches
         self.physicsWorld.setFixedTimestep(0.015)
 
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Gibs, False)
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.Gibs, TFGlobals.CollisionGroup.Gibs, False)
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Projectile, False)
-
         if ConfigVariableBool('garbage-collect-states').value:
             self.simTaskMgr.add(self.__garbageCollectStates, 'serverGarbageCollect', sort = -100)
         self.simTaskMgr.add(self.__physicsUpdate, 'serverPhysicsUpdate', sort = 50)

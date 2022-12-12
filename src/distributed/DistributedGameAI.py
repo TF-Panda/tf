@@ -5,9 +5,9 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
 from tf.player.DViewModelAI import DViewModelAI
 
-from tf.tfbase import TFGlobals, Sounds, TFLocalizer, TFFilters
+from tf.tfbase import TFGlobals, Sounds, TFLocalizer, TFFilters, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
-from tf.tfbase.TFGlobals import Contents, DamageType, TakeDamage, CollisionGroup, GameZone, TFTeam
+from tf.tfbase.TFGlobals import DamageType, TakeDamage, GameZone, TFTeam
 from tf.player.TFClass import *
 from .DTestCharAI import DTestCharAI
 from tf.object.BaseObject import BaseObject
@@ -431,7 +431,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
     def radiusDamage(self, info, origin, radius, ignoreClass, ignoreEntity):
         from tf.entity.DistributedEntity import DistributedEntity
 
-        mask = Contents.Solid | Contents.AnyTeam
+        # I don't think other players/buildings should block splash damage.
+        mask = CollisionGroups.World# | CollisionGroups.Mask_AllTeam
 
         src = Vec3(origin)
 
@@ -472,7 +473,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
             # Check that the explosion can "see" the entity.
             spot = do.getPos() + (do.viewOffset * 0.5)
-            tr = TFFilters.traceLine(src, spot, mask, CollisionGroup.Projectile, filter)
+            tr = TFFilters.traceLine(src, spot, mask, filter)
             if tr['hit']:
                 hitEnt = tr['ent']
                 if hitEnt and hitEnt != do:
@@ -500,16 +501,11 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             else:
                 distToEnt = (src - endPos).length()
 
-            #print("Dist to ", do, do.__class__.__name__, distToEnt)
-
             adjustedDamage = TFGlobals.remapValClamped(distToEnt, 0, radius, info.damage, info.damage * falloff)
 
             # Take a little less damage from yourself
             if hitEnt == info.attacker:
-                #print("Adjust for myself")
                 adjustedDamage *= 0.75
-
-            #print("Adjusted damage", adjustedDamage)
 
             if adjustedDamage <= 0:
                 continue
@@ -519,8 +515,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             adjustedInfo = copy.copy(info)
             adjustedInfo.setDamage(adjustedDamage - (adjustedDamage * blockedDamagePercent))
 
-            #print("Doing", adjustedInfo.damage, "to", do)
-
             # If we don't have a damage force, manufacture one.
             if adjustedInfo.damagePosition == Vec3() or adjustedInfo.damageForce == Vec3():
                 calculateExplosiveDamageForce(adjustedInfo, tr['tracedir'], src, 1.0)
@@ -529,8 +523,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 force = adjustedInfo.damageForce.length() * falloff
                 adjustedInfo.damageForce = tr['tracedir'] * force
                 adjustedInfo.damagePosition = Vec3(src)
-
-            #print("Doing radius damage to", do)
 
             if tr['hit'] and do == hitEnt:
                 clearMultiDamage()

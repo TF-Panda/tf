@@ -5,8 +5,7 @@ from panda3d.pphysics import *
 from .TFWeaponMelee import TFWeaponMelee
 
 from tf.tfbase import TFLocalizer
-from tf.tfbase.TFGlobals import Contents, CollisionGroup
-from tf.tfbase import TFFilters
+from tf.tfbase import TFFilters, CollisionGroups, TFGlobals
 
 from .WeaponMode import TFWeaponType, TFWeaponMode
 
@@ -50,9 +49,9 @@ class DistributedWrench(TFWeaponMelee):
         # See if we can hit an object with a higher range.
 
         # Only trace against objects.
-        filter = TFFilters.TFQueryFilter(self.player, [TFFilters.ignorePlayers])
+        filter = TFFilters.TFQueryFilter(self.player)
 
-        contents = Contents.RedTeam if self.player.team == 0 else Contents.BlueTeam
+        contents = CollisionGroups.RedBuilding if self.team == TFGlobals.TFTeam.Red else CollisionGroups.BlueBuilding
 
         # Setup swing range
         q = Quat()
@@ -61,9 +60,9 @@ class DistributedWrench(TFWeaponMelee):
         swingStart = self.player.getEyePosition()
         swingEnd = swingStart + (forward * 70)
 
-        tr = TFFilters.traceLine(swingStart, swingEnd, contents, 0, filter)
+        tr = TFFilters.traceLine(swingStart, swingEnd, contents, filter)
         if not tr['hit']:
-            tr = TFFilters.traceBox(swingStart, swingEnd, SWING_MINS, SWING_MAXS, contents, 0, filter, self.player.viewAngles)
+            tr = TFFilters.traceBox(swingStart, swingEnd, SWING_MINS, SWING_MAXS, contents, filter, self.player.viewAngles)
 
         ent = tr['ent']
 

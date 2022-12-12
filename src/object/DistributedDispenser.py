@@ -5,8 +5,8 @@ from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
-from tf.tfbase.TFGlobals import Contents, CollisionGroup, getTF2BuildFont, TFTeam, SpeechConcept
-from tf.tfbase import TFLocalizer
+from tf.tfbase.TFGlobals import getTF2BuildFont, TFTeam, SpeechConcept
+from tf.tfbase import TFLocalizer, CollisionGroups
 
 from .BaseObject import BaseObject
 from .ObjectType import ObjectType
@@ -100,9 +100,9 @@ class DistributedDispenser(BaseObject):
             tnode = PhysRigidDynamicNode("dispenserTrigger")
             tnode.addShape(tshape)
             tnode.addToScene(base.physicsWorld)
-            tnode.setCollisionGroup(CollisionGroup.Empty)
-            tnode.setContentsMask(Contents.Solid | (Contents.RedTeam if self.team == 0 else Contents.BlueTeam))
-            tnode.setSolidMask(Contents.RedTeam if self.team == 0 else Contents.BlueTeam)
+            # Player on any team because disguised enemy spies can use the
+            # dispenser.
+            tnode.setIntoCollideMask(CollisionGroups.Mask_Player)
             tnode.setTriggerCallback(CallbackObject.make(self.__touchTriggerCallback))
             tnode.setKinematic(True)
             self.touchTrigger = self.attachNewNode(tnode)
@@ -138,7 +138,7 @@ class DistributedDispenser(BaseObject):
             Returns true if the given target can be healed by this dispenser.
             """
 
-            if not target.isEntityVisible(self, Contents.Solid)[0]:
+            if not target.isEntityVisible(self, CollisionGroups.World)[0]:
                 # Don't have a LOS to dispenser, can't heal them.
                 return False
 

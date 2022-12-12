@@ -7,7 +7,7 @@ else:
     from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
-from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects
+from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
 from panda3d.core import *
@@ -17,14 +17,14 @@ class DistributedStickyBomb(BaseClass):
     def __init__(self):
         BaseClass.__init__(self)
         self.takeDamageMode = TFGlobals.TakeDamage.Yes
+        self.fromCollideMask = CollisionGroups.Projectile
+        self.intoCollideMask = CollisionGroups.World | CollisionGroups.Sky
 
         self.detTime = 0.0
 
         if not IS_CLIENT:
             self.solidFlags = TFGlobals.SolidFlag.Tangible
             self.solidShape = TFGlobals.SolidShape.Model
-            self.solidMask = TFGlobals.Contents.Solid
-            #self.collisionGroup = TFGlobals.CollisionGroup.Projectile
             self.kinematic = False
             self.contactCallback = True
             self.isSticking = False
@@ -42,9 +42,25 @@ class DistributedStickyBomb(BaseClass):
         def generate(self):
             BaseClass.generate(self)
             self.detTime = globalClock.frame_time + 0.8
-            self.setContentsMask(TFGlobals.Contents.RedTeam if self.team == TFGlobals.TFTeam.Red else TFGlobals.Contents.BlueTeam)
+            # Don't collide with teammates for the first bit of life.
+            # This works around an issue where the sticky bomb gets shoved by
+            # the player that shot the sticky.
+            self.addTask(self.__collideWithPlayersTask, 'stickyCollideWithPlayers', appendTask=True, sim=True, delay=0.25)
+
+            # Always collide with enemies from the get-go, but don't collide with teammates
+            # until later.
+            if self.team == TFGlobals.TFTeam.Red:
+                otherMask = CollisionGroups.Mask_Blue
+            else:
+                otherMask = CollisionGroups.Mask_Red
+            self.setIntoCollideMask(self.intoCollideMask | otherMask)
 
             self.addTask(self.__stickTask, 'stickTask', appendTask=True, sim=True, sort=51)
+
+        def __collideWithPlayersTask(self, task):
+            # Add players and buildings onto the sticky's into mask.
+            self.setIntoCollideMask(self.intoCollideMask | CollisionGroups.Mask_AllTeam)
+            return task.done
 
         #def __stickTask(self, task):
 
@@ -83,7 +99,7 @@ class DistributedStickyBomb(BaseClass):
             return isinstance(entity, (WorldAI, DistributedPropDynamicAI))
 
         def onContactStart(self, entity, actor, pair, shape):
-            if actor.getContentsMask() & TFGlobals.Contents.Sky:
+            if actor.getFromCollideMask() & CollisionGroups.Sky:
                 # Note that we hit the sky.  Our update task
                 # (outside of the physics step) will see the flag
                 # and disintegrate the bomb.
@@ -146,7 +162,7 @@ class DistributedStickyBomb(BaseClass):
             norm = Vec3.up()
             if self.isSticking:
                 norm = self.stickSurfaceNormal
-            tr = TFFilters.traceLine(pos + norm * 8, pos - norm * 32, TFGlobals.Contents.Solid, 0,
+            tr = TFFilters.traceLine(pos + norm * 8, pos - norm * 32, CollisionGroups.World,
                                     TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
             if tr['hit'] and tr['ent']:
                 tr['ent'].traceDecal('scorch', tr)

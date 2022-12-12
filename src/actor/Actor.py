@@ -8,7 +8,7 @@ from direct.directbase import DirectRender
 
 from .Model import Model
 from tf.tfbase.SurfaceProperties import SurfaceProperties
-from tf.tfbase.TFGlobals import Contents
+from tf.tfbase import CollisionGroups
 from .HitBox import HitBox
 from .Ragdoll import Ragdoll
 
@@ -691,7 +691,7 @@ class Actor(Model):
         shape.setTriggerShape(False)
         shape.setSceneQueryShape(True)
         body = PhysRigidDynamicNode("hbox_" + self.character.getName() + "_" + jointName)
-        body.setContentsMask(Contents.HitBox)
+        body.setFromCollideMask(CollisionGroups.HitBox)
         body.addShape(shape)
         body.setKinematic(True)
         body.addToScene(base.physicsWorld)

@@ -7,7 +7,7 @@ from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.actor.Actor import Actor
 from tf.actor.Activity import Activity
-from tf.tfbase import TFLocalizer, Sounds, TFFilters, TFGlobals
+from tf.tfbase import TFLocalizer, Sounds, TFFilters, TFGlobals, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 from direct.directbase import DirectRender
 
@@ -115,13 +115,13 @@ class FlameProjectile:
         oldPos = Vec3(self.pos)
         blocked = TFFilters.collideAndSlide(
             self.pos, self.velocity, {'type': 'sphere', 'radius': FLAME_BOXSIZE},
-            TFGlobals.Contents.Solid, 0, self.filter)
+            CollisionGroups.World, self.filter)
         if blocked:
             self.wasBlocked = True
 
         if not IS_CLIENT:
-            tr = TFFilters.traceBox(oldPos, self.pos, -self.size, self.size, TFGlobals.Contents.Solid | TFGlobals.Contents.AnyTeam,
-                                    0, self.filter)
+            tr = TFFilters.traceBox(oldPos, self.pos, -self.size, self.size, CollisionGroups.Mask_AllTeam,
+                                    self.filter)
             ent = tr['ent']
             if tr['hit'] and ent:
                 #if not ent.isPlayer() and not ent.isObject():
@@ -338,7 +338,7 @@ class DistributedFlameThrower(TFWeaponGun):
         # we're good to fire flames.
         #print("trace from", self.getMuzzlePosWorld(), "to", self.player.getEyePosition())
         tr = TFFilters.traceLine(self.getMuzzlePosWorld(), self.player.getEyePosition(),
-            TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(self.player))
+            CollisionGroups.World, TFFilters.TFQueryFilter(self.player))
         #print(tr['hit'], tr['ent'])
         return not tr['hit']
 

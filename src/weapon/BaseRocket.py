@@ -8,9 +8,9 @@ else:
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import Contents, SolidFlag, SolidShape, TakeDamage, DamageType, CollisionGroup
+from tf.tfbase.TFGlobals import TakeDamage, DamageType
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, applyMultiDamage
-from tf.tfbase import TFFilters, Sounds, TFEffects
+from tf.tfbase import TFFilters, Sounds, TFEffects, CollisionGroups, TFGlobals
 
 TF_ROCKET_RADIUS = (110.0 * 1.1)
 
@@ -29,25 +29,25 @@ class BaseRocket(BaseClass):
             self.damage = 0.0
             self.collideWithTeammatesTime = 0.0
             self.collideWithTeammates = False
-            self.solidMask = Contents.Solid
-            self.collisionGroup = CollisionGroup.Rockets
             self.enemy = None
             self.shooter = None
             self.inflictor = None
             self.damage = 100
             self.damageType = DamageType.Blast
-            self.takeDamageMode = TakeDamage.No
             self.sweepGeometry = None
 
-    def determineSolidMask(self):
-        contents = Contents.Solid
+    def determineCollideMask(self):
+        """
+        Sets the mask of collision groups the rocket should collide with.
+        """
+        mask = CollisionGroups.World | CollisionGroups.Sky
         if not self.collideWithTeammates:
             # Only collide with the other team.
-            contents |= Contents.BlueTeam if self.team == 0 else Contents.RedTeam
+            mask |= CollisionGroups.Mask_Blue if self.team == TFGlobals.TFTeam.Red else CollisionGroups.Mask_Red
         else:
             # Collide with both teams.
-            contents |= Contents.AnyTeam
-        self.setSolidMask(contents)
+            mask |= CollisionGroups.Mask_AllTeam
+        self.intoCollideMask = mask
 
     if IS_CLIENT:
         def makeTrailsEffect(self, src):
@@ -100,8 +100,7 @@ class BaseRocket(BaseClass):
             self.collideWithTeammatesTime = globalClock.frame_time + 0.25
             self.collideWithTeammates = False
             self.team = self.shooter.team
-            self.setContentsMask(Contents.Solid | (Contents.RedTeam if self.team == 0 else Contents.BlueTeam))
-            self.determineSolidMask()
+            self.determineCollideMask()
 
             # Build velocity vector from current rotation.
             self.velocity = self.getQuat().getForward()
@@ -150,20 +149,24 @@ class BaseRocket(BaseClass):
             if now > self.collideWithTeammatesTime and not self.collideWithTeammates:
                 # It's time to collide with teammates.
                 self.collideWithTeammates = True
-                self.determineSolidMask()
+                self.determineCollideMask()
 
             currPos = self.getPos()
             newPos = currPos + (self.velocity * globalClock.dt)
 
             # Sweep from current pos to new pos.  Check for hits.
             filter = TFFilters.TFQueryFilter(self.shooter)
-            tr = TFFilters.traceGeometry(currPos, newPos, self.sweepGeometry, self.solidMask, self.collisionGroup, filter, self.getHpr())
+            tr = TFFilters.traceGeometry(currPos, newPos, self.sweepGeometry, self.intoCollideMask, filter, self.getHpr())
             if tr['hit']:
                 if tr['actor']:
-                    if tr['actor'].getContentsMask() & Contents.Sky:
+                    if tr['actor'].getFromCollideMask() & CollisionGroups.Sky:
                         base.air.deleteObject(self)
                         return
                 if tr['ent']:
+                    # For some reason endpos is incorrect when using
+                    # traceGeometry, so we override it to the intersection
+                    # point.
+                    tr['endpos'] = tr['pos'] - tr['tracedir'] * 0.1
                     self.setPos(tr['endpos'])
                     self.explode(tr['ent'], tr)
 

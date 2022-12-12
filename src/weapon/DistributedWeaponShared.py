@@ -4,7 +4,6 @@ from tf.actor.Actor import Actor
 
 from tf.actor.Activity import Activity
 from tf.player.InputButtons import InputFlag
-from tf.tfbase.TFGlobals import CollisionGroup, Contents
 
 from panda3d.pphysics import *
 from panda3d.core import *

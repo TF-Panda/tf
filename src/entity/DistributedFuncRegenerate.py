@@ -2,7 +2,8 @@
 
 from .DistributedSolidEntity import DistributedSolidEntity
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag, Contents, TFTeam, WorldParent
+from tf.tfbase.TFGlobals import SolidShape, SolidFlag, TFTeam, WorldParent
+from tf.tfbase import CollisionGroups
 
 class DistributedFuncRegenerate(DistributedSolidEntity):
     """
@@ -56,12 +57,10 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
             if properties.hasAttribute("associatedmodel"):
                 self.modelTargetName = properties.getAttributeValue("associatedmodel").getString()
 
-            if self.team == TFTeam.Red:
-                self.setContentsMask(Contents.RedTeam)
-                self.setSolidMask(Contents.RedTeam)
-            else:
-                self.setContentsMask(Contents.BlueTeam)
-                self.setSolidMask(Contents.BlueTeam)
+            # We accept a touch by any player because during a round end
+            # the other team is allowed to use it.  We filter out enemies
+            # in the trigger callback during the normal round.
+            self.setIntoCollideMask(CollisionGroups.Mask_Player)
 
         def onTriggerEnter(self, entity):
             if not entity.isPlayer():

@@ -2,7 +2,7 @@
 
 from .DistributedSolidEntity import DistributedSolidEntity
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag, Contents, WorldParent
+from tf.tfbase.TFGlobals import SolidShape, SolidFlag, WorldParent
 
 class DistributedTrigger(DistributedSolidEntity):
 
@@ -11,7 +11,6 @@ class DistributedTrigger(DistributedSolidEntity):
         self.physType = self.PTConvex
         self.solidShape = SolidShape.Model
         self.solidFlags = SolidFlag.Trigger
-        self.solidMask = Contents.Solid | Contents.RedTeam | Contents.BlueTeam
         self.triggerCallback = True
         self.parentEntityId = WorldParent.Hidden
         self.triggerEnabled = True

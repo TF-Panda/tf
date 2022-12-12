@@ -5,7 +5,8 @@ from panda3d.pphysics import *
 
 from direct.directbase import DirectRender
 
-from tf.tfbase.TFGlobals import Contents, TakeDamage, SolidShape, SolidFlag, WorldParent
+from tf.tfbase.TFGlobals import TakeDamage, SolidShape, SolidFlag, WorldParent
+from tf.tfbase import CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 
 import random
@@ -54,10 +55,10 @@ class World(DistributedSolidEntity):
 
     def initWorldCollisions(self):
         collideTypeToMask = {
-            "": Contents.Solid,
-            "clip": Contents.PlayerSolid,
-            "playerclip": Contents.PlayerSolid,
-            "sky": Contents.Sky
+            "": CollisionGroups.World,
+            "clip": CollisionGroups.PlayerClip,
+            "playerclip": CollisionGroups.PlayerClip,
+            "sky": CollisionGroups.Sky
         }
         for i in range(self.model.getNumTriGroups()):
             group = self.model.getTriGroup(i)
@@ -77,7 +78,7 @@ class World(DistributedSolidEntity):
                     shape.addMaterial(materials[i])
 
             body = PhysRigidStaticNode("world-collide-" + group.getCollideType())
-            body.setContentsMask(collideTypeToMask.get(group.getCollideType(), Contents.Solid))
+            body.setFromCollideMask(collideTypeToMask.get(group.getCollideType(), CollisionGroups.World))
             body.addShape(shape)
             body.addToScene(base.physicsWorld)
             body.setPythonTag("entity", self)

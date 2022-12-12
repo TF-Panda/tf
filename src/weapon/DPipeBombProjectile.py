@@ -15,7 +15,7 @@ else:
 from panda3d.core import NodePath, Vec3, Point3
 from panda3d.pphysics import PhysSweepResult
 
-from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects
+from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
 PIPE_DMG_RADIUS = 146
@@ -28,6 +28,9 @@ class DPipeBombProjectile(BaseClass):
     def __init__(self):
         BaseClass.__init__(self)
 
+        self.fromCollideMask = CollisionGroups.Projectile
+        self.intoCollideMask = CollisionGroups.World | CollisionGroups.Sky
+
         if not IS_CLIENT:
             self.damage = 0.0
             self.fullDamage = 0.0
@@ -36,8 +39,6 @@ class DPipeBombProjectile(BaseClass):
             self.takeDamageMode = TFGlobals.TakeDamage.No
             self.solidFlags = TFGlobals.SolidFlag.Tangible
             self.solidShape = TFGlobals.SolidShape.Model
-            self.solidMask = TFGlobals.Contents.Solid
-            self.collisionGroup = TFGlobals.CollisionGroup.Projectile
             self.kinematic = False
             self.directHull = Vec3(2)
             self.otherTeamMask = 0
@@ -55,10 +56,10 @@ class DPipeBombProjectile(BaseClass):
             # hits something or the physics body collides with a surface.
             self.addTask(self.__directHitTest, self.uniqueName('directHitTest'), appendTask=True)
             self.addTask(self.__explodeTask, self.uniqueName('explodeTask'), appendTask=True, delay=2.3)
-            if self.team == 0:
-                self.otherTeamMask = TFGlobals.Contents.BlueTeam
+            if self.team == TFGlobals.TFTeam.Red:
+                self.otherTeamMask = CollisionGroups.Mask_Blue
             else:
-                self.otherTeamMask = TFGlobals.Contents.RedTeam
+                self.otherTeamMask = CollisionGroups.Mask_Red
 
         def __explodeTask(self, task):
             self.explode(None)
@@ -78,7 +79,7 @@ class DPipeBombProjectile(BaseClass):
 
             if not ent:
                 # Trace for scorch mark.
-                tr = TFFilters.traceLine(pos + (0, 0, 8), pos - (0, 0, 32), TFGlobals.Contents.Solid, 0,
+                tr = TFFilters.traceLine(pos + (0, 0, 8), pos - (0, 0, 32), CollisionGroups.World,
                                         TFFilters.TFQueryFilter(self, [TFFilters.worldOnly]))
                 if tr['hit'] and tr['ent']:
                     tr['ent'].traceDecal('scorch', tr)
@@ -102,9 +103,11 @@ class DPipeBombProjectile(BaseClass):
             base.air.deleteObject(self)
 
         def onContactStart(self, entity, actor, pair, shape):
-            if actor.getContentsMask() & TFGlobals.Contents.Sky:
+            if actor.getFromCollideMask() & CollisionGroups.Sky:
                 base.air.deleteObject(self)
                 return
+
+            print("contact start w/", entity, actor)
 
             if self.doingDirectTest:
                 self.removeTask(self.uniqueName('directHitTest'))
@@ -125,7 +128,7 @@ class DPipeBombProjectile(BaseClass):
             predictedPos = currPos + (currVel * globalClock.dt)
 
             tr = TFFilters.traceBox(currPos, predictedPos, -self.directHull, self.directHull,
-                                    self.otherTeamMask, 0, TFFilters.TFQueryFilter(self))
+                                    self.otherTeamMask, TFFilters.TFQueryFilter(self))
             if tr['hit']:
                 ent = tr['ent']
                 if ent and ent != self.shooter:

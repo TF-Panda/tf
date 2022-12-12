@@ -8,8 +8,8 @@ from .WeaponMode import TFWeaponMode
 from .TakeDamageInfo import TakeDamageInfo, applyMultiDamage, clearMultiDamage, calculateMeleeDamageForce
 from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
-from tf.tfbase.TFGlobals import Contents, CollisionGroup, DamageType
-from tf.tfbase import TFFilters
+from tf.tfbase.TFGlobals import DamageType
+from tf.tfbase import TFFilters, CollisionGroups
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
 
@@ -93,14 +93,14 @@ class TFWeaponMelee(TFWeapon):
 
         # See if we hit anything.
         filter = TFFilters.TFQueryFilter(self.player)
-        tr = TFFilters.traceLine(swingStart, swingEnd, Contents.Solid | Contents.AnyTeam | Contents.HitBox, 0, filter)
+        mask = CollisionGroups.World | CollisionGroups.Mask_AllTeam | CollisionGroups.HitBox
+        tr = TFFilters.traceLine(swingStart, swingEnd, mask, filter)
 
         if tr['hit']:
             return tr
 
         return TFFilters.traceBox(swingStart, swingEnd, SWING_MINS, SWING_MAXS,
-                                  Contents.Solid | Contents.AnyTeam | Contents.HitBox,
-                                  0, filter)
+                                  mask, filter)
 
     def getMeleeDamage(self, target):
         return self.weaponData[self.weaponMode]['damage']

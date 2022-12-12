@@ -11,7 +11,8 @@ else:
 from .ObjectState import ObjectState
 from .ObjectType import ObjectType
 from tf.actor.Activity import Activity
-from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, CollisionGroup, TFTeam, SpeechConcept
+from tf.tfbase.TFGlobals import SolidShape, SolidFlag, TFTeam, SpeechConcept
+from tf.tfbase import CollisionGroups
 from tf.player.TFClass import Class
 from tf.tfbase import Sounds
 
@@ -94,10 +95,10 @@ class BaseObject(BaseClass):
         return base.net.doId2do.get(self.builderDoId)
 
     def setCollideMasks(self):
-        self.setContentsMask(Contents.RedTeam if self.team == TFTeam.Red else Contents.BlueTeam)
+        self.setFromCollideMask(CollisionGroups.RedBuilding if self.team == TFTeam.Red else CollisionGroups.BlueBuilding)
         # TODO: solid to builder
         #if IS_CLIENT and self.isBuiltByLocalAvatar():
-        #    self.setSolidMask()
+        #    self.setIntoCollideMask()
 
     if not IS_CLIENT:
 
@@ -188,7 +189,6 @@ class BaseObject(BaseClass):
                 ap = DWeaponDropAI()
                 ap.solidShape = SolidShape.Model
                 ap.solidFlags |= SolidFlag.Tangible
-                ap.collisionGroup = CollisionGroup.Debris
                 ap.kinematic = False
                 ap.skin = self.team
                 ap.setModel(model)

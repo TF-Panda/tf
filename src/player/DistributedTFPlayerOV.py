@@ -19,7 +19,7 @@ from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfgui import CrossHairInfo
 from tf.tfgui.DamageNumbers import DamageNumbers
 from tf.tfgui.ChatFeed import ChatFeed
-from tf.tfbase import TFGlobals, TFFilters, TFLocalizer
+from tf.tfbase import TFGlobals, TFFilters, TFLocalizer, CollisionGroups
 from .TFPlayerState import TFPlayerState
 
 from direct.distributed2.ClientConfig import *
@@ -643,7 +643,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         """
 
         tr = TFFilters.traceSphere(targetPos, camPos, 8.0,
-            TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(camTargetEntity))
+            CollisionGroups.World, TFFilters.TFQueryFilter(camTargetEntity))
         if tr['hit']:
             return (True, tr['endpos'])
         return (False, camPos)

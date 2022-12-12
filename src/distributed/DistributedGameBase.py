@@ -2,7 +2,8 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import Contents, TFTeam
+from tf.tfbase.TFGlobals import TFTeam
+from tf.tfbase import CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 from .RoundState import RoundState
 
@@ -207,7 +208,7 @@ class DistributedGameBase:
                     cnode.addToScene(base.physicsWorld)
                     cnp = propPhysRoot.attachNewNode(cnode)
                     cnp.setTransform(NodePath(), propModel.getTransform(NodePath()))
-                    cnode.setContentsMask(Contents.Solid)
+                    cnode.setFromCollideMask(CollisionGroups.World)
                     #cnode.setPythonTag("entity", base.world)
 
             propModel.flattenLight()

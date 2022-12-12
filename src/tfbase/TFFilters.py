@@ -3,7 +3,7 @@
 from panda3d.pphysics import PhysRayCastResult, PhysSweepResult, PhysSphere
 from panda3d.core import *
 
-from tf.tfbase.TFGlobals import Contents
+from tf.tfbase import CollisionGroups
 
 tf_filter_coll = PStatCollector("App:TFFilterQuery:DoFilter")
 tf_filter_pytag_coll = PStatCollector("App:TFFilterQuery:DoFilter:GetPythonTag")
@@ -12,22 +12,22 @@ ENTITY_TAG = "entity"
 
 def hitBoxes(actor, mask, entity, source):
     """
-    If the given entity has hitboxes and the mask contains the Contents.HitBox
+    If the given entity has hitboxes and the mask contains the CollisionGroups.HitBox
     bit, ignores the entity's collision hull and only checks against the hit
     boxes.
     """
 
-    contents = actor.getContentsMask().getWord()
-    if (mask & Contents.HitBox) == 0:
+    fromMask = actor.getFromCollideMask()
+    if (CollisionGroups.HitBox & mask) == 0:
         # Not checking against hitboxes, ignore hitboxes.
-        if (contents & Contents.HitBox) != 0:
+        if (fromMask & CollisionGroups.HitBox) != 0:
             return 0
     else:
         # We are checking against hitboxes.  Ignore the collision hull, unless
         # the entity doesn't actually have hitboxes.
-        if len(entity.hitBoxes) > 0:
+        if entity.hitBoxes:
             # The entity has hitboxes, so ignore anything that isn't a hitbox.
-            if (contents & Contents.HitBox) == 0:
+            if (fromMask & CollisionGroups.HitBox) == 0:
                 # This isn't a hitbox.
                 return 0
 
@@ -118,10 +118,10 @@ class TFQueryFilter:
         self.filters = filters
 
     def __doFilter(self, cbdata):
-        ret = self.doFilter(cbdata.actor, cbdata.solid_mask, cbdata.collision_group, cbdata.result)
+        ret = self.doFilter(cbdata.actor, cbdata.into_collide_mask, cbdata.result)
         cbdata.result = ret
 
-    def doFilter(self, actor, mask, collisionGroup, hitType):
+    def doFilter(self, actor, mask, hitType):
         """
         Runs the set of Python filters in order.  The filter will early-out
         if one of the filters ignores the query.
@@ -139,10 +139,6 @@ class TFQueryFilter:
             return 0
 
         if not hitBoxes(actor, mask, entity, self.sourceEntity):
-            return 0
-
-        if not entity.shouldCollide(collisionGroup, mask):
-            # Entity doesn't collide with this.
             return 0
 
         for f in self.filters:
@@ -192,30 +188,30 @@ def traceCalcVector(start, end):
         dir = Vec3.forward()
     return (dir, dist)
 
-def traceLine(start, end, contents, cgroup, filter):
+def traceLine(start, end, intoMask, filter):
     dir, dist = traceCalcVector(start, end)
     result = PhysRayCastResult()
-    base.physicsWorld.raycast(result, start, dir, dist, contents, 0, cgroup, filter.filter)
+    base.physicsWorld.raycast(result, start, dir, dist, intoMask, 0, filter.filter)
     return makeTraceInfo(start, end, dir, dist, result)
 
-def traceBox(start, end, mins, maxs, contents, cgroup, filter, hpr=Vec3(0)):
+def traceBox(start, end, mins, maxs, intoMask, filter, hpr=Vec3(0)):
     dir, dist = traceCalcVector(start, end)
     result = PhysSweepResult()
     base.physicsWorld.boxcast(result, start + mins, start + maxs, dir, dist,
-                              hpr, contents, 0, cgroup, filter.filter)
+                              hpr, intoMask, 0, filter.filter)
     return makeTraceInfo(start, end, dir, dist, result)
 
-def traceSphere(start, end, radius, contents, cgroup, filter):
+def traceSphere(start, end, radius, intoMask, filter):
     dir, dist = traceCalcVector(start, end)
     result = PhysSweepResult()
     base.physicsWorld.sweep(result, PhysSphere(radius), start, Vec3(0), dir, dist,
-                            contents, 0, cgroup, filter.filter)
+                            intoMask, 0, filter.filter)
     return makeTraceInfo(start, end, dir, dist, result)
 
-def traceGeometry(start, end, geom, contents, cgroup, filter, hpr=Vec3(0)):
+def traceGeometry(start, end, geom, intoMask, filter, hpr=Vec3(0)):
     dir, dist = traceCalcVector(start, end)
     result = PhysSweepResult()
-    base.physicsWorld.sweep(result, geom, start, hpr, dir, dist, contents, 0, cgroup, filter.filter)
+    base.physicsWorld.sweep(result, geom, start, hpr, dir, dist, intoMask, 0, filter.filter)
     return makeTraceInfo(start, end, dir, dist, result)
 
 def clipVelocity(inVel, normal, outVel, overBounce):
@@ -241,7 +237,7 @@ def clipVelocity(inVel, normal, outVel, overBounce):
 
     return blocked
 
-def collideAndSlide(origin, velocity, collInfo, contents, collisionGroup, filter):
+def collideAndSlide(origin, velocity, collInfo, intoMask, filter):
     """
     Origin: current object position.
     Velocity: desired movement offset
@@ -272,9 +268,9 @@ def collideAndSlide(origin, velocity, collInfo, contents, collisionGroup, filter
         # end point.
         end = origin + velocity * timeLeft
         if collInfo['type'] == 'box':
-            tr = traceBox(origin, end, collInfo['mins'], collInfo['maxs'], contents, collisionGroup, filter)
+            tr = traceBox(origin, end, collInfo['mins'], collInfo['maxs'], intoMask, filter)
         elif collInfo['type'] == 'sphere':
-            tr = traceSphere(origin, end, collInfo['radius'], contents, collisionGroup, filter)
+            tr = traceSphere(origin, end, collInfo['radius'], intoMask, filter)
         else:
             assert False
         fraction = tr['frac']

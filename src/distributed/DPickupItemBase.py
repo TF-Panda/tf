@@ -3,7 +3,7 @@
 from panda3d.core import Vec3
 
 from tf.entity.DistributedEntity import DistributedEntity
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, CollisionGroups
 from tf.actor.Model import Model
 
 from direct.interval.IntervalGlobal import LerpHprInterval
@@ -47,8 +47,7 @@ class DPickupItemBase(DistributedEntity):
             self.triggerCallback = True
             self.solidShape = TFGlobals.SolidShape.Box
             self.solidFlags = TFGlobals.SolidFlag.Trigger
-            self.solidMask = TFGlobals.Contents.Solid | TFGlobals.Contents.AnyTeam
-            self.collisionGroup = TFGlobals.CollisionGroup.Debris
+            self.intoCollideMask = CollisionGroups.Mask_Player
             # All pickups use the same hull.
             self.hullMins = Vec3(-8, -8, 0)
             self.hullMaxs = Vec3(8, 8, 16)

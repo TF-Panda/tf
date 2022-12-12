@@ -49,7 +49,7 @@ class LevelBase:
             shape = PhysShape(geom, PhysMaterial(0.4, 0.25, 0.2))
             body = PhysRigidStaticNode("model-phys-%i" % i)
             body.addShape(shape)
-            body.setContentsMask(Contents.Solid)
+            body.setFromCollideMask(Contents.Solid)
             body.addToScene(base.physicsWorld)
             body.setPythonTag("entity", base.world)
             body.setPythonTag("object", base.world)
@@ -114,7 +114,7 @@ class LevelBase:
                     cnode.addToScene(base.physicsWorld)
                     cnp = propModel.attachNewNode(cnode)
                     cnp.setTransform(NodePath(), propModel.getTransform(NodePath()))
-                    cnode.setContentsMask(Contents.Solid)
+                    cnode.setFromCollideMask(Contents.Solid)
                     cnode.setPythonTag("entity", base.world)
                     cnode.setPythonTag("object", base.world)
 

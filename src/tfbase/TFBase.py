@@ -129,15 +129,6 @@ class TFBase(ShowBase, FSM):
         self.physicsWorld.setGravity((0, 0, -800)) # 9.81 m/s as inches
         self.physicsWorld.setFixedTimestep(0.015)
 
-        #self.physicsWorld.setGroupCollisionFlag(
-        #    TFGlobals.CollisionGroup.Debris, TFGlobals.CollisionGroup.Debris, False)
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Debris, False)
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.PlayerMovement, TFGlobals.CollisionGroup.Gibs, False)
-        self.physicsWorld.setGroupCollisionFlag(
-            TFGlobals.CollisionGroup.Gibs, TFGlobals.CollisionGroup.Gibs, False)
-
         self.taskMgr.add(self.physicsUpdate, 'physicsUpdate', sort = 30)
         self.taskMgr.add(self.ragdollUpdate, 'ragdollUpdate', sort = 35)
 

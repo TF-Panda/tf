@@ -15,8 +15,8 @@ from .ObserverMode import ObserverMode
 from .TFPlayerState import TFPlayerState
 from tf.weapon.TakeDamageInfo import addMultiDamage, TakeDamageInfo
 
-from tf.tfbase import TFGlobals, Sounds, TFFilters
-from tf.tfbase.TFGlobals import Contents, CollisionGroup, TakeDamage, DamageType, TFTeam, SpeechConcept
+from tf.tfbase import TFGlobals, Sounds, TFFilters, CollisionGroups
+from tf.tfbase.TFGlobals import TakeDamage, DamageType, TFTeam, SpeechConcept
 from tf.object.BaseObject import BaseObject
 from tf.object.ObjectType import ObjectType
 
@@ -180,7 +180,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             eyePos = self.getEyePosition()
             filter = TFFilters.TFQueryFilter(self)
             tr = TFFilters.traceLine(eyePos, eyePos + fwd * 10000,
-                Contents.Solid | Contents.AnyTeam, 0, filter)
+                CollisionGroups.World | CollisionGroups.Mask_AllTeam, filter)
             if tr['hit'] and tr['ent'] and tr['ent'].isPlayer() and not tr['ent'].isDead():
                 data['crosshair_player'] = tr['ent']
             else:
@@ -570,20 +570,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def pushExpression(self, name):
         self.sendUpdate('pushExpression', [name])
 
-    def shouldCollide(self, collisionGroup, contentsMask):
-        #print("Should collide?", collisionGroup, contentsMask)
-        if collisionGroup == CollisionGroup.PlayerMovement or collisionGroup == CollisionGroup.Rockets:
-            if self.team == 0:
-                if (contentsMask & Contents.RedTeam) == 0:
-                    #print("\tno")
-                    return False
-            elif self.team == 1:
-                if (contentsMask & Contents.BlueTeam) == 0:
-                    #print("\tno")
-                    return False
-        #print("\tyes")
-        return DistributedCharAI.shouldCollide(self, collisionGroup, contentsMask)
-
     def d_speak(self, soundName, client = None, excludeClients = []):
         info = Sounds.Sounds.get(soundName, None)
         if not info:
@@ -901,7 +887,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             traceDir.y += random.uniform(-noise, noise)
             traceDir.z += random.uniform(-noise, noise)
 
-            trb = TFFilters.traceLine(tr['endpos'], tr['endpos'] + traceDir * -traceDist, Contents.Solid, 0, filter)
+            trb = TFFilters.traceLine(tr['endpos'], tr['endpos'] + traceDir * -traceDist, CollisionGroups.World, filter)
             if trb['hit']:
                 base.world.traceDecal('blood', trb)
 
@@ -1180,7 +1166,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Trace player hull down to find ground.
         tr = TFFilters.traceBox(origin, origin + Vec3.down() * 100,
                                 TFGlobals.VEC_HULL_MIN, TFGlobals.VEC_HULL_MAX,
-                                TFGlobals.Contents.Solid, 0,
+                                CollisionGroups.World | CollisionGroups.PlayerClip,
                                 TFFilters.TFQueryFilter(self))
         if tr['hit']:
             self.setPos(tr['endpos'])

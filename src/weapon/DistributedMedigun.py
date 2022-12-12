@@ -9,8 +9,8 @@ from .TFWeaponGun import TFWeaponGun
 from tf.tfbase import TFLocalizer
 
 from .WeaponMode import TFWeaponMode, TFWeaponType
-from tf.tfbase.TFGlobals import DamageType, Contents, CollisionGroup, TFTeam
-from tf.tfbase import TFFilters, TFEffects
+from tf.tfbase.TFGlobals import DamageType, TFTeam
+from tf.tfbase import TFFilters, TFEffects, CollisionGroups
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.actor.Activity import Activity
@@ -110,7 +110,8 @@ class DistributedMedigun(TFWeaponGun):
         targetPoint = target.getWorldSpaceCenter()
 
         dist = (targetPoint - src).length()
-        if dist < self.getStickRange():
+        stickRange = self.getStickRange()
+        if dist < stickRange:
             if self.nextTargetCheckTime > globalClock.frame_time:
                 return
 
@@ -120,24 +121,28 @@ class DistributedMedigun(TFWeaponGun):
             q.setHpr(self.player.viewAngles)
             vecAiming = q.getForward()
 
-            vecEnd = src + vecAiming * self.getTargetRange()
+            vecEnd = src + vecAiming * stickRange
+
+            # Check the that the LOS to the heal target is not blocked
+            # by the world.  We ignore players and buildings.  A no-hit
+            # means the target is still good, because we know they are
+            # still in range.
+
+            mask = CollisionGroups.World
 
             filter = TFFilters.TFQueryFilter(self.player)
-            tr = TFFilters.traceLine(src, vecEnd, Contents.Solid | Contents.AnyTeam,
-                                     0, filter)
+            tr = TFFilters.traceLine(src, vecEnd, mask, filter)
             # Still visible?
-            if tr['ent'] == target:
+            if not tr['hit']:
                 return
 
-            tr = TFFilters.traceLine(src, targetPoint, Contents.Solid | Contents.AnyTeam,
-                                     0, filter)
-            if (not tr['hit']) or (tr['ent'] == target):
+            tr = TFFilters.traceLine(src, targetPoint, mask, filter)
+            if not tr['hit']:
                 return
 
             # If we failed, try the target's eye point as well.
-            tr = TFFilters.traceLine(src, target.getEyePosition(), Contents.Solid | Contents.AnyTeam,
-                                     0, filter)
-            if (not tr['hit']) or (tr['ent'] == target):
+            tr = TFFilters.traceLine(src, target.getEyePosition(), mask, filter)
+            if not tr['hit']:
                 return
 
         # We've lost this guy.
@@ -157,7 +162,8 @@ class DistributedMedigun(TFWeaponGun):
         vecEnd = src + vecAiming * self.getTargetRange()
 
         filter = TFFilters.TFQueryFilter(self.player)
-        tr = TFFilters.traceLine(src, vecEnd, Contents.Solid | Contents.AnyTeam, 0, filter)
+        # TODO: Should we ignore friendly buildings?
+        tr = TFFilters.traceLine(src, vecEnd, CollisionGroups.World | CollisionGroups.Mask_AllTeam, filter)
         if tr['hit'] and tr['ent']:
             if self.couldHealTarget(tr['ent']):
                 if not IS_CLIENT:

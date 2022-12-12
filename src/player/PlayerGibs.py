@@ -2,8 +2,7 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties
-from tf.tfbase.TFGlobals import Contents, CollisionGroup
-from tf.tfbase import TFEffects
+from tf.tfbase import TFEffects, CollisionGroups
 from tf.actor.Model import Model
 
 from direct.directbase import DirectRender
@@ -59,9 +58,8 @@ class PlayerGibs:
             cnode.setMass(cpart.mass)
             cnode.setLinearDamping(cpart.damping)
             cnode.setAngularDamping(cpart.rot_damping)
-            cnode.setCollisionGroup(CollisionGroup.Gibs)
-            cnode.setContentsMask(Contents.Solid)
-            cnode.setSolidMask(Contents.Solid)
+            cnode.setFromCollideMask(CollisionGroups.Debris)
+            cnode.setIntoCollideMask(CollisionGroups.World)
             cnode.setCcdEnabled(True)
             cnode.addToScene(base.physicsWorld)
             cnp = base.dynRender.attachNewNode(cnode)

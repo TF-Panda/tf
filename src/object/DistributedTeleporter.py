@@ -6,7 +6,7 @@ from .BaseObject import BaseObject
 from .ObjectType import ObjectType
 from .ObjectState import ObjectState
 
-from tf.tfbase import TFGlobals, TFLocalizer
+from tf.tfbase import TFGlobals, TFLocalizer, CollisionGroups
 
 from direct.interval.IntervalGlobal import *
 
@@ -92,9 +92,10 @@ class DistributedTeleporter(BaseObject):
         self.hullMaxs = Point3(24, 24, 12)
 
     def setCollideMasks(self):
-        self.setContentsMask(TFGlobals.Contents.Solid | (TFGlobals.Contents.RedTeam if (self.team == TFGlobals.TFTeam.Red) else TFGlobals.Contents.BlueTeam))
-        # This mask determines what can enter the trigger.  Our team only.
-        self.setSolidMask(TFGlobals.Contents.RedTeam if (self.team == TFGlobals.TFTeam.Red) else TFGlobals.Contents.BlueTeam)
+        self.setFromCollideMask(CollisionGroups.Teleporter | (CollisionGroups.RedBuilding if self.team == TFGlobals.TFTeam.Red else CollisionGroups.BlueBuilding))
+        # This mask determines what can enter the trigger.
+        # Any player, because enemy spies can use it.
+        self.setIntoCollideMask(CollisionGroups.Mask_Player)
 
     def isTeleporterIdle(self):
         return self.teleState == TStateIdle

@@ -6,7 +6,7 @@ from .TFWeapon import TFWeapon
 
 from .WeaponMode import TFWeaponType, TFWeaponMode
 
-from tf.tfbase import TFLocalizer, TFGlobals, TFFilters
+from tf.tfbase import TFLocalizer, TFGlobals, TFFilters, CollisionGroups
 from direct.gui.DirectGui import *
 from tf.actor.Activity import Activity
 from tf.actor.Actor import Actor
@@ -76,8 +76,8 @@ class DistributedToolbox(TFWeapon):
         #    base.addOneOffNode(TFGlobals.getLineViz(start, end, 1, (0, 0, 1, 1)))
 
         tr = TFFilters.traceLine(start, end,
-            TFGlobals.Contents.Solid | TFGlobals.Contents.PlayerSolid,
-            TFGlobals.CollisionGroup.PlayerMovement, TFFilters.TFQueryFilter(self.player))
+            CollisionGroups.World | CollisionGroups.PlayerClip,
+            TFFilters.TFQueryFilter(self.player))
         if tr['hit']:
             # Cannot build on very steep slopes ( > 45 degrees )
             dot = tr['norm'].dot(Vec3.up())
@@ -136,8 +136,8 @@ class DistributedToolbox(TFWeapon):
         while it < numIterations:
             tr = TFFilters.traceBox(Vec3(self.buildOrigin.x, self.buildOrigin.y, topZ),
                                     Vec3(self.buildOrigin.x, self.buildOrigin.y, boxBottomZ),
-                                    -halfBuildDimsXY, halfBuildDimsXY, TFGlobals.Contents.Solid|TFGlobals.Contents.PlayerSolid,
-                                    TFGlobals.CollisionGroup.PlayerMovement, TFFilters.TFQueryFilter(self.player), hpr)
+                                    -halfBuildDimsXY, halfBuildDimsXY, CollisionGroups.World | CollisionGroups.PlayerClip,
+                                    TFFilters.TFQueryFilter(self.player), hpr)
 
             if not tr['hit']:
                 # If there is no ground, then we can't place here.
@@ -197,10 +197,19 @@ class DistributedToolbox(TFWeapon):
         #if IS_CLIENT:
         #    base.addOneOffNode(TFGlobals.getBoxViz(self.buildOrigin + self.buildMins, self.buildOrigin + self.buildMaxs, 1, (1, 0, 0, 1)))
 
-        eyePos = self.player.getEyePosition()
-        tr = TFFilters.traceLine(self.buildOrigin, eyePos, TFGlobals.Contents.Solid, 0, TFFilters.TFQueryFilter(self.player))
+        # Check that the build hull is not blocked by any players or other buildings.
+        tr = TFFilters.traceBox(self.buildOrigin, self.buildOrigin, self.buildMins, self.buildMaxs,
+                                CollisionGroups.Mask_AllTeam, TFFilters.TFQueryFilter(self.player))
         if tr['frac'] < 1:
             return False
+
+        # Check that we have a LOS to the build position.
+        eyePos = self.player.getEyePosition()
+        tr = TFFilters.traceLine(self.buildOrigin, eyePos, CollisionGroups.World | CollisionGroups.Mask_AllTeam,
+                                 TFFilters.TFQueryFilter(self.player))
+        if tr['frac'] < 1:
+            return False
+
         return True
 
     def primaryAttack(self):

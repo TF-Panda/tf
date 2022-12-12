@@ -14,8 +14,7 @@ from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from .FireBullets import fireBullets
 from .WeaponEffects import makeMuzzleFlash
 
-from tf.tfbase.TFGlobals import CollisionGroup, Contents
-from tf.tfbase import TFFilters, TFGlobals
+from tf.tfbase import TFFilters, TFGlobals, CollisionGroups
 
 from tf.actor.Actor import Actor
 
@@ -165,8 +164,14 @@ class TFWeaponGun(BaseClass):
 
         # Trace forward and find what's in front of us, and aim at that.
 
-        filter = TFFilters.TFQueryFilter(player, [TFFilters.ignoreTeammates] if not hitTeammates else [])
-        tr = TFFilters.traceLine(shootPos, endPos, Contents.Solid | Contents.AnyTeam, 0, filter)
+        mask = CollisionGroups.World
+        if hitTeammates:
+            mask |= CollisionGroups.Mask_AllTeam
+        else:
+            mask |= CollisionGroups.Mask_Blue if self.team == TFGlobals.TFTeam.Red else CollisionGroups.Mask_Red
+
+        filter = TFFilters.TFQueryFilter(player)
+        tr = TFFilters.traceLine(shootPos, endPos, mask, filter)
 
         # Offset actual start point.
         src = shootPos + (forward * offset.x) + (right * offset.y) + (up * offset.z)

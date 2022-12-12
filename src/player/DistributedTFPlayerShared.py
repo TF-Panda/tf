@@ -11,9 +11,8 @@ from panda3d.pphysics import *
 from .TFClass import *
 from .InputButtons import *
 from .ObserverMode import ObserverMode
-from tf.tfbase import TFGlobals, TFFilters, Sounds
+from tf.tfbase import TFGlobals, TFFilters, Sounds, CollisionGroups
 
-from tf.tfbase.TFGlobals import Contents, CollisionGroup
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce, addMultiDamage
 from tf.movement.MoveType import MoveType
@@ -234,6 +233,19 @@ class DistributedTFPlayerShared:
 
         self.playStepSound(origin, vol, False)
 
+    def getPlayerCollideMask(self):
+        """
+        Returns the bitmask of collision groups that the player should
+        collide with.
+        """
+        mask = CollisionGroups.World | CollisionGroups.PlayerClip
+        # Collide with other team.
+        if self.team == TFGlobals.TFTeam.Red:
+            mask |= CollisionGroups.Mask_Blue
+        else:
+            mask |= CollisionGroups.Mask_Red
+        return mask
+
     def playStepSound(self, origin, volume, force):
         if IS_CLIENT:
             # Only play footstep sound if first time predicted.
@@ -246,7 +258,7 @@ class DistributedTFPlayerShared:
         surfaceDef = None
         tr = TFFilters.traceBox(origin, origin + Vec3.down() * 64,
             TFGlobals.VEC_HULL_MIN, TFGlobals.VEC_HULL_MAX,
-            Contents.Solid, 0, TFFilters.TFQueryFilter(self))
+            self.getPlayerCollideMask() & (~CollisionGroups.PlayerClip), TFFilters.TFQueryFilter(self))
         mat = tr['mat']
         if mat:
             # Get the surface definition associated with the PhysMaterial
@@ -338,7 +350,7 @@ class DistributedTFPlayerShared:
         # Fire a bullet (ignoring the shooter).
         start = info['src']
         end = start + info['dirShooting'] * info['distance']
-        tr = TFFilters.traceLine(start, end, Contents.HitBox | Contents.AnyTeam | Contents.Solid, 0, TFFilters.TFQueryFilter(self))
+        tr = TFFilters.traceLine(start, end, CollisionGroups.Mask_BulletCollide, TFFilters.TFQueryFilter(self))
 
         impactVol = 1.0 / info['shots']
 
@@ -438,7 +450,6 @@ class DistributedTFPlayerShared:
             base.physicsWorld, self,
             halfExts, mat
         )
-        self.controller.setCollisionGroup(TFGlobals.CollisionGroup.PlayerMovement)
         self.applyControllerMasks()
 
         self.controller.setUpDirection(Vec3.up())
@@ -449,16 +460,12 @@ class DistributedTFPlayerShared:
         self.controller.getActorNode().setPythonTag("object", self)
 
     def applyControllerMasks(self):
-        if self.team == 0:
+        if self.team == TFGlobals.TFTeam.Red:
             # We are red team.
-            self.controller.setContentsMask(TFGlobals.Contents.RedTeam)
-            # Blue team is solid to us.
-            self.controller.setSolidMask(TFGlobals.Contents.BlueTeam | TFGlobals.Contents.Solid | TFGlobals.Contents.PlayerSolid)
-        elif self.team == 1:
-            # We are blue team.
-            self.controller.setContentsMask(TFGlobals.Contents.BlueTeam)
-            # Red team is solid to us.
-            self.controller.setSolidMask(TFGlobals.Contents.RedTeam | TFGlobals.Contents.Solid | TFGlobals.Contents.PlayerSolid)
+            self.controller.setFromCollideMask(CollisionGroups.RedPlayer)
+        else:
+            self.controller.setFromCollideMask(CollisionGroups.BluePlayer)
+        #self.controller.setIntoCollideMask(self.getPlayerCollideMask())
 
     def disableController(self):
         """

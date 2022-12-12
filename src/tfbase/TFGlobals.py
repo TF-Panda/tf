@@ -69,28 +69,6 @@ class TFTeam:
 
     COUNT = 2
 
-class CollisionGroup:
-    Empty = 0
-    Debris = 1
-    InteractiveDebris = 2
-    Interactive = 3
-    Player = 4
-    PlayerMovement = 5
-    Projectile = 6
-    Rockets = 7
-    Gibs = 8
-
-class Contents:
-    Empty = 0
-    Solid = 1 << 0
-    RedTeam = 1 << 1
-    BlueTeam = 1 << 2
-    HitBox = 1 << 3
-    # Only solid to players.
-    PlayerSolid = 1 << 4
-    Sky = 1 << 5
-    AnyTeam = (RedTeam | BlueTeam)
-
 class SolidShape:
     Empty = 0 # Nothing.
     Box = 1 # Bounding box.

@@ -5,7 +5,8 @@ from panda3d.pphysics import *
 
 from direct.interval.IntervalGlobal import LerpHprInterval
 
-from tf.tfbase.TFGlobals import Contents, SolidShape, SolidFlag, TFTeam, CollisionGroup, WorldParent, SpeechConcept
+from tf.tfbase.TFGlobals import SolidShape, SolidFlag, TFTeam, WorldParent, SpeechConcept
+from tf.tfbase import CollisionGroups
 from tf.tfbase import TFFilters
 from tf.actor.Model import Model
 from tf.entity.DistributedEntity import DistributedEntity
@@ -21,8 +22,11 @@ class CaptureZone:
         shape.setSceneQueryShape(False)
         node = PhysRigidStaticNode("capture-zone")
         node.addShape(shape)
-        node.setCollisionGroup(CollisionGroup.Empty)
-        node.setSolidMask(Contents.RedTeam if team == TFTeam.Red else Contents.BlueTeam)
+        # This is what the trigger responds to.
+        if team == TFTeam.Red:
+            node.setIntoCollideMask(CollisionGroups.RedPlayer)
+        else:
+            node.setIntoCollideMask(CollisionGroups.BluePlayer)
         node.addToScene(base.physicsWorld)
         node.setTriggerCallback(CallbackObject.make(self.__triggerCallback))
         np = NodePath(node)
@@ -104,12 +108,12 @@ class DistributedTeamFlag(DistributedEntity):
                 self.flagModelName = Filename.fromOsSpecific(
                     properties.getAttributeValue("flag_model").getString()).getFullpathWoExtension()
 
-            if self.team == 0:
-                self.setContentsMask(Contents.RedTeam)
-                self.setSolidMask(Contents.BlueTeam)
+            #self.setFromCollideMask(CollisionGroups.Trigger)
+            # Respond to trigger touches by players of the opposing team.
+            if self.team == TFTeam.Red:
+                self.setIntoCollideMask(CollisionGroups.BluePlayer)
             else:
-                self.setContentsMask(Contents.BlueTeam)
-                self.setSolidMask(Contents.RedTeam)
+                self.setIntoCollideMask(CollisionGroups.RedPlayer)
 
         def generate(self):
             DistributedEntity.generate(self)
@@ -184,7 +188,7 @@ class DistributedTeamFlag(DistributedEntity):
             # Drop to ground underneath player.
             pos = plyr.getPos() + (0, 0, 32)
             tr = TFFilters.traceBox(pos, pos + Vec3.down() * 10000, Point3(-22.5, 12.75, -5.5), Point3(22.55, 13.34, 6.1),
-                                    Contents.Solid, 0, TFFilters.TFQueryFilter(self), Vec3(plyr.getH(), 0, 0))
+                                    CollisionGroups.World, TFFilters.TFQueryFilter(self), Vec3(plyr.getH(), 0, 0))
             if tr['hit']:
                 self.setPos(tr['endpos'])
                 self.setHpr(plyr.getH(), 0, 0)

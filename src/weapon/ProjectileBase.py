@@ -22,7 +22,7 @@ class ProjectileBase(BaseClass):
         else:
             self.damage = 0.0
             self.scorer = -1
-            self.solidMask = Contents.Solid | Contents.HitBox | Contents.AnyTeam
+            self.intoCollideMask = Contents.Solid | Contents.HitBox | Contents.AnyTeam
             self.solidFlags = SolidFlag.Trigger
             self.solidShape = SolidShape.Box
             self.triggerCallback = True

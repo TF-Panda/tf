@@ -8,7 +8,8 @@ else:
 from panda3d.core import CallbackObject, NodePath
 from panda3d.pphysics import PhysTriggerCallbackData
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag, CollisionGroup, Contents
+from tf.tfbase.TFGlobals import SolidShape, SolidFlag
+from tf.tfbase import CollisionGroups
 
 class DWeaponDrop(BaseClass):
 
@@ -25,8 +26,10 @@ class DWeaponDrop(BaseClass):
             self.sleepCallback = True
             self.solidShape = SolidShape.Box
             self.solidFlags = SolidFlag.Trigger
-            self.solidMask = Contents.Solid | Contents.AnyTeam
-            self.collisionGroup = CollisionGroup.Debris
+            self.fromCollideMask = CollisionGroups.Debris
+            self.intoCollideMask = CollisionGroups.World
+            self.useSeparateTriggerMask = True
+            self.triggerIntoMask = CollisionGroups.Mask_Player
             self.used = False
 
     if not IS_CLIENT:

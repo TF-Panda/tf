@@ -2,7 +2,7 @@ from panda3d.pphysics import *
 from panda3d.core import *
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties
-from tf.tfbase.TFGlobals import CollisionGroup
+from tf.tfbase import CollisionGroups
 
 class Ragdoll(PhysRagdoll):
 
@@ -44,7 +44,8 @@ class Ragdoll(PhysRagdoll):
 
             for i in range(self.getNumJoints()):
                 actor = self.getJointActor(i)
-                actor.setCollisionGroup(CollisionGroup.Debris)
+                actor.setFromCollideMask(CollisionGroups.Debris)
+                actor.setIntoCollideMask(CollisionGroups.World | CollisionGroups.Debris)
                 actor.setPythonTag("object", self)
 
             initialVel = Vec3(initialVel[0], initialVel[1], initialVel[2])

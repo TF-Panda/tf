@@ -193,7 +193,7 @@ class Char(Actor):
         shape.setTriggerShape(False)
         shape.setSceneQueryShape(True)
         body = PhysRigidDynamicNode("hbox_" + self.character.getName() + "_" + jointName)
-        body.setContentsMask(Contents.HitBox)
+        body.setFromCollideMask(Contents.HitBox)
         body.addShape(shape)
         body.setKinematic(True)
         body.addToScene(base.physicsWorld)
