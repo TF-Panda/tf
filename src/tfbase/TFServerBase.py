@@ -58,7 +58,7 @@ class TFServerBase(HostBase):
         self.air = self.sv
         self.sr = self.sv
         self.net = self.sv
-        self.sv.game.changeLevel("ctf_2fort")
+        self.sv.game.changeLevel(ConfigVariableString('tf-map', 'ctf_2fort').value)
 
         self.precache = []
         for pc in TFGlobals.ModelPrecacheList:

@@ -239,3 +239,6 @@ mouse-sensitivity 5.0
 # Turn this on to enable water reflections.  It is expensive
 # and currently not culled (but the threading helps).
 tf-water-reflections 0
+
+# For servers, the map to load on start.
+tf-map ctf_2fort
