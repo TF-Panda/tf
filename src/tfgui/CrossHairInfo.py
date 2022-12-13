@@ -52,6 +52,10 @@ class CrossHairInfo:
         self.ent = None
         self.gui = None
 
+    def destroy(self):
+        self.destroyEntInfo()
+        self.ent = None
+
     def destroyEntInfo(self):
         if self.gui:
             self.gui.destroy()
