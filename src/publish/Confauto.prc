@@ -53,7 +53,7 @@ load-sounds scripts/game_sounds_player.txt
 load-sounds scripts/game_sounds_vo.txt
 load-sounds scripts/game_sounds_physics.txt
 
-icon-filename etc/game.ico
+icon-filename etc/tfp2.ico
 
 load-display pandagl
 

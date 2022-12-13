@@ -121,7 +121,7 @@ file $TF/src/publish/Confauto.prc etc
 file $TF/src/publish/run-tf-client.bat .
 file $TF/src/publish/run-tf-server.bat .
 file $TF/src/publish/.itch.toml .
-file $TFMODELS/built/models/gui/game.ico etc WIN32
+file $TFMODELS/built/models/gui/tfp2.ico etc WIN32
 
 # Begin the tf.exe generation (Python freezing).
 

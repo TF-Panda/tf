@@ -24,7 +24,7 @@ sound-path      $TFMODELS
 
 window-title Team Fortress
 #if $[WINDOWS_PLATFORM]
-icon-filename models/gui/game.ico
+icon-filename models/gui/tfp2.ico
 #elif $[OSX_PLATFORM]
 icon-filename models/gui/game.icns
 #elif $[UNIX_PLATFORM]
