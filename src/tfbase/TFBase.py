@@ -606,6 +606,32 @@ class TFBase(ShowBase, FSM):
 
             #pgo.beginFrameApp()
 
+        # Material preloading.  We need to explicitly preload certain
+        # materials, specifically ones applied to dynamically generated
+        # geometry that isn't part of a preloaded model, such as materials
+        # for decals and particle systems.
+        #
+        # Load the material, then put it on a card, and prepare the card.
+        # This will generate the shader for the material, upload all the
+        # textures, etc.
+        cm = CardMaker('cm')
+        cm.setFrameFullscreenQuad()
+        cm.setHasUvs(True)
+        cmnp = NodePath(cm.generate())
+        for pc in TFGlobals.MaterialPrecacheList:
+            mat = loader.loadMaterial(pc)
+            self.precache.append(mat)
+            cmnp.setMaterial(mat)
+            cmnp.prepareScene(base.win.getGsg())
+            # Keep the window pumping.
+            base.graphicsEngine.renderFrame()
+        cmnp.removeNode()
+
+        # Flush the pipeline.
+        base.graphicsEngine.renderFrame()
+        base.graphicsEngine.renderFrame()
+        base.graphicsEngine.renderFrame()
+
         loadingText.destroy()
         bg.removeNode()
 

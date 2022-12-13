@@ -511,3 +511,30 @@ ModelPrecacheList = [
     "models/weapons/w_stickybomb_gib5",
     "models/weapons/w_stickybomb_gib6"
 ]
+
+# Materials that we want to preload.
+# These are materials assigned to dynamically generated geometry,
+# such as decals and particle systems.
+MaterialPrecacheList = [
+    "materials/decals_mod2x.mto",
+    "materials/decal_blood1.mto",
+    "materials/decal_blood2.mto",
+    "materials/decal_blood3.mto",
+    "materials/decal_blood4.mto",
+    "materials/decal_blood5.mto",
+    "materials/decal_blood6.mto",
+    "materials/effects/fire_embers1.mto",
+    "materials/effects/fire_cloud2.mto",
+    "materials/effects/largesmoke.mto",
+    "materials/flamethrowerfire102.mto",
+    "materials/smoke2lit.mto",
+    "materials/circle1.mto",
+    "materials/sc_softglow.mto",
+    "materials/starflash01.mto",
+    "materials/blood_goop3.mto",
+    "materials/effects/rockettrailsmoke.mto",
+    "materials/effects/sc_brightglow_y_nomodel.mto",
+    "materials/medicbeam_curl.mto",
+    "materials/healsign.mto",
+    "materials/tp_spark.mto"
+]
