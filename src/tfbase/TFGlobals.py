@@ -450,6 +450,7 @@ ModelPrecacheList = [
     "models/buildables/sapper_gib002",
 
     "models/effects/explosion",
+    "models/effects/minigunmuzzle",
 
     "models/weapons/c_bat",
     "models/weapons/c_bottle",
