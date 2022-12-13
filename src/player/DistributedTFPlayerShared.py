@@ -239,11 +239,16 @@ class DistributedTFPlayerShared:
         collide with.
         """
         mask = CollisionGroups.World | CollisionGroups.PlayerClip
-        # Collide with other team.
+        # Collide with enemy players.
         if self.team == TFGlobals.TFTeam.Red:
-            mask |= CollisionGroups.Mask_Blue
+            mask |= CollisionGroups.BluePlayer
         else:
-            mask |= CollisionGroups.Mask_Red
+            mask |= CollisionGroups.RedPlayer
+        # Set the mask to collide with all buildings, friendly or enemy.
+        # We have a special collision filter for player movement that
+        # ignores collisions with buildings for teammates, but keeps them
+        # for enemies and the builder.
+        mask |= CollisionGroups.Mask_Building
         return mask
 
     def playStepSound(self, origin, volume, force):

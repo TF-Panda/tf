@@ -93,6 +93,23 @@ def ignoreTeammateBuildings(actor, mask, entity, source):
         return 0
     return 1
 
+def ignoreTeammateBuildings_nonBuilder(actor, mask, entity, source):
+    """
+    Ignores friendly buildings, if the building was not built by the source
+    entity.
+    """
+    if (entity.team == source.team) and entity.isObject():
+        # Friendly building.
+        if not (entity.fromCollideMask & CollisionGroups.Teleporter):
+            # Not a teleporter.  (Teleporters collide with everyone).
+            if entity.builderDoId != source.doId:
+                # Source entity didn't build the building, so don't collide
+                # with it.
+                return 0
+
+    # Otherwise, collide with the building (enemies and builder).
+    return 1
+
 def ignoreSelf(actor, mask, entity, source):
     """
     Ignores the source entity of the query.

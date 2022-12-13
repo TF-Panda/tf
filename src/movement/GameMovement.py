@@ -10,6 +10,7 @@ from .MoveType import MoveType
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.player.TFClass import Class
+from tf.tfbase import TFFilters
 
 import math
 
@@ -37,6 +38,9 @@ class GameMovement:
         self.forward = Vec3(0)
         self.up = Vec3(0)
         self.right = Vec3(0)
+
+    def getMovementFilter(self):
+        return TFFilters.TFQueryFilter(self.player, [TFFilters.ignoreTeammateBuildings_nonBuilder])
 
     def processMovement(self, player, moveData):
         storeDeltaTime = globalClock.dt
@@ -462,7 +466,9 @@ class GameMovement:
         vel[2] = -2 # To detect if we're on the ground.
 
         self.mv.oldOrigin = self.mv.origin
-        flags = self.player.controller.move(globalClock.dt, vel, 0.0, self.player.getPlayerCollideMask())
+        filter = self.getMovementFilter()
+        flags = self.player.controller.move(globalClock.dt, vel, 0.0,
+            self.player.getPlayerCollideMask(), filter.filter)
         self.mv.origin = self.player.controller.foot_position
 
         self.mv.outWishVel += wishDirection * wishSpeed
@@ -538,7 +544,9 @@ class GameMovement:
         self.mv.velocity += self.player.baseVelocity
 
         self.mv.oldOrigin = self.mv.origin
-        flags = self.player.controller.move(globalClock.dt, self.mv.velocity * globalClock.dt, 0.1, self.player.getPlayerCollideMask())
+        filter = self.getMovementFilter()
+        flags = self.player.controller.move(globalClock.dt, self.mv.velocity * globalClock.dt, 0.1,
+            self.player.getPlayerCollideMask(), filter.filter)
         self.mv.origin = self.player.controller.foot_position
 
         self.mv.outWishVel += wishdir * wishspeed
