@@ -209,7 +209,7 @@ class DistributedDispenser(BaseObject):
 
         def __dispense(self, task):
             if self.nextAmmoDispense <= globalClock.frame_time:
-                ammoDispenseDist = 140.0*140.0
+                ammoDispenseDist = 120.0*120.0
                 numNearbyPlayers = 0
                 origin = self.getPos() + (0, 0, 32)
                 for plyr in base.game.playersByTeam[self.team]:
