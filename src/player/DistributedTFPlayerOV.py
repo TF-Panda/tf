@@ -246,9 +246,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         tn.setAlign(TextNode.ACenter)
         tn.setShadowColor((0.3, 0.3, 0.3, 1))
         tn.setShadow(0.04, 0.04)
+        tn.setTextScale(4)
         tnnp = plyr.viewOffsetNode.attachNewNode(tn.generate())
         tnnp.setPos(0, 0, 24)
-        tnnp.setBillboardPointEye(-40, True)
+        tnnp.setBillboardAxis()
         tnnp.setDepthWrite(False)
         self.nemesisLabels[doId] = tnnp
 
