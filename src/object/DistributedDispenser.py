@@ -90,10 +90,10 @@ class DistributedDispenser(BaseObject):
             self.addTask(self.__dispense, "dispenserDispense", appendTask=True, delay=0.1)
 
             # Create the trigger volume to heal and give ammo/metal to players.
-            # Mins -70, -70, 0; Maxs 70, 70, 50 converted to half extents and position offset.
-            box = PhysBox(70, 70, 25)
-            tshape = PhysShape(box, PhysMaterial(0, 0, 0))
-            tshape.setLocalPos((0, 0, 25))
+            mins = Point3(-70, -70, 0)
+            maxs = Point3(70, 70, 70)
+            tshape = PhysShape(PhysBox((maxs - mins) * 0.5), PhysMaterial(0, 0, 0))
+            tshape.setLocalPos((mins + maxs) * 0.5)
             tshape.setSimulationShape(False)
             tshape.setSceneQueryShape(False)
             tshape.setTriggerShape(True)
@@ -209,12 +209,13 @@ class DistributedDispenser(BaseObject):
 
         def __dispense(self, task):
             if self.nextAmmoDispense <= globalClock.frame_time:
+                ammoDispenseDist = 140.0*140.0
                 numNearbyPlayers = 0
                 origin = self.getPos() + (0, 0, 32)
                 for plyr in base.game.playersByTeam[self.team]:
                     if plyr.isDead():
                         continue
-                    if ((plyr.getPos() + (0, 0, 32)) - origin).length() > 64.0:
+                    if ((plyr.getPos() + (0, 0, 32)) - origin).lengthSquared() > ammoDispenseDist:
                         continue
                     self.dispenseAmmo(plyr)
                     numNearbyPlayers += 1
