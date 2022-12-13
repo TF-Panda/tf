@@ -32,9 +32,11 @@ class FogManager(DirectObject):
 
     def disableFog(self):
         self.enabled = False
-        self.scene.clearFog(self.fogNode)
-        self.task.remove()
-        self.task = None
+        if self.scene:
+            self.scene.clearFog()
+        if self.task:
+            self.task.remove()
+            self.task = None
 
     def __updateFog(self, task):
         self.updateParams()
