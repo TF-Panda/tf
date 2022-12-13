@@ -83,7 +83,6 @@ class Wave:
         self.loopStart = 0.0
         self.loopEnd = -1.0
         self.asyncHandle = None
-        self.asyncProxy = None
         self.asyncProxies = []
 
     def __asyncCallback(self, sound):
