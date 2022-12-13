@@ -107,8 +107,6 @@ class DPipeBombProjectile(BaseClass):
                 base.air.deleteObject(self)
                 return
 
-            print("contact start w/", entity, actor)
-
             if self.doingDirectTest:
                 self.removeTask(self.uniqueName('directHitTest'))
                 self.doingDirectTest = False
