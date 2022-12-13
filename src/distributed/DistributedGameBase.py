@@ -344,6 +344,7 @@ class DistributedGameBase:
             self.lvl = None
         self.lvlData = None
         self.levelName = None
+        self.propModels = []
 
     def preFlattenLevel(self):
         pass

@@ -690,6 +690,15 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         base.localAvatar.killFeed.pushEvent(text, priority)
 
     def delete(self):
+        if self.contextIval:
+            self.contextIval.pause()
+            self.contextIval = None
+        if self.contextLbl:
+            self.contextLbl.destroy()
+            self.contextLbl = None
+        if self.roundTimeText:
+            self.roundTimeText.destroy()
+            self.roundTimeText = None
         del base.game
         DistributedObject.delete(self)
         DistributedGameBase.delete(self)

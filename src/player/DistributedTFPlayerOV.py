@@ -155,6 +155,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.chatFeed = ChatFeed()
 
+        self.inputTokens = None
+
     def doAnimationEvent(self, event, data=0, predicted=True):
         if predicted and base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
             return
@@ -988,6 +990,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.localAvatarId = self.doId
 
     def delete(self):
+        self.destroyObjectPanels()
         if self.chatFeed:
             self.chatFeed.cleanup()
             self.chatFeed = None
@@ -1044,6 +1047,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.taskMgr.remove('mouseMovement')
         base.taskMgr.remove('hideSceneFreezeFrame')
 
+        if self.inputTokens:
+            for tok in self.inputTokens:
+                tok.release()
+            self.inputTokens = None
+
         del base.localAvatar
         del base.localAvatarId
         DistributedTFPlayer.delete(self)
@@ -1064,6 +1072,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.reload = inputState.watchWithModifiers("reload", "r", inputSource = inputState.Keyboard)
         self.attack2 = inputState.watchWithModifiers("attack2", "mouse3", inputSource = inputState.Mouse)
         self.lastWeapon = inputState.watchWithModifiers("lastweapon", "q", inputSource = inputState.Keyboard)
+        self.inputTokens = [self.fwd, self.bck, self.left, self.right,
+                            self.crouch, self.jump, self.attack1,
+                            self.reload, self.attack2, self.lastWeapon]
 
         self.accept(',', self.doChangeClass)
         self.accept('.', self.doChangeTeam)
