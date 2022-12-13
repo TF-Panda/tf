@@ -28,6 +28,7 @@ class TFWeaponSelection(DirectObject):
         self.wpnList = None
         self.root.removeNode()
         self.root = None
+        base.taskMgr.remove('wpnselectupdate')
 
     def clearWeaponList(self):
         for _, item in self.wpnList:
