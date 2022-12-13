@@ -94,6 +94,12 @@ file $DTOOL/built/lib/panda3d/core.pyd . WIN32
 file $DTOOL/built/lib/panda3d/pphysics.pyd . WIN32
 file $DTOOL/built/lib/panda3d/physics.pyd . WIN32
 
+# PANDATOOL DLLs and programs.
+# Publish pstats during development so testers can profile
+# the game.  Useful info.
+file $PANDATOOL/built/bin/pstats.exe . WIN32
+# We might also publish the asset converter tools in the future.
+
 # DIRECT DLLs.
 file $DIRECT/built/lib/libdirect.dll . WIN32
 file $DIRECT/built/lib/libactor.dll . WIN32
