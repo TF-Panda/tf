@@ -4,7 +4,9 @@ Builds the sound list from the script file.
 
 import math
 from enum import IntEnum, auto
-from panda3d.core import ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager, PitchShiftDSP, PStatCollector, SteamAudioProperties, loadPrcFileData
+from panda3d.core import (
+    ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager,
+    PitchShiftDSP, PStatCollector, SteamAudioProperties, loadPrcFileData, ProxyAudioSound)
 import random
 
 csc_coll = PStatCollector("App:Sounds:CreateSoundClient")
@@ -80,14 +82,38 @@ class Wave:
         self.spatialized = False
         self.loopStart = 0.0
         self.loopEnd = -1.0
+        self.asyncHandle = None
+        self.asyncProxy = None
+        self.asyncProxies = []
+
+    def __asyncCallback(self, sound):
+        self.sound = sound
+        self.sound.setLoopRange(self.loopStart, self.loopEnd)
+
+        # Copy sound to each proxy.
+        for proxy, mgr in self.asyncProxies:
+            proxy.setRealSound(mgr.getSound(self.sound))
+        self.asyncProxies = []
+
+        self.asyncHandle = None
 
     def getSound(self, mgr):
-        if self.sound:
+        if self.asyncHandle:
+            assert self.asyncProxies
+            proxy = ProxyAudioSound(self.asyncProxies[0][0])
+            self.asyncProxies.append((proxy, mgr))
+            return proxy
+
+        elif self.sound:
             return mgr.getSound(self.sound)
+
         else:
-            self.sound = mgr.getSound(self.filename, self.spatialized)
-            self.sound.setLoopRange(self.loopStart, self.loopEnd)
-            return self.sound
+            proxy = ProxyAudioSound()
+            proxy.setLoopRange(self.loopStart, self.loopEnd)
+            self.asyncProxies = [(proxy, mgr)]
+            self.asyncHandle = base.loader.loadSound(mgr, self.filename.getFullpath(),
+                self.spatialized, self.__asyncCallback)
+            return proxy
 
     def __repr__(self):
         return f"""
