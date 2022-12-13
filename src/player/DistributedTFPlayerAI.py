@@ -574,7 +574,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         info = Sounds.Sounds.get(soundName, None)
         if not info:
             return
-        self.sendUpdate('speak', [info.index], client = client, excludeClients = excludeClients)
+        base.air.sendUpdatePHSOnly(self, 'speak', [info.index], self.getEyePosition(), client=client, excludeClients=excludeClients)
+        #self.sendUpdate('speak', [info.index], client = client, excludeClients = excludeClients)
 
     def doClassSpecialSkill(self):
         if self.tfClass == Class.Demo:

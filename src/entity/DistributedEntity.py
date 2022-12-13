@@ -802,7 +802,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
             self.sendUpdate('emitSound_sv', soundInfo, client=client, excludeClients=excludeClients)
 
-        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, loop=False, chan=None, client=None, excludeClients=[]):
+        def emitSoundSpatial(self, soundName, offset=(0, 0, 2), volume=None, loop=False, chan=None, client=None, excludeClients=[], phsOnly=True):
             soundInfo = Sounds.createSoundServer(soundName)
             if soundInfo is None:
                 return
@@ -812,7 +812,10 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 soundInfo[4] = chan
             soundInfo.append(offset)
             soundInfo.append(loop)
-            self.sendUpdate('emitSoundSpatial_sv', soundInfo, client=client, excludeClients=excludeClients)
+            if False:# phsOnly:
+                base.air.sendUpdatePHSOnly(self, 'emitSoundSpatial_sv', soundInfo, self.getPos() + offset, client=client, excludeClients=excludeClients)
+            else:
+                self.sendUpdate('emitSoundSpatial_sv', soundInfo, client=client, excludeClients=excludeClients)
 
         def isEntityVisible(self, entity, traceMask):
             """

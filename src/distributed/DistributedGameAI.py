@@ -426,6 +426,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                         tex.clearRamImage()
 
     def d_doExplosion(self, pos, scale, dir):
+        #base.air.sendUpdatePHSOnly(self, 'doExplosion', [pos, scale, dir], pos)
         self.sendUpdate('doExplosion', [pos, scale, dir])
 
     def radiusDamage(self, info, origin, radius, ignoreClass, ignoreEntity):
@@ -534,6 +535,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             # TODO: hit all triggers
 
     def d_doTracers(self, origin, ends, excludeClients = []):
+        #base.air.sendUpdatePHSOnly(self, 'doTracers', [origin, ends], origin)
         self.sendUpdate('doTracers', [origin, ends], excludeClients = excludeClients)
 
     def playerCanTakeDamage(self, player, inflictor):
