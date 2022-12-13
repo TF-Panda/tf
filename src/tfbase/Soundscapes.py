@@ -131,6 +131,8 @@ class SoundscapeComponent:
             self.sound.setVolume(self.soundscape.volume * self.soundVolume)
 
     def start(self):
+        self.stop()
+
         if len(self.desc.waveFilenames) > 1 or self.desc.intervalMin != self.desc.intervalMax:
             # We have multiple sound filenames, so play them randomly each
             # interval.
@@ -419,6 +421,7 @@ class SoundscapeManager:
         return task.cont
 
     def start(self):
+        self.stop()
         self.task = base.taskMgr.add(self.update, 'soundscapeManagerUpdate')
 
     def stop(self):
@@ -458,5 +461,3 @@ class SoundscapeManager:
                 self.soundscapes.append(ss)
             else:
                 print("env_soundscape_proxy refers to non-existent env_soundscape %s" % actualSoundscapeName)
-
-        self.start()
