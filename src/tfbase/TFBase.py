@@ -13,6 +13,7 @@ from tf.tfbase import TFGlobals, TFLocalizer, SurfaceProperties, Soundscapes, So
 from tf.tfgui.TFMainMenu import TFMainMenu
 from tf.tfgui.NotifyView import NotifyView
 from tf.tfgui.GuiPanel import GuiPanel
+from tf.tfgui.TFDialog import TFDialog
 from .TFPostProcess import TFPostProcess
 from .PlanarReflector import PlanarReflector
 from . import Sounds
@@ -72,6 +73,9 @@ class TFBase(ShowBase, FSM):
         self.camNode.setCameraMask(DirectRender.MainCameraBitmask)
 
         self.win.disableClears()
+        self.win.setClearColorActive(True)
+        bgLinear = pow(0.3, 2.2)
+        self.win.setClearColor((bgLinear, bgLinear, bgLinear, 1))
 
         sceneDr = self.camNode.getDisplayRegion(0)
         sceneDr.disableClears()
@@ -114,11 +118,14 @@ class TFBase(ShowBase, FSM):
             #mgr.setStreamMode(AudioManager.SMSample)
             mgr.setVolume(base.config.GetFloat("sfx-volume", 1))
 
-        self.setBackgroundColor(0, 0, 0)
+        # Background color of 0.3 in linear space.
+
+        #self.setBackgroundColor(bgLinear, bgLinear, bgLinear)
         #self.enableMouse()
 
         self.accept('f9', self.screenshot)
 
+        DGG.defaultDialogRelief = DGG.FLAT
         DGG.setDefaultRolloverSound(self.loader.loadSfx("audio/sfx/buttonrollover.wav"))
         DGG.setDefaultClickSound(self.loader.loadSfx("audio/sfx/buttonclick.wav"))
         # TF2 also has a click release sound.
@@ -578,7 +585,7 @@ class TFBase(ShowBase, FSM):
         cm.setFrameFullscreenQuad()
         cm.setHasUvs(True)
         bg = self.render2d.attachNewNode(cm.generate())
-        bg.setColorScale((0.5, 0.5, 0.5, 1))
+        #bg.setColorScale((0.5, 0.5, 0.5, 1))
 
         aspectRatio = base.win.getXSize() / base.win.getYSize()
         if aspectRatio <= (4./3.):
@@ -591,7 +598,8 @@ class TFBase(ShowBase, FSM):
         bg.setTexture(loader.loadTexture(tex))
         bg.setBin('background', 0)
 
-        loadingText = OnscreenText(TFLocalizer.Loading, fg = (1, 1, 1, 1), parent = self.aspect2d)
+        loadingDialog = TFDialog(style=TFDialog.NoButtons, text=TFLocalizer.Loading, pad=(0.05, 0.01), midPad=0.06)
+        loadingDialog.show()
 
         base.graphicsEngine.renderFrame()
         base.graphicsEngine.flipFrame()
@@ -638,7 +646,7 @@ class TFBase(ShowBase, FSM):
         base.graphicsEngine.renderFrame()
         base.graphicsEngine.renderFrame()
 
-        loadingText.destroy()
+        loadingDialog.cleanup()
         bg.removeNode()
 
         if ConfigVariableBool('tf-play-immediately', False).value:

@@ -1,6 +1,9 @@
 from direct.distributed2.ClientRepository import ClientRepository
 from direct.fsm.FSM import FSM
 from direct.gui.DirectGui import DirectDialog, RetryCancelDialog, OkCancelDialog, OkDialog
+from direct.gui import DirectGuiGlobals as DGG
+
+from tf.tfgui.TFDialog import TFDialog
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
@@ -72,7 +75,8 @@ class TFClientRepository(ClientRepository, FSM):
         self.connectInfo = info
         self.acceptOnce('connectSuccess', self.handleConnectSuccess)
         self.acceptOnce('connectFailure', self.handleConnectFailure)
-        self.connectDialog = DirectDialog(text = TFLocalizer.ConnectingToServer % str(info['addr']))
+        self.connectDialog = TFDialog(style = TFDialog.NoButtons, text = TFLocalizer.ConnectingToServer % str(info['addr']))
+        self.connectDialog.show()
         self.connect(info['addr'])
 
     def handleConnectSuccess(self, addr):
@@ -88,9 +92,9 @@ class TFClientRepository(ClientRepository, FSM):
         del self.connectDialog
 
     def enterConnectionFailed(self):
-        self.dialog = RetryCancelDialog(text = TFLocalizer.ConnectionFailed % self.connectInfo['addr'],
-                                        command = self.__connectionFailedAck,
-                                        buttonTextList = [TFLocalizer.Retry, TFLocalizer.Cancel])
+        self.dialog = TFDialog(style = TFDialog.OkCancel, text = TFLocalizer.ConnectionFailed % self.connectInfo['addr'],
+                               command = self.__connectionFailedAck)
+        self.dialog.show()
 
     def __connectionFailedAck(self, value):
         if value > 0:
@@ -103,7 +107,7 @@ class TFClientRepository(ClientRepository, FSM):
         del self.dialog
 
     def enterAuthenticate(self):
-        self.dialog = DirectDialog(text = TFLocalizer.Authenticating)
+        self.dialog = TFDialog(style = TFDialog.NoButtons, text = TFLocalizer.Authenticating)
         self.dialog.show()
         self.sendHello()
         self.acceptOnce('serverHelloSuccess', self.handleHelloSuccess)
@@ -123,7 +127,7 @@ class TFClientRepository(ClientRepository, FSM):
         self.ignore('serverHelloFail')
 
     def enterJoinGame(self):
-        self.dialog = DirectDialog(text = TFLocalizer.JoiningGame)
+        self.dialog = TFDialog(style = TFDialog.NoButtons, text = TFLocalizer.JoiningGame)
         self.dialog.show()
         # Enter the uber zone to start talking to the game manager.
         self.handle = self.addInterest([TFGlobals.UberZone])
@@ -153,10 +157,9 @@ class TFClientRepository(ClientRepository, FSM):
         base.taskMgr.remove('runPredictionTask')
 
     def enterConnectionLost(self):
-        self.dialog = OkDialog(text = TFLocalizer.LostConnection,
-                               buttonTextList = [TFLocalizer.OK],
+        self.dialog = TFDialog(style = TFDialog.Acknowledge, text = TFLocalizer.LostConnection,
                                command = self.__onLostConnectionAck,
-                               text_wordwrap = 12)
+                               text_wordwrap = 18)
         self.dialog.show()
 
     def __onLostConnectionAck(self, value):
