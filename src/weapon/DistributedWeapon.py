@@ -149,6 +149,9 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
         assert self.player
 
+        if self.active:
+            return
+
         self.active = True
 
         if self.UsesViewModel:
@@ -176,6 +179,9 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         """
         Called when the weapon is no longer the active weapon.
         """
+
+        if not self.active:
+            return
 
         self.active = False
 
