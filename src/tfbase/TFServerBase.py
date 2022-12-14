@@ -90,6 +90,8 @@ class TFServerBase(HostBase):
         # Process global contact events, play sounds.
         while self.physicsWorld.hasContactEvent():
             data = self.physicsWorld.popContactEvent()
+            if not data.isValid():
+                continue
 
             if data.getNumContactPairs() == 0:
                 continue
@@ -105,6 +107,8 @@ class TFServerBase(HostBase):
 
             speed = point.getImpulse().length()
             a = data.getActorA()
+            if not a:
+                continue
             speed /= a.getMass()
             if speed < 70.0:
                 continue
