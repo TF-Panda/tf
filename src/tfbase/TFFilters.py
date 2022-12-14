@@ -274,6 +274,8 @@ def collideAndSlide(origin, velocity, collInfo, intoMask, filter):
 
     allFraction = 0.0
     timeLeft = globalClock.dt
+    if timeLeft <= 0:
+        return False
 
     newVelocity = Vec3()
 
