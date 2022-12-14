@@ -130,12 +130,13 @@ class TFClassMenu:
         self.pp = PostProcess()
         self.pp.startup(base.win)
         self.pp.addCamera(self.classCam, 0)
-        #self.fxaa = FXAA_Effect(self.pp)
-        #self.pp.addEffect(self.fxaa)
-        self.bloom = BloomEffect(self.pp)
-        self.pp.addEffect(self.bloom)
+        #
+        #self.bloom = BloomEffect(self.pp)
+        #self.pp.addEffect(self.bloom)
         self.toneMapping = ToneMappingEffect(self.pp)
         self.pp.addEffect(self.toneMapping)
+        self.fxaa = FXAA_Effect(self.pp)
+        self.pp.addEffect(self.fxaa)
         cm = CardMaker('cm')
         cm.setFrameFullscreenQuad()
         cm.setHasUvs(True)
@@ -160,8 +161,9 @@ class TFClassMenu:
         del self.classChar
         self.modelQuad.removeNode()
         del self.modelQuad
-        del self.bloom
+        #del self.bloom
         del self.toneMapping
+        del self.fxaa
         self.pp.shutdown()
         del self.pp
         base.taskMgr.remove("cmUpdatePostProcess")
