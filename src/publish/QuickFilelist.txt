@@ -108,6 +108,7 @@ file $DIRECT/built/lib/libdeadrec.dll . WIN32
 file $DIRECT/built/lib/libdistributed.dll . WIN32
 file $DIRECT/built/lib/libdistributed2.dll . WIN32
 file $DIRECT/built/lib/libfoundry.dll . WIN32
+file $DIRECT/built/lib/libhttp.dll . WIN32
 file $DIRECT/built/lib/libinterval.dll . WIN32
 file $DIRECT/built/lib/libmotiontrail.dll . WIN32
 file $DIRECT/built/lib/libshowbase.dll . WIN32
