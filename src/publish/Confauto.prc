@@ -2,6 +2,13 @@ plugin-path .
 model-path .
 model-path sound
 
+# Notify settings
+notify-level-gobj warning
+notify-level-loader warning
+notify-level-material warning
+notify-level-prediction warning
+notify-timestamp #t
+
 vfs-mount misc.mf .
 vfs-mount maps.mf .
 vfs-mount materials.mf .
