@@ -123,7 +123,7 @@ class TFBase(ShowBase, FSM):
         #self.setBackgroundColor(bgLinear, bgLinear, bgLinear)
         #self.enableMouse()
 
-        self.accept('f9', self.screenshot)
+        self.accept('f9', self.doScreenshot)
 
         DGG.defaultDialogRelief = DGG.FLAT
         DGG.setDefaultRolloverSound(self.loader.loadSfx("audio/sfx/buttonrollover.wav"))
@@ -245,6 +245,12 @@ class TFBase(ShowBase, FSM):
 
         # Nodes that render once and get removed at the start of the next frame.
         self.oneOffNodes = set()
+
+    def doScreenshot(self):
+        import os
+        if not os.path.isdir("screenshots"):
+            os.mkdir("screenshots")
+        self.screenshot('screenshots/screenshot')
 
     def addOneOffNode(self, node, parent=None):
         if parent:
