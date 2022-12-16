@@ -5,7 +5,9 @@ from .DViewModelShared import DViewModelShared
 
 from panda3d.core import *
 
-import random
+from tf.actor.AnimEvents import AnimEvent
+
+import random, math
 
 class ViewInfo:
     pass
@@ -37,9 +39,41 @@ class DViewModel(DistributedChar, DViewModelShared):
         self.ivLagAngles.setInterpolationAmount(cl_wpn_sway_interp)
 
         self.tracerRequests = []
+        self.shells = []
 
         self.removeInterpolatedVar(self.ivPos)
         self.removeInterpolatedVar(self.ivRot)
+
+    def calcViewModelAttachmentPos(self, pos):
+        camPos = base.cam.getPos(base.render)
+        camQuat = base.cam.getQuat(base.render)
+
+        worldX = math.tan(deg2Rad(base.camLens.getMinFov()))
+        viewX = math.tan(deg2Rad(base.vmLens.getMinFov()))
+
+        factorX = worldX / viewX
+        factorY = factorX
+
+        tmp = pos - camPos
+        transformed = Vec3(
+            camQuat.getRight().dot(tmp),
+            camQuat.getUp().dot(tmp),
+            camQuat.getForward().dot(tmp)
+        )
+
+        transformed.x *= factorX
+        transformed.y *= factorY
+
+        out = camQuat.getRight() * transformed.x + \
+            camQuat.getUp() * transformed.y + \
+            camQuat.getForward() * transformed.z
+        return out + camPos
+
+    def fireAnimEvent(self, event, options):
+        if event == AnimEvent.Client_Eject_Brass:
+            self.shells.append(options)
+        else:
+            DistributedChar.fireAnimEvent(self, event, options)
 
     def getStringIndex(self, string):
         if string not in DViewModel.StringTable:
@@ -258,8 +292,16 @@ class DViewModel(DistributedChar, DViewModelShared):
                 muzzlePos = Point3(muzzleTs.getPos())
                 if spread:
                     muzzlePos -= muzzleTs.getQuat().getForward() * spread
-                base.game.doTracer(muzzlePos, endPos, False, delay)
+                base.game.doTracer(self.calcViewModelAttachmentPos(muzzlePos), endPos, False, delay)
             self.tracerRequests = []
+
+        if self.shells:
+            for options in self.shells:
+                from tf.weapon.WeaponShell import WeaponShell
+                ts = self.getAttachment("eject_brass", True, False)
+                WeaponShell("models/weapons/" + options, self.calcViewModelAttachmentPos(ts.getPos()), ts.getQuat(),
+                            200, player.velocity, "Bounce.ShotgunShell")
+            self.shells = []
 
         #print("vm view is", info.origin, info.angles.getHpr())
 

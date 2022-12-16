@@ -13,8 +13,8 @@
 
 [
   Client_Play_Sound
-
   Client_Bodygroup_Set_Value
+  Client_Eject_Brass
 
   Server_Weapon_Increment_Ammo
 ]
