@@ -42,6 +42,10 @@ class WeaponShell:
         self.bounced = False
         self.bounceSound = bounceSound
 
+        fwd = quat.getForward()
+        up = quat.getUp()
+        right = quat.getRight()
+
         # Give it the silent surfaceprop so we can do a manual bounce
         # sound.
         surfaceProp = "default_silent"
@@ -71,16 +75,19 @@ class WeaponShell:
         cnp = base.dynRender.attachNewNode(cnode)
         cnp.node().setFinal(True)
         cnp.setPos(pos)
-        q = Quat()
-        lookAt(q, quat.getUp())
-        cnp.setQuat(q)
+        shellQ = Quat()
+        lookAt(shellQ, -up)
+        cnp.setQuat(shellQ)
         cnp.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))
         cnp.showThrough(DirectRender.ShadowCameraBitmask)
         cnode.syncTransform()
         mdl.modelNp.reparentTo(cnp)
 
         # Set up the ejection velocity.
-        cnode.addForce(quat.getForward() * amplitude + inheritVelocity, cnode.FTVelocityChange)
+        velocity = fwd * random.uniform(130, 180) + \
+            right * random.uniform(-30, 30) + \
+            up * random.uniform(-30, 30)
+        cnode.addForce(velocity + inheritVelocity, cnode.FTVelocityChange)
 
         WeaponShell.AllShells.append(self)
         if len(WeaponShell.AllShells) > WeaponShell.MaxShells.value:
