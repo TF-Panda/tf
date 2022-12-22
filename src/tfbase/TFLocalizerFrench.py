@@ -20,7 +20,7 @@ Yes = 'Oui'
 No = 'Non'
 
 ConnectingToServer = 'Connexion à %s...'
-ConnectionFailed = 'Impossible de se connecter à %s.'
+ConnectionFailed = 'Impossible de se connecter à %s. Ressayer ?'
 Authenticating = 'Authentification...'
 JoiningGame = 'Joindre jeu...'
 LostConnection = 'Votre connexion Internet s\'est inopinément interrompue.'
