@@ -715,9 +715,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         base.queueParticleSystem(effect, base.dynRender, 0.1)
 
         l = qpLight(qpLight.TPoint)
-        l.setColorSrgb((1 * 5, 0.5 * 5, 0))
+        l.setColorSrgb((1 * 2.5, 0.7 * 2.5, 0))
         l.setAttenuation(1, 0, 0.001)
-        l.setAttenuationRadius(128)
+        l.setAttenuationRadius(256)
         l.setPos(pos)
         base.addDynamicLight(l, fadeTime=0.25)
 
