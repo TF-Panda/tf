@@ -145,6 +145,7 @@ class DistributedGameBase:
         propRoot = base.render.attachNewNode(StaticPartitionedObjectNode("props"))
         self.propRoot = propRoot
         propRoot.showThrough(DirectRender.ShadowCameraBitmask)
+        #propRoot.node().levelInit(self.lvlData.getNumClusters(), self.lvlData.getAreaClusterTree())
         propPhysRoot = NodePath("propPhysRoot")
         propPhysRoot.hide()
         lightNodes = []
@@ -257,28 +258,30 @@ class DistributedGameBase:
 
         for propModel, hasVtxLight, in3DSky in lightNodes:
             # Also, we can flatten better by pre-computing the lighting state once.
-            lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask, False, hasVtxLight)
-            lightEffect.computeLighting(propModel.getNetTransform(), self.lvlData,
-                                        propModel.getBounds(), propModel.getParent().getNetTransform(), hasVtxLight)
-            state = propModel.getState()
-            state = state.compose(lightEffect.getCurrentLightingState())
-
             if in3DSky:
-                # Here's a bad hack.  If the prop is in the 3-D sky, it has
-                # the cascade light applied, but that is only for geometry
-                # in the regular scene, not the 3-d sky scene.  Find the light
-                # and remove it.  Later, we create a duplicate DirectionalLight
-                # with the same color and direction as the CascadeLight, for
-                # use only on geometry in the 3-d sky box.
-                la = state.getAttribDef(LightAttrib.getClassSlot())
-                for i in range(la.getNumOnLights()):
-                    light = la.getOnLight(i)
-                    if light == self.lvlData.getDirLight():
-                        la = la.removeOnLight(light)
-                        state = state.setAttrib(la)
-                        break
-            propModel.setState(state)
-            propModel.flattenLight()
+                if hasVtxLight:
+                    flags = MapLightingEffect.FDefaultBaked3dSky
+                else:
+                    flags = MapLightingEffect.FDefaultDynamic | MapLightingEffect.FNoSun
+                    flags &= ~MapLightingEffect.FDynamicLights
+            else:
+                if hasVtxLight:
+                    flags = MapLightingEffect.FDefaultBaked
+                else:
+                    flags = MapLightingEffect.FDefaultDynamic
+
+            lightEffect = MapLightingEffect.make(DirectRender.MainCameraBitmask, False, flags)
+            if True:#in3DSky:
+                lightEffect.computeLighting(propModel.getNetTransform(), self.lvlData,
+                                            propModel.getBounds(), propModel.getParent().getNetTransform())
+                state = propModel.getState()
+                state = state.compose(lightEffect.getCurrentLightingState())
+                propModel.setState(state)
+                propModel.flattenLight()
+            #else:
+                # For non-3d sky props, apply the effect in real time so we can
+                # have dynamic lights affect it.
+            #    propModel.setEffect(lightEffect)
 
         if IS_CLIENT:
             # Add overlays into the static prop partitioning.
@@ -311,6 +314,8 @@ class DistributedGameBase:
         propGr.collectVertexData(propRoot.node(), 0)
         propGr.unify(propRoot.node(), False)
         propGr.removeUnusedVertices(propRoot.node())
+
+        #propRoot.node().updateDirtyChildren()
 
         for child in propRoot.getChildren():
             propRoot.node().addObject(child.node())

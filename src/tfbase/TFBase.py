@@ -101,6 +101,10 @@ class TFBase(ShowBase, FSM):
         self.postProcess.setup()
         self.taskMgr.add(self.__updatePostProcess, 'updatePostProcess')
 
+        self.lightMgr = qpLightManager()
+        self.lightMgr.initialize()
+        #self.taskMgr.add(self.__updateLightMgr, 'updateLightMgr', sort=49)
+
         # 16 units per feet * feet per meter (3.28084)
         self.audioEngine.set3dUnitScale(52.49344)
         # Enable the steam audio listener-centric reverb on sound effects.
@@ -180,12 +184,20 @@ class TFBase(ShowBase, FSM):
         self.vmLens.setMinFov(self.config.GetInt("viewmodel-fov", 54) / (4./3.))
         self.vmLens.setAspectRatio(self.camLens.getAspectRatio())
         self.vmLens.setNear(1.0)
+        self.vmLens.setFar(200.0)
         # Clear depth to render viewmodel on top of world.
         self.vmCamera = self.makeCamera(
             self.win, lens = self.vmLens,
             clearDepth = True, clearColor = False)
         self.vmCamera.reparentTo(self.vmRender)
         self.postProcess.addCamera(self.vmCamera, 0, 2)
+
+        scenePass = self.postProcess.getScenePass()
+        buffer = scenePass.getBuffer()
+        buffer.getDisplayRegion(1).setLightCuller(qpLightCuller(self.lightMgr))
+        vmCuller = qpLightCuller(self.lightMgr)
+        vmCuller.setFrustumDiv(16, 8, 4)
+        buffer.getDisplayRegion(4).setLightCuller(vmCuller)
 
         self.taskMgr.add(self.viewModelSceneUpdate, 'viewModelSceneUpdate', sort = 47)
 
@@ -238,6 +250,7 @@ class TFBase(ShowBase, FSM):
         self.taskMgr.add(self.__particleQueueTask, 'processParticleQueue')
 
         self.taskMgr.add(self.__oneOffNodeTask, 'oneOffNodesClear', sort=-1000)
+        self.taskMgr.add(self.__processDynamicLights, 'dynamicLightTask', sort=48)
 
         GuiPanel.initialize()
 
@@ -245,6 +258,42 @@ class TFBase(ShowBase, FSM):
 
         # Nodes that render once and get removed at the start of the next frame.
         self.oneOffNodes = set()
+
+        self.game = None
+
+        self.dynamicLights = []
+
+    def addDynamicLight(self, lnp, followParent=None, fadeTime=0.0):
+        self.dynamicLights.append((lnp, Vec3(lnp.getColorLinear()), followParent, fadeTime, base.getRenderTime()))
+        self.lightMgr.addDynamicLight(lnp)
+
+    def removeDynamicLight(self, lnp):
+        for data in self.dynamicLights:
+            if data[0] == lnp:
+                self.lightMgr.removeDynamicLight(lnp)
+                self.dynamicLights.remove(data)
+                break
+
+    def __processDynamicLights(self, task):
+        self.lightMgr.update()
+
+        removed = []
+        for data in self.dynamicLights:
+            if data[2] is not None:
+                data[0].setPos(data[2].getPos(base.render))
+            if data[3] > 0.0:
+                now = globalClock.frame_time
+                elapsed = now - data[4]
+                frac = max(0.0, min(1.0, elapsed / data[3]))
+                if frac >= 1.0:
+                    removed.append(data)
+                data[0].setColorLinear(data[1] * (1.0 - frac))
+        if removed:
+            for x in removed:
+                self.lightMgr.removeDynamicLight(x[0])
+                self.dynamicLights.remove(x)
+
+        return task.cont
 
     def doScreenshot(self):
         import os

@@ -699,7 +699,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if self.roundTimeText:
             self.roundTimeText.destroy()
             self.roundTimeText = None
-        del base.game
+        base.game = None
         DistributedObject.delete(self)
         DistributedGameBase.delete(self)
 
@@ -713,6 +713,13 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         effect = TFEffects.getExplosionWallEffect()
         effect.setInput(0, tmp, True)
         base.queueParticleSystem(effect, base.dynRender, 0.1)
+
+        l = qpLight(qpLight.TPoint)
+        l.setColorSrgb((1 * 5, 0.5 * 5, 0))
+        l.setAttenuation(1, 0, 0.001)
+        l.setAttenuationRadius(128)
+        l.setPos(pos)
+        base.addDynamicLight(l, fadeTime=0.25)
 
         """
         root = base.dynRender.attachNewNode("expl")

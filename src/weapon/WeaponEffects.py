@@ -80,6 +80,22 @@ def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1), viewModel=False
     Sequence(Wait(0.1), Func(effect.softStop)).start()
     base.setFrameTime(saveTime)
 
+    cje = None
+    if node.hasEffect(CharacterJointEffect.getClassType()):
+        cje = node.getEffect(CharacterJointEffect.getClassType())
+        node.clearEffect(CharacterJointEffect.getClassType())
+    l = qpLight(qpLight.TPoint)
+    l.setColorSrgb((1 * 2, 0.9 * 2, 0.5 * 2))
+    l.setAttenuation(1, 0, 0.001)
+    l.setAttenuationRadius(128)
+    pos = node.getPos(base.render)
+    if viewModel:
+        pos = base.localAvatar.viewModel.calcViewModelAttachmentPos(pos)
+    l.setPos(pos)
+    base.addDynamicLight(l, fadeTime=0.15, followParent=node)
+    if cje:
+        node.setEffect(cje)
+
     """
     import random
     from panda3d.core import Quat, Point3
