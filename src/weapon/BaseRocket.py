@@ -23,6 +23,7 @@ class BaseRocket(BaseClass):
         self.critical = False
         if IS_CLIENT:
             self.spawnTime = 0.0
+            self.light = None
         else:
             self.exploded = False
             self.ignoreEntity = None
@@ -57,6 +58,12 @@ class BaseRocket(BaseClass):
 
         def __unhideRocket(self, task):
             self.show()
+            self.light = qpLight(qpLight.TPoint)
+            self.light.setAttenuation(1, 0, 0.001)
+            self.light.setAttenuationRadius(256)
+            self.light.setColorSrgb(Vec3(1, 0.7, 0.25) * 2)
+            self.light.setPos(self.getPos(base.render))
+            base.addDynamicLight(self.light, followParent=self)
             self.onUnhideRocket()
             return task.done
 
@@ -86,6 +93,11 @@ class BaseRocket(BaseClass):
             self.ivPos.pushFront(currOrigin, changeTime, False)
             self.ivRot.pushFront(currRot, changeTime, False)
 
+        def disable(self):
+            if self.light:
+                base.removeDynamicLight(self.light)
+                self.light = None
+            BaseClass.disable(self)
 
     def generate(self):
         BaseClass.generate(self)

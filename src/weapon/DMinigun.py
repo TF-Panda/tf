@@ -2,7 +2,7 @@
 
 # Do I hear boss music?
 
-from panda3d.core import rad2Deg, AudioSound
+from panda3d.core import *
 
 from .TFWeaponGun import TFWeaponGun
 
@@ -13,6 +13,8 @@ from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfbase import TFGlobals, TFLocalizer
 from tf.actor.Activity import Activity
 from tf.tfbase import Sounds
+
+import math
 
 MG_STATE_IDLE = 0
 MG_STATE_STARTFIRING = 1
@@ -71,6 +73,10 @@ class DMinigun(TFWeaponGun):
             #self.muzzleFlash.loadModel("models/effects/minigunmuzzle", False)
             #self.muzzleFlash.modelNp.setSy(0.75)
             self.muzzleFlash = loader.loadModel("models/effects/minigunmuzzle")
+            self.muzzleFlashLight = qpLight(qpLight.TPoint)
+            self.muzzleFlashLight.setAttenuation(1, 0, 0.001)
+            self.muzzleFlashLight.setAttenuationRadius(256)
+            self.muzzleFlashLightColor = Vec3(1, 0.7, 0) * 2
 
     def getName(self):
         return TFLocalizer.Minigun
@@ -175,9 +181,19 @@ class DMinigun(TFWeaponGun):
                 self.muzzleFlash.setScale(1)
             if not muzzle.isEmpty():
                 self.muzzleFlash.reparentTo(muzzle)
+                base.addDynamicLight(self.muzzleFlashLight, followParent=muzzle)
+                self.addTask(self.__muzzleFlashLightUpdate, 'muzzleFlashLightUpdate', sim=False, appendTask=True)
+
+        def __muzzleFlashLightUpdate(self, task):
+            bias = 0.3
+            frac = math.sin(globalClock.frame_time * 50) * 0.5 + 0.5
+            self.muzzleFlashLight.setColorSrgb(self.muzzleFlashLightColor * (frac * bias + (1.0 - bias)))
+            return task.cont
 
         def stopMuzzleFlash(self):
             self.muzzleFlash.detachNode()
+            self.removeTask('muzzleFlashLightUpdate')
+            base.removeDynamicLight(self.muzzleFlashLight)
 
         def weaponSoundUpdate(self):
             if base.cr.prediction.hasBeenPredicted():
