@@ -11,7 +11,7 @@ from tf.tfbase import TFLocalizer, Sounds, TFFilters, TFGlobals, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 from direct.directbase import DirectRender
 
-from panda3d.core import Vec3, Quat, Point3
+from panda3d.core import Vec3, Quat, Point3, qpLight
 
 import random
 
@@ -70,6 +70,13 @@ class FlameProjectile:
             flame.node().play()
             flame.setBillboardPointEye()
             self.flame = flame
+            self.flameLightColor = Vec3(1, 0.6, 0) * 1.5
+            self.flameLight = qpLight(qpLight.TPoint)
+            self.flameLight.setAttenuation(1, 0, 0.001)
+            self.flameLight.setAttenuationRadius(200)
+            self.flameLight.setPos(src)
+            self.flameLight.setColorLinear((0, 0, 0))
+            base.addDynamicLight(self.flameLight)
 
     def __flameUpdate(self, task):
         self.update()
@@ -83,6 +90,9 @@ class FlameProjectile:
         self.shooter = None
         self.hitEnts = None
         if IS_CLIENT:
+            if self.flameLight:
+                base.removeDynamicLight(self.flameLight)
+                self.flameLight = None
             if self.flame:
                 self.flame.removeNode()
                 self.flame = None
@@ -98,6 +108,12 @@ class FlameProjectile:
 
         elapsed = globalClock.frame_time - self.startTime
         frac = max(0.0, min(1.0, elapsed / FLAME_TIME))
+
+        if IS_CLIENT:
+            if frac < 0.5:
+                self.flameLight.setColorSrgb(self.flameLightColor * (frac / 0.5))
+            else:
+                self.flameLight.setColorSrgb(self.flameLightColor * (1.0 - ((frac - 0.5) / 0.5)))
 
         if not self.wasBlocked:
             attackerVelocityBlend = TFGlobals.remapValClamped(elapsed, FLAME_VELOCITYFADESTART,
@@ -154,6 +170,7 @@ class FlameProjectile:
         else:
             self.flame.setPos(self.pos)
             self.flame.setScale((FLAME_START_SCALE / self.explScale) * (1.0 - frac) + (FLAME_END_SCALE / self.explScale) * frac)
+            self.flameLight.setPos(self.pos)
 
         globalClock.dt = origDt
 
