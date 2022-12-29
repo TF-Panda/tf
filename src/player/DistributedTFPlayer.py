@@ -93,6 +93,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.overhealedEffect = None
         self.burningEffect = None
+        self.burningLight = None
 
         self.deathType = self.DTNone
 
@@ -147,10 +148,30 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.burningEffect.setInput(0, self.modelNp, False)
         self.burningEffect.start(base.dynRender, self)
 
+        self.burningLight = qpLight(qpLight.TPoint)
+        self.burningLight.setAttenuation(1, 0, 0.005)
+        self.burningLight.setAttenuationRadius(200)
+        self.burningLight.setColorSrgb(Vec3(1, 0.6, 0) * 1.5)
+        self.burningLight.setPos(self.viewOffsetNode.getPos(base.render))
+        base.addDynamicLight(self.burningLight)
+
+        self.addTask(self.__burningLightUpdate, 'playerBurningLightUpdate', appendTask=True, sim=False)
+
+    def __burningLightUpdate(self, task):
+        bias = 0.3
+        frac = math.sin(globalClock.frame_time * 50) * 0.5 + 0.5
+        self.burningLight.setColorSrgb(Vec3(2, 1.2, 0) * (frac * bias + (1.0 - bias)))
+        self.burningLight.setPos(self.getWorldSpaceCenter())
+        return task.cont
+
     def stopBurningEffect(self):
         if self.burningEffect:
             self.burningEffect.softStop()
             self.burningEffect = None
+        if self.burningLight:
+            base.removeDynamicLight(self.burningLight)
+            self.burningLight = None
+        self.removeTask('playerBurningLightUpdate')
 
     def RecvProxy_condition(self, cond):
         old = self.condition
