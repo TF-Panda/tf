@@ -1,4 +1,4 @@
-""" TFLocalizerFrench: French localization """
+""" TFLocalizerEnglish: English localization """
 
 ### Startup ###
 
