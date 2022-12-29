@@ -70,7 +70,7 @@ class FlameProjectile:
             flame.node().play()
             flame.setBillboardPointEye()
             self.flame = flame
-            self.flameLightColor = Vec3(1, 0.6, 0) * 1.5
+            self.flameLightColor = Vec3(1, 0.7, 0) * 1.5
             self.flameLight = qpLight(qpLight.TPoint)
             self.flameLight.setAttenuation(1, 0, 0.001)
             self.flameLight.setAttenuationRadius(200)
