@@ -85,7 +85,7 @@ def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1), viewModel=False
         cje = node.getEffect(CharacterJointEffect.getClassType())
         node.clearEffect(CharacterJointEffect.getClassType())
     l = qpLight(qpLight.TPoint)
-    l.setColorSrgb((1 * 2, 0.9 * 2, 0.5 * 2))
+    l.setColorSrgb((1 * 1.5, 0.9 * 1.5, 0.5 * 1.5))
     l.setAttenuation(1, 0, 0.001)
     l.setAttenuationRadius(128)
     pos = node.getPos(base.render)

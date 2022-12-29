@@ -76,7 +76,7 @@ class DMinigun(TFWeaponGun):
             self.muzzleFlashLight = qpLight(qpLight.TPoint)
             self.muzzleFlashLight.setAttenuation(1, 0, 0.001)
             self.muzzleFlashLight.setAttenuationRadius(256)
-            self.muzzleFlashLightColor = Vec3(1, 0.7, 0) * 2
+            self.muzzleFlashLightColor = Vec3(1, 0.7, 0) * 1.5
 
     def getName(self):
         return TFLocalizer.Minigun
