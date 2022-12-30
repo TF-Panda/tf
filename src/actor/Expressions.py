@@ -4,6 +4,8 @@ import math
 
 from tf.tfbase import TFGlobals
 
+from panda3d.core import *
+
 #class ExpressionDef:
 
 #    def __init__(self, )
@@ -41,6 +43,13 @@ class Expressions:
         # They are layered on top of each other.
         self.expressionList = []
 
+        # Create animation channel to move facial expression morphs.
+        self.chan = AnimChannelUser("expressions-chan", self.character, True)
+        self.chan.setFlags(AnimChannel.FDelta)
+        index = self.character.addChannel(self.chan)
+        # Layer 8 is above all joint animations, lip sync, and eyelids.
+        self.character.loop(index, True, 8)
+
     def hasExpression(self, name):
         for exp in self.expressionList:
             if exp.name == name:
@@ -63,7 +72,7 @@ class Expressions:
             for sliderName in sliderNameList:
                 slider = self.character.findSlider(sliderName)
                 if slider >= 0:
-                    self.character.setSliderValue(slider, 0.0)
+                    self.chan.setSlider(slider, 0.0)
         self.expressionList = []
 
     def clearNonBaseExpressions(self):
@@ -126,4 +135,4 @@ class Expressions:
             for sliderName in self.expressions[exp.name]:
                 slider = self.character.findSlider(sliderName)
                 if slider >= 0:
-                    self.character.setSliderValue(slider, weights[i])
+                    self.chan.setSlider(slider, weights[i])

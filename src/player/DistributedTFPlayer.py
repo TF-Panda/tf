@@ -285,7 +285,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
                 talkerIndex = self.ragdoll[0].character.addChannel(self.talker)
                 self.ragdoll[0].character.loop(talkerIndex, True)
             if self.expressions:
-                self.expressions.character = self.ragdoll[0].character
+                # Also play facial expressions on ragdoll.
+                expIndex = self.ragdoll[0].character.addChannel(self.expressions.chan)
+                self.ragdoll[0].character.loop(expIndex, True, 1)
                 # Remove idle expression so ragdoll goes to blank face after
                 # pain.
                 self.expressions.clearExpression('idle')

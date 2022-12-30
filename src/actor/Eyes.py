@@ -33,6 +33,14 @@ class Eyes:
         self.blinkTask = None
         self.lookAroundTask = None
 
+        # Set up the animation channel to move the eyelid morphs.
+        self.chan = AnimChannelUser("eyes-chan", self.char, True)
+        self.chan.setFlags(AnimChannel.FDelta)
+        index = self.char.addChannel(self.chan)
+        # Play it on layer 7 above lip sync and all joint
+        # animations.
+        self.char.loop(index, True, 7)
+
         if debug:
             headSegs = LineSegs('head')
             headSegs.setColor((1, 0, 0, 1))
@@ -81,8 +89,8 @@ class Eyes:
             # No eyelid sliders.
             return task.done
 
-        self.char.setSliderValue(self.lidUpperMorph, min(0.8, self.upperEyeLidCloseAmount + self.upperBlinkAmount))
-        self.char.setSliderValue(self.lidLowerMorph, min(1.0 - self.char.getSliderValue(self.lidUpperMorph), self.lowerEyeLidCloseAmount + self.lowerBlinkAmount))
+        self.chan.setSlider(self.lidUpperMorph, min(0.8, self.upperEyeLidCloseAmount + self.upperBlinkAmount))
+        self.chan.setSlider(self.lidLowerMorph, min(1.0 - self.chan.getSlider(self.lidUpperMorph), self.lowerEyeLidCloseAmount + self.lowerBlinkAmount))
 
         return task.cont
 
