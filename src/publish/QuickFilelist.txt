@@ -25,6 +25,7 @@ file $PYTHON_BIN/DLLs/_decimal.pyd . WIN32
 file $PYTHON_BIN/DLLs/_hashlib.pyd . WIN32
 file $PYTHON_BIN/DLLs/_lzma.pyd . WIN32
 file $PYTHON_BIN/DLLs/_socket.pyd . WIN32
+file $PYTHON_BIN/DLLs/_elementtree.pyd . WIN32
 file $PYTHON_BIN/DLLs/unicodedata.pyd . WIN32
 file $PYTHON_BIN/DLLs/pyexpat.pyd . WIN32
 file $PYTHON_BIN/DLLs/select.pyd . WIN32
