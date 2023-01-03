@@ -132,9 +132,10 @@ talker-phoneme-filter 0.08
 # This is essentially the default, but we reduce the number of states collected
 # each cycle to reduce overhead.
 garbage-collect-states 1
-garbage-collect-states-rate 0.01
+garbage-collect-transform-states-rate 0.5
+garbage-collect-render-states-rate 0.01
 auto-break-cycles 1
-transform-cache 1
+transform-cache 0
 state-cache 1
 
 bounds-type box
