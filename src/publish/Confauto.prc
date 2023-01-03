@@ -144,7 +144,7 @@ garbage-collect-states 1
 garbage-collect-transform-states-rate 0.5
 garbage-collect-render-states-rate 0.01
 auto-break-cycles 1
-transform-cache 1
+transform-cache 0
 state-cache 1
 
 bounds-type box
