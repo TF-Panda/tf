@@ -21,8 +21,9 @@ class BobState:
         self.verticalBob = 0.0
         self.lateralBob = 0.0
 
-cl_wpn_sway_interp = 0.1
-cl_wpn_sway_scale = 5.0
+tf_weapon_sway = ConfigVariableBool('tf-weapon-sway', False)
+tf_weapon_sway_interp = ConfigVariableDouble('tf-weapon-sway-interp', 0.1)
+tf_weapon_sway_scale = ConfigVariableDouble('tf-weapon-sway-scale', 5.0)
 
 class DViewModel(DistributedChar, DViewModelShared):
 
@@ -36,7 +37,7 @@ class DViewModel(DistributedChar, DViewModelShared):
         self.bobState = BobState()
         self.lagAngles = Quat()
         self.ivLagAngles = InterpolatedQuat()
-        self.ivLagAngles.setInterpolationAmount(cl_wpn_sway_interp)
+        self.ivLagAngles.setInterpolationAmount(tf_weapon_sway_interp.value)
 
         self.tracerRequests = []
         self.shells = []
@@ -316,7 +317,10 @@ class DViewModel(DistributedChar, DViewModelShared):
         tf_viewmodel lag
         """
 
-        if cl_wpn_sway_interp <= 0.0:
+        if not tf_weapon_sway.value:
+            return
+
+        if tf_weapon_sway_interp.value <= 0.0:
             return
 
         # Calculate our drift
@@ -339,7 +343,7 @@ class DViewModel(DistributedChar, DViewModelShared):
         angleDiff = lagAngles * invAngles
         laggedForward = angleDiff.getForward()
         forwardDiff = laggedForward - Vec3.forward()
-        forwardDiff *= cl_wpn_sway_scale
+        forwardDiff *= tf_weapon_sway_scale.value
 
         # Now offset the origin using that
         info.origin += forward * forwardDiff[1] + right * forwardDiff[0] + up * forwardDiff[2]
