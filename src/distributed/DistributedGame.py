@@ -704,6 +704,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         DistributedGameBase.delete(self)
 
     def doExplosion(self, pos, scale, dir):
+        pos = Vec3(pos[0], pos[1], pos[2])
+        dir = Vec3(dir[0], dir[1], dir[2])
         q = Quat()
         lookAt(q, dir)
         tmp = NodePath("tmp")
@@ -718,7 +720,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         l.setColorSrgb((1 * 2.5, 0.7 * 2.5, 0))
         l.setAttenuation(1, 0, 0.001)
         l.setAttenuationRadius(256)
-        l.setPos(pos)
+        l.setPos(pos + dir * 16)
         base.addDynamicLight(l, fadeTime=0.25)
 
         """
