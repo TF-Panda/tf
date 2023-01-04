@@ -752,12 +752,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         segs.moveTo(Point3(0))
         segs.drawTo(Vec3(0, -1, 0))
         segs.setThickness(2)
+        segs.setVertexColor(1, Vec4(0.0))
         np = base.dynRender.attachNewNode(segs.create())
         np.setLightOff(1)
         np.setBin('fixed', 2)
         np.lookAt(traceDir)
         np.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
-        segs.setVertexColor(1, Vec4(0.0))
 
         tracerScale = min(85, traceLen)
 
