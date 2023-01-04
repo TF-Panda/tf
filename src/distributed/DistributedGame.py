@@ -741,7 +741,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #print("tracer", start, end)
         start = Point3(start[0], start[1], start[2])
         end = Point3(end[0], end[1], end[2])
-        speed = 5000
+        speed = 7500
         color = Vec4(1.0, 0.9, 0.6, 1)
         traceDir = end - start
         traceLen = traceDir.length()
@@ -759,7 +759,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         np.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
         segs.setVertexColor(1, Vec4(0.0))
 
-        tracerScale = min(64, traceLen)
+        tracerScale = min(85, traceLen)
 
         seq = Sequence()
         seq.append(Wait(delay))
