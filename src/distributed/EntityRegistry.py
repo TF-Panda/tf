@@ -29,6 +29,7 @@ from tf.entity.DistributedFuncRotating import DistributedFuncRotatingAI
 from tf.entity.TFEntityFilters import FilterActivatorTFTeam
 from tf.entity.Ropes import RopeKeyFrameAI
 from tf.entity.TFLogicArena import TFLogicArena
+from tf.entity.TriggerCaptureArea import TriggerCaptureAreaAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -36,7 +37,7 @@ EntityRegistry = {
     "trigger_multiple": DistributedTriggerAI,
     "func_regenerate": DistributedFuncRegenerateAI,
     "prop_dynamic": DistributedPropDynamicAI,
-    "func_door": DistributedFuncDoorAI,
+    #"func_door": DistributedFuncDoorAI,
     "func_brush": DistributedFuncBrushAI,
     "point_spotlight": DistributedPointSpotlightAI,
     "item_healthkit_small": DHealthKitSmallAI,
@@ -51,5 +52,6 @@ EntityRegistry = {
     "func_rotating": DistributedFuncRotatingAI,
     "keyframe_rope": RopeKeyFrameAI,
     "move_rope": RopeKeyFrameAI,
-    "tf_logic_arena": TFLogicArena
+    "tf_logic_arena": TFLogicArena,
+    "trigger_capture_area": TriggerCaptureAreaAI
 }

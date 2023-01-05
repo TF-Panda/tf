@@ -11,7 +11,7 @@ class GameMode:
 MapPrefixToGameMode = {
     'arena': GameMode.Arena,
     'ctf': GameMode.CTF,
-    'cp': GameMode.ControlPoint,
+    'cp': GameMode.Training,
     'ad': GameMode.AttackDefend,
     'pl': GameMode.Payload,
     'tr': GameMode.Training

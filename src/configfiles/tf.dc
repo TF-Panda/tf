@@ -28,6 +28,7 @@ from tf.entity.DistributedFuncBrush import DistributedFuncBrush/AI
 from tf.entity.DistributedPointSpotlight import DistributedPointSpotlight/AI
 from tf.entity.DistributedFuncRotating import DistributedFuncRotating/AI
 from tf.entity.Ropes import RopeKeyFrame/AI
+from tf.entity.TriggerCaptureArea import TriggerCaptureArea/AI
 from tf.distributed.DistributedGame/AI import DistributedGame/AI
 from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
 from tf.actor.DistributedChar/AI import DistributedChar/AI
@@ -608,4 +609,7 @@ dclass RopeKeyFrame : DistributedEntity {
   uint16 slack;
   uint8 subdiv;
   uint8 thickness;
+};
+
+dclass TriggerCaptureArea : DistributedTrigger {
 };

@@ -368,6 +368,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 angles = Vec3()
                 props.getAttributeValue("origin").toVec3(origin)
                 props.getAttributeValue("angles").toVec3(angles)
+                if not props.hasAttribute("TeamNum"):
+                    continue
                 team = props.getAttributeValue("TeamNum").getInt() - 2
                 if team >= 0 and team <= 1:
                     self.teamSpawns[team].append((origin, angles))
