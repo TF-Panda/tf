@@ -59,7 +59,7 @@ if 1:   # flip this as necessary
     sys.stderr = logErr
 
     # Give Panda the same log we use
-    if __debug__:
+    if True:#__debug__:
         from panda3d.core import Notify, Filename, MultiplexStream
         nout = MultiplexStream()
         Notify.ptr().setOstreamPtr(nout, 0)
