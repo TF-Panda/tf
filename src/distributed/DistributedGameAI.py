@@ -38,8 +38,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.waitingForPlayers = True
 
-        self.roundTime = 600
-
         self.maxPlayersPerTeam = base.sv.getMaxClients() // TFTeam.COUNT
 
         # Number of rounds won by each team.
@@ -58,6 +56,13 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.playersByTeam = {0: [], 1: []}
         self.objectsByTeam = {0: [], 1: []}
+
+        self.roundEndTime = 0
+
+        self.switchTeamsOnNewRound = False
+        self.forceMapReset = False
+
+        self.levelEnts = []
 
         self.allPlayers = {}
 
@@ -157,18 +162,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         for plyr in base.game.playersByTeam[team]:
             base.world.emitSound(snd, client=plyr.owner)
 
-    def addRoundTime(self, time, rewardedTeam):
-        self.roundEndTime += time
-
-        if rewardedTeam not in (None, TFTeam.NoTeam):
-            if random.random() < 0.25:
-                self.teamSound("Announcer.TimeAdded", rewardedTeam)
-            else:
-                self.teamSound("Announcer.TimeAwardedForTeam", rewardedTeam)
-            self.enemySound("Announcer.TimeAddedForEnemy", rewardedTeam)
-        else:
-            base.world.emitSound("Announcer.TimeAdded")
-
     def newRound(self):
         """
         Starts a new round of the game.  Resets all players to spawn locations,
@@ -179,23 +172,43 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.winTeam = TFTeam.NoTeam
 
-        if self.gameModeImpl.needsSetup:
-            self.roundEndTime = globalClock.frame_time + self.gameModeImpl.setupTime
-            self.roundState = RoundState.Setup
+        if self.forceMapReset:
+            self.reloadLevelEntities()
+
+        if self.roundTimer:
+            if self.roundTimer.setupLength > 0:
+                self.roundTimer.startSetupTimer()
+                self.roundState = RoundState.Setup
+            else:
+                self.roundState = RoundState.Playing
         else:
             self.roundState = RoundState.Playing
         self.gameModeImpl.onNewRound()
 
-        for players in self.playersByTeam.values():
+        # Copy the team list so we can switch teams while iterating.
+        teamCopy = {}
+        for team, players in self.playersByTeam.items():
+            teamCopy[team] = list(players)
+        for players in teamCopy.values():
             for plyr in players:
-                plyr.destroyAllObjects()
-                plyr.doRespawn()
+                if self.switchTeamsOnNewRound:
+                    otherTeam = not plyr.team
+                    plyr.doChangeTeam(otherTeam, removeNemesises=False, announce=False)
+                else:
+                    plyr.destroyAllObjects()
+                    plyr.doRespawn()
                 # Speak about the round starting (battle cry)
                 plyr.speakConcept(TFGlobals.SpeechConcept.RoundStart, {})
 
         self.notify.info("New round %i" % self.roundNumber)
 
-        if not self.gameModeImpl.needsSetup:
+        if self.switchTeamsOnNewRound:
+            self.d_displayChat("Teams have been switched.")
+
+        self.switchTeamsOnNewRound = False
+        self.forceMapReset = False
+
+        if self.roundState == RoundState.Playing:
             self.beginRound()
 
     def beginRound(self):
@@ -203,7 +216,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         if self.roundState == RoundState.Setup:
             base.world.emitSound("Ambient.Siren")
         self.roundState = RoundState.Playing
-        self.roundEndTime = globalClock.frame_time + self.roundTime
         self.winTeam = TFTeam.NoTeam
 
         self.gameModeImpl.onBeginRound()
@@ -212,6 +224,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.notify.info("End round %i" % self.roundNumber)
         self.roundState = RoundState.Ended
         self.roundEndTime = globalClock.frame_time + 15.0
+        if self.roundTimer:
+            # Abort the round timer.
+            self.roundTimer.stopTimer()
 
         if winTeam is None:
             winTeam = TFTeam.NoTeam
@@ -252,102 +267,38 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.notify.info("Waiting for players")
             return task.cont
 
-        time = self.roundEndTime - globalClock.frame_time
-        prevTime = time + base.intervalPerTick
-
         if globalClock.frame_time >= self.roundEndTime:
-
-            if self.roundState == RoundState.Setup:
-                # Setup time over, start the round for real.
-                self.beginRound()
-
-            elif self.roundState == RoundState.Playing:
-                self.endRound()
-
-            elif self.roundState == RoundState.Ended:
+            if self.roundState == RoundState.Ended:
                 self.newRound()
-
-        elif self.roundState in [RoundState.Setup, RoundState.Playing]:
-            if prevTime > 1 and time <= 1:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 4 seconds.
-                    base.world.emitSound("Announcer.RoundBegins1Seconds")
-                else:
-                    # Mission ends in 4 seconds.
-                    base.world.emitSound("Announcer.RoundEnds1seconds")
-
-            elif prevTime > 2 and time <= 2:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 4 seconds.
-                    base.world.emitSound("Announcer.RoundBegins2Seconds")
-                else:
-                    # Mission ends in 4 seconds.
-                    base.world.emitSound("Announcer.RoundEnds2seconds")
-
-            elif prevTime > 3 and time <= 3:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 4 seconds.
-                    base.world.emitSound("Announcer.RoundBegins3Seconds")
-                else:
-                    # Mission ends in 4 seconds.
-                    base.world.emitSound("Announcer.RoundEnds3seconds")
-
-            elif prevTime > 4 and time <= 4:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 4 seconds.
-                    base.world.emitSound("Announcer.RoundBegins4Seconds")
-                else:
-                    # Mission ends in 4 seconds.
-                    base.world.emitSound("Announcer.RoundEnds4seconds")
-
-            elif prevTime > 5 and time <= 5:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 5 seconds.
-                    base.world.emitSound("Announcer.RoundBegins5Seconds")
-                else:
-                    # Mission ends in 5 seconds.
-                    base.world.emitSound("Announcer.RoundEnds5seconds")
-
-            elif prevTime > 10 and time <= 10:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 10 seconds.
-                    base.world.emitSound("Announcer.RoundBegins10Seconds")
-                else:
-                    # Mission ends in 10 seconds.
-                    base.world.emitSound("Announcer.RoundEnds10seconds")
-
-            elif prevTime > 30 and time <= 30:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 30 seconds.
-                    base.world.emitSound("Announcer.RoundBegins30Seconds")
-                else:
-                    # Mission ends in 30 seconds.
-                    base.world.emitSound("Announcer.RoundEnds30seconds")
-
-            elif prevTime > 60 and time <= 60:
-                if self.roundState == RoundState.Setup:
-                    # Mission begins in 60 seconds.
-                    base.world.emitSound("Announcer.RoundBegins60Seconds")
-                else:
-                    # Mission ends in 60 seconds.
-                    base.world.emitSound("Announcer.RoundEnds60seconds")
-
-            elif prevTime > 300 and time <= 300:
-                # Mission ends in 5 minutes.
-                base.world.emitSound("Announcer.RoundEnds5minutes")
 
         return task.cont
 
-    def collectTeamSpawns(self):
+    def reloadLevelEntities(self):
+        preserveEntClassNames = [
+            "worldspawn"
+        ]
+        for ent in reversed(list(self.levelEnts)):
+            if ent.className in preserveEntClassNames:
+                continue
+            if ent.isNetworkedEntity():
+                base.air.deleteObject(ent)
+            else:
+                ent.disable()
+                ent.delete()
+            self.levelEnts.remove(ent)
 
+        # Now load them up again, but ignoring the classnames
+        # we preserved.
+        self.loadLevelEntities(preserveEntClassNames)
+
+    def loadLevelEntities(self, ignoreClassNames=[]):
         from .EntityRegistry import EntityRegistry
-
-        self.teamSpawns = {0: [], 1: []}
-
-        levelEnts = []
 
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
+
+            if ent.getClassName() in ignoreClassNames:
+                continue
 
             entCls = EntityRegistry.get(ent.getClassName(), None)
             if entCls:
@@ -358,26 +309,14 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                     base.air.generateObject(entObj, GameZone, announce=False)
                 else:
                     entObj.generate()
-                levelEnts.append(entObj)
-            else:
-                print(ent.getClassName(), "not in entity registry")
-                if ent.getClassName() != "info_player_teamspawn":
-                    continue
-                props = ent.getProperties()
-                origin = Vec3()
-                angles = Vec3()
-                props.getAttributeValue("origin").toVec3(origin)
-                props.getAttributeValue("angles").toVec3(angles)
-                if not props.hasAttribute("TeamNum"):
-                    continue
-                team = props.getAttributeValue("TeamNum").getInt() - 2
-                if team >= 0 and team <= 1:
-                    self.teamSpawns[team].append((origin, angles))
+                self.levelEnts.append(entObj)
 
-        for entObj in levelEnts:
+        for entObj in self.levelEnts:
             entObj.announceGenerate()
             if entObj.isNetworkedEntity():
                 assert entObj.isDOAlive()
+
+        self.teamSpawns = base.entMgr.findAllEntitiesByClassName("info_player_teamspawn")
 
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
@@ -395,7 +334,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         elif self.gameMode == GameMode.Arena:
             self.gameModeImpl = GameModeArena(self)
 
-        self.collectTeamSpawns()
+        self.loadLevelEntities()
 
         #
         # Free up memory from the darn cube map textures embedded in the level.

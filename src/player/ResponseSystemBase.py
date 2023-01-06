@@ -100,6 +100,23 @@ def makeBaseTFResponseSystem(player, baseDef):
       )
     )
 
+  if 'capped_cp' in baseDef:
+    system.addRule(
+      SpeechConcept.CappedObjective,
+      Rule(
+        [
+          lambda data: data['gamemode'] == 'cp'
+        ],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in baseDef['capped_cp']
+            ]
+          )
+        ]
+      )
+    )
+
   if 'medic_call' in baseDef:
     # Generic medic call
     system.addRule(

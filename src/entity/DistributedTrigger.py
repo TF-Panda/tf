@@ -24,7 +24,7 @@ class DistributedTrigger(DistributedSolidEntity):
             self.initializeCollisions()
 
             if self.filterName:
-                ents = base.entMgr.findEntity(self.filterName)
+                ents = base.entMgr.findAllEntities(self.filterName)
                 if ents:
                     self.filterEnt = ents[0]
 
@@ -76,6 +76,11 @@ class DistributedTrigger(DistributedSolidEntity):
 
         def input_Enable(self, caller):
             self.triggerEnabled = True
+
+        def input_Disable(self, caller):
+            self.triggerEnabled = False
+            for ent in list(self.touching):
+                self.onEntityEndTouch(ent)
 
         def delete(self):
             self.touching = None

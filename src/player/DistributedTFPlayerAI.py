@@ -1162,8 +1162,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         #self.setActiveWeapon(0)
 
         # Select a random spawn location.
-        spawnPoints = base.air.game.teamSpawns[self.team]
-        origin, angles = random.choice(spawnPoints)
+        spawnPoints = [x for x in base.game.teamSpawns if x.enabled and x.team == self.team]
+        assert spawnPoints
+        spawnPoint = random.choice(spawnPoints)
+        origin = spawnPoint.spawnPos
+        angles = spawnPoint.spawnHpr
         # Trace player hull down to find ground.
         tr = TFFilters.traceBox(origin, origin + Vec3.down() * 100,
                                 TFGlobals.VEC_HULL_MIN, TFGlobals.VEC_HULL_MAX,
@@ -1173,7 +1176,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.setPos(tr['endpos'])
         else:
             self.setPos(origin)
-        self.d_setViewAngles((angles[1] - 90, angles[0]))
+        self.d_setViewAngles((angles[0], angles[1]))
         # Make client teleport player to respawn location.
         self.teleport()
 
@@ -1221,7 +1224,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.doChangeTeam(team, respawn)
 
-    def doChangeTeam(self, team, respawn=True, giveWeapons=True, isAuto=False):
+    def doChangeTeam(self, team, respawn=True, giveWeapons=True, isAuto=False, removeNemesises=True, announce=True):
         if team == self.team:
             self.pendingChangeTeam = TFTeam.NoTeam
             return
@@ -1233,15 +1236,16 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.stripWeapons()
         self.destroyDetonateables()
 
-        # Remove nemesises that are on the team we are joining.
-        for doId in list(self.nemesisList):
-            plyr = base.air.doId2do.get(doId)
-            if plyr and plyr.team == team:
-                # Remove domination from player on team we are joining.
-                plyr.removeDomination(self.doId, False)
-                self.nemesisList.remove(doId)
-            elif not plyr:
-                self.nemesisList.remove(doId)
+        if removeNemesises:
+            # Remove nemesises that are on the team we are joining.
+            for doId in list(self.nemesisList):
+                plyr = base.air.doId2do.get(doId)
+                if plyr and plyr.team == team:
+                    # Remove domination from player on team we are joining.
+                    plyr.removeDomination(self.doId, False)
+                    self.nemesisList.remove(doId)
+                elif not plyr:
+                    self.nemesisList.remove(doId)
 
         # Remove from old team.
         if self.team in base.game.playersByTeam and self in base.game.playersByTeam[self.team]:
@@ -1266,10 +1270,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.pendingChangeTeam = TFTeam.NoTeam
 
-        if isAuto:
-            base.game.d_displayChat("%s was automatically assigned to team %s." % (self.playerName, base.game.getTeamName(self.team)))
-        else:
-            base.game.d_displayChat("%s joined team %s" % (self.playerName, base.game.getTeamName(self.team)))
+        if announce:
+            if isAuto:
+                base.game.d_displayChat("%s was automatically assigned to team %s." % (self.playerName, base.game.getTeamName(self.team)))
+            else:
+                base.game.d_displayChat("%s joined team %s" % (self.playerName, base.game.getTeamName(self.team)))
 
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
         if not base.game.isChangeClassAllowed():

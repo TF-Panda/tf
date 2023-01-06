@@ -30,6 +30,12 @@ from tf.entity.TFEntityFilters import FilterActivatorTFTeam
 from tf.entity.Ropes import RopeKeyFrameAI
 from tf.entity.TFLogicArena import TFLogicArena
 from tf.entity.TriggerCaptureArea import TriggerCaptureAreaAI
+from tf.entity.TeamControlPoint import TeamControlPointAI
+from tf.entity.LogicRelay import LogicRelay
+from tf.entity.TeamRoundTimerAI import TeamRoundTimerAI
+from tf.entity.InfoPlayerTeamspawn import InfoPlayerTeamspawn
+from tf.entity.GameRoundWin import GameRoundWin
+from tf.entity.TeamControlPointMasterAI import TeamControlPointMasterAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -37,7 +43,7 @@ EntityRegistry = {
     "trigger_multiple": DistributedTriggerAI,
     "func_regenerate": DistributedFuncRegenerateAI,
     "prop_dynamic": DistributedPropDynamicAI,
-    #"func_door": DistributedFuncDoorAI,
+    "func_door": DistributedFuncDoorAI,
     "func_brush": DistributedFuncBrushAI,
     "point_spotlight": DistributedPointSpotlightAI,
     "item_healthkit_small": DHealthKitSmallAI,
@@ -53,5 +59,11 @@ EntityRegistry = {
     "keyframe_rope": RopeKeyFrameAI,
     "move_rope": RopeKeyFrameAI,
     "tf_logic_arena": TFLogicArena,
-    "trigger_capture_area": TriggerCaptureAreaAI
+    "trigger_capture_area": TriggerCaptureAreaAI,
+    "team_control_point": TeamControlPointAI,
+    "logic_relay": LogicRelay,
+    "team_round_timer": TeamRoundTimerAI,
+    "info_player_teamspawn": InfoPlayerTeamspawn,
+    "game_round_win": GameRoundWin,
+    "team_control_point_master": TeamControlPointMasterAI
 }

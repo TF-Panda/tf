@@ -37,7 +37,7 @@ class EntityConnectionManager:
             return (caller,)
         else:
             # Look up target name in entity dictionary.
-            return base.entMgr.findEntity(targetName)
+            return base.entMgr.findAllEntities(targetName)
 
     def fireOutput(self, name, extraArgs=[], activator=None):
         connections = self.outputs.get(name)

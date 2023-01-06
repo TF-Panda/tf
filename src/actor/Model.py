@@ -111,9 +111,9 @@ class Model(DirectObject):
         for i in range(len(bg)):
             body = bg[i]
             if i == value:
-                body.show()
+                body.unstash()
             else:
-                body.hide()
+                body.stash()
 
     def getBodygroupNodes(self, group, value):
         """
@@ -189,7 +189,7 @@ class Model(DirectObject):
         if self.modelNp:
             self.modelNp.hideBounds()
 
-    def loadModel(self, filename, callOnChanged=True):
+    def loadModel(self, filename, callOnChanged=True, flatten=True):
         """
         Loads up a model from the indicated model filename.  The existing
         model is unloaded.
@@ -214,7 +214,7 @@ class Model(DirectObject):
             self.notify.error("Could not load model %s" % filename)
             return False
         self.modelRootNode = self.modelNp.node()
-        if self.modelNp.find("**/+CharacterNode").isEmpty():
+        if flatten and self.modelNp.find("**/+CharacterNode").isEmpty():
             # Not a character, so flatten it out.
             self.modelNp.flattenStrong()
         if False:#self.modelNp.getNumChildren() == 1:

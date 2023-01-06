@@ -29,6 +29,9 @@ from tf.entity.DistributedPointSpotlight import DistributedPointSpotlight/AI
 from tf.entity.DistributedFuncRotating import DistributedFuncRotating/AI
 from tf.entity.Ropes import RopeKeyFrame/AI
 from tf.entity.TriggerCaptureArea import TriggerCaptureArea/AI
+from tf.entity.TeamControlPoint import TeamControlPoint/AI
+from tf.entity.TeamRoundTimer/AI import TeamRoundTimer/AI
+from tf.entity.TeamControlPointMaster/AI import TeamControlPointMaster/AI
 from tf.distributed.DistributedGame/AI import DistributedGame/AI
 from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
 from tf.actor.DistributedChar/AI import DistributedChar/AI
@@ -189,7 +192,6 @@ dclass DistributedGame : DistributedObject {
 
   uint8 gameMode;
   uint8 roundNumber;
-  float64 roundEndTime;
   uint8 roundState;
   int8 winTeam;
 
@@ -553,6 +555,7 @@ dclass DistributedFuncDoor : DistributedSolidEntity { };
 
 dclass DistributedFuncBrush : DistributedSolidEntity {
   uint8 isSolid;
+  uint8 enabled;
 };
 
 dclass DistributedPointSpotlight : DistributedEntity {
@@ -612,4 +615,20 @@ dclass RopeKeyFrame : DistributedEntity {
 };
 
 dclass TriggerCaptureArea : DistributedTrigger {
+  uint8 capState;
+  uint32 capDoId;
+};
+
+dclass TeamControlPoint : DistributedEntity {
+  int8 ownerTeam;
+};
+
+dclass TeamControlPointMaster : DistributedObject {
+};
+
+dclass TeamRoundTimer : DistributedObject {
+  uint16 timeLeftInteger;
+  uint8 timerIsSetup;
+  int8 team;
+  uint8 enabled;
 };

@@ -39,9 +39,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         DistributedObject.__init__(self)
         DistributedGameBase.__init__(self)
 
-        self.roundTimeText = OnscreenText("", pos=(0, 0.85 + 0.08), fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), align=TextNode.ACenter)
-        self.lastRoundTimeText = ""
-
         self.ssMgr = SoundscapeManager()
 
         self.sky = None
@@ -93,25 +90,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         print("Rendering cube maps...")
         r = CubemapRendering()
         r.renderCubemaps(self.lvlData)
-
-    def __updateRoundTimer(self, task):
-        self.updateRoundTimer()
-        return task.cont
-
-    def updateRoundTimer(self):
-        roundTimeRemaining = int(max(0.0, self.roundEndTime - globalClock.frame_time))
-        minutes = roundTimeRemaining // 60
-        seconds = roundTimeRemaining % 60
-
-        if self.inSetup():
-            text = "Setup"
-        else:
-            text = ""
-        text += "\n"
-        text += str(minutes) + ":" + str(seconds).zfill(2)
-        if text != self.lastRoundTimeText:
-            self.roundTimeText.setText(text)
-            self.lastRoundTimeText = text
 
     def toggleVisDebug(self):
         self.visDebug = not self.visDebug
@@ -218,8 +196,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         base.game = self
         self.changeLevel(self.levelName)
         self.worldLoaded()
-
-        self.addTask(self.__updateRoundTimer, 'updateRoundTimer', sim=True, appendTask=True)
 
     def __updateCascadeLight(self, task):
         if not self.clnp:
@@ -696,9 +672,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if self.contextLbl:
             self.contextLbl.destroy()
             self.contextLbl = None
-        if self.roundTimeText:
-            self.roundTimeText.destroy()
-            self.roundTimeText = None
         base.game = None
         DistributedObject.delete(self)
         DistributedGameBase.delete(self)

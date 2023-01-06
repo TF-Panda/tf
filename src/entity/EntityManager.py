@@ -5,20 +5,33 @@ import re
 class EntityManager:
 
     def __init__(self):
-        self.targetName2ent = {}
+        self.ents = []
 
-    def findEntity(self, pattern):
-        return [self.targetName2ent[x] for x in self.targetName2ent.keys() if re.search(pattern, x)]
+    def findAllEntities(self, pattern):
+        ents = []
+        for e in self.ents:
+            if re.search(pattern, e.targetName):
+                ents.append(e)
+        return ents
 
     def findExactEntity(self, name):
-        return self.targetName2ent.get(name, None)
+        for e in self.ents:
+            if e.targetName == name:
+                return e
+        return None
+
+    def findAllEntitiesByClassName(self, className):
+        ents = []
+        for e in self.ents:
+            if e.className == className:
+                ents.append(e)
+        return ents
 
     def registerEntity(self, ent):
+        assert ent not in self.ents
         if ent.targetName:
-            self.targetName2ent[ent.targetName] = ent
-
-        #print(self.targetName2ent)
+            self.ents.append(ent)
 
     def removeEntity(self, ent):
-        if ent.targetName and ent.targetName in self.targetName2ent:
-            del self.targetName2ent[ent.targetName]
+        if ent in self.ents:
+            self.ents.remove(ent)

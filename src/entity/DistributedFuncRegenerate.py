@@ -35,7 +35,7 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                 return self.associatedModel
 
             if self.modelTargetName:
-                self.associatedModel = base.entMgr.targetName2ent.get(self.modelTargetName)
+                self.associatedModel = base.entMgr.findExactEntity(self.modelTargetName)
 
             return self.associatedModel
 

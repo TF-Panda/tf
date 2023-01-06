@@ -157,7 +157,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             self.updateParentEntity()
         else:
             if self.parentEntityName:
-                parentEnt = base.entMgr.targetName2ent.get(self.parentEntityName)
+                parentEnt = base.entMgr.findExactEntity(self.parentEntityName)
                 if parentEnt is not None:
                     self.setParentEntityId(parentEnt.doId)
             else:

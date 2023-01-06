@@ -26,7 +26,6 @@ class DistributedGameBase:
         # Game mode/round system vars.
         self.gameMode = GameMode.Arena
         self.roundNumber = 0
-        self.roundEndTime = 0
         self.roundState = RoundState.Setup
         self.winTeam = TFTeam.NoTeam
 

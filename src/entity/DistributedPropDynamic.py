@@ -24,6 +24,9 @@ class DistributedPropDynamic(BaseClass):
 
     if not IS_CLIENT:
 
+        def input_Skin(self, caller, skin):
+            self.skin = int(skin)
+
         def setAnimation(self, animName):
             self.setAnim(animName, layer=0)
             self.animation = self.getCurrentAnim()
