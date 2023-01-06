@@ -169,3 +169,4 @@ dir $DMODELS/built/shaders shaders
 multifile levels.mf.pz
 file $PLAYER/ctf_2fort.bam .
 file $PLAYER/arena_lumberyard.bam .
+file $PLAYER/cp_gorge.bam .
