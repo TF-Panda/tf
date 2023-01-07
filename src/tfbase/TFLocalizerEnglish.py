@@ -232,6 +232,7 @@ ChatJoinedTeamAuto = "%s was automatically assigned to team %s."
 ChatYouWillRespawnAs = "*You will spawn as %s."
 ChatCannotChangeClass = "You can't change class at this time."
 ChatCannotChangeTeam = "You can't change team at this time."
+TF_TeamsSwitched = "Teams have been switched."
 
 TimerSetup = "Setup"
 TimerOverTime = "Overtime!"
