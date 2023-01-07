@@ -897,8 +897,8 @@ def getOverhealedEffect(team):
         colorLerp.addSegment(l0)
         system.addFunction(colorLerp)
 
-        system.addFunction(LifespanKillerParticleFunction(0.5))
-        system.addFunction(LinearMotionParticleFunction())
+        system.addFunction(LifespanKillerParticleFunction())
+        system.addFunction(LinearMotionParticleFunction(0.5))
 
         renderer = SpriteParticleRenderer2()
         renderer.setRenderState(RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/healsign.mto")),
