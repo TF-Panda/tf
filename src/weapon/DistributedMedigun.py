@@ -347,15 +347,15 @@ class DistributedMedigun(TFWeaponGun):
     if IS_CLIENT:
         def makeHealBeamParticle(self):
             if self.isOwnedByLocalPlayer():
-                self.healBeamSourceNode = self.player.viewModel.find("**/muzzle")
+                self.healBeamSourceNode = self.player.viewModel.find("**/muzzle").attachNewNode("healBeamSource")
             else:
-                self.healBeamSourceNode = self.player.find("**/muzzle")
+                self.healBeamSourceNode = self.player.find("**/muzzle").attachNewNode("healBeamSource")
 
             healBeamTargetNode = self.getHealingTarget().attachNewNode("healTarget")
             healBeamTargetNode.setPos(0, 0, 48)
 
             sys = TFEffects.getMedigunHealBeam(self.player.team)
-            sys.setInput(0, self.healBeamSourceNode, False) # medigun muzzle
+            sys.setInput(0, self.healBeamSourceNode, True) # medigun muzzle
             sys.setInput(1, healBeamTargetNode, True) # heal target
 
             return sys
