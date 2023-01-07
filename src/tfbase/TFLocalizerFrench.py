@@ -9,7 +9,7 @@ TFDisclaimer = 'Team Fortress and the Team Fortress logo are registered trademar
                'Panda3D is Copyright (c) Carnegie Mellon University.  ' \
                'FMOD Studio is Copyright (c) Firelight Technologies Pty Ltd.'
 
-Loading = "Chargement en cours..."
+Loading = "Chargement..."
 MainMenuStartPlaying = 'Jouer Maintenant'
 
 Quit = 'Quitter'
@@ -233,6 +233,5 @@ ChatYouWillRespawnAs = "* Vous commencerez en tant que %s."
 ChatCannotChangeClass = "Impossible de changer de classe pour l'instant."
 ChatCannotChangeTeam = "Impossible de changer d'équipe pour l'instant."
 
-# Fix this bob.
-TimerOverTime = "Overtime!"
-TimerSetup = "Setup"
+TimerOverTime = "Temps suppl."
+TimerSetup = "Configuration"
