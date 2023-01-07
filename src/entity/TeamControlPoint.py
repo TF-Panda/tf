@@ -8,7 +8,8 @@ class TeamControlPoint(DistributedEntity):
 
     def __init__(self):
         DistributedEntity.__init__(self)
-        self.teamPreviousPoint = {}
+        self.teamPreviousPointNames = {}
+        self.teamPreviousPoints = {}
         self.ownerTeam = TFGlobals.TFTeam.NoTeam
         self.defaultOwner = TFGlobals.TFTeam.NoTeam
         self.pointIndex = 0
@@ -33,6 +34,22 @@ class TeamControlPoint(DistributedEntity):
                 self.pointIndex = props.getAttributeValue("point_index").getInt()
             if props.hasAttribute("point_group"):
                 self.pointGroup = props.getAttributeValue("point_group").getInt()
+            if props.hasAttribute("team_previouspoint_2_0"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Red] = [props.getAttributeValue("team_previouspoint_2_0").getString()]
+            if props.hasAttribute("team_previouspoint_2_1"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Red].append(props.getAttributeValue("team_previouspoint_2_1").getString())
+            if props.hasAttribute("team_previouspoint_2_2"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Red].append(props.getAttributeValue("team_previouspoint_2_2").getString())
+            if props.hasAttribute("team_previouspoint_2_3"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Red].append(props.getAttributeValue("team_previouspoint_2_3").getString())
+            if props.hasAttribute("team_previouspoint_3_0"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Blue] = [props.getAttributeValue("team_previouspoint_3_0").getString()]
+            if props.hasAttribute("team_previouspoint_3_1"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Blue].append(props.getAttributeValue("team_previouspoint_3_1").getString())
+            if props.hasAttribute("team_previouspoint_3_2"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Blue].append(props.getAttributeValue("team_previouspoint_3_2").getString())
+            if props.hasAttribute("team_previouspoint_3_3"):
+                self.teamPreviousPointNames[TFGlobals.TFTeam.Blue].append(props.getAttributeValue("team_previouspoint_3_3").getString())
 
         def capturedByTeam(self, team):
             self.ownerTeam = team
@@ -50,8 +67,12 @@ class TeamControlPoint(DistributedEntity):
             self.updateHologramNode()
             self.spinIval = self.hologramModel.modelNp.hprInterval(5.0, (360, 0, 0), (0, 0, 0))
             self.spinIval.loop()
-
-            self.ls()
+        else:
+            # Get the points necessary to be captured to before capping this point.
+            for team in self.teamPreviousPointNames.keys():
+                self.teamPreviousPoints[team] = []
+                for pointName in self.teamPreviousPointNames[team]:
+                    self.teamPreviousPoints[team].append(base.entMgr.findExactEntity(pointName))
 
     def disable(self):
         if IS_CLIENT:
@@ -59,6 +80,8 @@ class TeamControlPoint(DistributedEntity):
             self.spinIval = None
             self.hologramModel.cleanup()
             self.hologramModel = None
+        self.teamPreviousPointNames = None
+        self.teamPreviousPoints = None
         DistributedEntity.disable(self)
 
 if not IS_CLIENT:

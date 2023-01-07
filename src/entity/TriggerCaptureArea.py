@@ -66,9 +66,22 @@ class TriggerCaptureArea(DistributedTrigger):
                     self.capState = self.CSBlocked
                     return task.cont
 
+            teamCanCap = (teamOnCap is not None) and (teamOnCap in self.canCapTeams)
+            if teamCanCap:
+                # Check that they have all the required points captured to cap
+                # this point.
+                prevList = self.capPoint.teamPreviousPoints.get(teamOnCap, [])
+                allCapped = True
+                for p in prevList:
+                    if p.ownerTeam != teamOnCap:
+                        allCapped = False
+                        break
+                if not allCapped:
+                    teamCanCap = False
+
             # If only one team is on the cap, and that team is allowed to
             # cap, increment progress towards capture.
-            if teamOnCap is not None and teamOnCap in self.canCapTeams:
+            if teamCanCap:
 
                 if self.teamProgress != teamOnCap and self.capProgress > 0:
                     # Another team has progress on the capture, start reverting it.
@@ -77,7 +90,6 @@ class TriggerCaptureArea(DistributedTrigger):
                     self.capState = self.CSReverting
                     self.capProgress -= self.calcProgressDelta(teamOnCap)
                     self.capProgress = max(0.0, self.capProgress)
-                    print("revert", self.capProgress)
 
                 elif self.capProgress < 1:
                     # We can start capturing it.
@@ -95,8 +107,6 @@ class TriggerCaptureArea(DistributedTrigger):
                             self.connMgr.fireOutput("OnCapTeam2")
                         else:
                             self.connMgr.fireOutput("OnCapTeam1")
-                    else:
-                        print("inc", self.capProgress)
 
             elif self.capProgress < 1:
                 # Nobody is on the cap or the team on the cap can't capture
@@ -104,11 +114,10 @@ class TriggerCaptureArea(DistributedTrigger):
                 self.capState = self.CSIdle
                 if self.teamProgress != TFGlobals.TFTeam.NoTeam and self.capProgress > 0:
                     timeToCap = self.timeToCap * 2 * self.numRequiredToCap[self.teamProgress]
-                    step = (1.0 / timeToCap) * globalClock.dt * 90
+                    step = (1.0 / (timeToCap / 90)) * globalClock.dt
                     # TODO: increase by 6 if overtime
                     self.capProgress -= step
                     self.capProgress = max(0.0, self.capProgress)
-                    print("decay", self.capProgress)
                 else:
                     self.capProgress = 0
 
