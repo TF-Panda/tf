@@ -113,10 +113,10 @@ class TriggerCaptureArea(DistributedTrigger):
                 # (they're a defender).  Decay the progress down to 0.
                 self.capState = self.CSIdle
                 if self.teamProgress != TFGlobals.TFTeam.NoTeam and self.capProgress > 0:
-                    timeToCap = self.timeToCap * 2 * self.numRequiredToCap[self.teamProgress]
-                    step = (1.0 / (timeToCap / 90)) * globalClock.dt
+                    decrease = self.timeToCap * 2 * self.numRequiredToCap[self.teamProgress]
+                    decrease /= 3.0
                     # TODO: increase by 6 if overtime
-                    self.capProgress -= step
+                    self.capProgress -= (1.0 / decrease) * globalClock.dt
                     self.capProgress = max(0.0, self.capProgress)
                 else:
                     self.capProgress = 0
