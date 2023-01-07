@@ -1079,7 +1079,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.accept(',', self.doChangeClass)
         self.accept('.', self.doChangeTeam)
         self.accept('i', self.sendUpdate, ['reloadResponses'])
-        self.accept('y', self.chatFeed.showChatEntry)
+
+        # All-chat.
+        self.accept('y', self.chatFeed.showChatEntry, [False])
+        # Team-chat
+        self.accept('u', self.chatFeed.showChatEntry, [True])
 
         self.createVoiceCommandMenus()
 

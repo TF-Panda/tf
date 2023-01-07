@@ -57,6 +57,7 @@ class ChatFeed:
 
         self.chatEntry = None
         self.suppressFrame = None
+        self.teamOnlyChat = False
 
     def hideChatEntry(self):
         #if self.suppressFrame:
@@ -66,9 +67,11 @@ class ChatFeed:
             self.chatEntry.destroy()
             self.chatEntry = None
 
-    def showChatEntry(self):
+    def showChatEntry(self, teamOnly):
         if self.chatEntry:
             return
+
+        self.teamOnlyChat = teamOnly
 
         base.localAvatar.disableControls()
 
@@ -85,9 +88,9 @@ class ChatFeed:
         # Don't send empty chats.  Server also checks this.
         if text:
             # Send to server so it can relay the chat to other clients.
-            base.localAvatar.sendUpdate('say', [text, 0])
+            base.localAvatar.sendUpdate('say', [text, self.teamOnlyChat])
             # Display on our end immediately.
-            base.localAvatar.playerChat(text, 0)
+            base.localAvatar.playerChat(text, self.teamOnlyChat)
         base.localAvatar.enableControls()
         self.hideChatEntry()
 
