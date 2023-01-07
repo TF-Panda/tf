@@ -121,6 +121,8 @@ class TriggerCaptureArea(DistributedTrigger):
                 else:
                     self.capProgress = 0
 
+            self.capPoint.capProgress = self.capProgress
+
             return task.cont
 
         def onEntityStartTouch(self, entity):

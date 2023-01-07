@@ -621,9 +621,13 @@ dclass TriggerCaptureArea : DistributedTrigger {
 
 dclass TeamControlPoint : DistributedEntity {
   int8 ownerTeam;
+  int8 defaultOwner;
+  uint8 capProgress / 100;
 };
 
 dclass TeamControlPointMaster : DistributedObject {
+  uint32 pointDoIds[];
+  int8 pointLayout[];
 };
 
 dclass TeamRoundTimer : DistributedObject {

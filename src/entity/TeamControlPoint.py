@@ -11,6 +11,7 @@ class TeamControlPoint(DistributedEntity):
         self.teamPreviousPointNames = {}
         self.teamPreviousPoints = {}
         self.ownerTeam = TFGlobals.TFTeam.NoTeam
+        self.capProgress = 0.0
         self.defaultOwner = TFGlobals.TFTeam.NoTeam
         self.pointIndex = 0
         self.pointGroup = 0
@@ -18,8 +19,15 @@ class TeamControlPoint(DistributedEntity):
 
     if IS_CLIENT:
         def RecvProxy_ownerTeam(self, team):
-            self.ownerTeam = team
-            self.updateHologramNode()
+            if team != self.ownerTeam:
+                self.ownerTeam = team
+                self.updateHologramNode()
+                messenger.send('ControlPointOwnerTeamChanged', [self])
+
+        def RecvProxy_capProgress(self, prog):
+            if prog != self.capProgress:
+                self.capProgress = prog
+                messenger.send('ControlPointProgressChanged', [self])
 
         def updateHologramNode(self):
             if self.hologramModel:

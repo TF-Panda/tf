@@ -22,6 +22,9 @@ class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
         self.restrictWinTeam = self.RestrictNeither
         self.switchTeams = False
 
+        self.pointDoIds = []
+        self.pointLayout = []
+
     def isNetworkedEntity(self):
         return True
 
@@ -38,11 +41,17 @@ class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
 
         self.rounds = base.entMgr.findAllEntitiesByClassName("team_control_point_round")
         self.points = base.entMgr.findAllEntitiesByClassName("team_control_point")
+        # Sort points by index.
+        self.points.sort(key=lambda x: x.pointIndex)
+        self.pointDoIds = [x.doId for x in self.points]
+        self.pointLayout = [i for i in range(len(self.points))]
         self.accept('controlPointCapped', self.onPointCapped)
 
     def delete(self):
         self.rounds = None
         self.points = None
+        self.pointDoIds = None
+        self.pointLayout = None
         self.ignore('controlPointCapped')
         EntityBase.delete(self)
         DistributedObjectAI.delete(self)
