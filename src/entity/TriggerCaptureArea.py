@@ -166,9 +166,15 @@ class TriggerCaptureArea(DistributedTrigger):
     else:
         def announceGenerate(self):
             DistributedTrigger.announceGenerate(self)
+            self.getCapPoint()
 
+        def getCapPoint(self):
             self.capPoint = base.cr.doId2do.get(self.capDoId)
-            assert self.capPoint
+
+        def RecvProxy_capDoId(self, doId):
+            if not self.capPoint or doId != self.capDoId:
+                self.capDoId = doId
+                self.getCapPoint()
 
         def disable(self):
             if self.capSound:
@@ -181,7 +187,8 @@ class TriggerCaptureArea(DistributedTrigger):
             if self.capSound:
                 self.capSound.stop()
                 self.capSound = None
-            self.capSound = self.capPoint.emitSoundSpatial(soundName)
+            if self.capPoint:
+                self.capSound = self.capPoint.emitSoundSpatial(soundName)
 
         def RecvProxy_capState(self, state):
             self.setCapState(state)
