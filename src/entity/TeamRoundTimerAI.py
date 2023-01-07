@@ -23,6 +23,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
         self.enabled = True
 
         self.timerIsSetup = False
+        self.inOverTime = False
 
     def stopTimer(self):
         self.removeTask('timerUpdate')
@@ -82,6 +83,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
         self.connMgr.fireOutput("OnRoundStart")
         self.running = True
         self.enabled = True
+        self.inOverTime = True
 
     def __timerUpdate(self, task):
         prevTime = self.timeLeft
@@ -95,9 +97,20 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                 # Start the normal round timer.
                 base.game.beginRound()
                 self.startTimer()
+                return task.done
             else:
-                self.connMgr.fireOutput("OnFinished")
-            return task.done
+                if base.game.canFinishRound():
+                    self.connMgr.fireOutput("OnFinished")
+                    return task.done
+                elif not self.inOverTime:
+                    self.inOverTime = True
+                    base.game.inOverTime = True
+                    # Overtime!
+                    base.world.emitSound("Game.Overtime")
+                return task.cont
+
+        self.inOverTime = False
+        base.game.inOverTime = False
 
         time = self.timeLeft
 
@@ -201,6 +214,8 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
             self.timerLength = props.getAttributeValue("timer_length").getFloat()
         if props.hasAttribute("auto_countdown"):
             self.autoCountdown = props.getAttributeValue("auto_countdown").getBool()
+        self.setupLength = 5
+        self.timerLength = 30
 
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)

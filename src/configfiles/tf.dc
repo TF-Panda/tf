@@ -635,4 +635,5 @@ dclass TeamRoundTimer : DistributedObject {
   uint8 timerIsSetup;
   int8 team;
   uint8 enabled;
+  uint8 inOverTime;
 };

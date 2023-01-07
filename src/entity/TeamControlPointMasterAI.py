@@ -25,6 +25,12 @@ class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
         self.pointDoIds = []
         self.pointLayout = []
 
+    def areAllPointsIdle(self):
+        for p in self.points:
+            if p.capProgress > 0 and p.capProgress < 1:
+                return False
+        return True
+
     def isNetworkedEntity(self):
         return True
 
@@ -38,6 +44,8 @@ class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)
         EntityBase.announceGenerate(self)
+
+        base.game.controlPointMaster = self
 
         self.rounds = base.entMgr.findAllEntitiesByClassName("team_control_point_round")
         self.points = base.entMgr.findAllEntitiesByClassName("team_control_point")
@@ -53,6 +61,7 @@ class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
         self.pointDoIds = None
         self.pointLayout = None
         self.ignore('controlPointCapped')
+        base.game.controlPointMaster = None
         EntityBase.delete(self)
         DistributedObjectAI.delete(self)
 

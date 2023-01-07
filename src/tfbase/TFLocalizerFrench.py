@@ -232,3 +232,7 @@ ChatJoinedTeamAuto = "Le joueur %s a rejoint automatiquement l'équipe %s."
 ChatYouWillRespawnAs = "* Vous commencerez en tant que %s."
 ChatCannotChangeClass = "Impossible de changer de classe pour l'instant."
 ChatCannotChangeTeam = "Impossible de changer d'équipe pour l'instant."
+
+# Fix this bob.
+TimerOverTime = "Overtime!"
+TimerSetup = "Setup"

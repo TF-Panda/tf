@@ -2,7 +2,7 @@
 
 from direct.distributed2.DistributedObject import DistributedObject
 
-from tf.tfbase import TFGlobals
+from tf.tfbase import TFGlobals, TFLocalizer
 
 from direct.gui.DirectGui import OnscreenText, DGG
 
@@ -12,6 +12,7 @@ class TeamRoundTimer(DistributedObject):
         DistributedObject.__init__(self)
         self.timeLeftInteger = 0
         self.timerIsSetup = False
+        self.inOverTime = False
         self.team = TFGlobals.TFTeam.NoTeam
         self.enabled = False
 
@@ -37,14 +38,18 @@ class TeamRoundTimer(DistributedObject):
             self.textLbl.hide()
 
     def updateTimerText(self):
-        minutes = self.timeLeftInteger // 60
-        seconds = self.timeLeftInteger % 60
-
-        if self.timerIsSetup:
-            text = "Setup\n"
+        if self.inOverTime:
+            text = TFLocalizer.TimerOverTime
         else:
-            text = ""
-        text += str(minutes) + ":" + str(seconds).zfill(2)
+            minutes = self.timeLeftInteger // 60
+            seconds = self.timeLeftInteger % 60
+
+            if self.timerIsSetup:
+                text = TFLocalizer.TimerSetup + "\n"
+            else:
+                text = ""
+            text += str(minutes) + ":" + str(seconds).zfill(2)
+
         if text != self.lastRoundTimeText:
             self.textLbl['text'] = text
             self.lastRoundTimeText = text

@@ -61,10 +61,25 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.switchTeamsOnNewRound = False
         self.forceMapReset = False
+        self.inOverTime = False
+        self.controlPointMaster = None
 
         self.levelEnts = []
 
         self.allPlayers = {}
+
+    def canFinishRound(self):
+        """
+        Returns True if the round can finish right now, or False if the round
+        be in overtime.
+        """
+
+        # If we're playing control points, don't end the round if a control point
+        # has progress on a capture.
+        if self.controlPointMaster:
+            return self.controlPointMaster.areAllPointsIdle()
+
+        return True
 
     def d_setGameContextMessage(self, id, duration, aboutTeam, forTeam=None, forPlayer=None, exclude=[]):
         if forTeam is not None:
@@ -207,6 +222,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.switchTeamsOnNewRound = False
         self.forceMapReset = False
+        self.inOverTime = False
 
         if self.roundState == RoundState.Playing:
             self.beginRound()
@@ -217,6 +233,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             base.world.emitSound("Ambient.Siren")
         self.roundState = RoundState.Playing
         self.winTeam = TFTeam.NoTeam
+        self.inOverTime = False
 
         self.gameModeImpl.onBeginRound()
 
@@ -224,6 +241,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.notify.info("End round %i" % self.roundNumber)
         self.roundState = RoundState.Ended
         self.roundEndTime = globalClock.frame_time + 15.0
+        self.inOverTime = False
         if self.roundTimer:
             # Abort the round timer.
             self.roundTimer.stopTimer()
