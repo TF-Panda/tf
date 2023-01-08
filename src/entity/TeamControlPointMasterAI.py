@@ -14,6 +14,7 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
         self.rounds = []
         self.currentRound = None
         self.roundIndex = -1
+        self.lastCapTime = 0.0
 
         self.switchTeams = False
 
@@ -40,8 +41,13 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
 
     def areAllPointsIdle(self):
         if self.currentRound:
-            return self.currentRound.areAllPointsIdle()
-        return TeamControlPointManagerAI.areAllPointsIdle(self)
+            ret = self.currentRound.areAllPointsIdle()
+        else:
+            ret = TeamControlPointManagerAI.areAllPointsIdle(self)
+
+        # Points are idle if they all have full or no progress, and a point
+        # hasn't been capped recently.  (Works around entity I/O race condition).
+        return ret and (globalClock.frame_time - self.lastCapTime) >= 0.1
 
     def setRound(self, index):
         assert self.rounds and not self.points
@@ -136,6 +142,8 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
         """
 
         #assert point in self.points
+
+        self.lastCapTime = globalClock.frame_time
 
         # Check if all points are owned by one team, if so, that team wins.
         self.checkWinner()
