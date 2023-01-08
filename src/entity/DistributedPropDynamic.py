@@ -95,6 +95,8 @@ class DistributedPropDynamic(BaseClass):
                         self.setAnimation(animName)
                     else:
                         self.setAnimation(0)
+                else:
+                    print("prop_dynamic model", fname, "does not exist, port it!")
 
     else:
 
