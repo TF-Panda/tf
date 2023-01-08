@@ -88,11 +88,13 @@ class DistributedFuncDoor(DistributedSolidEntity):
             if self.doorState <= self.DSClosing:
                 self.doorState = self.DSOpening
                 self.emitSoundSpatial("DoorSound.DefaultMove")
+                self.connMgr.fireOutput("OnOpen")
 
         def closeDoor(self):
             if self.doorState >= self.DSOpening:
                 self.doorState = self.DSClosing
                 self.emitSoundSpatial("DoorSound.DefaultMove")
+                self.connMgr.fireOutput("OnClose")
 
         def __doorUpdate(self, task):
 
