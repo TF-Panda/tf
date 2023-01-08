@@ -63,6 +63,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.forceMapReset = False
         self.inOverTime = False
         self.controlPointMaster = None
+        self.roundTimer = None
 
         self.levelEnts = []
 
