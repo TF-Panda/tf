@@ -65,6 +65,9 @@ class DistributedPropDynamic(BaseClass):
         def input_Disable(self, caller):
             self.setEnabled(False)
 
+        def input_SetAnimation(self, caller, animName):
+            self.setAnimation(animName)
+
         def setAnimation(self, animName):
             self.setAnim(animName, layer=0)
             self.animation = self.getCurrentAnim()
