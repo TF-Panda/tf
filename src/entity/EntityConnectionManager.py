@@ -18,6 +18,17 @@ class EntityConnectionManager:
     def __init__(self, entity):
         self.entity = entity
         self.outputs = {}
+        self.delayedTasks = set()
+
+    def __delayedConnectionTask(self, func, params, task):
+        # FIXME: Need to check that the entity we're calling still exists.
+        if task in self.delayedTasks:
+            self.delayedTasks.remove(task)
+        if params:
+            func(self.entity, *params)
+        else:
+            func(self.entity)
+        return task.done
 
     def addConnection(self, outputName, connection):
         connections = self.outputs.get(outputName, [])
@@ -27,6 +38,9 @@ class EntityConnectionManager:
     def cleanup(self):
         self.entity = None
         self.outputs = None
+        for t in self.delayedTasks:
+            t.remove()
+        self.delayedTasks = None
 
     def getConnectionEntity(self, targetName, activator, caller):
         if targetName == '!self':
@@ -51,16 +65,22 @@ class EntityConnectionManager:
             if not ents:
                 self.notify.warning(f'Output {name} is connected to non-existent entity {connection.targetEntityName}.')
                 continue
-            # TODO: Delays
             funcName = 'input_' + connection.inputName
             params = connection.parameters + extraArgs
             for ent in ents:
                 func = getattr(ent, funcName, None)
                 if func:
-                    if params:
-                        func(self.entity, *params)
+                    if connection.delay > 0.0:
+                        # Add a task to fire it later.
+                        task = base.simTaskMgr.doMethodLater(connection.delay, self.__delayedConnectionTask,
+                            'delayedConnection', extraArgs=[func, params], appendTask=True)
+                        self.delayedTasks.add(task)
                     else:
-                        func(self.entity)
+                        # Fire it immediately.
+                        if params:
+                            func(self.entity, *params)
+                        else:
+                            func(self.entity)
                 else:
                     self.notify.warning(f'Handling output {name} from entity {self.entity.__class__}, input method {funcName} does not exist on entity {ent.__class__}.')
             if connection.once:
