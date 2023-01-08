@@ -15,19 +15,41 @@ class EntityConnectionManager:
 
     notify = directNotify.newCategory('EntityConnectionManager')
 
+    GlobalIOQueue = []
+
     def __init__(self, entity):
         self.entity = entity
         self.outputs = {}
         self.delayedTasks = set()
 
-    def __delayedConnectionTask(self, func, params, task):
+    def processIOQueue(task):
+        if not EntityConnectionManager.GlobalIOQueue:
+            return task.cont
+
+        # Hold a temporary reference to the current queue, clear
+        # the global queue, and iterate over the temporary queue.
+        # This allows a new queue to be built up this frame while
+        # we fire the inputs of the previous queue.
+
+        theQueue = EntityConnectionManager.GlobalIOQueue
+        EntityConnectionManager.GlobalIOQueue = list()
+        for entity, targetEnt, func, params in theQueue:
+            if entity.connMgr is None or targetEnt.connMgr is None:
+                # Source or target entity was deleted.
+                continue
+            # Fire the input.
+            if params:
+                func(entity, *params)
+            else:
+                func(entity)
+
+        return task.cont
+
+    def __delayedConnectionTask(self, entity, targetEnt, func, params, task):
         # FIXME: Need to check that the entity we're calling still exists.
         if task in self.delayedTasks:
             self.delayedTasks.remove(task)
-        if params:
-            func(self.entity, *params)
-        else:
-            func(self.entity)
+        EntityConnectionManager.GlobalIOQueue.append((entity, targetEnt, func, params))
         return task.done
 
     def addConnection(self, outputName, connection):
@@ -73,14 +95,11 @@ class EntityConnectionManager:
                     if connection.delay > 0.0:
                         # Add a task to fire it later.
                         task = base.simTaskMgr.doMethodLater(connection.delay, self.__delayedConnectionTask,
-                            'delayedConnection', extraArgs=[func, params], appendTask=True)
+                            'delayedConnection', extraArgs=[self.entity, ent, func, params], appendTask=True)
                         self.delayedTasks.add(task)
                     else:
                         # Fire it immediately.
-                        if params:
-                            func(self.entity, *params)
-                        else:
-                            func(self.entity)
+                        EntityConnectionManager.GlobalIOQueue.append((self.entity, ent, func, params))
                 else:
                     self.notify.warning(f'Handling output {name} from entity {self.entity.__class__}, input method {funcName} does not exist on entity {ent.__class__}.')
             if connection.once:

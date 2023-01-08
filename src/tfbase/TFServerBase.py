@@ -5,6 +5,7 @@ from tf.distributed.TFServerRepository import TFServerRepository
 
 from tf.tfbase import Sounds, TFGlobals, SurfaceProperties
 from tf.entity.EntityManager import EntityManager
+from tf.entity.EntityConnectionManager import EntityConnectionManager
 
 from panda3d.core import *
 from panda3d.pphysics import *
@@ -53,6 +54,8 @@ class TFServerBase(HostBase):
         self.simTaskMgr.add(self.__physicsUpdate, 'serverPhysicsUpdate', sort = 50)
 
         self.entMgr = EntityManager()
+
+        self.simTaskMgr.add(EntityConnectionManager.processIOQueue, 'processEntityIOQueue', sort=0)
 
         self.sv = TFServerRepository(self.config.GetInt("sv_port", 6667))
         self.air = self.sv
