@@ -29,8 +29,8 @@ class EntityManager:
 
     def registerEntity(self, ent):
         assert ent not in self.ents
-        if ent.targetName:
-            self.ents.append(ent)
+        #if ent.targetName:
+        self.ents.append(ent)
 
     def removeEntity(self, ent):
         if ent in self.ents:

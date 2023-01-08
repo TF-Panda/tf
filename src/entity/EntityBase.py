@@ -19,7 +19,7 @@ class EntityBase(DirectObject):
         self.className = ent.getClassName()
         if properties.hasAttribute("targetname"):
             self.targetName = properties.getAttributeValue("targetname").getString()
-            base.entMgr.registerEntity(self)
+        base.entMgr.registerEntity(self)
 
         for i in range(ent.getNumConnections()):
             conn = ent.getConnection(i)
