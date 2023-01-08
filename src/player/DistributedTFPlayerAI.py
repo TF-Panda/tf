@@ -1162,9 +1162,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         #self.setActiveWeapon(0)
 
         # Select a random spawn location.
-        spawnPoints = [x for x in base.game.teamSpawns if x.enabled and x.team == self.team]
-        assert spawnPoints
-        spawnPoint = random.choice(spawnPoints)
+        spawnPoint = base.game.getSpawnPointForPlayer(self)
         origin = spawnPoint.spawnPos
         angles = spawnPoint.spawnHpr
         # Trace player hull down to find ground.

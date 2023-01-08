@@ -133,7 +133,7 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                 if base.game.isRoundEnded():
                     if entity.team != base.game.winTeam:
                         continue
-                elif entity.team != self.team:
+                elif self.team >= 0 and entity.team != self.team:
                     continue
 
                 lastRegenTime = self.lastRegenTimes.get(entity.doId, 0.0)

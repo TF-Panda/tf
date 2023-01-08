@@ -402,7 +402,7 @@ class DistributedGameBase:
                     mat = mattr.getMaterial()
                     if mat and isinstance(mat, SkyBoxMaterial):
                         gn.removeGeom(i)
-                        self.skyFaceRoot.node().addGeom(geom.makeCopy(), state)
+                        #self.skyFaceRoot.node().addGeom(geom.makeCopy(), state)
 
         self.skyFaceRoot.flattenLight()
 

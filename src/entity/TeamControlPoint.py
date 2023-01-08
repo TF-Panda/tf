@@ -80,7 +80,10 @@ class TeamControlPoint(DistributedEntity):
             for team in self.teamPreviousPointNames.keys():
                 self.teamPreviousPoints[team] = []
                 for pointName in self.teamPreviousPointNames[team]:
-                    self.teamPreviousPoints[team].append(base.entMgr.findExactEntity(pointName))
+                    ent = base.entMgr.findExactEntity(pointName)
+                    if ent != self:
+                        # Don't depend on ourselves.
+                        self.teamPreviousPoints[team].append(ent)
 
     def disable(self):
         if IS_CLIENT:

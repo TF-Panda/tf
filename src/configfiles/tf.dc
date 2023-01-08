@@ -547,6 +547,7 @@ dclass DistributedTrigger : DistributedSolidEntity {
 dclass DistributedPropDynamic : DistributedChar {
   int16 animation;
   uint8 solid;
+  uint8 enabled;
 };
 
 dclass DistributedFuncRegenerate : DistributedSolidEntity { };

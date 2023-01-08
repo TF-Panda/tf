@@ -18,17 +18,25 @@ class DistributedFuncBrush(DistributedSolidEntity):
     if not IS_CLIENT:
         def initFromLevel(self, ent, props):
             DistributedSolidEntity.initFromLevel(self, ent, props)
+
             if props.hasAttribute("Solidity"):
                 self.isSolid = props.getAttributeValue("Solidity").getInt() != 1
             elif props.hasAttribute("solid"):
                 self.isSolid = props.getAttributeValue("solid").getBool()
-            elif props.hasAttribute("StartDisabled"):
+
+            if props.hasAttribute("StartDisabled"):
                 self.enabled = not props.getAttributeValue("StartDisabled").getBool()
 
         def input_Disable(self, caller):
             self.setEnabled(False)
 
+        def input_TurnOff(self, caller):
+            self.setEnabled(False)
+
         def input_Enable(self, caller):
+            self.setEnabled(True)
+
+        def input_TurnOn(self, caller):
             self.setEnabled(True)
     else:
         def RecvProxy_enabled(self, flag):

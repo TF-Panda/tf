@@ -21,14 +21,19 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
         self.running = False
         self.team = TFGlobals.TFTeam.NoTeam
         self.enabled = True
+        self.resetTimeOnNewRound = False
 
         self.timerIsSetup = False
         self.inOverTime = False
+
+        self.saveTimeLeft = 0
 
     def stopTimer(self):
         self.removeTask('timerUpdate')
         self.enabled = False
         self.running = False
+        # Keep track of the current time for when we start the new CP round.
+        self.saveTimeLeft = self.timeLeft
 
     def isNetworkedEntity(self):
         return True
@@ -45,13 +50,17 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
 
     def input_AddTime(self, caller, time):
         self.timeLeft += float(time)
-        base.world.emitSound("Announcer.TimeAdded")
+        if not base.game.isRoundEnded():
+            base.world.emitSound("Announcer.TimeAdded")
 
     def input_AddTeamTime(self, caller, data):
         data = data.split()
         rewardedTeam = int(data[0]) - 2
         time = float(data[1])
         self.timeLeft += time
+
+        if base.game.isRoundEnded():
+            return
 
         if rewardedTeam != TFGlobals.TFTeam.NoTeam:
             if random.random() < 0.25:
@@ -72,9 +81,13 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
         self.connMgr.fireOutput("OnSetupStart")
         self.running = True
         self.enabled = True
+        self.inOverTime = False
 
     def startTimer(self):
-        self.timeLeft = self.timerLength
+        if self.resetTimeOnNewRound or self.saveTimeLeft == 0:
+            self.timeLeft = self.timerLength
+        else:
+            self.timeLeft = self.saveTimeLeft
         self.timerIsSetup = False
         if self.startPaused:
             self.paused = True
@@ -83,7 +96,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
         self.connMgr.fireOutput("OnRoundStart")
         self.running = True
         self.enabled = True
-        self.inOverTime = True
+        self.inOverTime = False
 
     def __timerUpdate(self, task):
         prevTime = self.timeLeft
@@ -114,7 +127,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
 
         time = self.timeLeft
 
-        if prevTime > 1 and time <= 1:
+        if prevTime >= 1 and time < 1:
             self.connMgr.fireOutput("On1SecRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -124,7 +137,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 4 seconds.
                     base.world.emitSound("Announcer.RoundEnds1seconds")
 
-        elif prevTime > 2 and time <= 2:
+        elif prevTime >= 2 and time < 2:
             self.connMgr.fireOutput("On2SecRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -134,7 +147,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 4 seconds.
                     base.world.emitSound("Announcer.RoundEnds2seconds")
 
-        elif prevTime > 3 and time <= 3:
+        elif prevTime >= 3 and time < 3:
             self.connMgr.fireOutput("On3SecRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -144,7 +157,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 4 seconds.
                     base.world.emitSound("Announcer.RoundEnds3seconds")
 
-        elif prevTime > 4 and time <= 4:
+        elif prevTime >= 4 and time < 4:
             self.connMgr.fireOutput("On4SecRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -154,7 +167,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 4 seconds.
                     base.world.emitSound("Announcer.RoundEnds4seconds")
 
-        elif prevTime > 5 and time <= 5:
+        elif prevTime >= 5 and time < 5:
             self.connMgr.fireOutput("On5SecRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -164,7 +177,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 5 seconds.
                     base.world.emitSound("Announcer.RoundEnds5seconds")
 
-        elif prevTime > 10 and time <= 10:
+        elif prevTime >= 10 and time < 10:
             self.connMgr.fireOutput("On10SecRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -174,7 +187,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 10 seconds.
                     base.world.emitSound("Announcer.RoundEnds10seconds")
 
-        elif prevTime > 30 and time <= 30:
+        elif prevTime >= 30 and time < 30:
             self.connMgr.fireOutput("On30SecRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -184,7 +197,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 30 seconds.
                     base.world.emitSound("Announcer.RoundEnds30seconds")
 
-        elif prevTime > 60 and time <= 60:
+        elif prevTime >= 60 and time < 60:
             self.connMgr.fireOutput("On1MinRemain")
             if self.autoCountdown:
                 if self.timerIsSetup:
@@ -194,7 +207,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
                     # Mission ends in 60 seconds.
                     base.world.emitSound("Announcer.RoundEnds60seconds")
 
-        elif prevTime > 300 and time <= 300:
+        elif prevTime >= 300 and time < 300:
             self.connMgr.fireOutput("On5MinRemain")
             # Mission ends in 5 minutes.
             if not self.timerIsSetup and self.autoCountdown:
@@ -214,8 +227,8 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
             self.timerLength = props.getAttributeValue("timer_length").getFloat()
         if props.hasAttribute("auto_countdown"):
             self.autoCountdown = props.getAttributeValue("auto_countdown").getBool()
-        self.setupLength = 5
-        self.timerLength = 30
+        #self.setupLength = 5
+        #self.timerLength = 30
 
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)

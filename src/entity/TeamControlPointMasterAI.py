@@ -1,41 +1,80 @@
 """TeamControlPointMasterAI module: contains the TeamControlPointMasterAI class."""
 
-from .EntityBase import EntityBase
+from .TeamControlPointManagerAI import TeamControlPointManagerAI
 from direct.distributed2.DistributedObjectAI import DistributedObjectAI
 
 from tf.tfbase import TFGlobals
 
-class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
-
-    RestrictNeither = 0
-    RestrictBoth = 1
-    RestrictRed = 2
-    RestrictBlue = 3
+class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
 
     def __init__(self):
         DistributedObjectAI.__init__(self)
-        EntityBase.__init__(self)
+        TeamControlPointManagerAI.__init__(self)
+
         self.rounds = []
-        self.points = []
+        self.currentRound = None
         self.roundIndex = -1
-        # If not NoTeam, only this team can win by capping all the points.
-        self.restrictWinTeam = self.RestrictNeither
+
         self.switchTeams = False
 
         self.pointDoIds = []
         self.pointLayout = []
 
+    def canTeamWin(self, team):
+        if self.currentRound:
+            return self.currentRound.canTeamWin(team)
+        return TeamControlPointManagerAI.canTeamWin(self, team)
+
+    def onNewRound(self):
+        """
+        Messenger hook when the game manager starts a new round.
+        """
+
+        # If we have rounds, switch to the next round.
+        if self.rounds:
+            ret = self.nextRound()
+
+            # When the previous round ended, we checked that there
+            # is another round to play.  So this shouldn't fail.
+            assert ret
+
     def areAllPointsIdle(self):
-        for p in self.points:
-            if p.capProgress > 0 and p.capProgress < 1:
-                return False
+        if self.currentRound:
+            return self.currentRound.areAllPointsIdle()
+        return TeamControlPointManagerAI.areAllPointsIdle(self)
+
+    def setRound(self, index):
+        assert self.rounds and not self.points
+        self.roundIndex = index
+        r = self.rounds[index]
+        self.currentRound = r
+        self.pointDoIds = [x.doId for x in r.points]
+        self.pointLayout = [i for i in range(len(self.pointDoIds))]
+
+    def hasNextRound(self):
+        """
+        Returns True if there is another round to play after this one, or
+        False if this is the last round.
+        """
+        return (self.roundIndex + 1) < len(self.rounds)
+
+    def nextRound(self):
+        """
+        Switches the master to the next control point round.
+        Returns True if the switch was made, or False if there are no more
+        rounds to play.
+        """
+        index = self.roundIndex + 1
+        if index >= len(self.rounds):
+            return False
+        self.setRound(index)
         return True
 
     def isNetworkedEntity(self):
         return True
 
     def initFromLevel(self, ent, props):
-        EntityBase.initFromLevel(self, ent, props)
+        TeamControlPointManagerAI.initFromLevel(self, ent, props)
         if props.hasAttribute("cpm_restrict_team_cap_win"):
             self.restrictWinTeam = props.getAttributeValue("cpm_restrict_team_cap_win").getInt()
         if props.hasAttribute("switch_teams"):
@@ -43,17 +82,23 @@ class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
 
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)
-        EntityBase.announceGenerate(self)
+        TeamControlPointManagerAI.announceGenerate(self)
 
         base.game.controlPointMaster = self
 
         self.rounds = base.entMgr.findAllEntitiesByClassName("team_control_point_round")
-        self.points = base.entMgr.findAllEntitiesByClassName("team_control_point")
-        # Sort points by index.
-        self.points.sort(key=lambda x: x.pointIndex)
-        self.pointDoIds = [x.doId for x in self.points]
-        self.pointLayout = [i for i in range(len(self.points))]
+        if not self.rounds:
+            self.points = base.entMgr.findAllEntitiesByClassName("team_control_point")
+            # Sort points by index.
+            self.points.sort(key=lambda x: x.pointIndex)
+            self.pointDoIds = [x.doId for x in self.points]
+            self.pointLayout = [i for i in range(len(self.points))]
+        else:
+            # Sort rounds by decreasing priority number.
+            self.rounds.sort(key=lambda x: x.roundPriority, reverse=True)
+
         self.accept('controlPointCapped', self.onPointCapped)
+        self.accept('OnNewRound', self.onNewRound)
 
     def delete(self):
         self.rounds = None
@@ -62,41 +107,35 @@ class TeamControlPointMasterAI(DistributedObjectAI, EntityBase):
         self.pointLayout = None
         self.ignore('controlPointCapped')
         base.game.controlPointMaster = None
-        EntityBase.delete(self)
+        TeamControlPointManagerAI.delete(self)
         DistributedObjectAI.delete(self)
 
     def checkWinner(self):
-        if self.restrictWinTeam == self.RestrictBoth:
-            return
+        if self.currentRound:
+            winTeam = self.currentRound.checkWinner()
+        else:
+            winTeam = TeamControlPointManagerAI.checkWinner(self)
 
-        winTeam = None
-        for p in self.points:
-            if winTeam is None:
-                winTeam = p.ownerTeam
-            elif winTeam != p.ownerTeam:
-                winTeam = None
-                break
-
-        if winTeam is None:
-            return
-
-        if self.restrictWinTeam != self.RestrictNeither:
-            if self.restrictWinTeam == self.RestrictRed and winTeam == TFGlobals.TFTeam.Red:
-                return
-            elif self.restrictWinTeam == self.RestrictBlue and winTeam == TFGlobals.TFTeam.Blue:
-                return
-
-        # This team wins.
-        base.game.endRound(winTeam)
-        base.game.switchTeamsOnNewRound = self.switchTeams
-        base.game.forceMapReset = True # TODO
+        if winTeam is not None:
+            # This team wins.
+            base.game.endRound(winTeam)
+            if not self.rounds or not self.hasNextRound():
+                # This is the end of the full round, so switch teams
+                # and restart.
+                base.game.switchTeamsOnNewRound = self.switchTeams
+                base.game.forceMapReset = True #TODO
+            else:
+                # There is another CP round to play, so don't switch teams
+                # or reset.
+                base.game.switchTeamsOnNewRound = False
+                base.game.forceMapReset = False
 
     def onPointCapped(self, point):
         """
         Called by a team_control_point when it gets capped.
         """
 
-        assert point in self.points
+        #assert point in self.points
 
         # Check if all points are owned by one team, if so, that team wins.
         self.checkWinner()

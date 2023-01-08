@@ -36,6 +36,7 @@ from tf.entity.TeamRoundTimerAI import TeamRoundTimerAI
 from tf.entity.InfoPlayerTeamspawn import InfoPlayerTeamspawn
 from tf.entity.GameRoundWin import GameRoundWin
 from tf.entity.TeamControlPointMasterAI import TeamControlPointMasterAI
+from tf.entity.TeamControlPointRoundAI import TeamControlPointRoundAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -65,5 +66,6 @@ EntityRegistry = {
     "team_round_timer": TeamRoundTimerAI,
     "info_player_teamspawn": InfoPlayerTeamspawn,
     "game_round_win": GameRoundWin,
-    "team_control_point_master": TeamControlPointMasterAI
+    "team_control_point_master": TeamControlPointMasterAI,
+    "team_control_point_round": TeamControlPointRoundAI
 }

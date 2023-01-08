@@ -21,7 +21,8 @@ class DistributedTrigger(DistributedSolidEntity):
     if not IS_CLIENT:
         def announceGenerate(self):
             DistributedSolidEntity.announceGenerate(self)
-            self.initializeCollisions()
+            if self.triggerEnabled:
+                self.initializeCollisions()
 
             if self.filterName:
                 ents = base.entMgr.findAllEntities(self.filterName)
@@ -76,11 +77,13 @@ class DistributedTrigger(DistributedSolidEntity):
 
         def input_Enable(self, caller):
             self.triggerEnabled = True
+            self.initializeCollisions()
 
         def input_Disable(self, caller):
             self.triggerEnabled = False
             for ent in list(self.touching):
                 self.onEntityEndTouch(ent)
+            self.destroyCollisions()
 
         def delete(self):
             self.touching = None

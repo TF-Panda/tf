@@ -70,7 +70,7 @@ class TriggerCaptureArea(DistributedTrigger):
                     self.capState = self.CSBlocked
                     return task.cont
 
-            teamCanCap = (teamOnCap is not None) and (teamOnCap in self.canCapTeams)
+            teamCanCap = (teamOnCap is not None) and (teamOnCap in self.canCapTeams) and (base.game.controlPointMaster.canTeamWin(teamOnCap))
             if teamCanCap:
                 # Check that they have all the required points captured to cap
                 # this point.
@@ -117,12 +117,11 @@ class TriggerCaptureArea(DistributedTrigger):
                 # (they're a defender).  Decay the progress down to 0.
                 self.capState = self.CSIdle
                 if self.teamProgress != TFGlobals.TFTeam.NoTeam and self.capProgress > 0:
-                    decayFactor = 3.0
+                    decayFactor = 1.5
                     if base.game.inOverTime:
-                        decayFactor *= 2
+                        decayFactor *= 3.0
                     decrease = self.timeToCap * 2 * self.numRequiredToCap[self.teamProgress]
                     decrease /= decayFactor
-                    # TODO: increase by 6 if overtime
                     self.capProgress -= (1.0 / decrease) * globalClock.dt
                     self.capProgress = max(0.0, self.capProgress)
                 else:

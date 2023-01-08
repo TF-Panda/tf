@@ -62,7 +62,7 @@ class EntityConnectionManager:
                     else:
                         func(self.entity)
                 else:
-                    self.notify.warning(f'Handling output {name} from entity {self.entity}, input method {funcName} does not exist on entity {ent}.')
+                    self.notify.warning(f'Handling output {name} from entity {self.entity.__class__}, input method {funcName} does not exist on entity {ent.__class__}.')
             if connection.once:
                 connections.remove(connection)
 

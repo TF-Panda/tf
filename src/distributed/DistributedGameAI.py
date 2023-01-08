@@ -68,6 +68,50 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.allPlayers = {}
 
+    def spawnPointFilter(self, point, player):
+
+        pointTeam = point.team
+
+        if self.controlPointMaster:
+
+            # Custom filter logic if we're playing control points.
+
+            if point.controlPoint:
+                # The spawn point's team must own the indicated control
+                # point for it to be active.
+                if point.controlPoint.ownerTeam != pointTeam:
+                    return False
+
+            currRound = self.controlPointMaster.currentRound
+
+            if currRound:
+                # The spawn point may be assigned to a different team based on
+                # the current CP round.
+
+                #print(player.team, point.blueCPRound, point.redCPRound, currRound)
+
+                if point.blueCPRound:
+                    if player.team == TFGlobals.TFTeam.Blue:
+                        if point.blueCPRound == currRound:
+                            return True
+                        return False
+
+                if point.redCPRound:
+                    if player.team == TFGlobals.TFTeam.Red:
+                        if point.redCPRound == currRound:
+                            return True
+                        return False
+
+        if not point.enabled:
+            return False
+
+        return player.team == pointTeam
+
+    def getSpawnPointForPlayer(self, player):
+        #print("current round", self.controlPointMaster.currentRound)
+        spawnPoints = [x for x in base.game.teamSpawns if self.spawnPointFilter(x, player)]
+        return random.choice(spawnPoints)
+
     def canFinishRound(self):
         """
         Returns True if the round can finish right now, or False if the round
@@ -200,6 +244,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.roundState = RoundState.Playing
         self.gameModeImpl.onNewRound()
 
+        messenger.send('OnNewRound')
+
         # Copy the team list so we can switch teams while iterating.
         teamCopy = {}
         for team, players in self.playersByTeam.items():
@@ -236,6 +282,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.inOverTime = False
 
         self.gameModeImpl.onBeginRound()
+
+        messenger.send('OnBeginRound')
 
     def endRound(self, winTeam=TFTeam.NoTeam):
         self.notify.info("End round %i" % self.roundNumber)
@@ -279,6 +327,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.winTeam = winTeam
 
         self.gameModeImpl.onEndRound()
+
+        messenger.send('OnEndRound')
 
     def __gameUpdate(self, task):
         if self.waitingForPlayers:

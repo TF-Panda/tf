@@ -14,6 +14,13 @@ class InfoPlayerTeamspawn(EntityBase):
         self.spawnHpr = Vec3()
         self.enabled = True
 
+        self.controlPointName = ""
+        self.controlPoint = None
+        self.blueCPRoundName = ""
+        self.blueCPRound = None
+        self.redCPRoundName = ""
+        self.redCPRound = None
+
     def initFromLevel(self, ent, props):
         EntityBase.initFromLevel(self, ent, props)
         if props.hasAttribute("StartDisabled"):
@@ -27,12 +34,35 @@ class InfoPlayerTeamspawn(EntityBase):
             self.spawnHpr[1] = -tmp
         if props.hasAttribute("TeamNum"):
             self.team = props.getAttributeValue("TeamNum").getInt() - 2
+        if props.hasAttribute("round_bluespawn"):
+            self.blueCPRoundName = props.getAttributeValue("round_bluespawn").getString()
+        if props.hasAttribute("round_redspawn"):
+            self.redCPRoundName = props.getAttributeValue("round_redspawn").getString()
+
+    def announceGenerate(self):
+        EntityBase.announceGenerate(self)
+        if self.redCPRoundName:
+            self.redCPRound = base.entMgr.findExactEntity(self.redCPRoundName)
+        if self.blueCPRoundName:
+            self.blueCPRound = base.entMgr.findExactEntity(self.blueCPRoundName)
+
+    def delete(self):
+        self.redCPRound = None
+        self.blueCPRound = None
+        self.controlPoint = None
+        EntityBase.delete(self)
 
     def input_Disable(self, caller):
         self.enabled = False
 
     def input_Enable(self, caller):
         self.enabled = True
+
+    def input_TurnOn(self, caller):
+        self.enabled = True
+
+    def input_TurnOff(self, caller):
+        self.enabled = False
 
     def input_Toggle(self, caller):
         self.enabled = not self.enabled
