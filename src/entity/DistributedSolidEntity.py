@@ -209,7 +209,7 @@ class DistributedSolidEntity(DistributedEntity):
             return
         gn = self.model.getGeomNode()
         if gn:
-            np = NodePath(gn)
+            np = NodePath(gn.makeCopy())
             np.setTransform(self.modelOrigin.getInverse())
             np.flattenLight()
             np.reparentTo(self)
