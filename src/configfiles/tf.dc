@@ -208,10 +208,13 @@ dclass DistributedGame : DistributedObject {
   pickedUpFlagEvent(uint32 doId) broadcast;
   capturedFlagEvent(uint32 doId) broadcast;
   defendedFlagEvent(uint32 doId) broadcast;
+  defendedPointEvent(uint32 doId, string pointName) broadcast;
+  cappedPointEvent(uint32 doId, string pointName) broadcast;
 
   displayChat(string text) broadcast;
 
   setGameContextMessage(uint16 id, float64 duration, uint8 team) broadcast;
+  setGoalString(string msg, uint8 team);
 };
 
 dclass DistributedChar : DistributedEntity {
@@ -272,6 +275,9 @@ dclass DistributedTFPlayer : DistributedChar {
   uint32 nemesisList[];
 
   uint8 numDetonateables;
+
+  int8 disguiseClass;
+  uint8 disguiseWeapon;
 
   // 46 bytes
 

@@ -6,6 +6,7 @@ from direct.fsm.State import State
 from direct.gui.DirectGui import DirectFrame, OnscreenText, DirectWaitBar, DGG
 
 from tf.tfbase import TFLocalizer, TFGlobals
+from tf.tfgui import TFGuiProperties
 
 class ObjectPanel(NodePath):
 
@@ -45,7 +46,8 @@ class ObjectPanel(NodePath):
         self.setZ(-0.1)
 
         self.titleLbl = OnscreenText(text = self.objectName, font = TFGlobals.getTF2SecondaryFont(),
-            parent = self.frame, scale = 0.325, fg=(1,1,1,1), shadow=(0, 0, 0, 1), pos = (0, 0.7))
+            parent = self.frame, scale = 0.325, fg=TFGuiProperties.TextColorLight,
+            shadow=TFGuiProperties.TextShadowColor, pos = (0, 0.7))
 
     def destroy(self):
         self.builtFSM.requestFinalState()
@@ -99,10 +101,10 @@ class ObjectPanel(NodePath):
         self.reparentTo(base.a2dTopLeft)
 
     def enterNotBuilt(self):
-        self.frame['frameColor'] = (0, 0, 0, 0.75)
+        self.frame['frameColor'] = TFGuiProperties.BackgroundColorNeutralTranslucent
         self.nbLabel = OnscreenText(
             text = TFLocalizer.NotBuilt,
-            fg = (1, 1, 1, 1), shadow=(0, 0, 0, 1),
+            fg = TFGuiProperties.TextColorLight, shadow=TFGuiProperties.TextShadowColor,
             pos = (0, -0.1),
             scale = 0.35,
             font = TFGlobals.getTF2SecondaryFont(),
@@ -114,14 +116,14 @@ class ObjectPanel(NodePath):
 
     def enterBuilt(self):
         if self.object.team == 0:
-            self.frame['frameColor'] = (0.9, 0.5, 0.5, 0.75)
+            self.frame['frameColor'] = TFGuiProperties.BackgroundColorRedTranslucent
         else:
-            self.frame['frameColor'] = (0.5, 0.65, 1, 0.75)
+            self.frame['frameColor'] = TFGuiProperties.BackgroundColorBlueTranslucent
         self.hpBar = DirectWaitBar(
             parent = self.frame,
             relief = DGG.FLAT,
-            frameColor=(0, 0, 0, 0.5),
-            barColor=(1,1,1,1),
+            frameColor=TFGuiProperties.BackgroundColorNeutralOpaque,
+            barColor=TFGuiProperties.TextColorLight,
             range=1.0,
             value=0.7,
             suppressMouse=False
@@ -146,13 +148,13 @@ class ObjectPanel(NodePath):
     def enterBuiltBuilding(self):
         self.buildingLbl = OnscreenText(
             text = TFLocalizer.Building, scale = 0.35,
-            fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1),
+            fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor,
             pos = (0, 0), parent = self.frame,
             font = TFGlobals.getTF2SecondaryFont())
         self.buildingBar = DirectWaitBar(
             parent = self,
-            frameColor = (0, 0, 0, 0.5),
-            barColor = (1, 1, 1, 1),
+            frameColor=TFGuiProperties.BackgroundColorNeutralOpaque,
+            barColor=TFGuiProperties.TextColorLight,
             range = 1.0,
             value = 0.4,
             relief = DGG.FLAT,
@@ -172,8 +174,8 @@ class ObjectPanel(NodePath):
             text = "2",
             scale = 0.3,
             font = TFGlobals.getTF2SecondaryFont(),
-            fg = (1, 1, 1, 1),
-            shadow = (0, 0, 0, 1),
+            fg = TFGuiProperties.TextColorLight,
+            shadow = TFGuiProperties.TextShadowColor,
             parent = self.frame,
             pos = (1.8, 0.7)
         )
@@ -227,8 +229,8 @@ class SentryPanel(ObjectPanel):
         self.killsLbl = OnscreenText(
             text = TFLocalizer.SentryKillsText % (0, 0),
             scale = 0.3,
-            fg = (1, 1, 1, 1),
-            shadow = (0, 0, 0, 1),
+            fg = TFGuiProperties.TextColorLight,
+            shadow = TFGuiProperties.TextShadowColor,
             parent = self.frame,
             pos = (-1.2, 0.25),
             align = TextNode.ALeft,
@@ -238,8 +240,8 @@ class SentryPanel(ObjectPanel):
         self.shellsLbl = OnscreenText(
             text = TFLocalizer.Shells,
             scale = 0.28,
-            fg = (1, 1, 1, 1),
-            shadow = (0, 0, 0, 1),
+            fg = TFGuiProperties.TextColorLight,
+            shadow = TFGuiProperties.TextShadowColor,
             parent = self.frame,
             pos = (-1.2, -0.1),
             align = TextNode.ALeft,
@@ -247,8 +249,8 @@ class SentryPanel(ObjectPanel):
         )
         self.shellsBar = DirectWaitBar(
             parent = self.frame,
-            frameColor = (0, 0, 0, 0.5),
-            barColor = (1, 1, 1, 1),
+            frameColor = TFGuiProperties.BackgroundColorNeutralOpaque,
+            barColor = TFGuiProperties.TextColorLight,
             range = 1.0,
             value = 0.4,
             relief = DGG.FLAT,
@@ -260,8 +262,8 @@ class SentryPanel(ObjectPanel):
         self.upgradeLbl = OnscreenText(
             text = TFLocalizer.Upgrade,
             scale = 0.28,
-            fg = (1, 1, 1, 1),
-            shadow = (0, 0, 0, 1),
+            fg = TFGuiProperties.TextColorLight,
+            shadow = TFGuiProperties.TextShadowColor,
             parent = self.frame,
             pos = (-1.2, -0.6),
             align = TextNode.ALeft,
@@ -269,8 +271,8 @@ class SentryPanel(ObjectPanel):
         )
         self.upgradeBar = DirectWaitBar(
             parent = self.frame,
-            frameColor = (0, 0, 0, 0.5),
-            barColor = (1, 1, 1, 1),
+            frameColor = TFGuiProperties.BackgroundColorNeutralOpaque,
+            barColor = TFGuiProperties.TextColorLight,
             range = 1.0,
             value = 0.4,
             relief = DGG.FLAT,

@@ -13,6 +13,7 @@ HeavyBaseResponses = {
   'battle_cry': stringList('Heavy.BattleCry', (1, 6)),
   'stalemate': stringList('Heavy.AutoDejectedTie', (1, 3)),
   'capped_ctf': stringList('Heavy.AutoCappedIntelligence', (1, 3)),
+  'capped_cp': stringList('Heavy.AutoCappedControlPoint', (1, 3)),
   'medic_call': stringList('Heavy.Medic', (1, 3)),
   'medic_follow': stringList('Heavy.MedicFollow', (1, 7)),
   'spy': stringList('Heavy.CloakedSpy', (1, 4)),

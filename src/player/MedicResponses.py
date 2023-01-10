@@ -13,6 +13,7 @@ MedicBaseResponses = {
   'battle_cry': stringList('Medic.BattleCry', (1, 6)),
   'stalemate': stringList('Medic.AutoDejectedTie', (1, 7)),
   'capped_ctf': stringList('Medic.AutoCappedIntelligence', (1, 3)),
+  'capped_cp': stringList('Medic.AutoCappedControlPoint', (1, 3)),
   'medic_call': stringList('Medic.Medic', (1, 3)),
   'spy': stringList('Medic.CloakedSpy', (1, 2)),
   'spy_scout': ['Medic.CloakedSpyIdentify01'],

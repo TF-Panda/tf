@@ -8,6 +8,13 @@ notify.info("Running in language: " + language.getValue())
 
 if language == 'english':
     from .TFLocalizerEnglish import *
-    
+
 if language == 'french':
     from .TFLocalizerFrench import *
+
+def getLocalizedString(string):
+    if string[0] != "#":
+        # Not a localizer string name.
+        return string
+    # Look up the name in the localizer.
+    return globals().get(string[1:], string)

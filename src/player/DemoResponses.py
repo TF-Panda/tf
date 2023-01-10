@@ -13,6 +13,7 @@ DemoBaseResponses = {
   'battle_cry': stringList('Demoman.BattleCry', (1, 7)),
   'stalemate': stringList('Demoman.AutoDejectedTie', (1, 4)),
   'capped_ctf': stringList('Demoman.AutoCappedIntelligence', (1, 3)),
+  'capped_cp': stringList('Demoman.AutoCappedControlPoint', (1, 3)),
   'medic_call': stringList('Demoman.Medic', (1, 3)),
   'spy': stringList('Demoman.CloakedSpy', (1, 3)),
   'spy_scout': ['Demoman.CloakedSpyIdentify01'],

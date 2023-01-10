@@ -101,6 +101,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.viewOffsetNode = self.attachNewNode("viewOffset")
 
+    def putOnDisguise(self):
+        if self.disguiseClass == Class.Invalid:
+            return
+
+        if self.team != base.localAvatar.team:
+            info = ClassInfos[self.disguiseClass]
+            self.setModel(info.PlayerModel)
+
     def playerChat(self, chatText, teamOnly):
         text = ""
         if self.isDead():

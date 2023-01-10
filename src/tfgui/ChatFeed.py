@@ -4,6 +4,7 @@ from direct.interval.IntervalGlobal import *
 from direct.gui.DirectGui import *
 
 from tf.tfbase import TFGlobals
+from tf.tfgui import TFGuiProperties
 
 from panda3d.core import *
 
@@ -81,7 +82,7 @@ class ChatFeed:
         #self.suppressFrame.guiItem.setBackgroundFocus(1)
         #print(self.suppressFrame.guiItem.getFrame())
         self.chatEntry = DirectEntry(overflow=0, parent=self.root, scale=self.ChatScale, pos=(0, 0, -0.05), width=25,
-                                     frameColor=(0.3, 0.3, 0.3, 0.7), text_fg=self.ChatColor, text_shadow=(0, 0, 0, 1), focus=1,
+                                     frameColor=TFGuiProperties.BackgroundColorNeutralTranslucent, text_fg=self.ChatColor, text_shadow=(0, 0, 0, 1), focus=1,
                                      command=self.onEnterChat, entryFont=TFGlobals.getTF2SecondaryFont(), suppressKeys=1, suppressMouse=1)
 
     def onEnterChat(self, text):

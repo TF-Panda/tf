@@ -13,6 +13,7 @@ ScoutBaseResponses = {
   'battle_cry': stringList('Scout.BattleCry', (1, 5)),
   'stalemate': stringList('Scout.AutoDejectedTie', (1, 4)),
   'capped_ctf': stringList('Scout.AutoCappedIntelligence', (1, 3)),
+  'capped_cp': stringList('Scout.AutoCappedControlPoint', (1, 4)),
   'medic_call': stringList('Scout.Medic', (1, 3)),
   'medic_follow': stringList('Scout.MedicFollow', (1, 4)),
   'spy': stringList('Scout.CloakedSpy', (1, 4)),

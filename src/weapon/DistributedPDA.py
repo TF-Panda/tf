@@ -9,6 +9,7 @@ from direct.gui.DirectGui import *
 from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfgui.GuiPanel import GuiPanel
+from tf.tfgui import TFGuiProperties
 
 from direct.fsm.FSM import FSM
 from direct.showbase.DirectObject import DirectObject
@@ -28,7 +29,7 @@ class ConstructionObject(NodePath, FSM):
 
         self.frame = DirectFrame(relief = DGG.FLAT,
                                  state = DGG.NORMAL,
-                                 frameColor = (0, 0.0, 0.0, 0.5),
+                                 frameColor = TFGuiProperties.BackgroundColorNeutralTranslucent,
                                  frameSize = (-0.25, 0.25, -0.25, 0.25),
                                  parent = self,
                                  suppressMouse = False)
@@ -46,23 +47,23 @@ class ConstructionObject(NodePath, FSM):
         self.hotkeyLbl['fg'] = color
 
     def enterAlreadyBuilt(self):
-        self.frameColor((0.0, 0.0, 0.0, 0.5))
-        self.textColor((0.5, 0.5, 0.5, 1.0))
+        self.frameColor(TFGuiProperties.BackgroundColorNeutralTranslucent)
+        self.textColor(TFGuiProperties.TextColorLight)
         self.metalLbl.setText(TFLocalizer.ObjectAlreadyBuilt)
         self.metalLbl.show()
         self.hotkeyLbl.hide()
 
     def enterAvailable(self):
-        self.frameColor((0.9, 0.9, 0.9, 0.75))
-        self.textColor((0.2, 0.2, 0.2, 1.0))
+        self.frameColor(TFGuiProperties.TextColorLight)
+        self.textColor(TFGuiProperties.TextColorDark)
         self.metalLbl.show()
         self.metalLbl.setText(TFLocalizer.RequiredMetal % self.metal)
         self.hotkeyLbl.show()
         self.hotkeyLbl.setText(TFLocalizer.PressKey % self.hotkey)
 
     def enterNotEnoughMetal(self):
-        self.frameColor((0.0, 0.0, 0.0, 0.5))
-        self.textColor((0.5, 0.5, 0.5, 1.0))
+        self.frameColor(TFGuiProperties.BackgroundColorNeutralTranslucent)
+        self.textColor(TFGuiProperties.TextColorLight)
         self.metalLbl.show()
         self.metalLbl.setText(TFLocalizer.RequiredMetal % self.metal)
         self.hotkeyLbl.show()
@@ -85,12 +86,13 @@ class ConstructionScreen(GuiPanel):
     def __init__(self, player, wpn):
         self.player = player
         GuiPanel.__init__(self, relief=DGG.FLAT, state=DGG.NORMAL,
-                          frameColor=(0, 0, 0, 0.5),
+                          frameColor=TFGuiProperties.BackgroundColorNeutralTranslucent,
                           frameSize=(-1.25, 1.25, -0.5, 0.5),
                           parent=base.aspect2d,
                           suppressMouse = False)
 
-        self.lbl = OnscreenText(text=TFLocalizer.BUILD, parent=self, pos=(-1.16, 0.34), fg=(1, 1, 1, 1), scale=0.15, align=TextNode.ALeft, font=TFGlobals.getTF2BuildFont(), shadow=(0, 0, 0, 0.7))
+        self.lbl = OnscreenText(text=TFLocalizer.BUILD, parent=self, pos=(-1.16, 0.34), fg=TFGuiProperties.TextColorLight,
+            scale=0.15, align=TextNode.ALeft, font=TFGlobals.getTF2BuildFont(), shadow=TFGuiProperties.TextShadowColor)
 
         x = -0.9
         spacing = 0.6

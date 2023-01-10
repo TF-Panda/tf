@@ -7,6 +7,7 @@ from direct.gui.DirectGui import *
 from panda3d.core import *
 
 from tf.tfbase import TFGlobals
+from tf.tfgui import TFGuiProperties
 
 class ControlPointWidget(DirectObject):
 
@@ -28,11 +29,11 @@ class ControlPointWidget(DirectObject):
 
     def updateBar(self):
         if self.point.defaultOwner == TFGlobals.TFTeam.Red:
-            self.bar['frameColor'] = (0.9, 0.5, 0.5, 1.0)
-            self.bar['barColor'] = (0.5, 0.65, 1, 1.0)
+            self.bar['frameColor'] = TFGuiProperties.BackgroundColorRedTranslucent
+            self.bar['barColor'] = TFGuiProperties.BackgroundColorBlueOpaque
         else:
-            self.bar['frameColor'] = (0.5, 0.65, 1, 1.0)
-            self.bar['barColor'] = (0.9, 0.5, 0.5, 1.0)
+            self.bar['frameColor'] = TFGuiProperties.BackgroundColorBlueTranslucent
+            self.bar['barColor'] = TFGuiProperties.BackgroundColorRedOpaque
         self.bar['value'] = self.point.capProgress
 
     def cleanup(self):
@@ -49,7 +50,7 @@ class ControlPointGuiPanel:
 
     def __init__(self, master):
         self.master = master
-        self.frame = DirectFrame(frameColor=(0, 0, 0, 0.75), relief=DGG.FLAT,
+        self.frame = DirectFrame(frameColor=TFGuiProperties.BackgroundColorNeutralTranslucent, relief=DGG.FLAT,
                                  frameSize=(self.canvasMins[0] - 0.02, self.canvasMaxs[0] + 0.02,
                                             self.canvasMins[1] - 0.02, self.canvasMaxs[1] + 0.02),
                                  parent=base.a2dBottomCenter, pos=(0, 0, 0.225), scale=0.8)

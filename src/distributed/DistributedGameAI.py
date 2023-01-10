@@ -57,6 +57,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.playersByTeam = {0: [], 1: []}
         self.objectsByTeam = {0: [], 1: []}
 
+        self.respawnWaves = {TFGlobals.TFTeam.Red: {'time': 10.0, 'wave': 0, 'nextWave': 0.0},
+                             TFGlobals.TFTeam.Blue: {'time': 10.0, 'wave': 0, 'nextWave': 0.0}}
+
         self.roundEndTime = 0
 
         self.switchTeamsOnNewRound = False
@@ -64,10 +67,46 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.inOverTime = False
         self.controlPointMaster = None
         self.roundTimer = None
+        self.gameRulesProxy = None
+        self.logicAutos = []
 
         self.levelEnts = []
 
         self.allPlayers = {}
+
+    def getRespawnWaveTimeForTeam(self, team):
+        waveTime = self.respawnWaves[team]['time']
+        numPlayers = len(self.playersByTeam[team])
+
+        if numPlayers >= 8:
+            return waveTime
+        elif numPlayers <= 3:
+            return min(5.0, waveTime)
+        elif waveTime > 5.0:
+            # Somewhere between 4 and 7 players, lerp
+            # the wave time from the configured value down to the
+            # minimum 5 seconds.
+            frac = (numPlayers - 3) / 5
+            return min(5.0, waveTime * frac + 5.0 * (1 - frac))
+
+    def getNextRespawnWaveTimeForTeam(self, team):
+        """
+        Returns the time of the *next* respawn wave after the current one.
+        """
+        return self.respawnWaves[team]['nextWave'] + self.getRespawnWaveTimeForTeam(team)
+
+    def __respawnWaveUpdate(self):
+        for team, data in self.respawnWaves.items():
+            if data['nextWave'] <= globalClock.frame_time:
+                waveIval = self.getRespawnWaveTimeForTeam(team)
+                data['nextWave'] = globalClock.frame_time + waveIval
+
+    def setTeamRespawnWaveTime(self, team, time):
+        self.respawnWaves[team]['time'] = time
+
+    def setTeamGoalString(self, team, string):
+        for p in self.playersByTeam[team]:
+            self.sendUpdate('setGoalString', [string, team], client=p.owner)
 
     def spawnPointFilter(self, point, player):
 
@@ -245,6 +284,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.roundState = RoundState.Playing
         self.gameModeImpl.onNewRound()
 
+        for la in self.logicAutos:
+            la.connMgr.fireOutput("OnMultiNewRound")
+
         messenger.send('OnNewRound')
 
         # Copy the team list so we can switch teams while iterating.
@@ -336,6 +378,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             self.notify.info("Waiting for players")
             return task.cont
 
+        self.__respawnWaveUpdate()
+
         if globalClock.frame_time >= self.roundEndTime:
             if self.roundState == RoundState.Ended:
                 self.newRound()
@@ -346,6 +390,10 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         preserveEntClassNames = [
             "worldspawn"
         ]
+        if self.gameRulesProxy and (self.gameRulesProxy not in self.levelEnts):
+            self.gameRulesProxy.disable()
+            self.gameRulesProxy.delete()
+            self.gameRulesProxy = None
         for ent in reversed(list(self.levelEnts)):
             if ent.className in preserveEntClassNames:
                 continue
@@ -386,6 +434,19 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 assert entObj.isDOAlive()
 
         self.teamSpawns = base.entMgr.findAllEntitiesByClassName("info_player_teamspawn")
+
+        gameRulesProxies = base.entMgr.findAllEntitiesByClassName("tf_gamerules")
+        assert len(gameRulesProxies) <= 1
+        if gameRulesProxies:
+            self.gameRulesProxy = gameRulesProxies[0]
+        else:
+            from tf.entity.TFGameRulesProxyAI import TFGameRulesProxyAI
+            self.gameRulesProxy = TFGameRulesProxyAI()
+
+        self.logicAutos = base.entMgr.findAllEntitiesByClassName("logic_auto")
+        for la in self.logicAutos:
+            la.connMgr.fireOutput("OnMultiNewMap")
+            la.connMgr.fireOutput("OnMapSpawn")
 
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)

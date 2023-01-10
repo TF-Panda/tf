@@ -3,6 +3,7 @@
 from direct.gui.DirectGui import *
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from tf.tfbase import TFLocalizer, TFGlobals
+from tf.tfgui import TFGuiProperties
 
 class TFDialog(DirectDialog):
     notify = directNotify.newCategory('TFDialog')
@@ -45,14 +46,14 @@ class TFDialog(DirectDialog):
             ('buttonPadSF', 2.2, DGG.INITOPT),
             ('text_font', font, None),
             ('button_text_font', font, None),
-            ('text_fg', (0.984, 0.925, 0.796, 1.0), None),
-            ('text_shadow', (0, 0, 0, 1), None),
-            ('button_text_fg', (0.984, 0.925, 0.796, 1.0), None),
-            ('button_text_shadow', (0, 0, 0, 1), None),
+            ('text_fg', TFGuiProperties.TextColorLight, None),
+            ('text_shadow', TFGuiProperties.TextShadowColor, None),
+            ('button_text_fg', TFGuiProperties.TextColorLight, None),
+            ('button_text_shadow', TFGuiProperties.TextShadowColor, None),
             ('relief', DGG.FLAT, None),
             ('button_relief', DGG.FLAT, None),
-            ('frameColor', (0, 0, 0, 0.75), None),
-            ('button_frameColor', ((0, 0, 0, 0.75), (0.61, 0.32, 0.13, 1)), None),
+            ('frameColor', TFGuiProperties.BackgroundColorNeutralTranslucent, None),
+            ('button_frameColor', (TFGuiProperties.BackgroundColorNeutralTranslucent, (0.61, 0.32, 0.13, 1)), None),
             ('fadeScreen', 0.5, None),
             ('text_wordwrap', 18, None),
             ('button_pad', (0.01, 0.01), None),

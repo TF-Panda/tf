@@ -16,6 +16,7 @@ class TeamControlPoint(DistributedEntity):
         self.pointIndex = 0
         self.pointGroup = 0
         self.hologramModel = None
+        self.pointName = ""
 
     if IS_CLIENT:
         def RecvProxy_ownerTeam(self, team):
@@ -58,6 +59,8 @@ class TeamControlPoint(DistributedEntity):
                 self.teamPreviousPointNames[TFGlobals.TFTeam.Blue].append(props.getAttributeValue("team_previouspoint_3_2").getString())
             if props.hasAttribute("team_previouspoint_3_3"):
                 self.teamPreviousPointNames[TFGlobals.TFTeam.Blue].append(props.getAttributeValue("team_previouspoint_3_3").getString())
+            if props.hasAttribute("point_printname"):
+                self.pointName = props.getAttributeValue("point_printname").getString()
 
         def capturedByTeam(self, team):
             self.ownerTeam = team

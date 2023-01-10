@@ -63,6 +63,12 @@ class DistributedTFPlayerShared:
         self.eyeH = 0.0
         self.eyeP = 0.0
 
+        # For spy disguises.  For players not on the local
+        # avatar's team, the player model will be set to
+        # the disguise class's model.
+        self.disguiseClass = Class.Invalid
+        self.disguiseWeapon = 0
+
         self.conditions = {}
         self.condition = self.CondNone
 

@@ -5,6 +5,7 @@ from panda3d.core import *
 
 from tf.tfbase import TFLocalizer
 from tf.player.TFClass import *
+from tf.tfgui import TFGuiProperties
 
 cl_crosshairscale = ConfigVariableDouble("cl-crosshair-scale", 32)
 cl_crosshairfile = ConfigVariableString("cl-crosshair-file", "crosshair5")
@@ -16,7 +17,7 @@ cl_crosshaira = ConfigVariableDouble("cl-crosshair-a", 255)
 class TFHud(DirectObject):
 
     LowHealthPerct = 0.33
-    GoodHealthColor = Vec4(1, 1, 1, 1)
+    GoodHealthColor = TFGuiProperties.TextColorLight
     LowHealthColor = Vec4(1, 0, 0, 1)
 
     ClipPos = (-0.15, 0.1)
@@ -34,18 +35,21 @@ class TFHud(DirectObject):
     def __init__(self):
         self.hidden = True
 
-        self.healthLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomLeft,
-                                        scale = 0.1, pos = (0.15, 0.1))
+        self.classNameLabel = OnscreenText(text = "", fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, parent = base.a2dBottomLeft,
+                                           scale=0.07, pos=(0.1, 0.2), align=TextNode.ALeft)
 
-        self.metalLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomLeft,
+        self.healthLabel = OnscreenText(text = "", fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, parent = base.a2dBottomLeft,
+                                        scale = 0.1, pos = (0.1, 0.1), align=TextNode.ALeft)
+
+        self.metalLabel = OnscreenText(text = "", fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, parent = base.a2dBottomLeft,
                                        scale = 0.07, pos = (0.35, 0.12))
 
-        self.clipLabel = OnscreenText(text = "", fg = (1,1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
+        self.clipLabel = OnscreenText(text = "", fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, parent = base.a2dBottomRight,
                                       scale = self.ClipScale, pos = self.ClipPos, align = self.ClipAlign)
-        self.ammoLabel = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
+        self.ammoLabel = OnscreenText(text = "", fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, parent = base.a2dBottomRight,
                                       scale = self.AmmoScale, pos = self.AmmoPos, align = self.AmmoAlign)
 
-        self.stickiesLbl = OnscreenText(text = "", fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), parent = base.a2dBottomRight,
+        self.stickiesLbl = OnscreenText(text = "", fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, parent = base.a2dBottomRight,
                                         scale = 0.07, pos = (-0.4, 0.12))
 
         self.crosshairTex = None
@@ -71,9 +75,12 @@ class TFHud(DirectObject):
         self.ammoLabel = None
         self.crosshair.destroy()
         self.crosshair = None
+        self.classNameLabel.destroy()
+        self.classNameLabel = None
         self.ignoreAll()
 
     def hideHud(self):
+        self.classNameLabel.hide()
         self.crosshair.hide()
         self.healthLabel.hide()
         self.clipLabel.hide()
@@ -82,17 +89,21 @@ class TFHud(DirectObject):
         self.stickiesLbl.hide()
         self.ignore('localPlayerMetalChanged')
         self.ignore('localPlayerDetonateablesChanged')
+        self.ignore('localPlayerClassChanged')
         self.hidden = True
 
     def showHud(self):
         self.hidden = False
+        self.classNameLabel.show()
         self.crosshair.show()
         self.healthLabel.show()
         self.updateAmmoLabel()
         self.updateMetalLabel()
         self.updateStickiesLabel()
+        self.updateClassLabel()
         self.accept('localPlayerMetalChanged', self.updateMetalLabel)
         self.accept('localPlayerDetonateablesChanged', self.updateStickiesLabel)
+        self.accept('localPlayerClassChanged', self.updateClassLabel)
 
     def handleWindowEvent(self, win):
         if win != base.win:
@@ -124,6 +135,9 @@ class TFHud(DirectObject):
 
         self.adjustCrosshairSize()
         self.adjustCrosshairColor()
+
+    def updateClassLabel(self):
+        self.classNameLabel.setText(base.localAvatar.classInfo.Name)
 
     def updateHealthLabel(self):
         self.healthLabel.setText(str(base.localAvatar.health))

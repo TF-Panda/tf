@@ -5,6 +5,7 @@ from panda3d.core import *
 from tf.tfbase import TFFilters, TFGlobals, TFLocalizer, CollisionGroups
 from tf.player import TFClass
 from tf.object.ObjectType import ObjectType
+from tf.tfgui import TFGuiProperties
 
 from direct.gui.DirectGui import DirectFrame, OnscreenText, DGG
 
@@ -40,9 +41,9 @@ class InfoGui:
         self.elemRoot.calcTightBounds(mins, maxs)
         self.frame['frameSize'] = (mins[0] - 0.03, maxs[0] + 0.03, mins[2] - 0.03, maxs[2] + 0.03)
         if self.info.ent.team == TFGlobals.TFTeam.Red:
-            self.frame['frameColor'] = (0.9, 0.5, 0.5, 0.65)
+            self.frame['frameColor'] = TFGuiProperties.BackgroundColorRedTranslucent
         else:
-            self.frame['frameColor'] = (0.5, 0.65, 1, 0.65)
+            self.frame['frameColor'] = TFGuiProperties.BackgroundColorBlueTranslucent
 
 class CrossHairInfo:
 
@@ -68,7 +69,7 @@ class CrossHairInfo:
 
         font = TFGlobals.getTF2SecondaryFont()
 
-        name = OnscreenText("", fg = (1, 1, 1, 1), shadow=(0, 0, 0, 1), font=font, parent=self.gui.elemRoot)
+        name = OnscreenText("", fg = TFGuiProperties.TextColorLight, shadow=TFGuiProperties.TextShadowColor, font=font, parent=self.gui.elemRoot)
         if self.ent.isPlayer():
             if self.context == CTX_HOVERED:
                 # Just show the name.
@@ -87,7 +88,7 @@ class CrossHairInfo:
         self.lastText = ""
 
         # Show health
-        hp = OnscreenText("", fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1),
+        hp = OnscreenText("", fg=TFGuiProperties.TextColorLight, shadow=TFGuiProperties.TextShadowColor,
                           font=font, parent=self.gui.elemRoot, scale=0.05, pos=(0, -0.08))
         self.gui.elements['hp'] = hp
 

@@ -7,6 +7,7 @@ from direct.gui.DirectGui import *
 from tf.player.TFClass import *
 from tf.tfbase import TFGlobals, Sounds, TFLocalizer
 from tf.tfbase.SoundEmitter import SoundEmitter
+from tf.tfgui import TFGuiProperties
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func
 from direct.interval.ActorInterval import ActorInterval
@@ -54,7 +55,7 @@ class TFClassMenu:
     def __init__(self):
         self.frame = DirectFrame(
           frameSize = (-0.85, 0.85, -0.65, 0.65), relief = DGG.FLAT,
-          frameColor = (0, 0, 0, 0.75))
+          frameColor = TFGuiProperties.BackgroundColorNeutralTranslucent)
         self.frame.setBin('fixed', 0)
 
         self.classRoot = NodePath("ClassRenderRoot")
@@ -100,7 +101,7 @@ class TFClassMenu:
         self.toIdleSeq = None
 
         self.titleLbl = OnscreenText(parent = self.frame, text = TFLocalizer.ChooseAClass, font = TFGlobals.getTF2SecondaryFont(),
-                                     scale = 0.1, fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), pos = (0, 0.55))
+                                     scale = 0.1, fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, pos = (0, 0.55))
         self.titleLbl.setBin('fixed', 2)
 
         self.classButtons = []

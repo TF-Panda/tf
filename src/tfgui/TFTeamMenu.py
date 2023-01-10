@@ -7,17 +7,18 @@ from direct.showbase.DirectObject import DirectObject
 
 from tf.tfbase import TFLocalizer, TFGlobals
 from tf.tfbase.TFGlobals import TFTeam
+from tf.tfgui import TFGuiProperties
 
 class TFTeamMenu(DirectObject):
 
     def __init__(self):
         self.frame = DirectFrame(
           frameSize = (-0.85, 0.85, -0.65, 0.65), relief = DGG.FLAT,
-          frameColor = (0, 0, 0, 0.75))
+          frameColor = TFGuiProperties.BackgroundColorNeutralTranslucent)
         self.frame.setBin('fixed', 0)
 
         self.titleLbl = OnscreenText(parent = self.frame, text = TFLocalizer.ChooseATeam, font = TFGlobals.getTF2SecondaryFont(),
-                                     scale = 0.1, fg = (1, 1, 1, 1), shadow = (0, 0, 0, 1), pos = (0, 0.55))
+                                     scale = 0.1, fg = TFGuiProperties.TextColorLight, shadow = TFGuiProperties.TextShadowColor, pos = (0, 0.55))
         self.titleLbl.setBin('fixed', 2)
 
         self.teamButtons = []

@@ -52,40 +52,75 @@ class TriggerCaptureArea(DistributedTrigger):
                 delta += step / (i + 1)
             return delta * globalClock.dt
 
+        def canTeamCap(self, team):
+            ret = (team is not None) and (team in self.canCapTeams) and (base.game.controlPointMaster.canTeamWin(team))
+            if ret:
+                # Check that they have all the required points captured to cap
+                # this point.
+                prevList = self.capPoint.teamPreviousPoints.get(team, [])
+                allCapped = True
+                for p in prevList:
+                    if p.ownerTeam != team:
+                        allCapped = False
+                        break
+                if not allCapped:
+                    ret = False
+            return ret
+
+        def getTeamsOnCap(self):
+            teams = set()
+            for p in self.playersOnCap:
+                teams.add(p.team)
+            return teams
+
+        def pointCanBeCapped(self):
+            if base.game.isRoundEnded():
+                return False
+
+            for team in range(TFGlobals.TFTeam.COUNT):
+                canCap = self.canTeamCap(team)
+                if canCap and self.capPoint.ownerTeam != team:
+                    return True
+            return False
+
+        def handleBlocked(self):
+            # Find the team that defended the point.
+
+            if self.point.ownerTeam == TFGlobals.TFTeam.NoTeam:
+                # This is just a contested point.
+                return
+
+            # Otherwise, any players on the point, on the team that
+            # owns the point, defended it.
+            defenders = []
+            for p in self.playersOnCap:
+                if p.team == self.point.ownerTeam:
+                    defenders.append(p)
+
+            if defenders:
+                base.game.sendUpdate('defendedPointEvent', [defenders[0], self.capPoint.pointName])
+
         def capUpdate(self, task):
             if base.game.isRoundEnded():
                 self.capProgress = 0
                 return task.cont
 
+            self.playersOnCap = [x for x in self.playersOnCap if not x.isDODeleted() and not x.isDead()]
+
             # If multiple teams are on the cap, progress is stagnant.
             teamOnCap = None
-            for plyr in list(self.playersOnCap):
-                if plyr.isDODeleted() or plyr.isDead():
-                    self.playersOnCap.remove(plyr)
-                    continue
-
+            for plyr in self.playersOnCap:
                 if teamOnCap is None:
                     teamOnCap = plyr.team
-                elif plyr.team != teamOnCap:
+                elif plyr.team != teamOnCap and self.pointCanBeCapped():
+                    if self.capState != self.CSBlocked:
+                        self.handleBlocked()
                     self.capState = self.CSBlocked
                     return task.cont
 
-            teamCanCap = (teamOnCap is not None) and (teamOnCap in self.canCapTeams) and (base.game.controlPointMaster.canTeamWin(teamOnCap))
-            if teamCanCap:
-                # Check that they have all the required points captured to cap
-                # this point.
-                prevList = self.capPoint.teamPreviousPoints.get(teamOnCap, [])
-                allCapped = True
-                for p in prevList:
-                    if p.ownerTeam != teamOnCap:
-                        allCapped = False
-                        break
-                if not allCapped:
-                    teamCanCap = False
-
             # If only one team is on the cap, and that team is allowed to
             # cap, increment progress towards capture.
-            if teamCanCap:
+            if self.canTeamCap(teamOnCap):
 
                 if self.teamProgress != teamOnCap and self.capProgress > 0:
                     # Another team has progress on the capture, start reverting it.
@@ -111,6 +146,9 @@ class TriggerCaptureArea(DistributedTrigger):
                             self.connMgr.fireOutput("OnCapTeam2")
                         else:
                             self.connMgr.fireOutput("OnCapTeam1")
+                        for p in self.playersOnCap:
+                            p.speakConcept(TFGlobals.SpeechConcept.CappedObjective, {'gamemode': 'cp'})
+                        base.game.sendUpdate('cappedPointEvent', [self.playersOnCap[0].doId, self.capPoint.pointName])
 
             elif self.capProgress < 1:
                 # Nobody is on the cap or the team on the cap can't capture

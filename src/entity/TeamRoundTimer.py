@@ -3,6 +3,7 @@
 from direct.distributed2.DistributedObject import DistributedObject
 
 from tf.tfbase import TFGlobals, TFLocalizer
+from tf.tfgui import TFGuiProperties
 
 from direct.gui.DirectGui import OnscreenText, DGG
 
@@ -22,12 +23,8 @@ class TeamRoundTimer(DistributedObject):
     def generate(self):
         DistributedObject.generate(self)
         self.textLbl = OnscreenText(
-          fg=(0.984, 0.925, 0.796, 1.0), shadow=(0, 0, 0, 1),
-          parent=base.a2dTopCenter, pos=(0, -0.15), scale=0.08)
-        if self.team == TFGlobals.TFTeam.Red:
-            self.textLbl['bg'] = (0.9, 0.5, 0.5, 0.75)
-        else:
-            self.textLbl['bg'] = (0.5, 0.65, 1, 0.75)
+          fg=TFGuiProperties.TextColorLight, shadow=TFGuiProperties.TextShadowColor,
+          parent=base.a2dTopCenter, pos=(0, -0.13), scale=0.08)
 
     def postDataUpdate(self):
         DistributedObject.postDataUpdate(self)
@@ -38,6 +35,10 @@ class TeamRoundTimer(DistributedObject):
             self.textLbl.hide()
 
     def updateTimerText(self):
+        if base.localAvatar.team == TFGlobals.TFTeam.Red:
+            self.textLbl['bg'] = TFGuiProperties.BackgroundColorRedTranslucent
+        else:
+            self.textLbl['bg'] = TFGuiProperties.BackgroundColorBlueTranslucent
         if self.inOverTime:
             text = TFLocalizer.TimerOverTime
         else:

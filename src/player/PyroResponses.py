@@ -13,6 +13,7 @@ PyroBaseResponses = {
   'battle_cry': stringList('Pyro.BattleCry', (1, 2)),
   'stalemate': ['Pyro.AutoDejectedTie01'],
   'capped_ctf': ['Pyro.AutoCappedIntelligence01'],
+  'capped_cp': ['Pyro.AutoCappedControlPoint01'],
   'medic_call': ['Pyro.Medic01'],
   'spy': ['Pyro.CloakedSpy01'],
   'teleporter_thanks': ['Pyro.ThanksForTheTeleporter01'],

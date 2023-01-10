@@ -13,6 +13,7 @@ SpyBaseResponses = {
   'battle_cry': stringList('Spy.BattleCry', (1, 4)),
   'stalemate': stringList('Spy.AutoDejectedTie', (1, 3)),
   'capped_ctf': stringList('Spy.AutoCappedIntelligence', (1, 3)),
+  'capped_cp': stringList('Spy.AutoCappedControlPoint', (1, 3)),
   'medic_call': stringList('Spy.Medic', (1, 3)),
   'medic_follow': stringList('Spy.MedicFollow', (1, 2)),
   'spy': stringList('Spy.CloakedSpy', (1, 4)),

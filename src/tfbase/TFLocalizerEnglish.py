@@ -159,6 +159,8 @@ NemesisText = "NEMESIS!"
 Msg_PickedUpFlag = " picked up the intelligence!"
 Msg_CapturedFlag = " captured the intelligence!"
 Msg_DefendedFlag = " defended the intelligence!"
+Msg_CapturedPoint = " captured "
+Msg_DefendedPoint = " defended "
 
 ### Shared Between Kill Screen, Engineer panel, Medic Panel ###
 
@@ -236,3 +238,16 @@ TF_TeamsSwitched = "Teams have been switched."
 
 TimerSetup = "Setup"
 TimerOverTime = "Overtime!"
+
+# Map-specific goal strings.  The name of the string is specified
+# in the level file and looked up in the localizer via getattr.
+Dustbowl_red_setup_goal	= "Defend the Control points against team BLU!"
+Dustbowl_blue_setup_goal = "Capture both Control Points to win the round and advance!"
+Dustbowl_red_final_goal = "Defend the final two Control Points or the enemy will win the game!"
+Dustbowl_blue_final_goal = "Capture the final two Control Points to win the game!"
+Dustbowl_cap_1_A = "First Cap, Stage One"
+Dustbowl_cap_1_B = "Second Cap, Stage One"
+Dustbowl_cap_2_A = "First Cap, Stage Two"
+Dustbowl_cap_2_B = "Second Cap, Stage Two"
+Dustbowl_cap_3_A = "First Cap, Stage Three"
+Dustbowl_cap_3_B = "the Rocket, Final Cap"

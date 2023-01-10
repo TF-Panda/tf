@@ -14,6 +14,7 @@ EngineerBaseResponses = {
   'battle_cry': ['Engineer.BattleCry01'] + stringList('Engineer.BattleCry', (3, 7)),
   'stalemate': stringList('Engineer.AutoDejectedTie', (1, 3)),
   'capped_ctf': stringList('Engineer.AutoCappedIntelligence', (1, 3)),
+  'capped_cp': stringList('Engineer.AutoCappedControlPoint', (1, 3)),
   'medic_call': stringList('Engineer.Medic', (1, 3)),
   'medic_follow': stringList('engineer_medicfollow', (1, 3)),
   'spy': stringList('Engineer.CloakedSpy', (1, 3)),

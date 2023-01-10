@@ -876,6 +876,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         elif self.tfClass != Class.Engineer:
             self.destroyObjectPanels()
 
+        messenger.send('localPlayerClassChanged')
+
     def RecvProxy_weapons(self, weapons):
         changed = weapons != self.weapons
         #print(weapons, self.weapons)

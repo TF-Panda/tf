@@ -18,6 +18,8 @@ from .SkyBox import SkyBox
 from tf.tfbase.Soundscapes import SoundscapeManager
 from .RoundState import RoundState
 
+from tf.tfgui import TFGuiProperties
+
 from .CubemapRendering import CubemapRendering
 
 play_sound_coll = PStatCollector("App:Sounds:PlaySound")
@@ -56,11 +58,31 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.accept('shift-v', self.toggleVisDebug)
         #self.accept('c', self.renderCubeMaps)
 
-        self.contextLbl = DirectLabel(text='', pos=(0, 0, 0.6), text_shadow=(0, 0, 0, 1), text_align=TextNode.ACenter, text_scale=0.06,
-                                      parent=base.a2dBottomCenter, suppressKeys=False, suppressMouse=False, text_fg=(1, 1, 1, 1),
+        self.goalLbl = DirectLabel(text='', pos=(0, 0, 0.55), text_shadow=TFGuiProperties.TextShadowColor, text_align=TextNode.ACenter, text_scale=0.05,
+                                      parent=base.aspect2d, suppressKeys=False, suppressMouse=False, text_fg=TFGuiProperties.TextColorLight,
+                                      text_font=TFGlobals.getTF2SecondaryFont(), text_wordwrap=25)
+        self.goalLbl.hide()
+        self.goalIval = None
+
+        self.contextLbl = DirectLabel(text='', pos=(0, 0, 0.6), text_shadow=TFGuiProperties.TextShadowColor, text_align=TextNode.ACenter, text_scale=0.06,
+                                      parent=base.a2dBottomCenter, suppressKeys=False, suppressMouse=False, text_fg=TFGuiProperties.TextColorLight,
                                       text_font=TFGlobals.getTF2SecondaryFont())
         self.contextLbl.hide()
         self.contextIval = None
+
+    def setGoalString(self, string, team):
+        text = TFLocalizer.getLocalizedString(string)
+        self.goalLbl.show()
+        self.goalLbl['text'] = text
+        if team == TFGlobals.TFTeam.Red:
+            self.goalLbl['text_bg'] = TFGuiProperties.BackgroundColorRedTranslucent
+        else:
+            self.goalLbl['text_bg'] = TFGuiProperties.BackgroundColorBlueTranslucent
+        if self.goalIval:
+            self.goalIval.pause()
+            self.goalIval = None
+        self.goalIval = Sequence(Wait(7.5), Func(self.goalLbl.hide))
+        self.goalIval.start()
 
     def setGameContextMessage(self, id, duration, team):
         from tf.distributed.GameContextMessages import ContextMessages
@@ -70,9 +92,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.contextLbl.show()
         self.contextLbl['text'] = text
         if team == 0:
-            self.contextLbl['text_bg'] = (0.9, 0.5, 0.5, 0.75)
+            self.contextLbl['text_bg'] = TFGuiProperties.BackgroundColorRedTranslucent
         else:
-            self.contextLbl['text_bg'] = (0.5, 0.65, 1, 0.75)
+            self.contextLbl['text_bg'] = TFGuiProperties.BackgroundColorBlueTranslucent
         if duration > 0:
             if self.contextIval:
                 self.contextIval.pause()
@@ -665,6 +687,28 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         text = self.teamFormattedString(plyr.team, plyr.playerName) + TFLocalizer.Msg_DefendedFlag
         base.localAvatar.killFeed.pushEvent(text, priority)
 
+    def defendedPointEvent(self, defenderDoId, pointName):
+        plyr = base.cr.doId2do.get(defenderDoId)
+        if not plyr:
+            return
+
+        pointName = TFLocalizer.getLocalizedString(pointName)
+
+        priority = (plyr == base.localAvatar)
+        text = self.teamFormattedString(plyr.team, plyr.playerName) + TFLocalizer.Msg_DefendedPoint + pointName
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
+    def cappedPointEvent(self, capperDoId, pointName):
+        plyr = base.cr.doId2do.get(capperDoId)
+        if not plyr:
+            return
+
+        pointName = TFLocalizer.getLocalizedString(pointName)
+
+        priority = (plyr == base.localAvatar)
+        text = self.teamFormattedString(plyr.team, plyr.playerName) + TFLocalizer.Msg_CapturedPoint + pointName
+        base.localAvatar.killFeed.pushEvent(text, priority)
+
     def delete(self):
         if self.contextIval:
             self.contextIval.pause()
@@ -672,6 +716,12 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if self.contextLbl:
             self.contextLbl.destroy()
             self.contextLbl = None
+        if self.goalIval:
+            self.goalIval.pause()
+            self.goalIval = None
+        if self.goalLbl:
+            self.goalLbl.destroy()
+            self.goalLbl = None
         base.game = None
         DistributedObject.delete(self)
         DistributedGameBase.delete(self)

@@ -37,6 +37,8 @@ from tf.entity.InfoPlayerTeamspawn import InfoPlayerTeamspawn
 from tf.entity.GameRoundWin import GameRoundWin
 from tf.entity.TeamControlPointMasterAI import TeamControlPointMasterAI
 from tf.entity.TeamControlPointRoundAI import TeamControlPointRoundAI
+from tf.entity.LogicAutoAI import LogicAutoAI
+from tf.entity.TFGameRulesProxyAI import TFGameRulesProxyAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -67,5 +69,7 @@ EntityRegistry = {
     "info_player_teamspawn": InfoPlayerTeamspawn,
     "game_round_win": GameRoundWin,
     "team_control_point_master": TeamControlPointMasterAI,
-    "team_control_point_round": TeamControlPointRoundAI
+    "team_control_point_round": TeamControlPointRoundAI,
+    "logic_auto": LogicAutoAI,
+    "tf_gamerules": TFGameRulesProxyAI
 }

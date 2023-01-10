@@ -1099,7 +1099,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if now < freezeEnd:
             return task.cont
 
-        self.respawnTime = now + tf_respawn_time.value
+        self.respawnTime = base.game.getNextRespawnWaveTimeForTeam(self.team)
         self.startWaitingToRespawn()
 
         return task.done

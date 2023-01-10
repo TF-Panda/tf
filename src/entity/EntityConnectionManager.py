@@ -71,6 +71,8 @@ class EntityConnectionManager:
             return (activator,)
         elif targetName == '!caller':
             return (caller,)
+        elif targetName == 'tf_gamerules':
+            return (base.game.gameRulesProxy,)
         else:
             # Look up target name in entity dictionary.
             return base.entMgr.findAllEntities(targetName)

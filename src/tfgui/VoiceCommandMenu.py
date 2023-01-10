@@ -7,13 +7,14 @@ from direct.showbase.DirectObject import DirectObject
 
 from tf.tfbase import TFGlobals
 from .GuiPanel import GuiPanel
+from . import TFGuiProperties
 
 class VoiceCommandMenu(GuiPanel):
 
     def __init__(self):
         GuiPanel.__init__(self, parent=base.a2dLeftCenter)
         self.setPos(0.1, 0, 0)
-        self['frameColor'] = (0.1, 0.1, 0.1, 0.7)
+        self['frameColor'] = TFGuiProperties.BackgroundColorNeutralTranslucent
         self['relief'] = DGG.FLAT
         self.items = []
         self.currFade = 0.0
@@ -40,7 +41,7 @@ class VoiceCommandMenu(GuiPanel):
 
     def addItem(self, text, hotkey, cmd):
         lbl = OnscreenText(str(hotkey) + ". " + text, parent=self.lblRoot,
-                           fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1), font=TFGlobals.getTF2SecondaryFont(),
+                           fg=TFGuiProperties.TextColorLight, shadow=TFGuiProperties.TextShadowColor, font=TFGlobals.getTF2SecondaryFont(),
                            align=TextNode.ALeft, scale=0.045)
         self.items.append((lbl, hotkey, cmd))
         self.bindButton(str(hotkey), self.__handleCommand, [cmd])

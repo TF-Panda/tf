@@ -13,6 +13,7 @@ SoldierBaseResponses = {
   'battle_cry': stringList('Soldier.BattleCry', (1, 6)),
   'stalemate': stringList('Soldier.AutoDejectedTie', (1, 3)),
   'capped_ctf': stringList('Soldier.AutoCappedIntelligence', (1, 3)),
+  'capped_cp': stringList('Soldier.AutoCappedControlPoint', (1, 3)),
   'medic_call': stringList('Soldier.Medic', (1, 3)),
   'medic_follow': stringList('Soldier.PickAxeTaunt', (1, 5)),
   'spy': stringList('Soldier.CloakedSpy', (1, 3)),

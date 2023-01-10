@@ -14,6 +14,7 @@ SniperBaseResponses = {
   'battle_cry': stringList('Sniper.BattleCry', (1, 6)),
   'stalemate': stringList('Sniper.AutoDejectedTie', (1, 3)),
   'capped_ctf': stringList('Sniper.AutoCappedIntelligence', (1, 5)),
+  'capped_cp': stringList('Sniper.AutoCappedControlPoint', (1, 3)),
   'medic_call': stringList('Sniper.Medic', (1, 2)),
   'medic_follow': stringList('sniper.MedicFollow', (1, 5)),
   'spy': stringList('Sniper.CloakedSpy', (1, 3)),
