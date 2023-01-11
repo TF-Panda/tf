@@ -236,3 +236,16 @@ TF_TeamsSwitched = "Les équipes ont été inversées."
 
 TimerOverTime = "Temps suppl."
 TimerSetup = "Configuration"
+
+# Map-specific goal strings.  The name of the string is specified
+# in the level file and looked up in the localizer via getattr.
+Dustbowl_red_setup_goal = "Défendez les points de contrôle contre les BLU !"
+Dustbowl_blue_setup_goal = "Prenez les deux points de contrôle pour gagner le round et avancer !"
+Dustbowl_red_final_goal = "Défendez les deux derniers points de contrôle pour éviter la défaite !"
+Dustbowl_blue_final_goal = "Prenez les deux derniers points de contrôle pour gagner la partie !"
+Dustbowl_cap_1_A = "Première capture, Phase 1"
+Dustbowl_cap_1_B = "Deuxième capture, Phase 1"
+Dustbowl_cap_2_A = "Première capture, Phase 2"
+Dustbowl_cap_2_B = "Deuxième capture, Phase 2"
+Dustbowl_cap_3_A = "Première capture, Phase 3"
+Dustbowl_cap_3_B = "le lance-roquettes, dernière capture"
