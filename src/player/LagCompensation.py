@@ -62,6 +62,8 @@ class LagCompensation(DirectObject):
             sample.simulationTime = globalClock.frame_time
             sample.pos = plyr.getPos()
             sample.hpr = plyr.getHpr()
+            sample.eyeH = plyr.eyeH
+            sample.eyeP = plyr.eyeP
             track.insert(0, sample)
 
     def startLagCompensation(self, plyr, cmd):
@@ -80,13 +82,13 @@ class LagCompensation(DirectObject):
 
         targetTime = base.ticksToTime(targetTick)
 
-        self.notify.debug("Start lag comp for plyr " + str(plyr.doId) + ", targetTime " + str(targetTime) + ", currentTime " + str(globalClock.frame_time))
-        self.notify.debug("Half-RTT is " + str(plyr.owner.averageRtt * 0.0005) + " seconds")
-        self.notify.debug("Lerp time is " + str(plyr.owner.interpAmount))
-        self.notify.debug("Lerp ticks " + str(lerpTicks))
-        self.notify.debug("Target tick " + str(targetTick))
-        self.notify.debug("current tick " + str(base.tickCount))
-        self.notify.debug("delta time " + str(deltaTime))
+        assert self.notify.debug("Start lag comp for plyr " + str(plyr.doId) + ", targetTime " + str(targetTime) + ", currentTime " + str(globalClock.frame_time))
+        assert self.notify.debug("Half-RTT is " + str(plyr.owner.averageRtt * 0.0005) + " seconds")
+        assert self.notify.debug("Lerp time is " + str(plyr.owner.interpAmount))
+        assert self.notify.debug("Lerp ticks " + str(lerpTicks))
+        assert self.notify.debug("Target tick " + str(targetTick))
+        assert self.notify.debug("current tick " + str(base.tickCount))
+        assert self.notify.debug("delta time " + str(deltaTime))
 
         #doLagCompDebug = tf_server_lag_comp_debug.value
 
@@ -127,6 +129,14 @@ class LagCompensation(DirectObject):
                 plyr.setHpr(restore.hpr)
                 anyChanged = True
 
+            if plyr.eyeH == change.eyeH:
+                plyr.eyeH = restore.eyeH
+                anyChanged = True
+
+            if plyr.eyeP == change.eyeP:
+                plyr.eyeP = restore.eyeP
+                anyChanged = True
+
             #pdelta = plyr.getPos() - change.pos
             #if pdelta.lengthSquared() < 128.0:
             if plyr.getPos() == change.pos:
@@ -146,6 +156,8 @@ class LagCompensation(DirectObject):
 
         curPos = plyr.getPos()
         curHpr = plyr.getHpr()
+        curEyeH = plyr.eyeH
+        curEyeP = plyr.eyeP
 
         prevPos = Point3(plyr.getPos())
         prevSample = None
@@ -182,22 +194,32 @@ class LagCompensation(DirectObject):
 
             p = sample.pos + (prevSample.pos - sample.pos) * frac
             hpr = sample.hpr + (prevSample.hpr - sample.hpr) * frac
+            eyeP = sample.eyeP + (prevSample.eyeP - sample.eyeP) * frac
+            eyeH = sample.eyeH + (prevSample.eyeH - sample.eyeH) * frac
         else:
             p = sample.pos
             hpr = sample.hpr
+            eyeP = sample.eyeP
+            eyeH = sample.eyeH
 
-        self.notify.debug("for plyr " + str(plyr.doId) + ", p " + str(p) + ", hpr " + str(hpr))
-        self.notify.debug("cur server pos " + str(curPos) + ", hpr " + str(curHpr))
+        assert self.notify.debug("for plyr " + str(plyr.doId) + ", p " + str(p) + ", hpr " + str(hpr))
+        assert self.notify.debug("cur server pos " + str(curPos) + ", hpr " + str(curHpr))
 
         pdiff = plyr.getPos() - p
         hdiff = plyr.getHpr() - hpr
+        eyeHDiff = plyr.eyeH - eyeH
+        eyePDiff = plyr.eyeP - eyeP
 
         change = record.change
         change.hpr = hpr
         change.pos = p
+        change.eyeH = eyeH
+        change.eyeP = eyeP
         restore = record.restore
         restore.hpr = plyr.getHpr()
         restore.pos = plyr.getPos()
+        restore.eyeH = plyr.eyeH
+        restore.eyeP = plyr.eyeP
 
         anyChanged = False
 
@@ -207,6 +229,14 @@ class LagCompensation(DirectObject):
 
         if pdiff.lengthSquared() > 0.01:
             plyr.setPos(p)
+            anyChanged = True
+
+        if eyeHDiff > 0.01:
+            plyr.eyeH = eyeH
+            anyChanged = True
+
+        if eyePDiff > 0.01:
+            plyr.eyeP = eyeP
             anyChanged = True
 
         if anyChanged:
