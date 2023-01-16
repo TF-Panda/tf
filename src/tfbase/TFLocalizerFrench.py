@@ -3,10 +3,10 @@
 ### Startup ###
 
 # Legal Disclaimer
-TFDisclaimer = 'Team Fortress and the Team Fortress logo are registered trademarks of Valve Corporation.  ' \
-               'Team Fortress 2 Panda is not affiliated with Valve Corporation.  ' \
-               'Team Fortress 2 Panda runs on a modified version of the Panda3D game engine.  ' \
-               'Panda3D is Copyright (c) Carnegie Mellon University.  ' \
+TFDisclaimer = 'Team Fortress and the Team Fortress logo are registered trademarks of Valve Corporation. ' \
+               'Team Fortress 2 Panda is not affiliated with Valve Corporation. ' \
+               'Team Fortress 2 Panda runs on a modified version of the Panda3D game engine. ' \
+               'Panda3D is Copyright (c) Carnegie Mellon University. ' \
                'FMOD Studio is Copyright (c) Firelight Technologies Pty Ltd.'
 
 Loading = "Chargement..."
@@ -159,6 +159,8 @@ NemesisText = "NEMESIS !"
 Msg_PickedUpFlag = " a récupéré les documents !"
 Msg_CapturedFlag = " a volé les documents !"
 Msg_DefendedFlag = " a défendu les documents !"
+Msg_CapturedPoint = " a capturé "
+Msg_DefendedPoint = " a défendu "
 
 ### Shared Between Kill Screen, Engineer panel, Medic Panel ###
 
