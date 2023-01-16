@@ -489,6 +489,10 @@ class DistributedTFPlayerShared:
         """
 
         if self.controller:
+            actor = self.controller.getActorNode()
+            if actor:
+                actor.clearPythonTag("entity")
+                actor.clearPythonTag("object")
             self.controller.destroy()
             self.controller = None
 

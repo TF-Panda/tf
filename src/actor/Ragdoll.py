@@ -35,6 +35,10 @@ class Ragdoll(PhysRagdoll):
                           part.damping, part.inertia, part.limit_x, part.limit_y, part.limit_z)
 
     def destroy(self):
+        for i in range(self.getNumJoints()):
+            actor = self.getJointActor(i)
+            if actor:
+                actor.clearPythonTag("object")
         self.characterNp = None
         PhysRagdoll.destroy(self)
 

@@ -608,6 +608,9 @@ class Actor(Model):
         self.channelsByName = {}
         # Remove hitboxes from physics scene and release references.
         for hbox in self.hitBoxes:
+            hbox.body.clearPythonTag("entity")
+            hbox.body.clearPythonTag("object")
+            hbox.body.clearPythonTag("hitbox")
             hbox.body.removeFromScene(base.physicsWorld)
             hbox.body = None
         self.hitBoxes = []

@@ -954,6 +954,12 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         BaseClass.disable(self)
         EntityBase.disable(self)
 
+    def removeNode(self):
+        if not self.isEmpty():
+            self.clearPythonTag("entity")
+            self.clearPythonTag("object")
+            NodePath.removeNode(self)
+
     def delete(self):
         if IS_CLIENT:
             self.ivPos = None
@@ -968,8 +974,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         self.destroyCollisions(replaceWithNormalNode=False)
         self.parentEntity = None
         #self.physicsRoot = None
-        if not self.isEmpty():
-            self.removeNode()
+        self.removeNode()
         BaseClass.delete(self)
 
 if not IS_CLIENT:
