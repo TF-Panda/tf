@@ -350,9 +350,13 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         if self.hasCollisions:
             self.node().setMass(mass)
 
+    def reinitializeCollisions(self):
+        self.destroyCollisions()
+        self.initializeCollisions()
+
     def initializeCollisions(self):
         if self.hasCollisions:
-            self.destroyCollisions()
+            return
 
         if self.solidShape == SolidShape.Empty:
             return

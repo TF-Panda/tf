@@ -104,7 +104,8 @@ class DistributedPropDynamic(BaseClass):
     else:
 
         def RecvProxy_enabled(self, flag):
-            self.setEnabled(flag)
+            if flag != self.enabled:
+                self.setEnabled(flag)
 
         def RecvProxy_model(self, mdl):
             if not mdl:

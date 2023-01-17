@@ -39,7 +39,8 @@ class DistributedChar(Actor, DistributedEntity):
         self.setSkin(skin)
 
     def RecvProxy_model(self, model):
-        self.loadModel(model)
+        if model != self.model:
+            self.loadModel(model)
 
     def startProcessingAnimationEvents(self):
         if not self.processingAnimEvents:

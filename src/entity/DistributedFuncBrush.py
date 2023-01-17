@@ -40,7 +40,8 @@ class DistributedFuncBrush(DistributedSolidEntity):
             self.setEnabled(True)
     else:
         def RecvProxy_enabled(self, flag):
-            self.setEnabled(flag)
+            if flag != self.enabled:
+                self.setEnabled(flag)
 
     def setEnabled(self, flag):
         self.enabled = flag
