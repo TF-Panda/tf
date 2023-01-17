@@ -468,7 +468,7 @@ class DistributedTFPlayerShared:
         self.applyControllerMasks()
 
         self.controller.setUpDirection(Vec3.up())
-        self.controller.setStepOffset(24) # 18 HUs to inches?
+        self.controller.setStepOffset(16) # 18 HUs to inches?
         self.controller.setContactOffset(1) # 6 inches idk
         self.controller.setFootPosition(self.getPos())
         self.controller.getActorNode().setPythonTag("entity", self)
