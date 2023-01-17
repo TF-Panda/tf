@@ -86,7 +86,7 @@ class TriggerCaptureArea(DistributedTrigger):
         def handleBlocked(self):
             # Find the team that defended the point.
 
-            if self.point.ownerTeam == TFGlobals.TFTeam.NoTeam:
+            if self.capPoint.ownerTeam == TFGlobals.TFTeam.NoTeam:
                 # This is just a contested point.
                 return
 
@@ -94,11 +94,11 @@ class TriggerCaptureArea(DistributedTrigger):
             # owns the point, defended it.
             defenders = []
             for p in self.playersOnCap:
-                if p.team == self.point.ownerTeam:
+                if p.team == self.capPoint.ownerTeam:
                     defenders.append(p)
 
             if defenders:
-                base.game.sendUpdate('defendedPointEvent', [defenders[0], self.capPoint.pointName])
+                base.game.sendUpdate('defendedPointEvent', [defenders[0].doId, self.capPoint.pointName])
 
         def capUpdate(self, task):
             if base.game.isRoundEnded():
