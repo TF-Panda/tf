@@ -267,6 +267,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         resets health, round timer, etc.
         """
 
+        self.sendUpdate('hideWinPanel')
+
         self.roundNumber += 1
 
         self.winTeam = TFTeam.NoTeam
@@ -328,7 +330,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         messenger.send('OnBeginRound')
 
-    def endRound(self, winTeam=TFTeam.NoTeam):
+    def endRound(self, winTeam=TFTeam.NoTeam, winReason=TFGlobals.WinReason.Stalemate):
         self.notify.info("End round %i" % self.roundNumber)
         self.roundState = RoundState.Ended
         self.roundEndTime = globalClock.frame_time + 15.0
@@ -372,6 +374,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.gameModeImpl.onEndRound()
 
         messenger.send('OnEndRound')
+
+        self.sendUpdate('showWinPanel', [winTeam, winReason])
 
     def __gameUpdate(self, task):
         if self.waitingForPlayers:

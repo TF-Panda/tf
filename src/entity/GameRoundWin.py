@@ -22,6 +22,6 @@ class GameRoundWin(EntityBase):
             self.forceMapReset = props.getAttributeValue("force_map_reset").getBool()
 
     def input_RoundWin(self, caller):
-        base.game.endRound(self.team)
+        base.game.endRound(self.team, TFGlobals.WinReason.Defended)
         base.game.switchTeamsOnNewRound = self.switchTeams
         base.game.forceMapReset = self.forceMapReset

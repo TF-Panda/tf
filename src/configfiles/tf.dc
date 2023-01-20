@@ -215,6 +215,9 @@ dclass DistributedGame : DistributedObject {
 
   setGameContextMessage(uint16 id, float64 duration, uint8 team) broadcast;
   setGoalString(string msg, uint8 team);
+
+  showWinPanel(int8 winTeam, uint8 winReason) broadcast;
+  hideWinPanel() broadcast;
 };
 
 dclass DistributedChar : DistributedEntity {

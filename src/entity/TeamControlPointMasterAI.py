@@ -123,9 +123,10 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
             winTeam = TeamControlPointManagerAI.checkWinner(self)
 
         if winTeam is not None:
+            isFinalRound = (not self.rounds or not self.hasNextRound())
             # This team wins.
-            base.game.endRound(winTeam)
-            if not self.rounds or not self.hasNextRound():
+            base.game.endRound(winTeam, TFGlobals.WinReason.CapturedPoints if isFinalRound else TFGlobals.WinReason.SeizedArea)
+            if isFinalRound:
                 # This is the end of the full round, so switch teams
                 # and restart.
                 base.game.switchTeamsOnNewRound = self.switchTeams

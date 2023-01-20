@@ -14,6 +14,14 @@ GameZone = 2
 
 from panda3d.core import BitMask32, Vec3, DynamicTextFont, SamplerState, NodePath, LineSegs
 
+class WinReason:
+    Stalemate = 0
+    Defended = 1
+    SeizedArea = 2
+    CapturedPoints = 3
+    CapturedPayload = 4
+    CapturedFlag = 5
+
 class SpeechConcept:
 
     TakeDamage = 0

@@ -19,6 +19,7 @@ from tf.tfbase.Soundscapes import SoundscapeManager
 from .RoundState import RoundState
 
 from tf.tfgui import TFGuiProperties
+from tf.tfgui.WinPanel import WinPanel
 
 from .CubemapRendering import CubemapRendering
 
@@ -69,6 +70,25 @@ class DistributedGame(DistributedObject, DistributedGameBase):
                                       text_font=TFGlobals.getTF2SecondaryFont())
         self.contextLbl.hide()
         self.contextIval = None
+
+        self.winPanel = None
+        self.winPanelRemoveTask = None
+
+    def showWinPanel(self, winTeam, winReason):
+        self.winPanel = WinPanel(winTeam, winReason)
+        #self.winPanelRemoveTask = base.taskMgr.doMethodLater(15.0, self.__hideWinPanel, 'hideWinPanel')
+
+    def __hideWinPanel(self, task):
+        self.hideWinPanel()
+        return task.done
+
+    def hideWinPanel(self):
+        if self.winPanel:
+            self.winPanel.cleanup()
+            self.winPanel = None
+        if self.winPanelRemoveTask:
+            self.winPanelRemoveTask.remove()
+            self.winPanelRemoveTask = None
 
     def setGoalString(self, string, team):
         text = TFLocalizer.getLocalizedString(string)
@@ -722,6 +742,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         if self.goalLbl:
             self.goalLbl.destroy()
             self.goalLbl = None
+        self.hideWinPanel()
         base.game = None
         DistributedObject.delete(self)
         DistributedGameBase.delete(self)
