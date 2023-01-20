@@ -897,6 +897,9 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             if sound is None:
                 return
 
+            if self != base.localAvatar:
+                sound.setVolume(sound.getVolume() * 0.65)
+
             self.soundEmitter.registerSound(sound,
                 chan,
                 True, offset)
@@ -929,6 +932,9 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 return None
             if volume is not None:
                 sound.setVolume(sound.getVolume() * volume)
+            # Lower the volume of non-local avatar sounds.
+            if self != base.localAvatar:
+                sound.setVolume(sound.getVolume() * 0.65)
             sound.setLoop(loop)
             if chan is None:
                 chan = info.channel
