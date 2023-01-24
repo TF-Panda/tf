@@ -7,6 +7,7 @@ import string
 import py_compile
 import time
 import re
+import platform
 
 from direct.dist import FreezeTool
 
@@ -190,8 +191,12 @@ except Exception as e:
     print(helpString)
     sys.exit(1)
 
-platform = 'WIN32'
-if os.name != 'nt':
+internalPlatform = platform.system()
+if internalPlatform == 'Windows':
+    platform = 'WIN32'
+elif internalPlatform == 'Linux':
+    platform = 'LINUX'
+elif internalPlatform == 'Darwin':
     platform = 'OSX'
 
 for opt in opts:
@@ -215,6 +220,7 @@ else:
     installDirectory = pargs[1]
     persistDirectory = pargs[2]
 
+print("Platform:", platform)
 
 from direct.directnotify.DirectNotifyGlobal import *
 from panda3d.core import *
