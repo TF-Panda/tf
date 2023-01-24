@@ -478,9 +478,12 @@ class DistributedTFPlayerShared:
         if self.team == TFGlobals.TFTeam.Red:
             # We are red team.
             self.controller.setFromCollideMask(CollisionGroups.RedPlayer)
+            # Don't collide with other red players.
+            self.controller.setIntoCollideMask(~BitMask32(CollisionGroups.RedPlayer))
         else:
             self.controller.setFromCollideMask(CollisionGroups.BluePlayer)
-        #self.controller.setIntoCollideMask(self.getPlayerCollideMask())
+            # Don't collide with other blue players.
+            self.controller.setIntoCollideMask(~BitMask32(CollisionGroups.BluePlayer))
 
     def disableController(self):
         """
