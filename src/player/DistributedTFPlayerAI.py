@@ -266,6 +266,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def changePlayerState(self, newState, prevState):
         if prevState == TFPlayerState.Playing:
             self.disableController()
+            self.disableHitBoxes()
         elif prevState == TFPlayerState.Died:
             self.removeTask('freezeFrameTask')
             self.observerTarget = -1
@@ -276,6 +277,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         if newState == TFPlayerState.Playing:
             self.enableController()
+            self.enableHitBoxes()
             self.respawnTime = 0.0
 
         elif newState == TFPlayerState.Spectating:

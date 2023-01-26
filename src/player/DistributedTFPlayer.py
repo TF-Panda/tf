@@ -464,6 +464,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if prevState == TFPlayerState.Playing:
             # Leaving the tangible world.  We died or something.
             self.disableController()
+            self.disableHitBoxes()
             self.removeTask('playerAnimState')
             if self.eyes:
                 self.eyes.disable()
@@ -477,6 +478,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.deathType = self.DTNone
             self.gibs = None
             self.enableController()
+            self.enableHitBoxes()
             self.addTask(self.__updateAnimState, 'playerAnimState', appendTask=True, sort=31, sim=False)
             # If we have a ragdoll, make sure the talker animation channel is
             # stopped on it.  Fixes the ragdoll doing lip sync on player lines

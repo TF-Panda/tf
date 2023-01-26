@@ -48,6 +48,7 @@ class Actor(Model):
         # TODO: Use an aggregate.
         self.hitBoxes = []
         self.lastHitBoxSyncTime = 0.0
+        self.hitBoxesEnabled = False
 
         # Set of Actors that are joint merged to me.
         # When our model changes, we will redirect our children
@@ -611,7 +612,8 @@ class Actor(Model):
             hbox.body.clearPythonTag("entity")
             hbox.body.clearPythonTag("object")
             hbox.body.clearPythonTag("hitbox")
-            hbox.body.removeFromScene(base.physicsWorld)
+            if hbox.body.getScene():
+                hbox.body.removeFromScene(base.physicsWorld)
             hbox.body = None
         self.hitBoxes = []
         Model.unloadModel(self)
@@ -673,6 +675,9 @@ class Actor(Model):
                            (maxs.get(0).getFloat(), maxs.get(1).getFloat(), maxs.get(2).getFloat()))
 
     def addHitBox(self, group, jointName, mins, maxs):
+        """
+        Adds a hitbox to the Actor.
+        """
         joint = self.character.findJoint(jointName)
         if joint == -1:
             self.notify.warning(f"addHitBox(): joint {jointName} not found on character {self.character.getName()}")
@@ -697,7 +702,8 @@ class Actor(Model):
         body.setFromCollideMask(CollisionGroups.HitBox)
         body.addShape(shape)
         body.setKinematic(True)
-        body.addToScene(base.physicsWorld)
+        if self.hitBoxesEnabled:
+            body.addToScene(base.physicsWorld)
         body.setOverallHidden(True)
         hbox = HitBox(group, body, joint)
         # Add a link to ourself so traces know who they hit.
@@ -705,6 +711,30 @@ class Actor(Model):
         body.setPythonTag("entity", self)
         body.setPythonTag("object", self)
         self.hitBoxes.append(hbox)
+
+    def disableHitBoxes(self):
+        """
+        Removes all hitboxes from the physics scene, so that
+        scene queries can no longer intersect the boxes.
+        """
+        if not self.hitBoxes:
+            return
+        for hbox in self.hitBoxes:
+            if hbox.body.getScene():
+                hbox.body.removeFromScene(base.physicsWorld)
+        self.hitBoxesEnabled = False
+
+    def enableHitBoxes(self):
+        """
+        Adds all hitboxes to the physics scene, so that scene queries
+        can intersect the boxes again.
+        """
+        if not self.hitBoxes:
+            return
+        for hbox in self.hitBoxes:
+            if not hbox.body.getScene():
+                hbox.body.addToScene(base.physicsWorld)
+        self.hitBoxesEnabled = True
 
     def syncHitBoxes(self):
         """
