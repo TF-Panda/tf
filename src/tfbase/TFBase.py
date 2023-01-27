@@ -16,6 +16,7 @@ from tf.tfgui.GuiPanel import GuiPanel
 from tf.tfgui.TFDialog import TFDialog
 from .TFPostProcess import TFPostProcess
 from .PlanarReflector import PlanarReflector
+from . import CollisionGroups
 from . import Sounds
 
 #from .Console import Console
@@ -262,6 +263,11 @@ class TFBase(ShowBase, FSM):
         self.game = None
 
         self.dynamicLights = []
+
+        # Set up the tracer for the audio system to calculate
+        # sound occlusion.
+        tracer = PhysAudioTracer(base.physicsWorld, CollisionGroups.World)
+        self.audioEngine.setTracer(tracer)
 
     def addDynamicLight(self, lnp, followParent=None, fadeTime=0.0):
         self.dynamicLights.append((lnp, Vec3(lnp.getColorLinear()), followParent, fadeTime, base.getRenderTime()))
