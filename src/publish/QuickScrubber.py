@@ -154,7 +154,7 @@ Required:
 #     <dirname>
 #       (Same as for the file command, above.)
 
-filelistPath = '$TOONTOWN/src/publish/QuickFilelist'
+filelistPath = '$TF/src/publish/QuickFilelist'
 installDirectory = None
 persistDirectory = None
 
