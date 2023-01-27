@@ -179,6 +179,7 @@ def createSound(info, spatial=False, getWave=False):
     if spatial:
         sound.set3dMinDistance(info.minDistance)
         props = SteamAudioProperties()
+        props._enable_occlusion = True
         #props._enable_air_absorption = False
         sound.applySteamAudioProperties(props)
         #print(repr(info))
@@ -231,6 +232,7 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False, getI
     if spatialized:
         sound.set3dMinDistance(info.minDistance)
         props = SteamAudioProperties()
+        props._enable_occlusion = True
         #props._enable_air_absorption = False
         sound.applySteamAudioProperties(props)
         #print(repr(info))
