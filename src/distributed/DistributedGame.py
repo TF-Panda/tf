@@ -250,6 +250,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
 
+        base.audioEngine.clearAudioProbeData()
+        base.audioEngine.clearAudioSceneData()
+
         if self.fogMgr:
             self.fogMgr.cleanup()
             self.fogMgr = None
@@ -419,7 +422,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         self.lvlData.setCam(base.cam)
         self.lvlData.buildTraceScene()
-        base.sfxManagerList[0].setTraceScene(self.lvlData.getTraceScene())
+        #base.sfxManagerList[0].setTraceScene(self.lvlData.getTraceScene())
 
         clnp = self.lvlData.getDirLight()
         if not clnp.isEmpty():
@@ -449,8 +452,16 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         #base.csmDebug.setShaderInput("cascadeSampler", cl.getShadowMap())
 
         saData = self.lvlData.getSteamAudioSceneData()
-        base.sfxManagerList[0].loadSteamAudioScene(saData.verts, saData.tris, saData.tri_materials, saData.materials)
-        base.sfxManagerList[0].loadSteamAudioReflectionProbeBatch(self.lvlData.getSteamAudioProbeData())
+        if saData.verts:
+            base.audioEngine.setAudioSceneData(saData.verts, saData.tris, saData.tri_materials, saData.materials)
+        else:
+            base.audioEngine.clearAudioSceneData()
+        # Load the audio reflection probes.
+        probeData = self.lvlData.getSteamAudioProbeData()
+        if probeData:
+            base.audioEngine.setAudioProbeData(probeData)
+        else:
+            base.audioEngine.clearAudioProbeData()
 
         # Initialize the dynamic vis node to the number of visgroups in the
         # new level.
