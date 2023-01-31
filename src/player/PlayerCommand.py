@@ -14,8 +14,22 @@ import random
 
 class PlayerCommand:
 
-    def __init__(self):
-        self.clear()
+    def __init__(self, init=True):
+        if init:
+            self.clear()
+
+    def makeCopy(self):
+        p = PlayerCommand(False)
+        p.buttons = self.buttons
+        p.viewAngles = Vec3(self.viewAngles)
+        p.mouseDelta = Vec2(self.mouseDelta)
+        p.move = Vec3(self.move)
+        p.weaponSelect = self.weaponSelect
+        p.hasBeenPredicted = self.hasBeenPredicted
+        p.tickCount = self.tickCount
+        p.commandNumber = self.commandNumber
+        p.randomSeed = self.randomSeed
+        return p
 
     def clear(self):
         # Gameplay button states
@@ -39,7 +53,7 @@ class PlayerCommand:
     @staticmethod
     def readDatagram(dgi, prev):
         # Assume no change.
-        cmd = copy.deepcopy(prev)
+        cmd = prev.makeCopy()
 
         if dgi.getUint8():
             cmd.commandNumber = dgi.getUint32()

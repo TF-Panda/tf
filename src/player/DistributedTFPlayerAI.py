@@ -723,7 +723,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         return force
 
     def onTakeDamage(self, inputInfo):
-        info = inputInfo#copy.deepcopy(inputInfo)
+        info = inputInfo
 
         if not info.damage:
             return
@@ -1504,7 +1504,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         ctx.droppedPackets = 0
         ctx.newCmds = []
         for i in range(count):
-            ctx.newCmds.append(copy.deepcopy(commands[i]))
+            ctx.newCmds.append(commands[i].makeCopy())
         ctx.cmds = ctx.newCmds
         ctx.backupCmds = []
 
@@ -1629,23 +1629,23 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 # backup for.
                 while droppedCmds > numBackup:
                     self.lastCmd.tickCount += 1
-                    availableCommands.append(copy.deepcopy(self.lastCmd))
+                    availableCommands.append(self.lastCmd.makeCopy())
                     droppedCmds -= 1
 
                 # Now run the "history" commands if we still have dropped packets.
                 while droppedCmds > 0:
                     cmdNum = numBackup - droppedCmds
-                    availableCommands.append(copy.deepcopy(ctx.backupCmds[cmdNum]))
+                    availableCommands.append(ctx.backupCmds[cmdNum].makeCopy())
                     droppedCmds -= 1
 
             # Now run any new commands.  Most recent command is at the tail.
             for i in range(len(ctx.newCmds)):
-                availableCommands.append(copy.deepcopy(ctx.newCmds[i]))
+                availableCommands.append(ctx.newCmds[i].makeCopy())
 
             # Save off the last good command in case we drop > numBackup
             # packets and need to rerun them.  We'll use this to "guess" at
             # what was in the missing packets.
-            self.lastCmd = copy.deepcopy(ctx.cmds[len(ctx.cmds) - 1])
+            self.lastCmd = ctx.cmds[len(ctx.cmds) - 1].makeCopy()
 
         # base.currentTicksThisFrame == number of ticks remaining to be run, so
         # we should take the last N PlayerCommands and postpone them until the
