@@ -406,6 +406,8 @@ class BaseObject(BaseClass):
 
             self.setObjectState(ObjectState.Constructing)
 
+            self.addTask(self.__simulateTask, 'ObjectSimulateAI', appendTask=True, sim=True)
+
         def determinePlaybackRate(self):
             if self.isBuilding():
                 self.repairMultiplier = self.getRepairMultiplier()
@@ -413,6 +415,10 @@ class BaseObject(BaseClass):
             else:
                 self.repairMultiplier = 1.0
                 self.setPlayRate(1.0)
+
+        def __simulateTask(self, task):
+            self.simulate()
+            return task.cont
 
         def simulate(self):
             BaseClass.simulate(self)

@@ -37,6 +37,11 @@ class DWeaponDrop(BaseClass):
             BaseClass.announceGenerate(self)
             self.enabled = True
             self.activeTime = globalClock.frame_time
+            self.addTask(self.__simulateTask, 'WeaponDropSimulateAI', appendTask=True, sim=True)
+
+        def __simulateTask(self, task):
+            self.simulate()
+            return task.cont
 
         def simulate(self):
             BaseClass.simulate(self)

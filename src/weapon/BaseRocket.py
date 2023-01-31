@@ -122,6 +122,8 @@ class BaseRocket(BaseClass):
             if not self.sweepGeometry:
                 self.sweepGeometry = self.makeModelCollisionShape()[0][1]
 
+            self.addTask(self.__simulateTask, 'RocketSimulateAI', sim=True, appendTask=True)
+
     if not IS_CLIENT:
         def delete(self):
             self.enemy = None
@@ -153,6 +155,10 @@ class BaseRocket(BaseClass):
 
             # Remove the rocket.
             base.net.deleteObject(self)
+
+        def __simulateTask(self, task):
+            self.simulate()
+            return task.cont
 
         def simulate(self):
             BaseClass.simulate(self)

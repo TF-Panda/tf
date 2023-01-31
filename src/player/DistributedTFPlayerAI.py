@@ -1435,6 +1435,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Start condition update logic.
         self.addTask(self.__conditionThinkAI, 'TFPlayerConditionThinkAI', appendTask=True, sim=True)
 
+        # Player simulation task.
+        self.addTask(self.__simulateTask, 'TFPlayerSimulateAI', appendTask=True, sim=True)
+
     def delete(self):
         base.game.d_displayChat("%s left the game." % self.playerName)
 
@@ -1582,6 +1585,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if paused:
             self.forceSimulation()
             self.simulate()
+
+    def __simulateTask(self, task):
+        self.simulate()
+        return task.cont
 
     def simulate(self):
         self.bulletForce = Vec3()
