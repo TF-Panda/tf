@@ -98,7 +98,8 @@ class World(DistributedSolidEntity):
         self.decalVisRoot.levelInit(base.game.lvlData.getNumClusters(), base.game.lvlData.getAreaClusterTree())
         self.decalVisRootNp = base.render.attachNewNode(self.decalVisRoot)
 
-        self.addTask(self.__updateDecalVis, 'updateDecalVis', sim=False, appendTask=True, sort=49)
+        if IS_CLIENT:
+            self.addTask(self.__updateDecalVis, 'updateDecalVis', sim=False, appendTask=True, sort=49)
 
         # Link static prop physics to world entity.
         for np in base.game.propPhysRoot.findAllMatches("**/+PhysRigidActorNode"):
