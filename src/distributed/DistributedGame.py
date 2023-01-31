@@ -451,11 +451,11 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         #base.csmDebug.setShaderInput("cascadeSampler", cl.getShadowMap())
 
-        saData = self.lvlData.getSteamAudioSceneData()
-        if saData.verts:
-            base.audioEngine.setAudioSceneData(saData.verts, saData.tris, saData.tri_materials, saData.materials)
-        else:
-            base.audioEngine.clearAudioSceneData()
+        #saData = self.lvlData.getSteamAudioSceneData()
+        #if saData.verts:
+        #    base.audioEngine.setAudioSceneData(saData.verts, saData.tris, saData.tri_materials, saData.materials)
+        #else:
+        #    base.audioEngine.clearAudioSceneData()
         # Load the audio reflection probes.
         probeData = self.lvlData.getSteamAudioProbeData()
         if probeData:
