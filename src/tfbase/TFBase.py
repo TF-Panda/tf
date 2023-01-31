@@ -224,9 +224,9 @@ class TFBase(ShowBase, FSM):
 
         # Play a constantly looping silence sound so the reverb always has
         # an input and doesn't go idle and cut off.
-        self.silenceSound = self.loadSfx("audio/sfx/silence.wav")
-        self.silenceSound.setLoop(True)
-        self.silenceSound.play()
+        #self.silenceSound = self.loadSfx("audio/sfx/silence.wav")
+        #self.silenceSound.setLoop(True)
+        #self.silenceSound.play()
 
         #cm = CardMaker('cm')
         #cm.setHasUvs(True)
