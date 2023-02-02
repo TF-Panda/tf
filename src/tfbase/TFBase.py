@@ -75,7 +75,7 @@ class TFBase(ShowBase, FSM):
 
         self.win.disableClears()
         self.win.setClearColorActive(True)
-        bgLinear = pow(0.3, 2.2)
+        bgLinear = pow(0.1, 2.2)
         self.win.setClearColor((bgLinear, bgLinear, bgLinear, 1))
 
         sceneDr = self.camNode.getDisplayRegion(0)

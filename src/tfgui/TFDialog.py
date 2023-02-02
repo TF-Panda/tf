@@ -53,7 +53,7 @@ class TFDialog(DirectDialog):
             ('relief', DGG.FLAT, None),
             ('button_relief', DGG.FLAT, None),
             ('frameColor', TFGuiProperties.BackgroundColorNeutralTranslucent, None),
-            ('button_frameColor', (TFGuiProperties.BackgroundColorNeutralTranslucent, (0.61, 0.32, 0.13, 1)), None),
+            ('button_frameColor', (TFGuiProperties.ButtonIdleColor, TFGuiProperties.ButtonHoverColor), None),
             ('fadeScreen', 0.5, None),
             ('text_wordwrap', 18, None),
             ('button_pad', (0.01, 0.01), None),
