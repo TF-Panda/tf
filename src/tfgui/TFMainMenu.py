@@ -16,7 +16,8 @@ class TFMainMenu(StateData):
     MenuSongs = [
       "audio/bgm/gamestartup1.mp3",
       "audio/bgm/gamestartup2.mp3",
-      "audio/bgm/gamestartup3.mp3"#,
+      "audio/bgm/gamestartup3.mp3",
+      "audio/bgm/create_a_toon.mid"#,
       #"audio/bgm/gamestartup4.mp3",
       #"audio/bgm/gamestartup5.mp3",
       #"audio/bgm/gamestartup6.mp3",
@@ -35,14 +36,6 @@ class TFMainMenu(StateData):
 
     @staticmethod
     def pickMenuSong():
-        # Small random chance of playing the Toontown theme on initial
-        # startup as a nod to Panda's origins.
-        #return "audio/bgm/tt_theme.mid"
-        #ttChance = random.random()
-        #ttChanceThreshold = 1.1#0.05
-        #if ttChance < ttChanceThreshold:
-        #    return random.choice(["audio/bgm/tt_theme.mid", "audio/bgm/create_a_toon.mid"])
-        #else:
         return random.choice(TFMainMenu.MenuSongs)
 
     def __init__(self):
