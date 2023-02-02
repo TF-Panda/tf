@@ -156,7 +156,7 @@ class TFMainMenu(StateData):
         self.verLbl.reparentTo(hidden)
         self.driverInfoLbl.reparentTo(hidden)
         self.ignore("menuSongFinished")
-        base.stopMusic()
+        #base.stopMusic()
         StateData.exit(self)
 
     def unload(self):
