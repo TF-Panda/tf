@@ -592,7 +592,7 @@ class TFBase(ShowBase, FSM):
         bgCard.setFrameFullscreenQuad()
         bgCardNp = self.render2d.attachNewNode(bgCard.generate())
         bgCardNp.setColor(0, 0, 0, 1)
-        tfLogo = OnscreenImage(image = self.loader.loadModel("models/gui/tf2_logo_2"), scale = 0.05)
+        tfLogo = OnscreenImage(image = self.loader.loadModel("models/gui/tf2p_logo"), scale = 0.05)
         tfLogo.setTransparency(True)
         tfLogo.setAlphaScale(0)
         pandaLogo = OnscreenImage('maps/powered_by_panda3d.txo')
