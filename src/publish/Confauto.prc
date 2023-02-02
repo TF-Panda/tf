@@ -115,10 +115,11 @@ tone-mapping-algorithm urchima
 # FMOD audio configuration.
 fmod-use-steam-audio 1
 fmod-speaker-mode stereo
-fmod-mixer-sample-rate 48000
+fmod-mixer-sample-rate 44100
 fmod-dsp-buffer-size 1024
 fmod-number-of-sound-channels 256
 fmod-compressed-samples 1
+fmod-reverb-mix 0.25
 music-volume 1.0
 sfx-volume 0.72
 
