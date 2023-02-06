@@ -84,14 +84,16 @@ class TFPlayerAnimState:
         #print("anim event", event)
         from tf.weapon.DMinigun import DMinigun
         from tf.weapon.DistributedSniperRifle import DistributedSniperRifle
+        from tf.weapon.DistributedMedigun import DistributedMedigun
         if event == PlayerAnimEvent.AttackPrimary:
             wpn = self.player.getActiveWeaponObj()
             isMinigun = isinstance(wpn, DMinigun)
             isSniperRifle = isinstance(wpn, DistributedSniperRifle)
-            if isMinigun:
+            isMedigun = isinstance(wpn, DistributedMedigun)
+            if isMinigun or isMedigun:
                 gestureActivity = Activity.Attack_Stand
                 if not self.isGestureSlotPlaying(GestureSlot.AttackAndReload, self.translateActivity(gestureActivity, GestureSlot.AttackAndReload)):
-                    self.restartGesture(GestureSlot.AttackAndReload, gestureActivity)
+                    self.restartGesture(GestureSlot.AttackAndReload, gestureActivity, blendIn=0.0)
             elif isSniperRifle and self.player.inCondition(self.player.CondZoomed):
                 # Weapon primary fire, zoomed in.
                 if self.player.ducking:
