@@ -77,6 +77,11 @@ medicKilledPlayerVeryManyLines = [
 medicMeleeKillLines = [
   'Medic.SpecialCompleted01'
 ]
+medicChargeReadyLines = [
+  "Medic.AutoChargeReady01",
+  "Medic.AutoChargeReady02",
+  "Medic.AutoChargeReady03"
+]
 
 def makeResponseSystem(player):
     system = makeBaseTFResponseSystem(player, MedicBaseResponses)
@@ -132,6 +137,20 @@ def makeResponseSystem(player):
         ],
         [
           {'name': 'KillSpeechMelee', 'value': 1, 'expireTime': 10}
+        ]
+      )
+    )
+    # When we get full ubercharge.
+    system.addRule(
+      SpeechConcept.ChargeReady,
+      Rule(
+        [],
+        [
+          Response(
+            [
+              ResponseLine(x) for x in medicChargeReadyLines
+            ]
+          )
         ]
       )
     )

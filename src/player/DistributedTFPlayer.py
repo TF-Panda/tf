@@ -101,6 +101,11 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.viewOffsetNode = self.attachNewNode("viewOffset")
 
+        self.healerDoIds = []
+
+    def getNumHealers(self):
+        return len(self.healerDoIds)
+
     def putOnDisguise(self):
         if self.disguiseClass == Class.Invalid:
             return

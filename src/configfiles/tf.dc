@@ -282,6 +282,8 @@ dclass DistributedTFPlayer : DistributedChar {
   int8 disguiseClass;
   uint8 disguiseWeapon;
 
+  uint32 healerDoIds[];
+
   // 46 bytes
 
   // Client request to change class.

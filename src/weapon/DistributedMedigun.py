@@ -9,11 +9,13 @@ from .TFWeaponGun import TFWeaponGun
 from tf.tfbase import TFLocalizer
 
 from .WeaponMode import TFWeaponMode, TFWeaponType
-from tf.tfbase.TFGlobals import DamageType, TFTeam
+from tf.tfbase.TFGlobals import DamageType, TFTeam, SpeechConcept
 from tf.tfbase import TFFilters, TFEffects, CollisionGroups
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.actor.Activity import Activity
+
+import math
 
 # heal()
 # recalculateInvuln()
@@ -21,6 +23,9 @@ from tf.actor.Activity import Activity
 # getMaxBuffedHealth()
 # getNumHealers()
 # stopHealing()
+
+weapon_medigun_charge_rate = 40.0
+weapon_medigun_chargerelease_rate = 8.0
 
 class DistributedMedigun(TFWeaponGun):
 
@@ -43,7 +48,7 @@ class DistributedMedigun(TFWeaponGun):
         self.healing = False
         self.attacking = False
         self.holstered = True
-        self.chargeRelease = True
+        self.chargeRelease = False
         self.healingTargetId = -1
 
         self.healSound = None
@@ -77,6 +82,7 @@ class DistributedMedigun(TFWeaponGun):
             self.addPredictionField("lastRejectSoundTime", float, networked=False, noErrorCheck=True)
 
     def allowedToHealTarget(self, target):
+        # TODO: disguised spies, not invisible
         return target.team == self.player.team
 
     def couldHealTarget(self, target):
@@ -228,8 +234,10 @@ class DistributedMedigun(TFWeaponGun):
                     chargeAmount /= totalHealers
 
                 newLevel = min(self.chargeLevel + chargeAmount, 1.0)
-                #if not IS_CLIENT:
-                #    if newLevel >= 1.0 and self.chargeLevel < 1.0:
+                if newLevel >= 1.0 and self.chargeLevel < 1.0:
+                    if not IS_CLIENT:
+                        self.player.speakConcept(SpeechConcept.ChargeReady)
+                    self.playSound("WeaponMedigun.Charged")
 
                 self.chargeLevel = newLevel
 

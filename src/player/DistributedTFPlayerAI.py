@@ -126,6 +126,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.recentKills = []
 
+    def SendProxy_healerDoIds(self):
+        # FIXME: probably slow
+        if not self.healers:
+            return []
+        return [x['player'].doId for x in self.healers]
+
     def dropFlag(self):
         if self.flag:
             self.flag.drop()

@@ -70,6 +70,8 @@ class SpeechConcept:
     Teleported = 37
     StoppedBeingHealed = 38
 
+    ChargeReady = 39
+
 class TFTeam:
     NoTeam = -1
     Red = 0
