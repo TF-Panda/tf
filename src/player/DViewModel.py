@@ -21,7 +21,7 @@ class BobState:
         self.verticalBob = 0.0
         self.lateralBob = 0.0
 
-tf_weapon_sway = ConfigVariableBool('tf-weapon-sway', False)
+tf_weapon_sway = ConfigVariableBool('tf-weapon-sway', True)
 tf_weapon_sway_interp = ConfigVariableDouble('tf-weapon-sway-interp', 0.1)
 tf_weapon_sway_scale = ConfigVariableDouble('tf-weapon-sway-scale', 5.0)
 
