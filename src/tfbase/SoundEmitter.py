@@ -46,11 +46,40 @@ class SoundEmitter(DirectObject):
 
         self.debug = False
 
-    def delete(self):
+    def stopAllSounds(self):
         self.stopSpatialTask()
         self.ignoreAll()
         for s in (self.generalSounds + list(self.chanSounds.values())):
             s.sound.stop()
+        self.chanSounds = {}
+        self.generalSounds = []
+        self.spatialSounds = set()
+
+    def stopChannel(self, chan):
+        if chan < 0:
+            self.stopAllSounds()
+
+        elif chan in NoOverrideChannels:
+            for s in self.generalSounds:
+                self.ignore(s.eventName)
+                s.sound.stop()
+                if s in self.spatialSounds:
+                    self.spatialSounds.remove(s)
+            self.generalSounds = []
+
+        elif chan in self.chanSounds:
+            s = self.chanSounds[chan]
+            self.ignore(s.eventName)
+            s.sound.stop()
+            del self.chanSounds[chan]
+            if s in self.spatialSounds:
+                self.spatialSounds.remove(s)
+
+        if not self.spatialSounds:
+            self.stopSpatialTask()
+
+    def delete(self):
+        self.stopAllSounds()
         self.chanSounds = None
         self.generalSounds = None
         self.spatialSounds = None

@@ -821,6 +821,9 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             else:
                 self.sendUpdate('emitSoundSpatial_sv', soundInfo, client=client, excludeClients=excludeClients)
 
+        def stopSound(self, channel=-1):
+            self.sendUpdate('stopSound_sv', [channel])
+
         def isEntityVisible(self, entity, traceMask):
             """
             Traces a line from this entity's position to the indicated
@@ -905,6 +908,12 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 True, offset)
             sound.setLoop(bool(loop))
             sound.play()
+
+        def stopSound_sv(self, channel):
+            self.soundEmitter.stopChannel(channel)
+
+        def stopSound(self, channel=-1):
+            self.soundEmitter.stopChannel(channel)
 
         def emitSound(self, soundName, loop=False, volume=None, chan=None):
             if isinstance(soundName, str):
