@@ -5,6 +5,7 @@ from .DistributedSolidEntity import DistributedSolidEntity
 from panda3d.core import *
 
 from tf.tfbase.TFGlobals import SolidShape, SolidFlag
+from tf.tfbase import Sounds
 
 class DistributedFuncDoor(DistributedSolidEntity):
 
@@ -93,7 +94,7 @@ class DistributedFuncDoor(DistributedSolidEntity):
         def closeDoor(self):
             if self.doorState >= self.DSOpening:
                 self.doorState = self.DSClosing
-                self.emitSoundSpatial("DoorSound.DefaultMove")
+                #self.emitSoundSpatial("DoorSound.DefaultMove")
                 self.connMgr.fireOutput("OnClose")
 
         def __doorUpdate(self, task):
@@ -112,7 +113,8 @@ class DistributedFuncDoor(DistributedSolidEntity):
                 self.frac = min(1.0, self.frac)
                 if self.frac >= 1:
                     self.doorState = self.DSOpen
-                    self.emitSoundSpatial("DoorSound.DefaultArrive")
+                    self.stopSound(Sounds.Channel.CHAN_BODY)
+                    #self.emitSoundSpatial("DoorSound.DefaultArrive")
                     if self.wait >= 0.0:
                         self.closeTime = globalClock.frame_time + self.wait
 
