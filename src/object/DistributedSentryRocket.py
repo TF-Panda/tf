@@ -26,12 +26,12 @@ class DistributedSentryRocket(BaseRocket):
                 node = self.find("**/rocket" + str(i + 1))
                 if not node.isEmpty():
                     trail = self.makeTrailsEffect(node)
-                    #trail.start(base.dynRender)
+                    trail.start(base.dynRender)
                     self.trails.append(trail)
 
-        def onUnhideRocket(self):
-            for trail in self.trails:
-                trail.start(base.dynRender)
+        #def onUnhideRocket(self):
+        #    for trail in self.trails:
+        #        trail.start(base.dynRender)
 
         def disable(self):
             for trail in self.trails:

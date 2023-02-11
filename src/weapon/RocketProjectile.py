@@ -18,11 +18,11 @@ class RocketProjectile(BaseRocket):
         def announceGenerate(self):
             BaseRocket.announceGenerate(self)
             self.trailsEffect = self.makeTrailsEffect(self)
-           # self.trailsEffect.start(base.dynRender)
+            self.trailsEffect.start(base.dynRender)
 
-        def onUnhideRocket(self):
-            if self.trailsEffect:
-                self.trailsEffect.start(base.dynRender)
+        #def onUnhideRocket(self):
+        #    if self.trailsEffect:
+        #        self.trailsEffect.start(base.dynRender)
 
         def disable(self):
             if self.trailsEffect:
