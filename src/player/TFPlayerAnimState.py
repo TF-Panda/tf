@@ -329,6 +329,27 @@ class TFPlayerAnimState:
         return self.jumping or self.inAirWalk
 
     def handleDucking(self):
+        if self.player.duckFlag:
+            speed = self.vel.getXy().length()
+            if speed < 0.5:
+                self.idealActivity = Activity.Crouch
+                if self.player.inCondition(self.player.CondAiming) or self.holdDeployedPoseUntilTime > globalClock.frame_time:
+                    self.idealActivity = Activity.Deployed_Idle_Crouch
+            else:
+                self.idealActivity = Activity.Crouch_Walk
+
+                if self.player.inCondition(self.player.CondAiming):
+                    isMinigun = False
+                    wpn = self.player.getActiveWeaponObj()
+                    if wpn:
+                        from tf.weapon.DMinigun import DMinigun
+                        isMinigun = isinstance(wpn, DMinigun)
+
+                    if not isMinigun:
+                        self.idealActivity = Activity.Deployed_Crouch
+
+            return True
+
         return False
 
     def handleSwimming(self):

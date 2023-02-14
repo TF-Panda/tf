@@ -285,6 +285,15 @@ dclass DistributedTFPlayer : DistributedChar {
 
   uint32 healerDoIds[];
 
+  uint8 ducked;
+  uint8 ducking;
+  uint8 inDuckJump;
+  uint8 duckFlag;
+  float64 duckTime;
+  float64 duckJumpTime;
+  float64 jumpTime;
+
+
   // 46 bytes
 
   // Client request to change class.

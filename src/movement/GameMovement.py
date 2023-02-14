@@ -11,10 +11,11 @@ from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.player.TFClass import Class
 from tf.tfbase import TFFilters
+from tf.tfbase.TFGlobals import VEC_HULL_MAX, VEC_HULL_MIN, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX, VEC_DUCK_VIEW
 
 import math
 
-def simpleSpline(self, val):
+def simpleSpline(val):
     valueSquared = val * val
     return (3 * valueSquared - 2 * valueSquared * val)
 
@@ -172,16 +173,119 @@ class GameMovement:
                 self.player.swimSoundTime = 0
 
     def setDuckedEyeOffset(self, offset):
-        # FIXME
-        pass
+        #duckHullMin = self.getPlayerHullMins(True)
+        #standHullMin = self.getPlayerHullMins(False)
+
+        #more = duckHullMin.z - standHullMin.z
+
+        duckViewOffset = self.getPlayerViewOffset(True)
+        standViewOffset = self.getPlayerViewOffset(False)
+        tmp = Vec3(self.player.viewOffset)
+        tmp.z = (duckViewOffset.z * offset) + (standViewOffset.z * (1 - offset))
+        #print(tmp)
+        self.player.viewOffset = tmp
 
     def handleDuckSpeedCrop(self):
-        if not self.speedCropped and self.player.ducking and self.mv.onGround:
+        if not self.speedCropped and self.player.duckFlag and self.mv.onGround:
             frac = 0.333333333
             self.mv.forwardMove *= frac
             self.mv.sideMove *= frac
             self.mv.upMove *= frac
             self.speedCropped = True
+
+    def canUnDuckJump(self):
+        end = Vec3(self.mv.origin)
+        end.z -= 36.0
+        tr = self.tracePlayerHull(self.mv.origin, end)
+        if tr['frac'] < 1.0:
+            end.z = mv.origin.z + (-36.0 * tr['frac'])
+
+            # Test a normal hull.
+            wasDucked = self.player.ducked
+            self.player.ducked = False
+            trUp = self.tracePlayerHull(end, end)
+            self.player.ducked = wasDucked
+            if not tr['startsolid']:
+                return (True, tr)
+
+        return (False, tr)
+
+    def finishUnDuckJump(self, tr):
+        newOrigin = Vec3(self.mv.origin)
+
+        # Up for uncrouching.
+        hullSizeNormal = VEC_HULL_MAX - VEC_HULL_MIN
+        hullSizeCrouch = VEC_DUCK_HULL_MAX - VEC_DUCK_HULL_MIN
+        viewDelta = (hullSizeNormal - hullSizeCrouch)
+
+        deltaZ = viewDelta.z
+        viewDelta.z *= tr['frac']
+        deltaZ -= viewDelta.z
+
+        self.player.duckFlag = False
+        self.player.ducked = False
+        self.player.ducking = False
+        self.player.inDuckJump = False
+        self.player.duckTime = 0.0
+        self.player.duckJumpTime = 0.0
+        self.player.jumpTime = 0.0
+
+        viewOffset = self.getPlayerViewOffset(False)
+        viewOffset.z -= deltaZ
+        self.player.viewOffset = viewOffset
+
+        newOrigin -= viewDelta
+        self.mv.origin = newOrigin
+        #self.mv.oldOrigin = Vec3(self.mv.origin)
+
+    def canUnDuck(self):
+        newOrigin = Vec3(self.mv.origin)
+
+        if self.mv.onGround:
+            for i in range(3):
+                newOrigin[i] += (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
+        else:
+            # If in air letting go of crouch, make sure we can offset origin
+            # to make up for uncrouching.
+            hullSizeNormal = VEC_HULL_MAX - VEC_HULL_MIN
+            hullSizeCrouch = VEC_DUCK_HULL_MAX - VEC_DUCK_HULL_MIN
+            viewDelta = (hullSizeNormal - hullSizeCrouch)
+            viewDelta = -viewDelta
+            newOrigin += viewDelta
+
+        wasDucked = self.player.ducked
+        self.player.ducked = False
+        tr = self.tracePlayerHull(self.mv.origin, newOrigin)
+        self.player.ducked = wasDucked
+        if tr['startsolid'] or tr['frac'] != 1.0:
+            return False
+
+        return True
+
+    def finishUnDuck(self):
+        newOrigin = Vec3(self.mv.origin)
+
+        if self.mv.onGround:
+            for i in range(3):
+                newOrigin[i] += (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
+        else:
+            # If in air letting go of crouch, make sure we can offset origin
+            # to make up for uncrouching.
+            hullSizeNormal = VEC_HULL_MAX - VEC_HULL_MIN
+            hullSizeCrouch = VEC_DUCK_HULL_MAX - VEC_DUCK_HULL_MIN
+            viewDelta = (hullSizeNormal - hullSizeCrouch)
+            viewDelta = -viewDelta
+            newOrigin += viewDelta
+
+        self.player.ducked = False
+        self.player.duckFlag = False
+        self.player.ducking = False
+        self.player.inDuckJump = False
+        self.player.viewOffset = self.getPlayerViewOffset(False)
+        self.player.duckTime = 0.0
+
+        self.mv.origin = newOrigin
+        #self.mv.oldOrigin = Vec3(self.mv.origin)
 
     def duck(self):
         """
@@ -193,7 +297,7 @@ class GameMovement:
 
         # Check to see if we are in the air.
         inAir = not self.mv.onGround
-        inDuck = self.player.ducking
+        inDuck = self.player.duckFlag
         duckJump = self.player.jumpTime > 0.0
         duckJumpTime = self.player.duckJumpTime > 0.0
 
@@ -236,7 +340,66 @@ class GameMovement:
                     else:
                         # Check for a crouch override.
                         if not (self.mv.buttons & InputFlag.Crouch):
-                            pass
+                            ret, tr = self.canUnDuckJump()
+                            if ret:
+                                self.finishUnDuckJump(tr)
+                                self.player.duckJumpTime = (GAMEMOVEMENT_TIME_TO_UNDUCK * (1.0 - tr['frac'])) + GAMEMOVEMENT_TIME_TO_UNDUCK_INV
+            else:
+                # UNDUCK (or attempt to...)
+                if self.player.inDuckJump:
+                    if not (self.mv.buttons & InputFlag.Crouch):
+                        ret, tr = self.canUnDuckJump()
+                        if ret:
+                            self.finishUnDuckJump(tr)
+                            if tr['frac'] < 1.0:
+                                self.player.duckJumpTime = (GAMEMOVEMENT_TIME_TO_UNDUCK * (1.0 - tr['frac'])) + GAMEMOVEMENT_TIME_TO_UNDUCK_INV
+                    else:
+                        self.player.inDuckJump = False
+
+                if duckJumpTime:
+                    return
+
+                # Try to unduck unless automovement is not allowed.
+                if self.player.allowAutoMovement or inAir or self.player.ducking:
+                    # We released the duck button, we aren't in "duck" and we are not in the air --
+                    # start unduck transition.
+                    if buttonsReleased & InputFlag.Crouch:
+                        if inDuck and not duckJump:
+                            self.player.duckTime = GAMEMOVEMENT_DUCK_TIME
+                        elif self.player.ducking and not self.player.ducked:
+                            # Invert time if release before fully ducked.
+                            unduckMS = 1000.0 * TIME_TO_UNDUCK
+                            duckMS = 1000.0 * TIME_TO_DUCK
+                            elapsedMS = GAMEMOVEMENT_DUCK_TIME - self.player.duckTime
+                            fracDucked = elapsedMS / duckMS
+                            remainingUnduckMS = fracDucked * unduckMS
+                            self.player.duckTime = GAMEMOVEMENT_DUCK_TIME - unduckMS + remainingUnduckMS
+
+
+                    # Check to see if we are capable of unducking.
+                    if self.canUnDuck():
+                        # or unducking.
+                        if self.player.ducking or self.player.ducked:
+                            duckMS = max(0.0, GAMEMOVEMENT_DUCK_TIME - self.player.duckTime)
+                            duckSec = duckMS * 0.001
+
+                            # Finish ducking immediately if duck time is over or not on ground.
+                            if duckSec > TIME_TO_UNDUCK or (inAir and not duckJump):
+                                self.finishUnDuck()
+                            else:
+                                # Calc parametric time.
+                                duckFrac = simpleSpline(1.0 - (duckSec / TIME_TO_UNDUCK))
+                                self.setDuckedEyeOffset(duckFrac)
+                                self.player.ducking = True
+
+                    else:
+                        # Still under something where we can't unduck, so make sure we reset this timer
+                        # so that we'll unduck once we exit the tunnel, etc.
+                        if self.player.duckTime != GAMEMOVEMENT_DUCK_TIME:
+                            self.setDuckedEyeOffset(1.0)
+                            self.player.duckTime = GAMEMOVEMENT_DUCK_TIME
+                            self.player.ducked = True
+                            self.player.ducking = False
 
     def startUnDuckJump(self):
         self.player.ducking = True
@@ -244,6 +407,12 @@ class GameMovement:
         self.player.ducking = False
 
         self.player.viewOffset = self.getPlayerViewOffset(True)
+
+        hullSizeNormal = VEC_HULL_MAX - VEC_HULL_MIN
+        hullSizeCrouch = VEC_DUCK_HULL_MAX - VEC_DUCK_HULL_MIN
+        viewDelta = (hullSizeNormal - hullSizeCrouch)
+        out = self.mv.origin + viewDelta
+        self.mv.origin = out
 
         self.fixPlayerCrouchStuck(True)
 
@@ -256,34 +425,46 @@ class GameMovement:
     def getPlayerHullMaxs(self, ducked):
         return VEC_DUCK_HULL_MAX if ducked else VEC_HULL_MAX
 
-    def testPlayerPosition(self, pos, collGroup):
-        ret = PhysSweepResult()
-        intoCollideMask = self.player.controller.getIntoCollideMask()
-        if base.physicsWorld.boxcast(ret, self.getPlayerHullMins(self.player.ducked),
-            self.getPlayerHullMaxs(self.player.ducked),
-            Vec3.forward(), 0.0, Vec3(0.0), intoCollideMask, 0, collGroup):
+    def tracePlayerHull(self, start, end):
+        mask = self.player.getPlayerCollideMask()
+        filter = TFFilters.TFQueryFilter(self.player, [TFFilters.ignoreTeammateBuildings_nonBuilder])
+        mins = self.getPlayerHullMins(self.player.ducked)
+        maxs = self.getPlayerHullMaxs(self.player.ducked)
+        tr = TFFilters.traceBox(start, end, mins, maxs, mask, filter)
+        return tr
 
-            b = ret.getBlock()
-            a = b.getActor()
-            if a and (a.getFromCollideMask() & intoCollideMask):
-                ent = a.getPythonTag("entity")
-                if ent:
-                    return (ent, b)
+    def testPlayerPosition(self, pos):
+        intoMask = self.player.getPlayerCollideMask()
+        tr = TFFilters.traceBox(pos, pos, self.getPlayerHullMins(self.player.ducked), self.getPlayerHullMaxs(self.player.ducked),
+                                intoMask, TFFilters.TFQueryFilter(self.player, [TFFilters.ignoreTeammateBuildings_nonBuilder]))
+        if tr['hit'] and tr['ent']:
+            if tr['actor'].getFromCollideMask() & intoMask:
+                return tr
 
-        return (None, None)
+        return None
 
     def finishDuck(self):
-        self.player.ducking = True
+        self.player.duckFlag = True
         self.player.ducked = True
         self.player.ducking = False
 
         self.player.viewOffset = self.getPlayerViewOffset(True)
 
+        if self.mv.onGround:
+            for i in range(3):
+                self.mv.origin[i] -= (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
+        else:
+            hullSizeNormal = VEC_HULL_MAX - VEC_HULL_MIN
+            hullSizeCrouch = VEC_DUCK_HULL_MAX - VEC_DUCK_HULL_MIN
+            viewDelta = (hullSizeNormal - hullSizeCrouch)
+            out = self.mv.origin + viewDelta
+            self.mv.origin = out
+
         self.fixPlayerCrouchStuck(True)
 
     def fixPlayerCrouchStuck(self, upward):
-        hitent, _ = self.testPlayerPosition(self.mv.origin, CollisionGroup.PlayerMovement)
-        if not hitent:
+        tr = self.testPlayerPosition(self.mv.origin)
+        if not tr:
             return
 
         direction = 1 if upward else 0
@@ -291,8 +472,8 @@ class GameMovement:
         test = Point3(self.mv.origin)
         for _ in range(36):
             self.mv.origin.z += direction
-            hitent, _ = self.testPlayerPosition(self.mv.origin, CollisionGroup.PlayerMovement)
-            if not hitent:
+            tr = self.testPlayerPosition(self.mv.origin)
+            if not tr:
                 return
 
         self.mv.origin = test
@@ -331,8 +512,8 @@ class GameMovement:
 
         self.player.updateStepSound(self.mv.origin, self.mv.velocity)
 
-        #self.updateDuckJumpEyeOffset()
-        #self.duck()
+        self.updateDuckJumpEyeOffset()
+        self.duck()
 
         # Handle movement modes.
         if self.player.moveType == MoveType.Walk:
@@ -467,6 +648,8 @@ class GameMovement:
 
         self.mv.oldOrigin = self.mv.origin
         filter = self.getMovementFilter()
+        self.updateControllerSize()
+        self.player.controller.foot_position = self.mv.origin
         flags = self.player.controller.move(globalClock.dt, vel, 0.0,
             self.player.getPlayerCollideMask(), filter.filter)
         self.mv.origin = self.player.controller.foot_position
@@ -545,6 +728,8 @@ class GameMovement:
 
         self.mv.oldOrigin = self.mv.origin
         filter = self.getMovementFilter()
+        self.updateControllerSize()
+        self.player.controller.foot_position = self.mv.origin
         flags = self.player.controller.move(globalClock.dt, self.mv.velocity * globalClock.dt, 0.1,
             self.player.getPlayerCollideMask(), filter.filter)
         self.mv.origin = self.player.controller.foot_position
@@ -607,8 +792,6 @@ class GameMovement:
         """
 
         if self.player.isDead():
-            # ???
-            self.mv.oldButtons &= ~InputFlag.Jump
             return False
 
         # TODO: See if we are water jumping.
@@ -621,9 +804,16 @@ class GameMovement:
         airDash = False
         onGround = bool(self.mv.onGround)
 
-        #if not self.mv.onGround:
-        #    self.mv.oldButtons &= ~InputFlag.Jump
-        #    return False # in air, so no effect
+        # Cannot jump while ducked.
+        if self.player.duckFlag:
+            # Let a scout do it.
+            allow = isScout and not onGround
+            if not allow:
+                return False
+
+        # Cannot jump while in the unduck transition.
+        if (self.player.ducking and self.player.duckFlag) or self.player.duckJumpTime > 0.0:
+            return False
 
         if self.mv.oldButtons & InputFlag.Jump:
             # Don't pogo stick!
@@ -644,12 +834,6 @@ class GameMovement:
 
         self.preventBunnyJumping()
 
-        # TODO: Cannot jump while in the unduck transition.
-        # TODO: Still updating eye position.
-
-        #if IS_CLIENT:
-        #    print("Jumping")
-
         # Start jump animation.
         self.player.doAnimationEvent(PlayerAnimEvent.Jump)
         # Play footstep sound.
@@ -668,7 +852,11 @@ class GameMovement:
         # Accelerate upward
         # TODO: IF we are ducking
         startZ = self.mv.velocity[2]
-        self.mv.velocity[2] += mul
+
+        if self.player.ducking or self.player.duckFlag:
+            self.mv.velocity[2] = mul
+        else:
+            self.mv.velocity[2] += mul
 
         self.finishGravity()
 
@@ -676,7 +864,7 @@ class GameMovement:
         self.mv.outStepHeight += 0.15
 
         # Flag that we jumped
-        self.mv.oldButtons &= ~InputFlag.Jump
+        self.mv.oldButtons |= InputFlag.Jump
 
         return True
 
@@ -833,5 +1021,11 @@ class GameMovement:
             self.mv.velocity[2] = 0.0
 
         self.checkFalling()
+
+    def updateControllerSize(self):
+        if self.player.ducked:
+            self.player.controller.resize(VEC_DUCK_HULL_MAX.z - VEC_DUCK_HULL_MIN.z)
+        else:
+            self.player.controller.resize(VEC_HULL_MAX.z - VEC_HULL_MIN.z)
 
 g_game_movement = GameMovement()

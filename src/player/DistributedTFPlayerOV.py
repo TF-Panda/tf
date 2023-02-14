@@ -522,6 +522,14 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.addPredictionField("fov", float, noErrorCheck=True, networked=False)
         self.addPredictionField("eyeH", float, tolerance=0.01)
         self.addPredictionField("eyeP", float, tolerance=0.01)
+        self.addPredictionField("ducked", bool)
+        self.addPredictionField("ducking", bool)
+        self.addPredictionField("duckFlag", bool)
+        self.addPredictionField("inDuckJump", bool)
+        self.addPredictionField("duckTime", float, tolerance=0.01)
+        self.addPredictionField("duckJumpTime", float, tolerance=0.01)
+        self.addPredictionField("jumpTime", float, tolerance=0.01)
+        self.addPredictionField("viewOffset", Vec3, networked=False, noErrorCheck=True)
 
     def setActiveWeapon(self, index):
         if self.activeWeapon == index:

@@ -89,6 +89,10 @@ class DistributedTFPlayerShared:
 
         self.airDashing = False
         self.ducking = False
+        self.ducked = False
+        self.duckFlag = False
+        self.inDuckJump = False
+        self.allowAutoMovement = True
 
         self.stepSoundTime = 0.0
         self.stepSide = 0
@@ -172,7 +176,7 @@ class DistributedTFPlayerShared:
         return roundDown
 
     def getClassViewOffset(self):
-        return Vec3(0, 0, self.classInfo.ViewOffset)
+        return Vec3(0, 0, self.classInfo.ViewHeight)
 
     def usesMetal(self):
         return self.tfClass == Class.Engineer
