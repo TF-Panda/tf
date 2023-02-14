@@ -150,6 +150,20 @@ class DistributedTFPlayerShared:
 
         self.numDetonateables = 0
 
+    def getWorldSpaceCenter(self):
+        # Special code for world space center of players.
+        # Use the player origin, with the Z raised up to the center of
+        # the player's hull.  Use the duck hull even if we're still in
+        # the duck transition (just started ducking).  This allows rocket
+        # jumps to boost us further if we tap duck before rocket
+        # jumping.
+        ducked = self.ducked or self.ducking
+        mins = TFGlobals.VEC_HULL_MIN if not ducked else TFGlobals.VEC_DUCK_HULL_MIN
+        maxs = TFGlobals.VEC_HULL_MAX if not ducked else TFGlobals.VEC_DUCK_HULL_MAX
+        center = self.getPos()
+        center.z += (maxs.z + mins.z) * 0.5
+        return center
+
     def getLocalHullMins(self):
         return TFGlobals.VEC_HULL_MIN
 

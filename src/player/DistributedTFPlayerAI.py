@@ -126,6 +126,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.recentKills = []
 
+    def getWorldSpaceCenter(self):
+        return DistributedTFPlayerShared.getWorldSpaceCenter(self)
+
     def SendProxy_healerDoIds(self):
         # FIXME: probably slow
         if not self.healers:
@@ -214,10 +217,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         line = self.responseSystem.speakConcept(data)
         if line:
             if self.responseSystem.speakTime == globalClock.frame_time:
-                print("Speak now")
                 self.d_speak(line)
             else:
-                print("Speak in", self.responseSystem.speakTime - globalClock.frame_time, "seconds")
                 base.simTaskMgr.doMethodLater(self.responseSystem.speakTime - globalClock.frame_time, self.__delayedSpeak,
                                               'delayedSpeak', extraArgs=[line], appendTask=True)
             return True
@@ -657,8 +658,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.speakConcept(SpeechConcept.StoppedBeingHealed)
 
     def getClassSize(self):
-        mins = TFGlobals.VEC_HULL_MIN
-        maxs = TFGlobals.VEC_HULL_MAX
+        ducked = self.ducking or self.ducked
+        mins = TFGlobals.VEC_HULL_MIN if not ducked else TFGlobals.VEC_DUCK_HULL_MIN
+        maxs = TFGlobals.VEC_HULL_MAX if not ducked else TFGlobals.VEC_DUCK_HULL_MAX
         return Vec3(maxs[0] - mins[0], maxs[1] - mins[1], maxs[2] - mins[2])
 
     def onTakeDamage_alive(self, info):
@@ -710,7 +712,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if info.damageType & DamageType.Critical:
             self.emitSound("TFPlayer.CritPain", client=self.owner)
 
-        #print("subtracting", int(info.damage + 0.5), "from tf player hp")
         self.health -= int(info.damage + 0.5)
         if self.health <= 0:
             # Died.

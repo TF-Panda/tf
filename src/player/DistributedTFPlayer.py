@@ -103,6 +103,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.healerDoIds = []
 
+    def getWorldSpaceCenter(self):
+        return DistributedTFPlayerShared.getWorldSpaceCenter(self)
+
     def getNumHealers(self):
         return len(self.healerDoIds)
 
