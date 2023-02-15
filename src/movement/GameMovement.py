@@ -242,8 +242,10 @@ class GameMovement:
         newOrigin = Vec3(self.mv.origin)
 
         if self.mv.onGround:
-            for i in range(3):
-                newOrigin[i] += (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
+            newOrigin.z += VEC_HULL_MAX.z - VEC_DUCK_HULL_MAX.z
+            #pass
+            #for i in range(3):
+            #    newOrigin[i] += (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
         else:
             # If in air letting go of crouch, make sure we can offset origin
             # to make up for uncrouching.
@@ -254,8 +256,8 @@ class GameMovement:
             newOrigin += viewDelta
 
         wasDucked = self.player.ducked
-        self.player.ducked = False
-        tr = self.tracePlayerHull(self.mv.origin, newOrigin)
+        self.player.ducked = True
+        tr = self.tracePlayerHull(newOrigin, newOrigin)
         self.player.ducked = wasDucked
         if tr['startsolid'] or tr['frac'] != 1.0:
             return False
@@ -266,8 +268,9 @@ class GameMovement:
         newOrigin = Vec3(self.mv.origin)
 
         if self.mv.onGround:
-            for i in range(3):
-                newOrigin[i] += (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
+            pass
+            #for i in range(3):
+            #    newOrigin[i] += (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
         else:
             # If in air letting go of crouch, make sure we can offset origin
             # to make up for uncrouching.
@@ -417,13 +420,13 @@ class GameMovement:
         self.fixPlayerCrouchStuck(True)
 
     def getPlayerViewOffset(self, ducked):
-        return VEC_DUCK_VIEW if ducked else self.player.getClassViewOffset()
+        return Vec3(VEC_DUCK_VIEW) if ducked else self.player.getClassViewOffset()
 
     def getPlayerHullMins(self, ducked):
-        return VEC_DUCK_HULL_MIN if ducked else VEC_HULL_MAX
+        return Vec3(VEC_DUCK_HULL_MIN) if ducked else Vec3(VEC_HULL_MIN)
 
     def getPlayerHullMaxs(self, ducked):
-        return VEC_DUCK_HULL_MAX if ducked else VEC_HULL_MAX
+        return Vec3(VEC_DUCK_HULL_MAX) if ducked else Vec3(VEC_HULL_MAX)
 
     def tracePlayerHull(self, start, end):
         mask = self.player.getPlayerCollideMask()
@@ -451,8 +454,9 @@ class GameMovement:
         self.player.viewOffset = self.getPlayerViewOffset(True)
 
         if self.mv.onGround:
-            for i in range(3):
-                self.mv.origin[i] -= (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
+            pass
+            #for i in range(3):
+            #    self.mv.origin[i] -= (VEC_DUCK_HULL_MIN[i] - VEC_HULL_MIN[i])
         else:
             hullSizeNormal = VEC_HULL_MAX - VEC_HULL_MIN
             hullSizeCrouch = VEC_DUCK_HULL_MAX - VEC_DUCK_HULL_MIN
