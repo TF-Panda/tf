@@ -76,6 +76,7 @@ class World(DistributedSolidEntity):
             if len(materials) > 1:
                 for i in range(1, len(materials)):
                     shape.addMaterial(materials[i])
+                shape.submitMaterials()
 
             body = PhysRigidStaticNode("world-collide-" + group.getCollideType())
             body.setFromCollideMask(collideTypeToMask.get(group.getCollideType(), CollisionGroups.World))

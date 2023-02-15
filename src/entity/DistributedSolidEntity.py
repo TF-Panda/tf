@@ -176,6 +176,7 @@ class DistributedSolidEntity(DistributedEntity):
             if len(materials) > 1:
                 for i in range(1, len(materials)):
                     shape.addMaterial(materials[i])
+                shape.submitMaterials()
 
             return ((shape, triMesh),)
 
