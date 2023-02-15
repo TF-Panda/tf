@@ -347,7 +347,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
     def setMass(self, mass):
         self.mass = mass
-        if self.hasCollisions:
+        if self.hasCollisions and not self.kinematic:
             self.node().setMass(mass)
 
     def reinitializeCollisions(self):
@@ -385,7 +385,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
         #body.computeMassProperties()
 
-        if self.mass != -1:
+        if self.mass != -1 and not self.kinematic:
             body.setMass(self.mass)
         body.setLinearDamping(self.damping)
         body.setAngularDamping(self.rotDamping)
