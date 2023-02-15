@@ -642,10 +642,10 @@ class GameMovement:
         self.mv.velocity += self.player.baseVelocity
 
         spd = self.mv.velocity.length()
-        if spd < 1.0:
-            self.mv.velocity.set(0, 0, 0)
-            self.mv.velocity -= self.player.baseVelocity
-            return
+        #if spd < 1.0:
+        #    self.mv.velocity.set(0, 0, 0)
+        #    self.mv.velocity -= self.player.baseVelocity
+        #    return
 
         vel = self.mv.velocity * globalClock.dt
         vel[2] = -2 # To detect if we're on the ground.
