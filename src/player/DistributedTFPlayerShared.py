@@ -473,15 +473,19 @@ class DistributedTFPlayerShared:
 
         mins = TFGlobals.VEC_HULL_MIN
         maxs = TFGlobals.VEC_HULL_MAX
-        height = maxs[2] - mins[2]
-        ll = mins
-        lr = Vec3(maxs[0], maxs[1], mins[2])
-        radius = (lr - ll).length() * 0.5
-        #halfExts = Vec3((maxs[0] - mins[0]) / 2, (maxs[1] - mins[1]) / 2, (maxs[2] - mins[2]) / 2)
+        #height = maxs[2] - mins[2]
+        #ll = mins
+        #lr = Vec3(maxs[0], maxs[1], mins[2])
+        #radius = (lr - ll).length() * 0.5
+        halfExts = Vec3((maxs[0] - mins[0]) / 2, (maxs[1] - mins[1]) / 2, (maxs[2] - mins[2]) / 2)
         mat = SurfaceProperties[self.getModelSurfaceProp()].getPhysMaterial()
-        self.controller = PhysCapsuleController(
+        #self.controller = PhysCapsuleController(
+        #    base.physicsWorld, self,
+        #    radius, height, mat
+        #)
+        self.controller = PhysBoxController(
             base.physicsWorld, self,
-            radius, height, mat
+            halfExts, mat
         )
         self.applyControllerMasks()
 
