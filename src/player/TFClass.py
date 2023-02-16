@@ -161,7 +161,7 @@ class SoldierInfo:
     ViewHeight = 68
     MaxHealth = 200
     Phonemes = 'soldier'
-    DontDoAirWalk = True
+    DontDoAirWalk = False
 
     Expressions = {
         'idle': [],
