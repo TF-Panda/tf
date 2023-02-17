@@ -392,8 +392,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if not data:
             return
         sound, wave = data
-        if self != base.localAvatar:
-            sound.setVolume(sound.getVolume() * 0.65)
+        #if self != base.localAvatar:
+        #    sound.setVolume(sound.getVolume() * 0.65)
         self.stopSpeech()
         self.soundEmitter.registerSound(sound, Sounds.Channel.CHAN_AUTO, spatial, self.viewOffset)
         self.currentSpeech = sound
