@@ -44,6 +44,9 @@ def remapVal(val, A, B, C, D):
 
     return C + (D - C) * (val - A) / (B - A)
 
+def setSoundLevel(sound, sndlvl):
+    sound.set3dMinDistance(1.0 / soundLevelToDistMult(sndlvl))
+
 class Channel(IntEnum):
 
     Invalid = -1
@@ -62,7 +65,7 @@ class SoundLevel(IntEnum):
 
     SNDLVL_NONE = 0
     SNDLVL_IDLE = 60
-    SNDLVL_TALKING = 60
+    SNDLVL_TALKING = 80
     SNDLVL_NORM = 75
     SNDLVL_STATIC = 66
     SNDLVL_GUNFIRE = 140

@@ -392,6 +392,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         if not data:
             return
         sound, wave = data
+        # Override the attenuation on speech sounds.
+        Sounds.setSoundLevel(sound, Sounds.SoundLevel.SNDLVL_TALKING)
         #if self != base.localAvatar:
         #    sound.setVolume(sound.getVolume() * 0.65)
         self.stopSpeech()
