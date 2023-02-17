@@ -55,7 +55,7 @@ class DistributedStickyBombLauncher(TFWeaponGun):
 
         def playChargeSound(self):
             self.stopChargeSound()
-            self.chargingSound = self.emitSound("Weapon_StickyBombLauncher.ChargeUp")
+            self.chargingSound = self.player.emitSound("Weapon_StickyBombLauncher.ChargeUp")
 
         def addPredictionFields(self):
             TFWeaponGun.addPredictionFields(self)

@@ -237,9 +237,9 @@ class DMinigun(TFWeaponGun):
 
             spatialize = not self.isOwnedByLocalPlayer()
             if spatialize:
-                self.currSound = self.emitSoundSpatial(self.Sounds[sound], (0, 0, 30), loop=loop)
+                self.currSound = self.player.emitSoundSpatial(self.Sounds[sound], loop=loop)
             else:
-                self.currSound = self.emitSound(self.Sounds[sound], loop=loop)
+                self.currSound = self.player.emitSound(self.Sounds[sound], loop=loop)
 
     def windUp(self):
         if not self.player:

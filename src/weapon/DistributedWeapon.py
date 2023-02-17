@@ -52,7 +52,7 @@ class DistributedWeapon(DistributedChar, DistributedWeaponShared):
         if len(soundName) == 0:
             return
 
-        self.emitSound(soundName)
+        self.player.emitSound(soundName)
 
     def addViewModelBob(self, viewModel, info):
         pass

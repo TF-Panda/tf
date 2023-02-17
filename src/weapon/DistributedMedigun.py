@@ -376,11 +376,11 @@ class DistributedMedigun(TFWeaponGun):
                 if not self.healSound:
                     if self.isOwnedByLocalPlayer():
                         # We are healing someone.
-                        self.healSound = self.emitSound("WeaponMedigun.HealingHealer", loop=True)
+                        self.healSound = self.player.emitSound("WeaponMedigun.HealingHealer", loop=True)
                     elif self.healingTargetId == base.localAvatarId:
-                        self.healSound = self.emitSoundSpatial("WeaponMedigun.HealingTarget", loop=True, offset=(0, 0, 32))
+                        self.healSound = self.player.emitSoundSpatial("WeaponMedigun.HealingTarget", loop=True)
                     else:
-                        self.healSound = self.emitSoundSpatial("WeaponMedigun.HealingWorld", loop=True, offset=(0, 0, 32))
+                        self.healSound = self.player.emitSoundSpatial("WeaponMedigun.HealingWorld", loop=True)
 
                 if not self.healParticle:
                     self.healParticle = self.makeHealBeamParticle()

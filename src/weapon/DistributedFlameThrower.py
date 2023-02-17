@@ -253,9 +253,9 @@ class DistributedFlameThrower(TFWeaponGun):
 
         def emitSoundWpn(self, sndName, loop=False, chan=None):
             if self.isOwnedByLocalPlayer():
-                return self.emitSound(sndName, loop=loop, chan=chan)
+                return self.player.emitSound(sndName, loop=loop, chan=chan)
             else:
-                return self.emitSoundSpatial(sndName, (0, 0, 30), loop=loop, chan=chan)
+                return self.player.emitSoundSpatial(sndName, loop=loop, chan=chan)
 
         def __weaponSoundUpdateTask(self, task):
             self.weaponSoundUpdate()

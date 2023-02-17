@@ -60,9 +60,9 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
         if not predicted:
             # If it's not being predicted, send the sound to the owner
             # as a non-spatial sound.
-            self.emitSound(soundName, client=self.player.owner)
+            self.player.emitSound(soundName, client=self.player.owner)
         # Send it as spatial to everyone else.
-        self.emitSoundSpatial(soundName, offset, excludeClients=[self.player.owner])
+        self.player.emitSoundSpatial(soundName, offset, excludeClients=[self.player.owner])
 
     def delete(self):
         if self.active:
