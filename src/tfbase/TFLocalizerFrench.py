@@ -253,7 +253,7 @@ Dustbowl_cap_3_A = "Première capture, Phase 3"
 Dustbowl_cap_3_B = "le lance-roquettes, dernière capture"
 
 WinPanelHeadingTeamWins = "LES %s GAGNENT !"
-WinPanelHeadingSeizesArea = "LES %s PRENNENT LA ZONE"
+WinPanelHeadingSeizesArea = "LES %s PRENNENT LA ZONE !"
 WinPanelHeadingStalemate = "MATCH NUL !" # "Pauvres nuls !"
 WinPanelReasonStalemate = "Aucune équipe n'a atteint son objectif."
 WinPanelReasonDefended = "Les %s ont assuré la défense jusqu'à la fin du round."
