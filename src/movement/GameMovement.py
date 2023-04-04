@@ -1028,8 +1028,8 @@ class GameMovement:
 
     def updateControllerSize(self):
         if self.player.ducked:
-            self.player.controller.resize(VEC_DUCK_HULL_MAX.z - VEC_DUCK_HULL_MIN.z)
+            self.player.controller.resize((VEC_DUCK_HULL_MAX.z - VEC_DUCK_HULL_MIN.z) * 0.5)
         else:
-            self.player.controller.resize(VEC_HULL_MAX.z - VEC_HULL_MIN.z)
+            self.player.controller.resize((VEC_HULL_MAX.z - VEC_HULL_MIN.z) * 0.5)
 
 g_game_movement = GameMovement()
