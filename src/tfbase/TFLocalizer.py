@@ -12,6 +12,9 @@ if language == 'english':
 if language == 'french':
     from .TFLocalizerFrench import *
 
+if language == 'german':
+    from .TFLocalizerGerman import *
+
 def getLocalizedString(string):
     if string[0] != "#":
         # Not a localizer string name.
