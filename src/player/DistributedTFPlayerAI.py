@@ -250,7 +250,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         if len(self.detonateables) > self.maxDetonateables:
             # Detonate the oldest one.
-            self.detonateables[0].detonate(True)
+            self.detonateables[0].detonate(True, True)
 
         assert len(self.detonateables) <= self.maxDetonateables
 
@@ -586,21 +586,38 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         #base.air.sendUpdatePHSOnly(self, 'speak', [info.index], self.getEyePosition(), client=client, excludeClients=excludeClients)
         self.sendUpdate('speak', [info.index], client = client, excludeClients = excludeClients)
 
+    def detonateStickies(self):
+        # Here we hold the position that each stickybomb was detonated at.
+        # We want to play an explode sound at the position of each sticky, but
+        # equalize the volumes so you don't go deaf when you det a bunch of
+        # stickies at once.
+        detPositions = []
+
+        for det in self.detonateables:
+            det.beginDetonate()
+
+        if not self.detonateables:
+            allDetonated = False
+        else:
+            allDetonated = True
+            for det in list(self.detonateables):
+                if det.detonating:
+                    detPositions.append((det, det.detonate(False, False)))
+                else:
+                    allDetonated = False
+
+        if not allDetonated:
+            self.emitSound("Player.UseDeny", client=self.owner)
+
+        # Play an explosion for each sticky with equalized volume.
+        if detPositions:
+            vol = 1.0 / len(detPositions)
+            for det, pos in detPositions:
+                det.doDetSound(pos, vol)
+
     def doClassSpecialSkill(self):
         if self.tfClass == Class.Demo:
-            for det in self.detonateables:
-                det.beginDetonate()
-            if not self.detonateables:
-                allDetonated = False
-            else:
-                allDetonated = True
-                for det in list(self.detonateables):
-                    if det.detonating:
-                        det.detonate(False)
-                    else:
-                        allDetonated = False
-            if not allDetonated:
-                self.emitSound("Player.UseDeny", client=self.owner)
+            self.detonateStickies()
             return True
 
         return False

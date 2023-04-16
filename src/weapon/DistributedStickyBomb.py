@@ -148,15 +148,21 @@ class DistributedStickyBomb(BaseClass):
             self.detonating = True
             return True
 
-        def detonate(self, force):
+        def doDetSound(self, pos=None, volume=None):
+            if not pos:
+                pos = self.getPos()
+            base.world.emitSoundSpatial("Weapon_StickyBombLauncher.ModeSwitch", pos, chan=Sounds.Channel.CHAN_AUTO, volume=volume)
+            base.world.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode", pos, chan=Sounds.Channel.CHAN_AUTO, volume=volume)
+
+        def detonate(self, force, playSound=False):
             assert self.detonating or force
 
             self.detonating = True
 
             # Time to detonate.
             pos = self.getPos()
-            base.world.emitSoundSpatial("Weapon_StickyBombLauncher.ModeSwitch", pos, chan=Sounds.Channel.CHAN_AUTO)
-            base.world.emitSoundSpatial("Weapon_Grenade_Pipebomb.Explode", pos, chan=Sounds.Channel.CHAN_AUTO)
+            if playSound:
+                self.doDetSound(pos)
 
             # Trace for scorch mark.
             norm = Vec3.up()
@@ -181,6 +187,8 @@ class DistributedStickyBomb(BaseClass):
             base.game.doScreenShake(pos, 10, 150.0, 1.0, 300.0, 0, True)
 
             base.air.deleteObject(self)
+
+            return pos
 
         def delete(self):
             assert self.shooter
