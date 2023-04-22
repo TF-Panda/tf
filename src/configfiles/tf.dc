@@ -645,6 +645,8 @@ dclass TeamControlPoint : DistributedEntity {
   int8 ownerTeam;
   int8 defaultOwner;
   uint8 capProgress / 100;
+  uint8 capState;
+  uint8 capperCount;
 };
 
 dclass TeamControlPointMaster : DistributedObject {

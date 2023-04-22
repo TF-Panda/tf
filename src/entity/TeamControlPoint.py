@@ -4,6 +4,8 @@ from .DistributedEntity import DistributedEntity
 from tf.actor.Model import Model
 from tf.tfbase import TFGlobals
 
+from . import CapState
+
 class TeamControlPoint(DistributedEntity):
 
     def __init__(self):
@@ -17,6 +19,8 @@ class TeamControlPoint(DistributedEntity):
         self.pointGroup = 0
         self.hologramModel = None
         self.pointName = ""
+        self.capperCount = 0
+        self.capState = CapState.CSIdle
 
     if IS_CLIENT:
         def RecvProxy_ownerTeam(self, team):
@@ -29,6 +33,16 @@ class TeamControlPoint(DistributedEntity):
             if prog != self.capProgress:
                 self.capProgress = prog
                 messenger.send('ControlPointProgressChanged', [self])
+
+        def RecvProxy_capperCount(self, count):
+            if count != self.capperCount:
+                self.capperCount = count
+                messenger.send('ControlPointCapperCountChanged', [self])
+
+        def RecvProxy_capState(self, state):
+            if state != self.capState:
+                self.capState = state
+                messenger.send('ControlPointCapperCountChanged', [self])
 
         def updateHologramNode(self):
             if self.hologramModel:

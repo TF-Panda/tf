@@ -2,8 +2,11 @@
 
 from direct.distributed2.DistributedObject import DistributedObject
 
+from . import CapState
+
 from direct.showbase.DirectObject import DirectObject
 from direct.gui.DirectGui import *
+from direct.interval.IntervalGlobal import Sequence, LerpFunc
 from panda3d.core import *
 
 from tf.tfbase import TFGlobals
@@ -11,14 +14,23 @@ from tf.tfgui import TFGuiProperties
 
 class ControlPointWidget(DirectObject):
 
+    BlinkScale = 1.3
+    BlinkTime = 0.5
+
     def __init__(self, point, panel, pos):
         self.point = point
         self.bar = DirectWaitBar(frameSize=(-0.08, 0.08, -0.08, 0.08),
-                                 range=1.0, value=0.0, text_scale=0.04, text_pos=(0, 0),
-                                 parent=panel.frame, pos=pos, text="")
+                                 range=1.0, value=0.0, text_scale=0.05, text_pos=(0, 0), text_fg=TFGuiProperties.TextColorLight,
+                                 text_shadow=TFGuiProperties.TextShadowColor,
+                                 text_align=TextNode.ACenter,
+                                 parent=panel.frame, pos=pos, text="", text_font=TFGlobals.getTF2SecondaryFont(),
+                                 )
 
         #self.accept('ControlPointOwnerTeamChanged', self.__handlePointUpdate)
         self.accept('ControlPointProgressChanged', self.__handlePointUpdate)
+        self.accept('ControlPointCapperCountChanged', self.__handlePointUpdate)
+
+        self.blinkIval = None
 
         self.updateBar()
 
@@ -27,17 +39,70 @@ class ControlPointWidget(DirectObject):
             return
         self.updateBar()
 
+    def getTeamBarColor(self):
+        if self.point.defaultOwner == TFGlobals.TFTeam.Red:
+            return TFGuiProperties.BackgroundColorBlueOpaque
+        else:
+            return TFGuiProperties.BackgroundColorRedOpaque
+
     def updateBar(self):
+        # Updates the UI state of the capture point widget based on the
+        # state of the associated capture point.
+
         if self.point.defaultOwner == TFGlobals.TFTeam.Red:
             self.bar['frameColor'] = TFGuiProperties.BackgroundColorRedTranslucent
-            self.bar['barColor'] = TFGuiProperties.BackgroundColorBlueOpaque
         else:
             self.bar['frameColor'] = TFGuiProperties.BackgroundColorBlueTranslucent
-            self.bar['barColor'] = TFGuiProperties.BackgroundColorRedOpaque
+
+        self.bar['barColor'] = self.getTeamBarColor()
+
         self.bar['value'] = self.point.capProgress
+
+        # Update bar text to show what is happening.
+        if self.point.capState == CapState.CSCapping and self.point.capperCount > 0:
+            # Show capper count when capping.
+            self.bar['text'] = f'x{self.point.capperCount}'
+        elif self.point.capState == CapState.CSBlocked:
+            self.bar['text'] = '>><<' # Dunno
+        elif self.point.capState == CapState.CSReverting and self.point.capperCount > 0:
+            # Number of players reversing the cap.
+            self.bar['text'] = f'x{self.point.capperCount}'
+        else:
+            self.bar['text'] = ''
+
+        if self.point.capState != CapState.CSIdle:
+            # Something interesting is happening to the point, so pulse the bar.
+            self.startBlink()
+        else:
+            self.stopBlink()
+
+    def startBlink(self):
+
+        # Starts the blinking interval on the progress bar for this capture point
+        # while it is not idle (being captured, reverted, blocked, etc).
+
+        def lerpTheBarColor(t):
+            # Scale up the bar color to pulse it.
+            col = Vec4(self.getTeamBarColor())
+            origA = float(col[3])
+            col = (col * (1 - t)) + (col * self.BlinkScale * t)
+            col[3] = origA
+            self.bar['barColor'] = col
+
+        if not self.blinkIval:
+            self.blinkIval = Sequence(LerpFunc(lerpTheBarColor, fromData=0, toData=1, duration=self.BlinkTime, blendType='easeInOut'),
+                                      LerpFunc(lerpTheBarColor, fromData=1, toData=0, duration=self.BlinkTime, blendType='easeInOut'))
+            self.blinkIval.loop()
+
+    def stopBlink(self):
+        if self.blinkIval:
+            self.blinkIval.finish()
+            self.blinkIval = None
+        self.bar['barColor'] = self.getTeamBarColor()
 
     def cleanup(self):
         self.ignoreAll()
+        self.stopBlink()
         self.point = None
         self.bar.destroy()
         self.bar = None
@@ -73,6 +138,9 @@ class ControlPointGuiPanel:
 
     def create(self):
         self.destroyWidgets()
+
+        # Create widgets for each capture point in the round.
+        # Lay them out in a grid.
 
         layout = self.master.pointLayout
         layout2D = []

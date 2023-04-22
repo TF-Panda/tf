@@ -1,16 +1,12 @@
 """TriggerCaptureArea module: contains the TriggerCaptureArea class."""
 
 from .DistributedTrigger import DistributedTrigger
+from . import CapState
 
 from tf.tfbase import TFGlobals
 from tf.player.TFClass import Class
 
 class TriggerCaptureArea(DistributedTrigger):
-
-    CSIdle = 0
-    CSCapping = 1
-    CSBlocked = 2
-    CSReverting = 3
 
     def __init__(self):
         DistributedTrigger.__init__(self)
@@ -24,6 +20,7 @@ class TriggerCaptureArea(DistributedTrigger):
         self.numRequiredToCap = []
 
         self.playersOnCap = []
+        self.capperCount = 0
 
         self.capBlocked = False
 
@@ -31,7 +28,7 @@ class TriggerCaptureArea(DistributedTrigger):
         self.teamProgress = TFGlobals.TFTeam.NoTeam
         self.capProgress = 0.0
 
-        self.capState = self.CSIdle
+        self.capState = CapState.CSIdle
         self.capSound = None
         self.capDoId = 0
 
@@ -48,6 +45,7 @@ class TriggerCaptureArea(DistributedTrigger):
                     numPlayersOnCap += 2
                 else:
                     numPlayersOnCap += 1
+            self.setCapperCount(numPlayersOnCap)
             for i in range(1, numPlayersOnCap):
                 delta += step / (i + 1)
             return delta * globalClock.dt
@@ -102,8 +100,10 @@ class TriggerCaptureArea(DistributedTrigger):
 
         def capUpdate(self, task):
             if base.game.isRoundEnded():
-                self.capProgress = 0
+                self.setCapProgress(0)
                 return task.cont
+
+            self.setCapperCount(0)
 
             self.playersOnCap = [x for x in self.playersOnCap if not x.isDODeleted() and not x.isDead()]
 
@@ -113,9 +113,9 @@ class TriggerCaptureArea(DistributedTrigger):
                 if teamOnCap is None:
                     teamOnCap = plyr.team
                 elif plyr.team != teamOnCap and self.pointCanBeCapped():
-                    if self.capState != self.CSBlocked:
+                    if self.capState != CapState.CSBlocked:
                         self.handleBlocked()
-                    self.capState = self.CSBlocked
+                    self.setCapState(CapState.CSBlocked)
                     return task.cont
 
             # If only one team is on the cap, and that team is allowed to
@@ -126,21 +126,24 @@ class TriggerCaptureArea(DistributedTrigger):
                     # Another team has progress on the capture, start reverting it.
                     # Once it's fully reverted, we can make progress towards our team
                     # capturing it.
-                    self.capState = self.CSReverting
-                    self.capProgress -= self.calcProgressDelta(teamOnCap)
-                    self.capProgress = max(0.0, self.capProgress)
+                    self.setCapState(CapState.CSReverting)
+                    prog = self.capProgress - self.calcProgressDelta(teamOnCap)
+                    prog = max(0.0, prog)
+                    self.setCapProgress(prog)
 
                 elif self.capProgress < 1:
                     # We can start capturing it.
                     if self.capProgress == 0:
                         self.capPoint.teamStartCapping(teamOnCap)
-                    self.capState = self.CSCapping
+                    self.setCapState(CapState.CSCapping)
                     self.teamProgress = teamOnCap
-                    self.capProgress += self.calcProgressDelta(teamOnCap)
-                    self.capProgress = min(1.0, self.capProgress)
-                    if self.capProgress >= 1:
+                    prog = self.capProgress
+                    prog += self.calcProgressDelta(teamOnCap)
+                    prog = min(1.0, prog)
+                    self.setCapProgress(prog)
+                    if prog >= 1:
                         # Capped.
-                        self.capState = self.CSIdle
+                        self.setCapState(CapState.CSIdle)
                         self.capPoint.capturedByTeam(self.teamProgress)
                         if self.teamProgress == TFGlobals.TFTeam.Blue:
                             self.connMgr.fireOutput("OnCapTeam2")
@@ -153,19 +156,19 @@ class TriggerCaptureArea(DistributedTrigger):
             elif self.capProgress < 1:
                 # Nobody is on the cap or the team on the cap can't capture
                 # (they're a defender).  Decay the progress down to 0.
-                self.capState = self.CSIdle
+                self.setCapState(CapState.CSIdle)
                 if self.teamProgress != TFGlobals.TFTeam.NoTeam and self.capProgress > 0:
                     decayFactor = 1.5
                     if base.game.inOverTime:
                         decayFactor *= 3.0
                     decrease = self.timeToCap * 2 * self.numRequiredToCap[self.teamProgress]
                     decrease /= decayFactor
-                    self.capProgress -= (1.0 / decrease) * globalClock.dt
-                    self.capProgress = max(0.0, self.capProgress)
+                    prog = self.capProgress
+                    prog -= (1.0 / decrease) * globalClock.dt
+                    prog = max(0.0, prog)
+                    self.setCapProgress(prog)
                 else:
-                    self.capProgress = 0
-
-            self.capPoint.capProgress = self.capProgress
+                    self.setCapProgress(0)
 
             return task.cont
 
@@ -207,6 +210,18 @@ class TriggerCaptureArea(DistributedTrigger):
                 assert self.capPoint
                 self.capDoId = self.capPoint.doId
             self.addTask(self.capUpdate, 'capUpdate', appendTask=True)
+
+        def setCapState(self, state):
+            self.capState = state
+            self.capPoint.capState = state
+
+        def setCapProgress(self, prog):
+            self.capProgress = prog
+            self.capPoint.capProgress = prog
+
+        def setCapperCount(self, count):
+            self.capperCount = count
+            self.capPoint.capperCount = count
     else:
         def announceGenerate(self):
             DistributedTrigger.announceGenerate(self)
@@ -239,11 +254,11 @@ class TriggerCaptureArea(DistributedTrigger):
 
         def setCapState(self, state):
             if state != self.capState:
-                if state in (self.CSCapping, self.CSReverting):
+                if state in (CapState.CSCapping, CapState.CSReverting):
                     self.doCapSound("Hologram.Start")
-                elif state == self.CSBlocked:
+                elif state == CapState.CSBlocked:
                     self.doCapSound("Hologram.Interrupted")
-                elif state == self.CSIdle:
+                elif state == CapState.CSIdle:
                     self.doCapSound("Hologram.Stop")
                 self.capState = state
 
