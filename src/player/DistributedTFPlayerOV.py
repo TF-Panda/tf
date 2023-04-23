@@ -157,6 +157,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.inputTokens = None
 
+    def b_setDefaultFOV(self, fov):
+        self.setDefaultFOV(fov)
+        self.sendUpdate('setDefaultFOV', [self.defaultFov])
+
     def doAnimationEvent(self, event, data=0, predicted=True):
         if predicted and base.cr.prediction.inPrediction and not base.cr.prediction.firstTimePredicted:
             return
@@ -519,7 +523,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         # or zooming in with the sniper rifle.
         self.addPredictionField("maxSpeed", float, tolerance=0.5)
         self.addPredictionField("fallVelocity", float, noErrorCheck=True, networked=False)
-        self.addPredictionField("fov", float, noErrorCheck=True, networked=False)
+        self.addPredictionField("fov", float, networked=True, tolerance=0.01)
         self.addPredictionField("eyeH", float, tolerance=0.01)
         self.addPredictionField("eyeP", float, tolerance=0.01)
         self.addPredictionField("ducked", bool)
@@ -1107,6 +1111,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.win.requestProperties(props)
 
         self.accept('escape', self.enableControls)
+
+        # Notify the server of our configured default fov.
+        self.b_setDefaultFOV(base.fovConfig.value)
 
     def startControls(self):
         base.simTaskMgr.add(self.runControls, 'runControls')

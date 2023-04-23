@@ -88,7 +88,10 @@ class TFBase(ShowBase, FSM):
 
         self.render.hide(DirectRender.ShadowCameraBitmask)
 
-        self.camLens.setMinFov(base.config.GetInt("fov", 75) / (4./3.))
+        self.fovConfig = ConfigVariableInt("fov", 75)
+        self.vmFovConfig = ConfigVariableInt("viewmodel-fov", 54)
+
+        self.camLens.setMinFov(self.fovConfig.value / (4./3.))
 
         self.render.setAntialias(AntialiasAttrib.MMultisample)
         self.render2d.setAntialias(AntialiasAttrib.MMultisample)
@@ -182,7 +185,7 @@ class TFBase(ShowBase, FSM):
         # Set up the view model camera and scene.
         self.vmRender = NodePath("vmrender")
         self.vmLens = PerspectiveLens()
-        self.vmLens.setMinFov(self.config.GetInt("viewmodel-fov", 54) / (4./3.))
+        self.vmLens.setMinFov(self.vmFovConfig.value / (4./3.))
         self.vmLens.setAspectRatio(self.camLens.getAspectRatio())
         self.vmLens.setNear(1.0)
         self.vmLens.setFar(200.0)

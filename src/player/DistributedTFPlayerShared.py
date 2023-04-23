@@ -140,7 +140,7 @@ class DistributedTFPlayerShared:
         self.fov = 75
         # default fov
         self.defaultFov = 75
-        self.desiredFov = 75
+        self.desiredFov = 0 # 0 means use default fov
         self.fovSpeed = 0.0
 
         # List of players dominating me.
@@ -174,10 +174,21 @@ class DistributedTFPlayerShared:
         return self.inCondition(self.CondLoser)
 
     def setFOV(self, fov, time):
+        self.desiredFov = fov
         if fov == 0:
             self.fov = self.defaultFov
         else:
             self.fov = fov
+
+    def setDefaultFOV(self, fov):
+        """
+        Client request to change default FOV.
+        """
+
+        fov = max(54, min(90, fov))
+        self.defaultFov = fov
+        if self.desiredFov == 0:
+            self.setFOV(0, 0)
 
     def __conditionThink(self, task):
 

@@ -293,6 +293,7 @@ dclass DistributedTFPlayer : DistributedChar {
   float64 duckJumpTime;
   float64 jumpTime;
 
+  uint8 fov;
 
   // 46 bytes
 
@@ -360,6 +361,8 @@ dclass DistributedTFPlayer : DistributedChar {
   voiceCommandChat(uint8 cmd);
 
   dropFlag() ownsend airecv;
+
+  setDefaultFOV(uint8 fov) ownsend airecv;
 };
 
 dclass DistributedWeapon : DistributedChar {
