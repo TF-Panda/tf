@@ -89,8 +89,13 @@ fxaa-enable 1
 ssao-enable 0
 motion-blur-enable 0
 bloom-enable 0
-tone-mapping-enable 1
+# Disable tone-mapping by default, as it matches original TF2.
+# The available tone-mappers are urchima, aces, and uncharted2.
+# In my opinion urchima looks the best, but they all introduce
+# a lot of contrast that make the game visually harder to read.
+tone-mapping-enable 0
 tone-mapping-algorithm urchima
+tone-mapping-urchima-contrast 1.0
 
 # FMOD audio configuraton.
 # Put this directory on plugin-path.  This is where the Steam Audio
@@ -103,13 +108,15 @@ fmod-dsp-buffer-size 1024
 fmod-number-of-sound-channels 256
 fmod-compressed-samples 1
 fmod-reverb-mix 0.25
+fmod-steam-audio-reflection-job 1
 music-volume 1.0
 sfx-volume 0.72
 
 # Default viewmodel and normal camera FOVs.
 # Taken from original TF2.
-viewmodel-fov 54
-fov 75
+# Actually, let's use some preferred modern values as default.
+viewmodel-fov 70
+fov 90
 
 default-cube-map maps/sky.txo
 
@@ -152,6 +159,9 @@ texture-stage-pool-mode name
 # We do this in App to animate all the characters in parallel,
 # and reduce contention on parallel Cull traversals.
 cull-animation 0
+# Can't do parallel animation at the moment because there is a weird
+# race condition that I haven't figured out yet.
+parallel-animation 0
 
 use-orig-source-shader 1
 
