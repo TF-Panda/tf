@@ -400,7 +400,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         self.soundEmitter.registerSound(sound, Sounds.Channel.CHAN_AUTO, spatial, self.viewOffset)
         self.currentSpeech = sound
         if self.talker:
-            self.talker.speak(sound, sentences.getSentence(str(wave.filename)))
+            sentence = sentences.getSentence(str(wave.filename))
+            if sentence:
+                self.talker.speak(sound, sentence)
         sound.play()
 
     def onModelChanged(self):
