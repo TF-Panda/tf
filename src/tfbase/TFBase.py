@@ -112,7 +112,7 @@ class TFBase(ShowBase, FSM):
         # 16 units per feet * feet per meter (3.28084)
         self.audioEngine.set3dUnitScale(52.49344)
         # Enable the steam audio listener-centric reverb on sound effects.
-        base.sfxManagerList[0].setSteamAudioReverb()
+        self.sfxManager = self.sfxManagerList[0]
 
         if True:#self.postProcess.enableHDR:
             self.render.setAttrib(LightRampAttrib.makeIdentity())
@@ -274,6 +274,22 @@ class TFBase(ShowBase, FSM):
         # sound occlusion.
         tracer = PhysAudioTracer(base.physicsWorld, CollisionGroups.World)
         self.audioEngine.setTracer(tracer)
+
+    def enableReverb(self, probeData):
+        """
+        Shortcut to enable the Steam Audio reverb DSP on SFX.  In order to
+        actually do something it needs reflection probe data which is
+        part of the level bam file.  See $TF/src/distributed/DistributedGame.py.
+        """
+        self.sfxManager.setSteamAudioReverb()
+        self.audioEngine.setAudioProbeData(probeData)
+
+    def disableReverb(self):
+        """
+        Shortcut to disable the Steam Audio reverb DSP on SFX.
+        """
+        self.audioEngine.clearAudioProbeData()
+        self.sfxManager.clearReverb()
 
     def addDynamicLight(self, lnp, followParent=None, fadeTime=0.0):
         self.dynamicLights.append((lnp, Vec3(lnp.getColorLinear()), followParent, fadeTime, base.getRenderTime()))

@@ -251,8 +251,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
     def unloadLevel(self):
         DistributedGameBase.unloadLevel(self)
 
-        base.audioEngine.clearAudioProbeData()
-        base.audioEngine.clearAudioSceneData()
+        base.disableReverb()
 
         if self.fogMgr:
             self.fogMgr.cleanup()
@@ -460,9 +459,9 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         # Load the audio reflection probes.
         probeData = self.lvlData.getSteamAudioProbeData()
         if probeData:
-            base.audioEngine.setAudioProbeData(probeData)
+            base.enableReverb(probeData)
         else:
-            base.audioEngine.clearAudioProbeData()
+            base.disableReverb()
 
         # Initialize the dynamic vis node to the number of visgroups in the
         # new level.
