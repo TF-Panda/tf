@@ -176,7 +176,7 @@ def createSound(info, spatial=False, getWave=False):
     if not wave:
         return None
 
-    sound = wave.getSound(base.sfxManagerList[0])
+    sound = wave.getSound(base.sfxManager)
     sound.setPlayRate(random.uniform(info.pitch[0], info.pitch[1]))
     sound.setVolume(random.uniform(info.volume[0], info.volume[1]))
     if spatial:
@@ -228,7 +228,7 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False, getI
         return None
 
     get_sound_coll.start()
-    sound = wave.getSound(base.sfxManagerList[0])
+    sound = wave.getSound(base.sfxManager)
     get_sound_coll.stop()
     sound.setPlayRate(pitch)
     sound.setVolume(volume)

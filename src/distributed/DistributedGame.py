@@ -422,7 +422,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         self.lvlData.setCam(base.cam)
         self.lvlData.buildTraceScene()
-        #base.sfxManagerList[0].setTraceScene(self.lvlData.getTraceScene())
 
         clnp = self.lvlData.getDirLight()
         if not clnp.isEmpty():

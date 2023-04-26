@@ -68,7 +68,7 @@ class TFBase(ShowBase, FSM):
 
         TextNode.setDefaultFont(TFGlobals.getTF2Font())
 
-        if base.config.GetBool("want-pstats-hotkey", False):
+        if self.config.GetBool("want-pstats-hotkey", False):
             self.accept('shift-s', self.togglePStats)
 
         self.camNode.setCameraMask(DirectRender.MainCameraBitmask)
@@ -124,7 +124,7 @@ class TFBase(ShowBase, FSM):
         # We always want to preload sound effects.
         for mgr in self.sfxManagerList:
             #mgr.setStreamMode(AudioManager.SMSample)
-            mgr.setVolume(base.config.GetFloat("sfx-volume", 1))
+            mgr.setVolume(self.config.GetFloat("sfx-volume", 1))
 
         # Background color of 0.3 in linear space.
 
@@ -237,7 +237,7 @@ class TFBase(ShowBase, FSM):
         #cm = CardMaker('cm')
         #cm.setHasUvs(True)
         #cm.setFrame(-1, 1, -1, 1)
-        #self.csmDebug = base.aspect2d.attachNewNode(cm.generate())
+        #self.csmDebug = self.aspect2d.attachNewNode(cm.generate())
         #self.csmDebug.setScale(0.3)
         #self.csmDebug.setZ(-0.7)
         #self.csmDebug.setShader(Shader.load(Shader.SL_GLSL, "shaders/debug_csm.vert.glsl", "shaders/debug_csm.frag.glsl"))
@@ -272,7 +272,7 @@ class TFBase(ShowBase, FSM):
 
         # Set up the tracer for the audio system to calculate
         # sound occlusion.
-        tracer = PhysAudioTracer(base.physicsWorld, CollisionGroups.World)
+        tracer = PhysAudioTracer(self.physicsWorld, CollisionGroups.World)
         self.audioEngine.setTracer(tracer)
 
     def enableReverb(self, probeData):
@@ -292,7 +292,7 @@ class TFBase(ShowBase, FSM):
         self.sfxManager.clearReverb()
 
     def addDynamicLight(self, lnp, followParent=None, fadeTime=0.0):
-        self.dynamicLights.append((lnp, Vec3(lnp.getColorLinear()), followParent, fadeTime, base.getRenderTime()))
+        self.dynamicLights.append((lnp, Vec3(lnp.getColorLinear()), followParent, fadeTime, self.getRenderTime()))
         self.lightMgr.addDynamicLight(lnp)
 
     def removeDynamicLight(self, lnp):
@@ -308,7 +308,7 @@ class TFBase(ShowBase, FSM):
         removed = []
         for data in self.dynamicLights:
             if data[2] is not None:
-                data[0].setPos(data[2].getPos(base.render))
+                data[0].setPos(data[2].getPos(self.render))
             if data[3] > 0.0:
                 now = globalClock.frame_time
                 elapsed = now - data[4]
@@ -551,17 +551,17 @@ class TFBase(ShowBase, FSM):
 
             if speed >= 500:
                 if surfDefA:
-                    base.world.emitSoundSpatial(surfDefA.impactHard, position, volume, chan=chan)
+                    self.world.emitSoundSpatial(surfDefA.impactHard, position, volume, chan=chan)
                     #soundsEmitted += 1
                 if surfDefB:
-                    base.world.emitSoundSpatial(surfDefB.impactHard, position, volume, chan=chan)
+                    self.world.emitSoundSpatial(surfDefB.impactHard, position, volume, chan=chan)
                     #soundsEmitted += 1
             elif speed >= 70.0:
                 if surfDefA:
-                    base.world.emitSoundSpatial(surfDefA.impactSoft, position, volume, chan=chan)
+                    self.world.emitSoundSpatial(surfDefA.impactSoft, position, volume, chan=chan)
                     #soundsEmitted += 1
                 if surfDefB:
-                    base.world.emitSoundSpatial(surfDefB.impactSoft, position, volume, chan=chan)
+                    self.world.emitSoundSpatial(surfDefB.impactSoft, position, volume, chan=chan)
                     #soundsEmitted += 1
 
         #if soundsEmitted > 0:
@@ -670,7 +670,7 @@ class TFBase(ShowBase, FSM):
         bg = self.render2d.attachNewNode(cm.generate())
         #bg.setColorScale((0.5, 0.5, 0.5, 1))
 
-        aspectRatio = base.win.getXSize() / base.win.getYSize()
+        aspectRatio = self.win.getXSize() / self.win.getYSize()
         if aspectRatio <= (4./3.):
             tex = random.choice(
                 ["maps/background01.txo", "maps/background02.txo"])
@@ -684,22 +684,22 @@ class TFBase(ShowBase, FSM):
         loadingDialog = TFDialog(style=TFDialog.NoButtons, text=TFLocalizer.Loading, pad=(0.05, 0.01), midPad=0.06)
         loadingDialog.show()
 
-        base.graphicsEngine.renderFrame()
-        base.graphicsEngine.flipFrame()
+        self.graphicsEngine.renderFrame()
+        self.graphicsEngine.flipFrame()
 
         self.precache = []
-        pgo = base.win.getGsg().getPreparedObjects()
+        pgo = self.win.getGsg().getPreparedObjects()
         for pc in TFGlobals.ModelPrecacheList:
             mdl = loader.loadModel(pc)
             self.precache.append(mdl)
 
-            #base.graphicsEngine.renderFrame()
+            #self.graphicsEngine.renderFrame()
 
             # Upload textures, vertex buffers, index buffers.
-            mdl.prepareScene(base.win.getGsg())
+            mdl.prepareScene(self.win.getGsg())
 
             # Keep the window pumping.
-            base.graphicsEngine.renderFrame()
+            self.graphicsEngine.renderFrame()
 
             #pgo.beginFrameApp()
 
@@ -719,15 +719,15 @@ class TFBase(ShowBase, FSM):
             mat = loader.loadMaterial(pc)
             self.precache.append(mat)
             cmnp.setMaterial(mat)
-            cmnp.prepareScene(base.win.getGsg())
+            cmnp.prepareScene(self.win.getGsg())
             # Keep the window pumping.
-            base.graphicsEngine.renderFrame()
+            self.graphicsEngine.renderFrame()
         cmnp.removeNode()
 
         # Flush the pipeline.
-        base.graphicsEngine.renderFrame()
-        base.graphicsEngine.renderFrame()
-        base.graphicsEngine.renderFrame()
+        self.graphicsEngine.renderFrame()
+        self.graphicsEngine.renderFrame()
+        self.graphicsEngine.renderFrame()
 
         loadingDialog.cleanup()
         bg.removeNode()
