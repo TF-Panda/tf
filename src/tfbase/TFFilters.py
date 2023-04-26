@@ -200,7 +200,7 @@ def makeTraceInfo(start, end, dir, dist, result):
 
 def traceCalcVector(start, end):
     dir = end - start
-    dist = dir.length()
+    dist = max(0.01, dir.length())
     if not dir.normalize():
         dir = Vec3.forward()
     return (dir, dist)
