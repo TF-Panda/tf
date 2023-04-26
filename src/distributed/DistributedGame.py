@@ -56,7 +56,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.skyClnp = None
         self.waterGeomNp = None
 
-        self.accept('shift-v', self.toggleVisDebug)
+        if base.wantDevHotkeys:
+            self.accept('shift-v', self.toggleVisDebug)
         #self.accept('c', self.renderCubeMaps)
 
         self.goalLbl = DirectLabel(text='', pos=(0, 0, 0.55), text_shadow=TFGuiProperties.TextShadowColor, text_align=TextNode.ACenter, text_scale=0.05,

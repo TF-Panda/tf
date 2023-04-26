@@ -47,8 +47,8 @@ class TFPostProcess(PostProcess):
         self.exposureBias = PTA_LVecBase3f.emptyArray(1)
         self.setExposureBias(1)
 
-        base.accept('f1', self.decExposureBias)
-        base.accept('f2', self.incExposureBias)
+        #base.accept('f1', self.decExposureBias)
+        #base.accept('f2', self.incExposureBias)
 
         #self.setupHBAOControls()
         if self.enableHDR:

@@ -207,18 +207,21 @@ class TFBase(ShowBase, FSM):
 
         self.playGame = None
 
-        base.accept('shift-w', self.toggleWireframe)
         self.showingBounds = False
         self.enablePbr = False
         self.enableIk = True
-        base.accept('shift-b', self.toggleBounds)
-        base.accept('shift-r', ShaderManager.getGlobalPtr().reloadShaders)
-        base.accept('shift-p', self.togglePbr)
-        base.accept('shift-i', self.toggleIk)
-        base.accept('shift-l', self.render.ls)
-        base.accept('shift-k', self.vmRender.ls)
-        base.accept('shift-j', self.sky3DTop.ls)
-        #base.accept('shift-j', self.printVMRenderMasks)
+        # Development debug shortcuts.
+        self.wantDevHotkeys = __debug__ and self.config.GetBool('tf-want-dev-hotkeys', True)
+        if self.wantDevHotkeys:
+            self.accept('shift-w', self.toggleWireframe)
+            self.accept('shift-b', self.toggleBounds)
+            self.accept('shift-r', ShaderManager.getGlobalPtr().reloadShaders)
+            self.accept('shift-p', self.togglePbr)
+            self.accept('shift-i', self.toggleIk)
+            self.accept('shift-l', self.render.ls)
+            self.accept('shift-k', self.vmRender.ls)
+            self.accept('shift-j', self.sky3DTop.ls)
+        #self.accept('shift-j', self.printVMRenderMasks)
 
         self.planarReflect = PlanarReflector(1024, "reflection", True)
         self.planarRefract = PlanarReflector(1024, "refraction", False)
