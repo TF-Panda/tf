@@ -126,6 +126,22 @@ get_py_name() const {
 /**
  *
  */
+INLINE void PredictionField::
+set_offset(size_t ofs) {
+  _offset = ofs;
+}
+
+/**
+ * Returns the offset of the data for this field in the data buffer.
+ */
+INLINE size_t PredictionField::
+get_offset() const {
+  return _offset;
+}
+
+/**
+ *
+ */
 INLINE PredictionCopy::
 PredictionCopy(CopyMode mode, PredictedObject *obj, PTA_uchar dest_dict, PTA_uchar src_dict,
                bool count_errors, bool report_errors, bool perform_copy) :
@@ -193,12 +209,12 @@ report_error(const PredictionField *field, int cmd, const Type &predicted, const
  *
  */
 INLINE PyObject *PredictionCopy::
-get_field_py_obj(const PredictionField *field) {
+get_field_py_obj(const PredictionField *field, PyObject *obj) {
   PyObject *py_obj;
   if (field->get_getter() != nullptr) {
     py_obj = PyObject_CallNoArgs(field->get_getter());
   } else {
-    py_obj = PyDict_GetItem(_obj->_dict, field->get_py_name());
+    py_obj = PyDict_GetItem(obj, field->get_py_name());
     Py_XINCREF(py_obj);
   }
   return py_obj;
@@ -208,13 +224,13 @@ get_field_py_obj(const PredictionField *field) {
  *
  */
 INLINE void PredictionCopy::
-set_field_py_obj(const PredictionField *field, PyObject *obj) {
+set_field_py_obj(const PredictionField *field, PyObject *data, PyObject *obj) {
   if (field->get_setter() != nullptr) {
-    PyObject *args = PyTuple_Pack(1, obj);
+    PyObject *args = PyTuple_Pack(1, data);
     PyObject_CallObject(field->get_setter(), args);
     Py_DECREF(args);
   } else {
-    PyDict_SetItem(_obj->_dict, field->get_py_name(), obj);
+    PyDict_SetItem(obj, field->get_py_name(), data);
   }
-  Py_DECREF(obj);
+  Py_DECREF(data);
 }

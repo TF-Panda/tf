@@ -51,6 +51,7 @@ class Prediction(DirectObject):
         self.numServerCommandsAcknowledged = 0
         self.currentCommandReference = 0
         self.previousAckHadErrors = False
+        self.localAvPosField = None
 
         # List of all entities that use prediction.
         self.predictables = []
@@ -73,16 +74,19 @@ class Prediction(DirectObject):
         """
         Checks for prediction errors.
         """
-        return
+
         if not cl_predict.getValue():
             return
 
-        slot = base.localAvatar.getPredictedFrame(commandsAcked - 1)
+        pred = base.localAvatar.pred
+        if not self.localAvPosField:
+            self.localAvPosField = pred.getField(pred.findField("pos"))
+        predictedPos = PredictionCopy.getVec3Value(
+            self.localAvPosField, pred.getDataSlot(commandsAcked - 1),
+            self.localAvPosField.offset, pred)
+
         netPos = base.localAvatar.getPos()
         # Compare what the server returned with what we had predicted it to be.
-        predictedPos = slot.get("pos")
-        if predictedPos is None:
-            return
         delta = predictedPos - netPos
         length = delta.length()
         #self.notify.info(f"For slot {commandsAcked - 1}, predicted pos: {predictedPos}, net pos: {netPos}")
@@ -91,6 +95,7 @@ class Prediction(DirectObject):
             length = 0.0
         else:
             if length > PREDICTION_MIN_EPSILON:
+                base.localAvatar.notePredictionError(delta)
                 # Difference is outside tolerance but within an acceptable
                 # amount to smooth it out.
                 self.notify.info("Prediction error %6.3f units (%6.3f %6.3f %6.3f)" %
@@ -133,8 +138,6 @@ class Prediction(DirectObject):
         Called at the end of the frame if any packets were received.
         """
 
-        #errorCheck = (commandsAcknowledged > 0)
-
         self.numServerCommandsAcknowledged += commandsAcknowledged
         self.previousAckHadErrors = False
 
@@ -148,8 +151,8 @@ class Prediction(DirectObject):
                     if p.pred.postNetworkDataReceived(self.numServerCommandsAcknowledged, self.currentCommandReference):
                         self.previousAckHadErrors = True
 
-            #if errorCheck:
-            #    self.checkError(self.numServerCommandsAcknowledged)
+            if commandsAcknowledged > 0:
+                self.checkError(self.numServerCommandsAcknowledged)
 
     def restoreOriginalEntityState(self):
         """

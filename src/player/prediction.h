@@ -82,6 +82,7 @@ PUBLISHED:
   INLINE Type get_type() const;
   INLINE const std::string &get_name() const;
   INLINE PyObject *get_py_name() const;
+  INLINE size_t get_offset() const;
 
   MAKE_PROPERTY(setter, get_setter, set_setter);
   MAKE_PROPERTY(getter, get_getter, set_getter);
@@ -90,6 +91,10 @@ PUBLISHED:
   MAKE_PROPERTY(type, get_type);
   MAKE_PROPERTY(stride, get_stride);
   MAKE_PROPERTY(name, get_name);
+  MAKE_PROPERTY(offset, get_offset);
+
+public:
+  INLINE void set_offset(size_t ofs);
 
 private:
   std::string _name;
@@ -102,6 +107,8 @@ private:
 
   unsigned int _flags;
   float _tolerance;
+
+  size_t _offset;
 };
 typedef pvector<PredictionField> PredictionFields;
 
@@ -137,37 +144,37 @@ PUBLISHED:
   // Getter/setter/comparison for different data types.
   //
 
-  int get_int_value(const PredictionField *field, const PTA_uchar &dict, size_t pos);
-  void set_int_value(int value, const PredictionField *field, PTA_uchar &dict, size_t pos);
-  DiffType compare_ints(int a, int b);
+  static int get_int_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static void set_int_value(int value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static DiffType compare_ints(int a, int b);
 
-  bool get_bool_value(const PredictionField *field, const PTA_uchar &dict, size_t pos);
-  void set_bool_value(bool value, const PredictionField *field, PTA_uchar &dict, size_t pos);
-  DiffType compare_bools(bool a, bool b);
+  static bool get_bool_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static void set_bool_value(bool value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static DiffType compare_bools(bool a, bool b);
 
-  float get_float_value(const PredictionField *field, const PTA_uchar &dict, size_t pos);
-  void set_float_value(float value, const PredictionField *field, PTA_uchar &dict, size_t pos);
-  DiffType compare_floats(float a, float b, float tolerance);
+  static float get_float_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static void set_float_value(float value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static DiffType compare_floats(float a, float b, float tolerance);
 
-  LVecBase2f get_vec2_value(const PredictionField *field, const PTA_uchar &dict, size_t pos);
-  void set_vec2_value(const LVecBase2f &value, const PredictionField *field, PTA_uchar &dict, size_t pos);
+  static LVecBase2f get_vec2_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static void set_vec2_value(const LVecBase2f &value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj);
 
-  LVecBase3f get_vec3_value(const PredictionField *field, const PTA_uchar &dict, size_t pos);
-  void set_vec3_value(const LVecBase3f &value, const PredictionField *field, PTA_uchar &dict, size_t pos);
+  static LVecBase3f get_vec3_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static void set_vec3_value(const LVecBase3f &value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj);
 
-  LVecBase4f get_vec4_value(const PredictionField *field, const PTA_uchar &dict, size_t pos);
-  void set_vec4_value(const LVecBase4f &value, const PredictionField *field, PTA_uchar &dict, size_t pos);
+  static LVecBase4f get_vec4_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj);
+  static void set_vec4_value(const LVecBase4f &value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj);
 
   template<class Type>
-  INLINE DiffType compare_vecs(const Type &a, const Type &b, float tolerance);
+  static INLINE DiffType compare_vecs(const Type &a, const Type &b, float tolerance);
 
   template<class Type>
   INLINE void report_error_delta(const PredictionField *field, int cmd, const Type &predicted_value, const Type &received_value);
   template<class Type>
   INLINE void report_error(const PredictionField *field, int cmd, const Type &predicted, const Type &received);
 
-  INLINE PyObject *get_field_py_obj(const PredictionField *field);
-  INLINE void set_field_py_obj(const PredictionField *field, PyObject *obj);
+  static INLINE PyObject *get_field_py_obj(const PredictionField *field, PyObject *obj);
+  static INLINE void set_field_py_obj(const PredictionField *field, PyObject *data, PyObject *obj);
 
 public:
   static bool _got_types;
@@ -215,6 +222,12 @@ PUBLISHED:
 
   PTA_uchar alloc_slot(int slot);
   void calc_buffer_size();
+
+  int find_field(const std::string &name) const;
+  const PredictionField *get_field(int n) const;
+
+  CPTA_uchar get_data_slot(int slot) const;
+  CPTA_uchar get_original_data_slot() const;
 
 public:
   PyObject *_py_entity;

@@ -157,6 +157,31 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.inputTokens = None
 
+        self.predictionError = Vec3()
+        self.predictionErrorTime = 0.0
+
+    def getPredictionErrorSmoothingVector(self):
+        errorAmount = (globalClock.frame_time - self.predictionErrorTime) / 0.1
+        if errorAmount >= 1.0:
+            return Vec3()
+
+        errorAmount = 1.0 - errorAmount
+
+        return self.predictionError * errorAmount
+
+    def notePredictionError(self, delta):
+        if self.isDead():
+            return
+
+        oldDelta = self.getPredictionErrorSmoothingVector()
+
+        # Sum all errors within smoothing time.
+        self.predictionError = delta + oldDelta
+        # Remember when last error happened.
+        self.predictionErrorTime = globalClock.frame_time
+
+        self.resetInterpolatedVars()
+
     def b_setDefaultFOV(self, fov):
         self.setDefaultFOV(fov)
         self.sendUpdate('setDefaultFOV', [self.defaultFov])
@@ -636,7 +661,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.calcSpectatorView(self, 48*2)
         else:
             self.hide()
-            base.camera.setPos(self.getEyePosition())
+            pos = self.getEyePosition()
+            # Apply smoothed out prediction error.
+            pos += self.getPredictionErrorSmoothingVector()
+            base.camera.setPos(pos)
             base.camera.setHpr(self.viewAngles + self.punchAngle)
             if self.viewModel:
                 # Don't render the view model when zoomed.
@@ -710,6 +738,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if tr[0]:
             eyeOrigin = tr[1]
             self.observerChaseDistance = (origin - eyeOrigin).length()
+
+        # Apply smoothed out prediction error.
+        eyeOrigin += self.getPredictionErrorSmoothingVector()
 
         base.camera.setPos(eyeOrigin)
 

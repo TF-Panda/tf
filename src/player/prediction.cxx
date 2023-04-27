@@ -27,7 +27,8 @@ PredictionField::
 PredictionField() :
   _getter(nullptr),
   _setter(nullptr),
-  _py_name(nullptr)
+  _py_name(nullptr),
+  _offset(0)
 {
 }
 
@@ -41,7 +42,8 @@ PredictionField(const std::string &name, Type type, unsigned int flags) :
   _getter(nullptr),
   _setter(nullptr),
   _flags(flags),
-  _tolerance(0.0f)
+  _tolerance(0.0f),
+  _offset(0)
 {
   _py_name = PyUnicode_FromString(name.c_str());
 }
@@ -57,7 +59,8 @@ PredictionField(const PredictionField &copy) :
   _setter(copy._setter),
   _flags(copy._flags),
   _tolerance(copy._tolerance),
-  _py_name(copy._py_name)
+  _py_name(copy._py_name),
+  _offset(copy._offset)
 {
   Py_XINCREF(_py_name);
   Py_XINCREF(_getter);
@@ -75,7 +78,8 @@ PredictionField(PredictionField &&other) :
   _setter(other._setter),
   _flags(other._flags),
   _tolerance(other._tolerance),
-  _py_name(other._py_name)
+  _py_name(other._py_name),
+  _offset(other._offset)
 {
   other._getter = nullptr;
   other._setter = nullptr;
@@ -111,6 +115,7 @@ operator = (const PredictionField &copy) {
   }
   _flags = copy._flags;
   _tolerance = copy._tolerance;
+  _offset = copy._offset;
   if (_py_name != copy._py_name) {
     Py_XDECREF(_py_name);
     _py_name = copy._py_name;
@@ -136,6 +141,7 @@ operator = (PredictionField &&other) {
   _setter = other._setter;
   _flags = other._flags;
   _tolerance = other._tolerance;
+  _offset = other._offset;
   if (_py_name != other._py_name) {
     Py_XDECREF(_py_name);
   }
@@ -367,6 +373,7 @@ void PredictedObject::
 calc_buffer_size() {
   _buffer_size = 0u;
   for (size_t i = 0; i < _fields.size(); ++i) {
+    _fields[i].set_offset(_buffer_size);
     _buffer_size += _fields[i].get_stride();
   }
 }
@@ -575,15 +582,15 @@ transfer_field(const PredictionField *field, size_t pos) {
   DiffType diff = DT_differs;
 
   if (field->get_type() == PredictionField::T_int) {
-    int src_value = get_int_value(field, _src_dist, pos);
-    int dest_value = get_int_value(field, _dest_dict, pos);
+    int src_value = get_int_value(field, _src_dist, pos, _obj);
+    int dest_value = get_int_value(field, _dest_dict, pos, _obj);
 
     if (_error_check) {
       diff = compare_ints(src_value, dest_value);
     }
 
     if (_perform_copy && diff != DT_identical) {
-      set_int_value(src_value, field, _dest_dict, pos);
+      set_int_value(src_value, field, _dest_dict, pos, _obj);
     }
 
     if (_error_check && diff == DT_differs) {
@@ -594,15 +601,15 @@ transfer_field(const PredictionField *field, size_t pos) {
     }
 
   } else if (field->get_type() == PredictionField::T_bool) {
-    bool src_value = get_bool_value(field, _src_dist, pos);
-    bool dest_value = get_bool_value(field, _dest_dict, pos);
+    bool src_value = get_bool_value(field, _src_dist, pos, _obj);
+    bool dest_value = get_bool_value(field, _dest_dict, pos, _obj);
 
     if (_error_check) {
       diff = compare_bools(src_value, dest_value);
     }
 
     if (_perform_copy && diff != DT_identical) {
-      set_bool_value(src_value, field, _dest_dict, pos);
+      set_bool_value(src_value, field, _dest_dict, pos, _obj);
     }
 
     if (_error_check && diff == DT_differs) {
@@ -613,15 +620,15 @@ transfer_field(const PredictionField *field, size_t pos) {
     }
 
   } else if (field->get_type() == PredictionField::T_float) {
-    float src_value = get_float_value(field, _src_dist, pos);
-    float dest_value = get_float_value(field, _dest_dict, pos);
+    float src_value = get_float_value(field, _src_dist, pos, _obj);
+    float dest_value = get_float_value(field, _dest_dict, pos, _obj);
 
     if (_error_check) {
       diff = compare_floats(src_value, dest_value, field->get_tolerance());
     }
 
     if (_perform_copy && diff != DT_identical) {
-      set_float_value(src_value, field, _dest_dict, pos);
+      set_float_value(src_value, field, _dest_dict, pos, _obj);
     }
 
     if (_error_check && diff == DT_differs) {
@@ -632,15 +639,15 @@ transfer_field(const PredictionField *field, size_t pos) {
     }
 
   } else if (field->get_type() == PredictionField::T_vec2) {
-    LVecBase2f src_value = get_vec2_value(field, _src_dist, pos);
-    LVecBase2f dest_value = get_vec2_value(field, _dest_dict, pos);
+    LVecBase2f src_value = get_vec2_value(field, _src_dist, pos, _obj);
+    LVecBase2f dest_value = get_vec2_value(field, _dest_dict, pos, _obj);
 
     if (_error_check) {
       diff = compare_vecs(src_value, dest_value, field->get_tolerance());
     }
 
     if (_perform_copy && diff != DT_identical) {
-      set_vec2_value(src_value, field, _dest_dict, pos);
+      set_vec2_value(src_value, field, _dest_dict, pos, _obj);
     }
 
     if (_error_check && diff == DT_differs) {
@@ -651,15 +658,15 @@ transfer_field(const PredictionField *field, size_t pos) {
     }
 
   } else if (field->get_type() == PredictionField::T_vec3) {
-    LVecBase3f src_value = get_vec3_value(field, _src_dist, pos);
-    LVecBase3f dest_value = get_vec3_value(field, _dest_dict, pos);
+    LVecBase3f src_value = get_vec3_value(field, _src_dist, pos, _obj);
+    LVecBase3f dest_value = get_vec3_value(field, _dest_dict, pos, _obj);
 
     if (_error_check) {
       diff = compare_vecs(src_value, dest_value, field->get_tolerance());
     }
 
     if (_perform_copy && diff != DT_identical) {
-      set_vec3_value(src_value, field, _dest_dict, pos);
+      set_vec3_value(src_value, field, _dest_dict, pos, _obj);
     }
 
     if (_error_check && diff == DT_differs) {
@@ -670,15 +677,15 @@ transfer_field(const PredictionField *field, size_t pos) {
     }
 
   } else if (field->get_type() == PredictionField::T_vec4) {
-    LVecBase4f src_value = get_vec4_value(field, _src_dist, pos);
-    LVecBase4f dest_value = get_vec4_value(field, _dest_dict, pos);
+    LVecBase4f src_value = get_vec4_value(field, _src_dist, pos, _obj);
+    LVecBase4f dest_value = get_vec4_value(field, _dest_dict, pos, _obj);
 
     if (_error_check) {
       diff = compare_vecs(src_value, dest_value, field->get_tolerance());
     }
 
     if (_perform_copy && diff != DT_identical) {
-      set_vec4_value(src_value, field, _dest_dict, pos);
+      set_vec4_value(src_value, field, _dest_dict, pos, _obj);
     }
 
     if (_error_check && diff == DT_differs) {
@@ -696,11 +703,11 @@ transfer_field(const PredictionField *field, size_t pos) {
  *
  */
 int PredictionCopy::
-get_int_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) {
+get_int_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     return *(int *)(dict.p() + pos);
   } else {
-    PyObject *int_obj = get_field_py_obj(field);
+    PyObject *int_obj = get_field_py_obj(field, obj->_dict);
     int value = (int)PyLong_AsLong(int_obj);
     Py_DECREF(int_obj);
     return value;
@@ -711,11 +718,11 @@ get_int_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) {
  *
  */
 void PredictionCopy::
-set_int_value(int value, const PredictionField *field, PTA_uchar &dict, size_t pos) {
+set_int_value(int value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     *(int *)(dict.p() + pos) = value;
   } else {
-    set_field_py_obj(field, PyLong_FromLong((long)value));
+    set_field_py_obj(field, PyLong_FromLong((long)value), obj->_dict);
   }
 }
 
@@ -734,11 +741,11 @@ compare_ints(int a, int b) {
  *
  */
 bool PredictionCopy::
-get_bool_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) {
+get_bool_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     return *(bool *)(dict.p() + pos);
   } else {
-    PyObject *bool_obj = get_field_py_obj(field);
+    PyObject *bool_obj = get_field_py_obj(field, obj->_dict);
     bool value = (bool)PyLong_AsLong(bool_obj);
     Py_DECREF(bool_obj);
     return value;
@@ -749,11 +756,11 @@ get_bool_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) 
  *
  */
 void PredictionCopy::
-set_bool_value(bool value, const PredictionField *field, PTA_uchar &dict, size_t pos) {
+set_bool_value(bool value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     *(bool *)(dict.p() + pos) = value;
   } else {
-    set_field_py_obj(field, PyBool_FromLong((long)value));
+    set_field_py_obj(field, PyBool_FromLong((long)value), obj->_dict);
   }
 }
 
@@ -772,11 +779,11 @@ compare_bools(bool a, bool b) {
  *
  */
 float PredictionCopy::
-get_float_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) {
+get_float_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     return *(float *)(dict.p() + pos);
   } else {
-    PyObject *flt_obj = get_field_py_obj(field);
+    PyObject *flt_obj = get_field_py_obj(field, obj->_dict);
     float value = (float)PyFloat_AsDouble(flt_obj);
     Py_DECREF(flt_obj);
     return value;
@@ -787,11 +794,11 @@ get_float_value(const PredictionField *field, const PTA_uchar &dict, size_t pos)
  *
  */
 void PredictionCopy::
-set_float_value(float value, const PredictionField *field, PTA_uchar &dict, size_t pos) {
+set_float_value(float value, const PredictionField *field, PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     *(float *)(dict.p() + pos) = value;
   } else {
-    set_field_py_obj(field, PyFloat_FromDouble((double)value));
+    set_field_py_obj(field, PyFloat_FromDouble((double)value), obj->_dict);
   }
 }
 
@@ -815,12 +822,12 @@ compare_floats(float a, float b, float tolerance) {
  *
  */
 LVecBase2f PredictionCopy::
-get_vec2_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) {
+get_vec2_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     float *data = (float *)(dict.p() + pos);
     return LVecBase2f(data[0], data[1]);
   } else {
-    PyObject *vec_obj = get_field_py_obj(field);
+    PyObject *vec_obj = get_field_py_obj(field, obj->_dict);
     LVecBase2f tmp;
     LVecBase2f *coerced = Dtool_Coerce_LVecBase2f(vec_obj, tmp);
     tmp = *coerced;
@@ -835,7 +842,7 @@ get_vec2_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) 
  */
 void PredictionCopy::
 set_vec2_value(const LVecBase2f &value, const PredictionField *field,
-               PTA_uchar &dict, size_t pos) {
+               PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     float *data = (float *)(dict.p() + pos);
     data[0] = value[0];
@@ -843,7 +850,7 @@ set_vec2_value(const LVecBase2f &value, const PredictionField *field,
 
   } else {
     LVecBase2f *vec = new LVecBase2f(value);
-    set_field_py_obj(field, DTool_CreatePyInstance((void *)vec, *_vec2_type, true, false));
+    set_field_py_obj(field, DTool_CreatePyInstance((void *)vec, *_vec2_type, true, false), obj->_dict);
   }
 }
 
@@ -851,12 +858,12 @@ set_vec2_value(const LVecBase2f &value, const PredictionField *field,
  *
  */
 LVecBase3f PredictionCopy::
-get_vec3_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) {
+get_vec3_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     float *data = (float *)(dict.p() + pos);
     return LVecBase3f(data[0], data[1], data[2]);
   } else {
-    PyObject *vec_obj = get_field_py_obj(field);
+    PyObject *vec_obj = get_field_py_obj(field, obj->_dict);
     LVecBase3f tmp;
     LVecBase3f *coerced = Dtool_Coerce_LVecBase3f(vec_obj, tmp);
     tmp = *coerced;
@@ -871,7 +878,7 @@ get_vec3_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) 
  */
 void PredictionCopy::
 set_vec3_value(const LVecBase3f &value, const PredictionField *field,
-               PTA_uchar &dict, size_t pos) {
+               PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     float *data = (float *)(dict.p() + pos);
     data[0] = value[0];
@@ -880,7 +887,7 @@ set_vec3_value(const LVecBase3f &value, const PredictionField *field,
 
   } else {
     LVecBase3f *vec = new LVecBase3f(value);
-    set_field_py_obj(field, DTool_CreatePyInstance((void *)vec, *_vec3_type, true, false));
+    set_field_py_obj(field, DTool_CreatePyInstance((void *)vec, *_vec3_type, true, false), obj->_dict);
   }
 }
 
@@ -888,12 +895,12 @@ set_vec3_value(const LVecBase3f &value, const PredictionField *field,
  *
  */
 LVecBase4f PredictionCopy::
-get_vec4_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) {
+get_vec4_value(const PredictionField *field, const PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     float *data = (float *)(dict.p() + pos);
     return LVecBase4f(data[0], data[1], data[2], data[3]);
   } else {
-    PyObject *vec_obj = get_field_py_obj(field);
+    PyObject *vec_obj = get_field_py_obj(field, obj->_dict);
     LVecBase4f tmp;
     LVecBase4f *coerced = Dtool_Coerce_LVecBase4f(vec_obj, tmp);
     tmp = *coerced;
@@ -908,7 +915,7 @@ get_vec4_value(const PredictionField *field, const PTA_uchar &dict, size_t pos) 
  */
 void PredictionCopy::
 set_vec4_value(const LVecBase4f &value, const PredictionField *field,
-               PTA_uchar &dict, size_t pos) {
+               PTA_uchar &dict, size_t pos, PredictedObject *obj) {
   if (!dict.is_null()) {
     float *data = (float *)(dict.p() + pos);
     data[0] = value[0];
@@ -918,7 +925,7 @@ set_vec4_value(const LVecBase4f &value, const PredictionField *field,
 
   } else {
     LVecBase4f *vec = new LVecBase4f(value);
-    set_field_py_obj(field, DTool_CreatePyInstance((void *)vec, *_vec4_type, true, false));
+    set_field_py_obj(field, DTool_CreatePyInstance((void *)vec, *_vec4_type, true, false), obj->_dict);
   }
 }
 
@@ -946,4 +953,44 @@ fetch_types() {
   }
 
   _got_types = true;
+}
+
+/**
+ *
+ */
+int PredictedObject::
+find_field(const std::string &name) const {
+  for (int i = 0; i < (int)_fields.size(); ++i) {
+    if (_fields[i].get_name() == name) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ *
+ */
+const PredictionField *PredictedObject::
+get_field(int n) const {
+  nassertr(n >= 0 && n < (int)_fields.size(), nullptr);
+  return &_fields[n];
+}
+
+/**
+ * Returns the data buffer containing stored prediction results
+ * for the given slot.
+ */
+CPTA_uchar PredictedObject::
+get_data_slot(int slot) const {
+  nassertr(slot >= 0 && slot < prediction_data_slots, CPTA_uchar());
+  return _data_slots[slot];
+}
+
+/**
+ * Returns the original data buffer.
+ */
+CPTA_uchar PredictedObject::
+get_original_data_slot() const {
+  return _original_data;
 }
