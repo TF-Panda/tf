@@ -278,7 +278,7 @@ class TFBase(ShowBase, FSM):
     def postRunFrame(self):
         ShowBase.postRunFrame(self)
 
-        if __debug__:
+        if __debug__ and base.config.GetBool('tf-want-clock-osd', False):
             self.onScreenDebug.add("client time", base.clockMgr.getTime())
             self.onScreenDebug.add("client frame", globalClock.frame_count)
             self.onScreenDebug.add("client dt", base.clockMgr.getDeltaTime())
