@@ -77,7 +77,7 @@ class DistributedCharAI(Actor, DistributedEntityAI):
             channel = self.character.getChannel(info.channel)
             event = channel.getEvent(info.event)
             eventInfo = {
-                "eventTime": globalClock.frame_time,
+                "eventTime": base.clockMgr.getTime(),
                 "source": self,
                 "sequence": info.channel,
                 "cycle": event.getCycle(),

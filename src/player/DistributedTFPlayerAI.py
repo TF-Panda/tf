@@ -154,10 +154,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.sendUpdate('playerChat', [text, teamOnly], excludeClients=[self.owner])
 
     def updateRecentKills(self):
-        self.recentKills = [x for x in self.recentKills if (globalClock.frame_time - x) < 20]
+        self.recentKills = [x for x in self.recentKills if (base.clockMgr.getTime() - x) < 20]
 
     def speakKilledPlayer(self, player, sentryKill, domMode):
-        self.recentKills.append(globalClock.frame_time)
+        self.recentKills.append(base.clockMgr.getTime())
         data = {
             'killedplayer': player,
             'withweapon': self.getActiveWeaponObj(),
@@ -216,10 +216,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.addConceptData(concept, data)
         line = self.responseSystem.speakConcept(data)
         if line:
-            if self.responseSystem.speakTime == globalClock.frame_time:
+            if self.responseSystem.speakTime == base.clockMgr.getTime():
                 self.d_speak(line)
             else:
-                base.simTaskMgr.doMethodLater(self.responseSystem.speakTime - globalClock.frame_time, self.__delayedSpeak,
+                base.simTaskMgr.doMethodLater(self.responseSystem.speakTime - base.clockMgr.getTime(), self.__delayedSpeak,
                                               'delayedSpeak', extraArgs=[line], appendTask=True)
             return True
         return False
@@ -237,10 +237,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         if self.CondBurning not in self.conditions:
             self.setCondition(self.CondBurning)
-            self.flameBurnTime = globalClock.frame_time
+            self.flameBurnTime = base.clockMgr.getTime()
 
         flameLife = TF_BURNING_FLAME_LIFE_PYRO if victimIsPyro else TF_BURNING_FLAME_LIFE
-        self.flameRemoveTime = globalClock.frame_time + flameLife
+        self.flameRemoveTime = base.clockMgr.getTime() + flameLife
         self.burnAttacker = attacker.doId
 
     def addDetonateable(self, det):
@@ -339,7 +339,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def __conditionThinkAI(self, task):
         for cond, timeLeft in self.conditions.items():
             if timeLeft != -1:
-                reduction = globalClock.dt
+                reduction = base.clockMgr.getDeltaTime()
 
                 # If we're being healed, we reduce bad conditions faster
                 if cond in self.BadConditions and self.healers:
@@ -358,7 +358,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # health above 100%.
         decayHealth = True
         if self.CondHealthBuff in self.conditions:
-            timeSinceDamage = globalClock.frame_time - self.lastDamageTime
+            timeSinceDamage = base.clockMgr.getTime() - self.lastDamageTime
             scale = TFGlobals.remapValClamped(timeSinceDamage, 10, 15, 1.0, 3.0)
 
             hasFullHealth = self.health >= self.maxHealth
@@ -373,10 +373,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
                 if healer['dispenser']:
                     # Dispensers heal at a slower rate, but ignore scale
-                    self.healFraction += globalClock.dt * healer['amount']
+                    self.healFraction += base.clockMgr.getDeltaTime() * healer['amount']
                 else:
                     # Player heals are affected by the last damage time
-                    self.healFraction += globalClock.dt * healer['amount'] * scale
+                    self.healFraction += base.clockMgr.getDeltaTime() * healer['amount'] * scale
 
                 totalHealAmount += healer['amount']
 
@@ -396,13 +396,13 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             if self.CondBurning in self.conditions:
                 # Reduce the duration of this burn
                 reduction = 2
-                self.flameRemoveTime -= reduction * globalClock.dt
+                self.flameRemoveTime -= reduction * base.clockMgr.getDeltaTime()
 
         if decayHealth:
             # If we're not buffed, our health drains back to max
             if self.health > self.maxHealth:
                 boostMaxAmount = self.getMaxBuffedHealth() - self.maxHealth
-                self.healFraction += globalClock.dt * (boostMaxAmount / tf_boost_drain_time)
+                self.healFraction += base.clockMgr.getDeltaTime() * (boostMaxAmount / tf_boost_drain_time)
 
                 healthToDrain = int(self.healFraction)
                 if healthToDrain > 0:
@@ -415,9 +415,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             if not burnAttacker:
                 self.removeCondition(self.CondBurning)
             else:
-                if globalClock.frame_time > self.flameRemoveTime:
+                if base.clockMgr.getTime() > self.flameRemoveTime:
                     self.removeCondition(self.CondBurning)
-                elif globalClock.frame_time >= self.flameBurnTime and self.tfClass != Class.Pyro:
+                elif base.clockMgr.getTime() >= self.flameBurnTime and self.tfClass != Class.Pyro:
                     # Burn the player (if not pyro, who does not take persistent burning damage).
                     info = TakeDamageInfo()
                     info.attacker = burnAttacker
@@ -425,10 +425,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                     info.setDamage(3)
                     info.damageType = DamageType.Burn | DamageType.PreventPhysicsForce
                     self.takeDamage(info)
-                    self.flameBurnTime = globalClock.frame_time + TF_BURNING_FREQUENCY
+                    self.flameBurnTime = base.clockMgr.getTime() + TF_BURNING_FREQUENCY
 
-                if self.nextBurningSound < globalClock.frame_time:
-                    self.nextBurningSound = globalClock.frame_time + 2.5
+                if self.nextBurningSound < base.clockMgr.getTime():
+                    self.nextBurningSound = base.clockMgr.getTime() + 2.5
 
         return task.cont
 
@@ -516,7 +516,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.takeDamage(info)
 
     def voiceCommand(self, cmd):
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
         if self.isDead() or (now - self.lastVoiceCmdTime) < 1.5:
             return
 
@@ -691,7 +691,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if igniting and info.attacker:
             self.burn(info.attacker)
 
-        self.lastDamageTime = globalClock.frame_time
+        self.lastDamageTime = base.clockMgr.getTime()
 
         if info.damageType & DamageType.PreventPhysicsForce:
             force = Vec3(0.0)
@@ -837,7 +837,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             # Look in pain.
             self.pushExpression('pain')
 
-            now = globalClock.frame_time
+            now = base.clockMgr.getTime()
 
             if info.damageType & DamageType.Fall:
                 self.emitSound("Player.FallDamage", client=self.owner)
@@ -1069,7 +1069,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.observerTarget = self.doId
 
         self.observerMode = ObserverMode.DeathCam
-        self.deathTime = globalClock.frame_time
+        self.deathTime = base.clockMgr.getTime()
         self.playedFreezeSound = False
         self.abortFreezeCam = False
         self.velocity = Vec3(0)
@@ -1103,7 +1103,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
     def freezeFrameTask(self, task):
 
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
 
         timeInFreeze = spec_freeze_traveltime.getValue() + spec_freeze_time.getValue()
         freezeEnd = (self.deathTime + TF_DEATH_ANIMATION_TIME + timeInFreeze)
@@ -1143,7 +1143,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             self.respawnTime = -1
             return task.done
 
-        if globalClock.frame_time >= self.respawnTime:
+        if base.clockMgr.getTime() >= self.respawnTime:
             # Respawn now.
             self.doRespawn()
             return task.done
@@ -1633,10 +1633,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if simulationTicks > 0:
             self.adjustPlayerTimeBase(simulationTicks)
 
-        # Store off true server timestamps
-        saveFrameTime = globalClock.frame_time
-        saveDt = globalClock.dt
-
         commandContextCount = len(self.commandContexts)
 
         # Build a list of available commands.
@@ -1709,17 +1705,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # Now run the commands.
         if cmdsToRun > 0:
             for i in range(cmdsToRun):
-                self.runPlayerCommand(availableCommands[i], base.deltaTime)
-
-        # Restore the true server clock.
-        base.setFrameTime(saveFrameTime)
-        base.setDeltaTime(saveDt)
+                self.runPlayerCommand(availableCommands[i], base.clockMgr.getDeltaTime())
 
     def runPlayerCommand(self, cmd, deltaTime):
         self.currentCommand = cmd
 
-        base.setFrameTime(self.tickBase * base.intervalPerTick)
-        base.setDeltaTime(base.intervalPerTick)
+        base.clockMgr.enterSimulationTime(cmd.tickCount, self.tickBase)
 
         base.net.predictionRandomSeed = cmd.randomSeed
 
@@ -1769,6 +1760,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         base.net.predictionRandomSeed = 0
         self.currentCommand = None
+
+        base.clockMgr.exitSimulationTime()
 
     def playerCommand(self, data):
         """ Player command sent to us by the client. """

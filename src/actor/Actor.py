@@ -745,7 +745,7 @@ class Actor(Model):
         if not self.hitBoxes or not self.character:
             return
 
-        #now = globalClock.frame_time
+        #now = base.clockMgr.getTime()
         #if now == self.lastHitBoxSyncTime:
             # We're already synchronized with the current point in time.
         #    return

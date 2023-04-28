@@ -78,11 +78,14 @@ class Prediction(DirectObject):
         if not cl_predict.getValue():
             return
 
+        if commandsAcked > PREDICTION_DATA_SLOTS:
+            return
+
         pred = base.localAvatar.pred
         if not self.localAvPosField:
             self.localAvPosField = pred.getField(pred.findField("pos"))
         predictedPos = PredictionCopy.getVec3Value(
-            self.localAvPosField, pred.getDataSlot(commandsAcked - 1),
+            self.localAvPosField, pred.getDataSlot((commandsAcked - 1)),
             self.localAvPosField.offset, pred)
 
         netPos = base.localAvatar.getPos()
@@ -259,13 +262,13 @@ class Prediction(DirectObject):
                     # here because if we don't, we'll have 3 interpolation entries with the same timestamp as
                     # this predicted frame, so we don't be able to interpolate (which leads to jerky movement)
                     # in the player when ANY entity like your gun gets a prediction error).
-                    prev = globalClock.frame_time
-                    base.setFrameTime((base.localAvatar.tickBase * base.intervalPerTick) - base.intervalPerTick)
+
+                    base.clockMgr.enterSimulationTime(base.localAvatar.tickBase - 1)
 
                     for p in self.predictables:
                         p.resetInterpolatedVars()
 
-                    base.setFrameTime(prev)
+                    base.clockMgr.exitSimulationTime()
 
         destinationSlot += skipAhead
         # Always reset these values now that we handled them.
@@ -299,14 +302,9 @@ class Prediction(DirectObject):
             # Is this the first time predicting this?
             self.firstTimePredicted = not cmd.hasBeenPredicted
 
-            # Set globals appropriately
-            frameTime = base.localAvatar.tickBase * base.intervalPerTick
+            self.runSimulation(currentCommand, cmd, base.localAvatar)
 
-            self.runSimulation(currentCommand, frameTime, cmd, base.localAvatar)
-
-            base.setFrameTime(frameTime)
-            base.setDeltaTime(base.intervalPerTick)
-            base.setTickCount(cmd.tickCount)
+            base.clockMgr.enterSimulationTime(cmd.tickCount, base.localAvatar.tickBase)
 
             # Call untouch on any entities no longer predicted to be touching.
             #self.untouch() # TODO
@@ -325,6 +323,8 @@ class Prediction(DirectObject):
             # Copy the state over.
             i += 1
 
+            base.clockMgr.exitSimulationTime()
+
         self.inPrediction = False
 
         # Somehow we looped past the end of the list (severe lag), don't predict at all.
@@ -333,7 +333,7 @@ class Prediction(DirectObject):
 
         return True
 
-    def runSimulation(self, currentCommand, frameTime, cmd, localAvatar):
+    def runSimulation(self, currentCommand, cmd, localAvatar):
         runSimulationPCollector.start()
 
         ctx = localAvatar.commandContext
@@ -348,12 +348,11 @@ class Prediction(DirectObject):
         # Don't used cache
         for i in range(len(self.predictables)):
             # Always reset.
-            base.setFrameTime(frameTime)
-            base.setDeltaTime(base.intervalPerTick)
-            base.setTickCount(cmd.tickCount)
+            base.clockMgr.enterSimulationTime(cmd.tickCount, localAvatar.tickBase)
 
             p = self.predictables[i]
             if not p:
+                base.clockMgr.exitSimulationTime()
                 continue
 
             isLocal = (localAvatar == p)
@@ -363,6 +362,7 @@ class Prediction(DirectObject):
             #    assert i == 0
 
             if p.playerSimulated:
+                base.clockMgr.exitSimulationTime()
                 continue
 
             # TODO: client-created entities
@@ -375,9 +375,11 @@ class Prediction(DirectObject):
 
             predLatchPCollector.start()
             # Don't update last networked data here!!!
-            p.onLatchInterpolatedVars(globalClock.frame_time,
+            p.onLatchInterpolatedVars(base.clockMgr.getClientTime(),
                                       p.SimulationVar | p.AnimationVar | p.OmitUpdateLastNetworked)
             predLatchPCollector.stop()
+
+            base.clockMgr.exitSimulationTime()
 
         runSimulationPCollector.stop()
 
@@ -420,10 +422,7 @@ class Prediction(DirectObject):
 
         self.startCommand(avatar, cmd)
 
-        # Set globals appropriately
-        base.setFrameTime(avatar.tickBase * base.intervalPerTick)
-        base.setDeltaTime(base.intervalPerTick)
-        base.setTickCount(cmd.tickCount)
+        base.clockMgr.enterSimulationTime(cmd.tickCount, avatar.tickBase)
 
         if not avatar.isDead():
 
@@ -479,6 +478,8 @@ class Prediction(DirectObject):
 
         avatar.tickBase += 1
 
+        base.clockMgr.exitSimulationTime()
+
     def startCommand(self, avatar, cmd):
         avatar.currentCommand = cmd
         base.net.predictionRandomSeed = cmd.randomSeed
@@ -507,16 +508,18 @@ class Prediction(DirectObject):
         self.previousStartFrame = startFrame
 
         # Save off current timer values.
-        saveDeltaTime = globalClock.dt
-        saveFrameTime = globalClock.frame_time
-        saveFrameCount = base.tickCount
+        #saveDeltaTime = base.clockMgr.getDeltaTime()
+        #saveFrameTime = base.clockMgr.getTime()
+        #saveFrameCount = base.tickCount
+
+        #print("pred update", saveFrameTime, saveFrameCount)
 
         self.doUpdate(receivedNewWorldUpdate, validFrame, incomingAcknowledged, outgoingCommand)
 
         # Restore true timer values.
-        base.setFrameTime(saveFrameTime)
-        base.setDeltaTime(saveDeltaTime)
-        base.setTickCount(saveFrameCount)
+        #base.setFrameTime(saveFrameTime)
+        #base.setDeltaTime(saveDeltaTime)
+        #base.setTickCount(saveFrameCount)
 
     def doUpdate(self, receivedNewWorldUpdate, validFrame, incomingAcknowledged, outgoingCommand):
         if not hasattr(base, 'localAvatar') or not base.localAvatar:

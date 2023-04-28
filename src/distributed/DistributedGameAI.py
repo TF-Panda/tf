@@ -97,9 +97,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
     def __respawnWaveUpdate(self):
         for team, data in self.respawnWaves.items():
-            if data['nextWave'] <= globalClock.frame_time:
+            if data['nextWave'] <= base.clockMgr.getTime():
                 waveIval = self.getRespawnWaveTimeForTeam(team)
-                data['nextWave'] = globalClock.frame_time + waveIval
+                data['nextWave'] = base.clockMgr.getTime() + waveIval
 
     def setTeamRespawnWaveTime(self, team, time):
         self.respawnWaves[team]['time'] = time
@@ -333,7 +333,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
     def endRound(self, winTeam=TFTeam.NoTeam, winReason=TFGlobals.WinReason.Stalemate):
         self.notify.info("End round %i" % self.roundNumber)
         self.roundState = RoundState.Ended
-        self.roundEndTime = globalClock.frame_time + 15.0
+        self.roundEndTime = base.clockMgr.getTime() + 15.0
         self.inOverTime = False
         if self.roundTimer:
             # Abort the round timer.
@@ -384,7 +384,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.__respawnWaveUpdate()
 
-        if globalClock.frame_time >= self.roundEndTime:
+        if base.clockMgr.getTime() >= self.roundEndTime:
             if self.roundState == RoundState.Ended:
                 self.newRound()
 

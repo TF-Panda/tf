@@ -78,7 +78,7 @@ class DistributedStickyBombLauncher(TFWeaponGun):
 
     def itemPostFrame(self):
         idle = True
-        if globalClock.frame_time > self.nextPrimaryAttack and self.clip > 0:
+        if base.clockMgr.getTime() > self.nextPrimaryAttack and self.clip > 0:
             if (self.player.buttons & InputFlag.Attack1) and not self.inReload:
                 if not self.isCharging:
                     self.isCharging = True
@@ -88,7 +88,7 @@ class DistributedStickyBombLauncher(TFWeaponGun):
                     self.charge = 0.0
                     idle = False
                 else:
-                    self.charge += globalClock.dt * 0.25
+                    self.charge += base.clockMgr.getDeltaTime() * 0.25
                     self.charge = min(1.0, self.charge)
                     if self.charge >= 1:
                         # Hit full charge, auto fire.

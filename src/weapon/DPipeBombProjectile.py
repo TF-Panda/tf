@@ -123,7 +123,7 @@ class DPipeBombProjectile(BaseClass):
                 return task.cont
 
             currPos = self.getPos(base.render)
-            predictedPos = currPos + (currVel * globalClock.dt)
+            predictedPos = currPos + (currVel * base.clockMgr.getDeltaTime())
 
             tr = TFFilters.traceBox(currPos, predictedPos, -self.directHull, self.directHull,
                                     self.otherTeamMask, TFFilters.TFQueryFilter(self))

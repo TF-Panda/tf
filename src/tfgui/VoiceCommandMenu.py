@@ -102,7 +102,7 @@ class VoiceCommandMenu(GuiPanel):
 
     def __update(self, task):
         if self.currFade != self.targetFade:
-            self.currFade = TFGlobals.approach(self.targetFade, self.currFade, globalClock.dt / 0.3)
+            self.currFade = TFGlobals.approach(self.targetFade, self.currFade, base.clockMgr.getDeltaTime() / 0.3)
             self.setAlphaScale(self.currFade)
             if self.fadingOut and self.currFade <= 0:
                 GuiPanel.hide(self)

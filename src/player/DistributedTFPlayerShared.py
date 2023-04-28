@@ -237,7 +237,7 @@ class DistributedTFPlayerShared:
                 self.stepSoundTime += 100
 
     def updateStepSound(self, origin, vel):
-        dt = base.deltaTime
+        dt = base.clockMgr.getDeltaTime()
         if self.stepSoundTime > 0:
             self.stepSoundTime -= 1000.0 * dt
             if self.stepSoundTime < 0:

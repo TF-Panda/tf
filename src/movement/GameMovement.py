@@ -44,7 +44,7 @@ class GameMovement:
         return TFFilters.TFQueryFilter(self.player, [TFFilters.ignoreTeammateBuildings_nonBuilder])
 
     def processMovement(self, player, moveData):
-        storeDeltaTime = globalClock.dt
+        #storeDeltaTime = base.clockMgr.getDeltaTime()
         self.speedCropped = False
         self.player = player
         self.mv = moveData
@@ -61,8 +61,8 @@ class GameMovement:
         self.playerMove()
         self.finishMove()
 
-        globalClock.dt = storeDeltaTime
-        base.deltaTime = storeDeltaTime
+        #base.clockMgr.getDeltaTime() = storeDeltaTime
+        #base.deltaTime = storeDeltaTime
 
         #self.player.velocity = self.mv.velocity
 
@@ -92,7 +92,7 @@ class GameMovement:
 
     def decayPunchAngle(self):
         if self.player.punchAngle.lengthSquared() > 0.001 or self.player.punchAngleVel.lengthSquared() > 0.001:
-            dt = globalClock.dt
+            dt = base.clockMgr.getDeltaTime()
             self.player.punchAngle += self.player.punchAngleVel * dt
             damping = 1 - (PUNCH_DAMPING * dt)
             if damping < 0:
@@ -153,7 +153,7 @@ class GameMovement:
             self.mv.angles[0] -= 360
 
     def reduceTimers(self):
-        frameMSec = globalClock.dt * 1000.0
+        frameMSec = base.clockMgr.getDeltaTime() * 1000.0
 
         if self.player.duckTime > 0:
             self.player.duckTime -= frameMSec
@@ -545,8 +545,8 @@ class GameMovement:
             entGravity = self.player.gravity
         else:
             entGravity = 1.0
-        self.mv.velocity[2] -= (entGravity * sv_gravity.value * 0.5 * globalClock.dt)
-        self.mv.velocity[2] += self.player.baseVelocity[2] * globalClock.dt
+        self.mv.velocity[2] -= (entGravity * sv_gravity.value * 0.5 * base.clockMgr.getDeltaTime())
+        self.mv.velocity[2] += self.player.baseVelocity[2] * base.clockMgr.getDeltaTime()
 
         temp = Vec3(self.player.baseVelocity)
         temp[2] = 0
@@ -572,7 +572,7 @@ class GameMovement:
             return
 
         # Determine amount of acceleration
-        accelspeed = accel * globalClock.dt * wishspeed * self.player.surfaceFriction
+        accelspeed = accel * base.clockMgr.getDeltaTime() * wishspeed * self.player.surfaceFriction
 
         # Cap at addspeed
         if accelspeed > addspeed:
@@ -647,21 +647,21 @@ class GameMovement:
         #    self.mv.velocity -= self.player.baseVelocity
         #    return
 
-        vel = self.mv.velocity * globalClock.dt
+        vel = self.mv.velocity * base.clockMgr.getDeltaTime()
         vel[2] = -2 # To detect if we're on the ground.
 
         self.mv.oldOrigin = self.mv.origin
         filter = self.getMovementFilter()
         self.updateControllerSize()
         self.player.controller.foot_position = self.mv.origin
-        flags = self.player.controller.move(globalClock.dt, vel, 0.0,
+        flags = self.player.controller.move(base.clockMgr.getDeltaTime(), vel, 0.0,
             self.player.getPlayerCollideMask(), filter.filter)
         self.mv.origin = self.player.controller.foot_position
 
         self.mv.outWishVel += wishDirection * wishSpeed
 
         # This is the new, clipped velocity.
-        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / globalClock.dt
+        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / base.clockMgr.getDeltaTime()
 
         # Pull the base velocity back out
         self.mv.velocity -= self.player.baseVelocity
@@ -689,7 +689,7 @@ class GameMovement:
             return
 
         # Determine acceleration speed after acceleration
-        accelspeed = accel * wishspeed * globalClock.dt * self.player.surfaceFriction
+        accelspeed = accel * wishspeed * base.clockMgr.getDeltaTime() * self.player.surfaceFriction
 
         # Cap it
         if (accelspeed > addspeed):
@@ -734,14 +734,14 @@ class GameMovement:
         filter = self.getMovementFilter()
         self.updateControllerSize()
         self.player.controller.foot_position = self.mv.origin
-        flags = self.player.controller.move(globalClock.dt, self.mv.velocity * globalClock.dt, 0.1,
+        flags = self.player.controller.move(base.clockMgr.getDeltaTime(), self.mv.velocity * base.clockMgr.getDeltaTime(), 0.1,
             self.player.getPlayerCollideMask(), filter.filter)
         self.mv.origin = self.player.controller.foot_position
 
         self.mv.outWishVel += wishdir * wishspeed
 
         # This is the new, clipped velocity.
-        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / globalClock.dt
+        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / base.clockMgr.getDeltaTime()
 
         # Pull the base velocity back out
         self.mv.velocity -= self.player.baseVelocity
@@ -762,7 +762,7 @@ class GameMovement:
             control = sv_stopspeed.value if (speed < sv_stopspeed.value) else speed
 
             # Add the amount to the drop amount
-            drop += control * friction * globalClock.dt
+            drop += control * friction * base.clockMgr.getDeltaTime()
 
             #print("Drop is", drop)
 
@@ -783,7 +783,7 @@ class GameMovement:
         else:
             entGravity = 1.0
 
-        self.mv.velocity[2] -= (entGravity * sv_gravity.value * globalClock.dt * 0.5)
+        self.mv.velocity[2] -= (entGravity * sv_gravity.value * base.clockMgr.getDeltaTime() * 0.5)
 
         self.checkVelocity()
 

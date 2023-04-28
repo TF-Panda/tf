@@ -217,7 +217,7 @@ class Char(Actor):
         current world-space transform of the associated joints.
         """
 
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
         if now == self.lastHitBoxSyncTime:
             # We're already synchronized with the current point in time.
             return

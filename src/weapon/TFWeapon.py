@@ -260,14 +260,14 @@ class TFWeapon(BaseClass):
             if not bobState:
                 return 0
 
-            if globalClock.dt == 0.0 or not player:
+            if base.clockMgr.getDeltaTime() == 0.0 or not player:
                 return 0
 
             cl_bobcycle = 0.8
             cl_bobup = 0.5
 
             speed = player.velocity.length()
-            maxSpeedDelta = max(0.0, (globalClock.frame_time - bobState.lastBobTime) * 320.0)
+            maxSpeedDelta = max(0.0, (base.clockMgr.getTime() - bobState.lastBobTime) * 320.0)
 
             # Don't allow too big speed changes
             speed = max(bobState.lastSpeed - maxSpeedDelta, min(bobState.lastSpeed + maxSpeedDelta, speed))
@@ -277,8 +277,8 @@ class TFWeapon(BaseClass):
 
             bobOffset = remapVal(speed, 0.0, 320.0, 0.0, 1.0)
 
-            bobState.bobTime += (globalClock.frame_time - bobState.lastBobTime) * bobOffset
-            bobState.lastBobTime = globalClock.frame_time
+            bobState.bobTime += (base.clockMgr.getTime() - bobState.lastBobTime) * bobOffset
+            bobState.lastBobTime = base.clockMgr.getTime()
 
             # Calculate the vertical bob
             cycle = bobState.bobTime - int(bobState.bobTime / cl_bobcycle) * cl_bobcycle
@@ -359,7 +359,7 @@ class TFWeapon(BaseClass):
             # This prevents people from exploiting weapons to allow weapons to fire
             # faster.
             deployTime = 0.67
-            self.nextPrimaryAttack = max(originalPrimaryAttack, globalClock.frame_time + deployTime)
+            self.nextPrimaryAttack = max(originalPrimaryAttack, base.clockMgr.getTime() + deployTime)
 
         return True
 
@@ -404,7 +404,7 @@ class TFWeapon(BaseClass):
         self.reloadMode = TFReloadMode.Start
 
     def reloadSingly(self):
-        if self.nextPrimaryAttack > globalClock.frame_time:
+        if self.nextPrimaryAttack > base.clockMgr.getTime():
             return False
 
         if not self.player:
@@ -423,7 +423,7 @@ class TFWeapon(BaseClass):
             return True
 
         elif self.reloadMode == TFReloadMode.Reloading:
-            if self.timeWeaponIdle > globalClock.frame_time:
+            if self.timeWeaponIdle > base.clockMgr.getTime():
                 return False
 
             if self.clip == self.reloadStartClipAmount:
@@ -446,7 +446,7 @@ class TFWeapon(BaseClass):
 
         elif self.reloadMode == TFReloadMode.ReloadingContinue:
             # Did we finish the reload start?  Now we can finish reloading the rocket.
-            if self.timeWeaponIdle > globalClock.frame_time:
+            if self.timeWeaponIdle > base.clockMgr.getTime():
                 return False
 
             # If we have ammo, remove ammo and add it to clip.
@@ -534,7 +534,7 @@ class TFWeapon(BaseClass):
         if not self.player:
             return
 
-        time = globalClock.frame_time + reloadTime
+        time = base.clockMgr.getTime() + reloadTime
         # TODO: set next player attack time (weapon independent)
         self.nextPrimaryAttack = time
 
@@ -555,7 +555,7 @@ class TFWeapon(BaseClass):
 
         if (self.player.buttons & InputFlag.Attack2) and not self.inReload and not self.inAttack2:
             #if self.player.doClassSpecialSkill():
-            #    self.nextSecondaryAttack = globalClock.frame_time + 0.5
+            #    self.nextSecondaryAttack = base.clockMgr.getTime() + 0.5
             self.inAttack2 = True
         else:
             self.inAttack2 = False
@@ -566,10 +566,10 @@ class TFWeapon(BaseClass):
                 if self.reloadMode != TFReloadMode.Start and self.clip > 0:
                     self.reloadMode = TFReloadMode.Start
                     self.inReload = False
-                    self.player.nextAttack = globalClock.frame_time
-                    self.nextPrimaryAttack = globalClock.frame_time
+                    self.player.nextAttack = base.clockMgr.getTime()
+                    self.nextPrimaryAttack = base.clockMgr.getTime()
 
-                    self.timeWeaponIdle = globalClock.frame_time + self.weaponData[self.weaponMode]['timeIdle']
+                    self.timeWeaponIdle = base.clockMgr.getTime() + self.weaponData[self.weaponMode]['timeIdle']
 
     def itemPostFrame(self):
         if not self.player:
@@ -590,7 +590,7 @@ class TFWeapon(BaseClass):
             self.reloadSinglyPostFrame()
 
     def reloadSinglyPostFrame(self):
-        if self.timeWeaponIdle > globalClock.frame_time:
+        if self.timeWeaponIdle > base.clockMgr.getTime():
             return
 
         # If the clip is empty and we have ammo remaining
@@ -602,7 +602,7 @@ class TFWeapon(BaseClass):
         if self.hasWeaponIdleTimeElapsed():
             if not (self.reloadsSingly and self.reloadMode != TFReloadMode.Start):
                 self.sendWeaponAnim(Activity.VM_Idle)
-                self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
+                self.timeWeaponIdle = base.clockMgr.getTime() + self.viewModel.getCurrentAnimLength()
 
     if not IS_CLIENT:
         def dropAsAmmoPack(self):

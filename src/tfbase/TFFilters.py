@@ -273,7 +273,7 @@ def collideAndSlide(origin, velocity, collInfo, intoMask, filter):
     planes = [Vec3()] * 5
 
     allFraction = 0.0
-    timeLeft = globalClock.dt
+    timeLeft = base.clockMgr.getDeltaTime()
     if timeLeft <= 0:
         return False
 

@@ -189,7 +189,7 @@ class Eyes:
                 self.nextLookTime = 0.0
                 snap = True
 
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
 
         if now >= self.nextLookTime:
             # It's time to look somewhere else.

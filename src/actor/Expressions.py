@@ -81,10 +81,10 @@ class Expressions:
         self.expressionList = [self.expressionList[0]]
 
     def pushExpression(self, name, maxWeight, duration = -1, oscillation = 0.0, oscillationSpeed = 0.0):
-        self.expressionList.append(Expression(name, globalClock.frame_time, maxWeight, duration, oscillation, oscillationSpeed))
+        self.expressionList.append(Expression(name, base.clockMgr.getTime(), maxWeight, duration, oscillation, oscillationSpeed))
 
     def updateExpression(self, exp):
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
         elapsed = now - exp.startTime
 
         if exp.duration > 0 and elapsed >= exp.duration:

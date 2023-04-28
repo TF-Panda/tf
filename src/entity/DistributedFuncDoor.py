@@ -100,7 +100,7 @@ class DistributedFuncDoor(DistributedSolidEntity):
         def __doorUpdate(self, task):
 
             if self.doorState == self.DSClosing:
-                self.frac -= self.fracsPerSec * globalClock.dt
+                self.frac -= self.fracsPerSec * base.clockMgr.getDeltaTime()
                 self.frac = max(0.0, self.frac)
                 if self.frac <= 0:
                     self.doorState = self.DSClosed
@@ -109,19 +109,19 @@ class DistributedFuncDoor(DistributedSolidEntity):
                 self.setPos(self.closedPos + self.openPos * self.frac)
 
             elif self.doorState == self.DSOpening:
-                self.frac += self.fracsPerSec * globalClock.dt
+                self.frac += self.fracsPerSec * base.clockMgr.getDeltaTime()
                 self.frac = min(1.0, self.frac)
                 if self.frac >= 1:
                     self.doorState = self.DSOpen
                     self.stopSound(Sounds.Channel.CHAN_BODY)
                     #self.emitSoundSpatial("DoorSound.DefaultArrive")
                     if self.wait >= 0.0:
-                        self.closeTime = globalClock.frame_time + self.wait
+                        self.closeTime = base.clockMgr.getTime() + self.wait
 
                 self.setPos(self.closedPos + self.openPos * self.frac)
 
             elif self.doorState == self.DSOpen:
-                if self.closeTime >= 0 and globalClock.frame_time >= self.closeTime:
+                if self.closeTime >= 0 and base.clockMgr.getTime() >= self.closeTime:
                     self.closeDoor()
 
             return task.cont

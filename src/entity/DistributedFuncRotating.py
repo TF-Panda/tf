@@ -43,7 +43,7 @@ class DistributedFuncRotating(DistributedSolidEntity):
             self.addTask(self.__rotate, 'func_rotating_rotate', appendTask=True, sim=False)
 
         def __rotate(self, task):
-            inc = globalClock.dt * self.rotateSpeed
+            inc = base.clockMgr.getDeltaTime() * self.rotateSpeed
             if self.spawnflags & self.ReverseDirection:
                 self.rotation -= inc
             else:

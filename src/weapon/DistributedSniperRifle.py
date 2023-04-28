@@ -115,7 +115,7 @@ class DistributedSniperRifle(TFWeaponGun):
 
             self.resetTimers()
 
-        if self.unzoomTime > 0 and globalClock.frame_time > self.unzoomTime:
+        if self.unzoomTime > 0 and base.clockMgr.getTime() > self.unzoomTime:
             if self.rezoomAfterShot:
                 self.zoomOutIn()
                 self.rezoomAfterShot = False
@@ -125,11 +125,11 @@ class DistributedSniperRifle(TFWeaponGun):
             self.unzoomTime = -1
 
         if self.rezoomTime > 0:
-            if globalClock.frame_time > self.rezoomTime:
+            if base.clockMgr.getTime() > self.rezoomTime:
                 self.zoomIn()
                 self.rezoomTime = -1
 
-        if (self.player.buttons & InputFlag.Attack2) and self.nextSecondaryAttack <= globalClock.frame_time:
+        if (self.player.buttons & InputFlag.Attack2) and self.nextSecondaryAttack <= base.clockMgr.getTime():
             # If we're in the process of rezooming, just cancel it.
             if self.rezoomTime > 0 or self.unzoomTime > 0:
                 # Prevent them from rezooming in less time than they would have
@@ -157,17 +157,17 @@ class DistributedSniperRifle(TFWeaponGun):
 
             self.chargedDamage = 0.0
             self.rezoomAfterShot = False
-        elif self.nextSecondaryAttack <= globalClock.frame_time:
+        elif self.nextSecondaryAttack <= base.clockMgr.getTime():
             # Don't start charging in the time just after a shot before
             # we unzoom to play rack anim.
             if self.player.inCondition(self.player.CondAiming) and not self.rezoomAfterShot:
                 prevCharge = self.chargedDamage
-                self.chargedDamage = min(self.chargedDamage + globalClock.dt * TF_WEAPON_SNIPERRIFLE_CHARGE_PER_SEC, TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX)
+                self.chargedDamage = min(self.chargedDamage + base.clockMgr.getDeltaTime() * TF_WEAPON_SNIPERRIFLE_CHARGE_PER_SEC, TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX)
                 if IS_CLIENT and base.cr.prediction.isFirstTimePredicted() and self.chargedDamage >= TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX and prevCharge < TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX:
                     # Hit full charge, play sound.
                     self.player.emitSound("TFPlayer.ReCharged")
             else:
-                self.chargedDamage = max(0, self.chargedDamage - globalClock.dt * TF_WEAPON_SNIPERRIFLE_UNCHARGE_PER_SEC)
+                self.chargedDamage = max(0, self.chargedDamage - base.clockMgr.getDeltaTime() * TF_WEAPON_SNIPERRIFLE_UNCHARGE_PER_SEC)
 
         # Fire
         if self.player.buttons & InputFlag.Attack1:
@@ -191,16 +191,16 @@ class DistributedSniperRifle(TFWeaponGun):
         self.toggleZoom()
 
         # At least 0.2 seconds from now, but don't stomp a previous value
-        self.nextPrimaryAttack = max(self.nextPrimaryAttack, globalClock.frame_time + 0.2)
-        self.nextSecondaryAttack = globalClock.frame_time + TF_WEAPON_SNIPERRIFLE_ZOOM_TIME
+        self.nextPrimaryAttack = max(self.nextPrimaryAttack, base.clockMgr.getTime() + 0.2)
+        self.nextSecondaryAttack = base.clockMgr.getTime() + TF_WEAPON_SNIPERRIFLE_ZOOM_TIME
 
     def zoomOutIn(self):
         self.zoomOut()
 
         if self.player and self.player.autoRezoom:
-            self.rezoomTime = globalClock.frame_time + 0.9
+            self.rezoomTime = base.clockMgr.getTime() + 0.9
         else:
-            self.nextSecondaryAttack = globalClock.frame_time + 1.0
+            self.nextSecondaryAttack = base.clockMgr.getTime() + 1.0
 
     def zoomIn(self):
         # Start aiming.
@@ -249,14 +249,14 @@ class DistributedSniperRifle(TFWeaponGun):
             self.zoomIn()
         else:
             self.zoomOut()
-        self.nextSecondaryAttack = globalClock.frame_time + 1.2
+        self.nextSecondaryAttack = base.clockMgr.getTime() + 1.2
 
     def fire(self, player):
         if self.ammo <= 0:
             self.handleFireOnEmpty()
             return
 
-        if self.nextPrimaryAttack > globalClock.frame_time:
+        if self.nextPrimaryAttack > base.clockMgr.getTime():
             return
 
         self.primaryAttack()
@@ -270,12 +270,12 @@ class DistributedSniperRifle(TFWeaponGun):
                 self.setRezoom(False, 0.5)
         else:
             # Prevent primary fire preventing zooms
-            self.nextSecondaryAttack = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
+            self.nextSecondaryAttack = base.clockMgr.getTime() + self.viewModel.getCurrentAnimLength()
 
         self.chargedDamage = 0.0
 
     def setRezoom(self, rezoom, delay):
-        self.unzoomTime = globalClock.frame_time + delay
+        self.unzoomTime = base.clockMgr.getTime() + delay
         self.rezoomAfterShot = rezoom
 
 if not IS_CLIENT:

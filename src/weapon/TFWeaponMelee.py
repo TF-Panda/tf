@@ -53,7 +53,7 @@ class TFWeaponMelee(TFWeapon):
 
         self.player.doClassSpecialSkill()
         self.inAttack2 = True
-        self.nextSecondaryAttack = globalClock.frame_time + 0.5
+        self.nextSecondaryAttack = base.clockMgr.getTime() + 0.5
 
     def doViewModelAnimation(self):
         self.sendWeaponAnim(Activity.VM_Fire)
@@ -67,16 +67,16 @@ class TFWeaponMelee(TFWeapon):
         self.doPlayerAnimation(player)
         self.doViewModelAnimation()
 
-        self.nextPrimaryAttack = globalClock.frame_time + self.weaponData[self.weaponMode]['timeFireDelay']
+        self.nextPrimaryAttack = base.clockMgr.getTime() + self.weaponData[self.weaponMode]['timeFireDelay']
         self.timeWeaponIdle = self.nextPrimaryAttack + self.weaponData[self.weaponMode]['timeIdleEmpty']
 
         self.playSound(self.getSingleSound())
 
-        self.smackTime = globalClock.frame_time + self.weaponData[self.weaponMode]['smackDelay']
+        self.smackTime = base.clockMgr.getTime() + self.weaponData[self.weaponMode]['smackDelay']
 
     def itemPostFrame(self):
         # check for smack
-        if self.smackTime > 0.0 and globalClock.frame_time > self.smackTime:
+        if self.smackTime > 0.0 and base.clockMgr.getTime() > self.smackTime:
             self.smack()
             self.smackTime = -1.0
 

@@ -54,7 +54,7 @@ class FlameProjectile:
         self.task = base.simTaskMgr.add(self.__flameUpdate, 'flameUpdate')
         self.filter = TFFilters.TFQueryFilter(self.shooter)
 
-        self.startTime = globalClock.frame_time
+        self.startTime = base.clockMgr.getTime()
         self.killTime = self.startTime + FLAME_TIME
         self.wasBlocked = False
 
@@ -98,15 +98,15 @@ class FlameProjectile:
                 self.flame = None
 
     def update(self):
-        origDt = globalClock.dt
-        globalClock.dt = base.intervalPerTick
+        #origDt = base.clockMgr.getDeltaTime()
+        #base.clockMgr.getDeltaTime() = base.intervalPerTick
 
-        if globalClock.frame_time >= self.killTime:
-            globalClock.dt = origDt
+        if base.clockMgr.getTime() >= self.killTime:
+            #base.clockMgr.getDeltaTime() = origDt
             self.kill()
             return
 
-        elapsed = globalClock.frame_time - self.startTime
+        elapsed = base.clockMgr.getTime() - self.startTime
         frac = max(0.0, min(1.0, elapsed / FLAME_TIME))
 
         if IS_CLIENT:
@@ -172,7 +172,7 @@ class FlameProjectile:
             self.flame.setScale((FLAME_START_SCALE / self.explScale) * (1.0 - frac) + (FLAME_END_SCALE / self.explScale) * frac)
             self.flameLight.setPos(self.pos)
 
-        globalClock.dt = origDt
+        #base.clockMgr.getDeltaTime() = origDt
 
 class DistributedFlameThrower(TFWeaponGun):
 
@@ -266,7 +266,7 @@ class DistributedFlameThrower(TFWeaponGun):
             loop = False
             sound = -1
             if self.isFiring:
-                elapsed = globalClock.frame_time - self.startFireTime
+                elapsed = base.clockMgr.getTime() - self.startFireTime
                 if elapsed < 3:
                     sound = 0
                     sndName = "Weapon_FlameThrower.FireStart"
@@ -322,7 +322,7 @@ class DistributedFlameThrower(TFWeaponGun):
         TFWeaponGun.deactivate(self)
 
     def primaryAttack(self):
-        self.nextPrimaryAttack = globalClock.frame_time + self.primaryAttackInterval
+        self.nextPrimaryAttack = base.clockMgr.getTime() + self.primaryAttackInterval
         if self.isFiring:
             self.ammo -= 1
 
@@ -330,7 +330,7 @@ class DistributedFlameThrower(TFWeaponGun):
     #    if self.hasWeaponIdleTimeElapsed():
     #        if self.isFiring:
     #            self.player.doAnimationEvent(PlayerAnimEvent.AttackPrimary)
-    #            self.timeWeaponIdle = globalClock.frame_time + 1.0
+    #            self.timeWeaponIdle = base.clockMgr.getTime() + 1.0
 
     if not IS_CLIENT:
         def fireFlame(self):
@@ -340,7 +340,7 @@ class DistributedFlameThrower(TFWeaponGun):
             proj = FlameProjectile(self.player, src, dir)
             flameIval = 0.075
             proj.damageAmount = self.dmgPerSec * flameIval
-            self.nextFlameFireTime = globalClock.frame_time + flameIval
+            self.nextFlameFireTime = base.clockMgr.getTime() + flameIval
             self.sendUpdate('doFlame', [src, dir])
 
     def getMuzzlePosWorld(self):
@@ -368,13 +368,13 @@ class DistributedFlameThrower(TFWeaponGun):
             #print("good to fire", goodToFire)
 
         if goodToFire:
-            if not self.isFiring and globalClock.frame_time >= self.nextPrimaryAttack:
+            if not self.isFiring and base.clockMgr.getTime() >= self.nextPrimaryAttack:
                 self.isFiring = True
-                self.startFireTime = globalClock.frame_time
+                self.startFireTime = base.clockMgr.getTime()
                 self.sendWeaponAnim(Activity.VM_Fire)
-                self.nextFlameFireTime = globalClock.frame_time
+                self.nextFlameFireTime = base.clockMgr.getTime()
                 self.player.doAnimationEvent(PlayerAnimEvent.AttackPre)
-                #self.timeWeaponIdle = globalClock.frame_time + 0.5
+                #self.timeWeaponIdle = base.clockMgr.getTime() + 0.5
 
         elif self.isFiring:
             self.sendWeaponAnim(Activity.VM_Idle)
@@ -388,7 +388,7 @@ class DistributedFlameThrower(TFWeaponGun):
                 self.weaponSoundUpdate()
 
         if not IS_CLIENT:
-            if self.isFiring and globalClock.frame_time >= self.nextFlameFireTime:
+            if self.isFiring and base.clockMgr.getTime() >= self.nextFlameFireTime:
                 self.fireFlame()
 
 if not IS_CLIENT:

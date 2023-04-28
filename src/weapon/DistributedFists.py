@@ -69,7 +69,7 @@ class DistributedFists(TFWeaponMelee):
             self.speakWeaponFire()
 
     def speakWeaponFire(self):
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
         elapsed = now - self.lastSpeakTime
         if elapsed >= self.speakIval:
             line = random.choice(self.VoiceLines)

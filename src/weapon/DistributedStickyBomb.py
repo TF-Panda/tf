@@ -41,7 +41,7 @@ class DistributedStickyBomb(BaseClass):
     if not IS_CLIENT:
         def generate(self):
             BaseClass.generate(self)
-            self.detTime = globalClock.frame_time + 0.8
+            self.detTime = base.clockMgr.getTime() + 0.8
             # Don't collide with teammates for the first bit of life.
             # This works around an issue where the sticky bomb gets shoved by
             # the player that shot the sticky.
@@ -77,7 +77,7 @@ class DistributedStickyBomb(BaseClass):
                 # If we took blast damage, push the sticky.
                 # Turn it back into a kinematic object, and stick again after 1 second.
                 self.unstick()
-                self.stickTime = globalClock.frame_time + 1.0
+                self.stickTime = base.clockMgr.getTime() + 1.0
 
                 BaseClass.onTakeDamage(self, info)
 
@@ -134,7 +134,7 @@ class DistributedStickyBomb(BaseClass):
             if self.isSticking:
                 return task.cont
 
-            if globalClock.frame_time < self.stickTime:
+            if base.clockMgr.getTime() < self.stickTime:
                 return task.cont
 
             self.stick()
@@ -143,7 +143,7 @@ class DistributedStickyBomb(BaseClass):
 
         def beginDetonate(self):
             assert not self.detonating
-            if globalClock.frame_time < self.detTime:
+            if base.clockMgr.getTime() < self.detTime:
                 return False
             self.detonating = True
             return True
@@ -204,8 +204,8 @@ class DistributedStickyBomb(BaseClass):
             self.hide()
             self.addTask(self.__showTask, 'showPipeBomb', appendTask=True, delay=0.1)
 
-            if self.detTime > globalClock.frame_time:
-                self.addTask(self.__detPulseTask, 'stickyBombDetPulse', appendTask=True, sim=True, delay=(self.detTime - globalClock.frame_time))
+            if self.detTime > base.clockMgr.getTime():
+                self.addTask(self.__detPulseTask, 'stickyBombDetPulse', appendTask=True, sim=True, delay=(self.detTime - base.clockMgr.getTime()))
 
             self.trailEffect = TFEffects.getPipebombTrailEffect(self.team)
             self.trailEffect.setInput(0, self, False)

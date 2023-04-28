@@ -31,7 +31,7 @@ class ScreenShake:
             shakeData.frequency = freq
             shakeData.duration = duration
             shakeData.nextShake = 0
-            shakeData.endTime = globalClock.frame_time + duration
+            shakeData.endTime = base.clockMgr.getTime() + duration
             shakeData.command = command
             shakeData.offset = Vec3(0)
             shakeData.angle = 0
@@ -46,14 +46,14 @@ class ScreenShake:
 
         for shake in list(self.shakes):
 
-            if (globalClock.frame_time > shake.endTime) or shake.duration <= 0 or shake.amplitude <= 0 or shake.frequency <= 0:
+            if (base.clockMgr.getTime() > shake.endTime) or shake.duration <= 0 or shake.amplitude <= 0 or shake.frequency <= 0:
                 # Retire this shake.
                 self.shakes.remove(shake)
                 continue
 
-            if globalClock.frame_time > shake.nextShake:
+            if base.clockMgr.getTime() > shake.nextShake:
                 # Higher frequency means we recalc the extents more often and pertur the display again.
-                shake.nextShake = globalClock.frame_time + (1.0 / shake.frequency)
+                shake.nextShake = base.clockMgr.getTime() + (1.0 / shake.frequency)
 
                 # Compute random shake extents (the shake will settle down from this).
                 for i in range(3):
@@ -61,7 +61,7 @@ class ScreenShake:
                 shake.angle = random.uniform(-shake.amplitude*0.25, shake.amplitude*0.25)
 
             # Ramp down amplitude over duration (fraction goes from 1 to 0 linearly with slope 1/duration)
-            fraction = (shake.endTime - globalClock.frame_time) / shake.duration
+            fraction = (shake.endTime - base.clockMgr.getTime()) / shake.duration
 
             # Ramp up frequency over duration
             if fraction:
@@ -73,7 +73,7 @@ class ScreenShake:
             fraction *= fraction
 
             # Sine wave that slowly settings to zero
-            angle = globalClock.frame_time * freq
+            angle = base.clockMgr.getTime() * freq
             if angle > 1e8:
                 angle = 1e8
             fraction *= math.sin(angle)
@@ -83,4 +83,4 @@ class ScreenShake:
             self.shakeAppliedAngle += shake.angle * fraction
 
             # Drop amplitude a bit, less for higher frequency shakes.
-            shake.amplitude -= shake.amplitude * (globalClock.dt / (shake.duration * shake.frequency))
+            shake.amplitude -= shake.amplitude * (base.clockMgr.getDeltaTime() / (shake.duration * shake.frequency))

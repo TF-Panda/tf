@@ -54,7 +54,7 @@ class MuzzleParticle(NodePath):
         NodePath.removeNode(self)
 
     def particleUpdate(self, task):
-        deltaTime = globalClock.frame_time - self.startTime
+        deltaTime = base.clockMgr.getTime() - self.startTime
         timeFraction = deltaTime / self.duration
         if timeFraction >= 1.0:
             self.removeNode()
@@ -72,13 +72,22 @@ class MuzzleParticle(NodePath):
 def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1), viewModel=False):
     from tf.tfbase import TFEffects
     from direct.interval.IntervalGlobal import Sequence, Wait, Func
-    saveTime = globalClock.frame_time
-    base.setFrameTime(base.getRenderTime())
+
+    if base.clockMgr.isInSimulationClock():
+        # If we call this in the simulation, we need to temporarily override
+        # the clock to the true client frame time, so the particle system
+        # and interval is timed correctly.
+        saveTime = base.clockMgr.getClientTime()
+        base.clock.frame_time = base.clockMgr.getClientFrameTime()
+
     effect = TFEffects.getMuzzleFlashEffect(viewModel)
     effect.setInput(0, node, False)
     effect.start(node)
     Sequence(Wait(0.1), Func(effect.softStop)).start()
-    base.setFrameTime(saveTime)
+
+    if base.clockMgr.isInSimulationClock():
+        # Restore the simulation time.
+        base.clock.frame_time = saveTime
 
     cje = None
     if node.hasEffect(CharacterJointEffect.getClassType()):
@@ -198,7 +207,7 @@ def tracerSound(start, end):
 
     #print("tracer sound")
 
-    dt = nextWhizTime - globalClock.frame_time
+    dt = nextWhizTime - base.clockMgr.getTime()
     #print("Dt", dt)
     if dt > 0:
         return
@@ -230,7 +239,7 @@ def tracerSound(start, end):
     elif dist <= 0.0:
         return
 
-    nextWhizTime = globalClock.frame_time + 0.1
+    nextWhizTime = base.clockMgr.getTime() + 0.1
 
     snd = Sounds.createSoundByName(soundName, spatial=True)
     #snd.set3dDistanceFactor(0.0)

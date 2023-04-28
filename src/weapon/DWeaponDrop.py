@@ -36,7 +36,7 @@ class DWeaponDrop(BaseClass):
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
             self.enabled = True
-            self.activeTime = globalClock.frame_time
+            self.activeTime = base.clockMgr.getTime()
             self.addTask(self.__simulateTask, 'WeaponDropSimulateAI', appendTask=True, sim=True)
 
         def __simulateTask(self, task):
@@ -46,13 +46,13 @@ class DWeaponDrop(BaseClass):
         def simulate(self):
             BaseClass.simulate(self)
 
-            now = globalClock.frame_time
+            now = base.clockMgr.getTime()
             if self.singleUse and self.enabled and ((now - self.activeTime) >= self.lifetime):
                 base.net.deleteObject(self)
 
         #def onSleep(self):
         #    self.enabled = True
-        #    self.activeTime = globalClock.frame_time
+        #    self.activeTime = base.clockMgr.getTime()
 
         #def onWake(self):
         #    self.enabled = False

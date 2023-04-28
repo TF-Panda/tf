@@ -304,13 +304,13 @@ class Soundscape:
     def updateTask(self, task):
         if self.fading == 1:
             # Fading in.
-            self.volume = TFGlobals.approach(1.0, self.volume, 0.5 * globalClock.dt)
+            self.volume = TFGlobals.approach(1.0, self.volume, 0.5 * base.clockMgr.getDeltaTime())
             if self.volume >= 1.0:
                 # Fade in done.
                 self.fading = 0
         elif self.fading == 2:
             # Fading out.
-            self.volume = TFGlobals.approach(0.0, self.volume, 0.5 * globalClock.dt)
+            self.volume = TFGlobals.approach(0.0, self.volume, 0.5 * base.clockMgr.getDeltaTime())
             if self.volume <= 0.0:
                 # Fade out done, stop.
                 self.stop(False)

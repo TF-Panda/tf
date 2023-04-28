@@ -80,7 +80,7 @@ class BaseRocket(BaseClass):
             self.ivPos.clearHistory()
             self.ivRot.clearHistory()
 
-            changeTime = globalClock.frame_time
+            changeTime = base.clockMgr.getTime()
 
             # Add a sample one second back.
             currOrigin = self.getPos() - self.initialVel
@@ -102,14 +102,14 @@ class BaseRocket(BaseClass):
     def generate(self):
         BaseClass.generate(self)
         if IS_CLIENT:
-            self.spawnTime = globalClock.frame_time
+            self.spawnTime = base.clockMgr.getTime()
 
             # Don't render for first 0.2 seconds of being alive.
             self.hide()
             self.addTask(self.__unhideRocket, 'unhideRocket', delay = 0.2, sim = False, appendTask = True)
         else:
             # Don't collide with players on the owner's team for the first bit of life.
-            self.collideWithTeammatesTime = globalClock.frame_time + 0.25
+            self.collideWithTeammatesTime = base.clockMgr.getTime() + 0.25
             self.collideWithTeammates = False
             self.team = self.shooter.team
             self.determineCollideMask()
@@ -163,14 +163,14 @@ class BaseRocket(BaseClass):
         def simulate(self):
             BaseClass.simulate(self)
 
-            now = globalClock.frame_time
+            now = base.clockMgr.getTime()
             if now > self.collideWithTeammatesTime and not self.collideWithTeammates:
                 # It's time to collide with teammates.
                 self.collideWithTeammates = True
                 self.determineCollideMask()
 
             currPos = self.getPos()
-            newPos = currPos + (self.velocity * globalClock.dt)
+            newPos = currPos + (self.velocity * base.clockMgr.getDeltaTime())
 
             # Sweep from current pos to new pos.  Check for hits.
             filter = TFFilters.TFQueryFilter(self.shooter)

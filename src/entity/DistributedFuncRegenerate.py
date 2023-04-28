@@ -81,7 +81,7 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                 mdl = self.getAssociatedModel()
                 if mdl:
                     mdl.setAnimation("open")
-                self.closeTime = globalClock.frame_time + 2.0
+                self.closeTime = base.clockMgr.getTime() + 2.0
                 self.isOpen = True
 
         def regenPlayer(self, player):
@@ -109,7 +109,7 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
             self.emitSound("Regenerate.Touch", client=player.owner)
 
         def __update(self, task):
-            now = globalClock.frame_time
+            now = base.clockMgr.getTime()
 
             mdl = self.getAssociatedModel()
             if self.isOpen and mdl and now >= self.closeTime:

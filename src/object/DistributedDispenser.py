@@ -83,7 +83,7 @@ class DistributedDispenser(BaseObject):
             self.ammoMetal = 25
             BaseObject.onBecomeActive(self)
 
-            self.nextAmmoDispense = globalClock.frame_time + 0.5
+            self.nextAmmoDispense = base.clockMgr.getTime() + 0.5
 
             # Create tasks to dispense and regenerate metal.
             self.addTask(self.__refill, "dispenserRefill", appendTask=True, delay=3.0)
@@ -208,7 +208,7 @@ class DistributedDispenser(BaseObject):
             return task.again
 
         def __dispense(self, task):
-            if self.nextAmmoDispense <= globalClock.frame_time:
+            if self.nextAmmoDispense <= base.clockMgr.getTime():
                 ammoDispenseDist = 120.0*120.0
                 numNearbyPlayers = 0
                 origin = self.getPos() + (0, 0, 32)
@@ -219,7 +219,7 @@ class DistributedDispenser(BaseObject):
                         continue
                     self.dispenseAmmo(plyr)
                     numNearbyPlayers += 1
-                self.nextAmmoDispense = globalClock.frame_time
+                self.nextAmmoDispense = base.clockMgr.getTime()
                 # Try to dispense more often when no players are around so we
                 # give it as soon as possible when a new player shows up.
                 self.nextAmmoDispense += 1.0 if (numNearbyPlayers > 0) else 0.1

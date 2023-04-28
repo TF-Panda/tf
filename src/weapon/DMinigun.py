@@ -133,13 +133,13 @@ class DMinigun(TFWeaponGun):
             if self.barrelCurrVelocity != self.barrelTargetVelocity:
                 # Update barrel velocity to bing it up to speed or to rest
                 self.barrelCurrVelocity = TFGlobals.approach(self.barrelTargetVelocity,
-                    self.barrelCurrVelocity, self.barrelAccelSpeed * globalClock.dt)
+                    self.barrelCurrVelocity, self.barrelAccelSpeed * base.clockMgr.getDeltaTime())
 
             #print("barrel curr vel", self.barrelCurrVelocity)
             #print("barrel target", self.barrelTargetVelocity)
 
             # Update the barrel rotation based on current velo.
-            self.barrelAngle += self.barrelCurrVelocity * globalClock.dt
+            self.barrelAngle += self.barrelCurrVelocity * base.clockMgr.getDeltaTime()
 
             #print("barrel angle", self.barrelAngle)
 
@@ -186,7 +186,7 @@ class DMinigun(TFWeaponGun):
 
         def __muzzleFlashLightUpdate(self, task):
             bias = 0.3
-            frac = math.sin(globalClock.frame_time * 50) * 0.5 + 0.5
+            frac = math.sin(base.clockMgr.getTime() * 50) * 0.5 + 0.5
             self.muzzleFlashLight.setColorSrgb(self.muzzleFlashLightColor * (frac * bias + (1.0 - bias)))
             return task.cont
 
@@ -275,7 +275,7 @@ class DMinigun(TFWeaponGun):
         self.player.removeCondition(self.player.CondAiming)
 
         # Time to weapon idle.
-        self.timeWeaponIdle = globalClock.frame_time + 2
+        self.timeWeaponIdle = base.clockMgr.getTime() + 2
 
         self.player.updateClassSpeed()
 
@@ -285,7 +285,7 @@ class DMinigun(TFWeaponGun):
         self.barrelAccelSpeed = BARREL_WIND_DOWN_SPEED
 
     def weaponIdle(self):
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
 
         if now < self.timeWeaponIdle:
             return
@@ -352,7 +352,7 @@ class DMinigun(TFWeaponGun):
         elif self.player.buttons & InputFlag.Attack2:
             self.weaponMode = TFWeaponMode.Secondary
 
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
 
         if self.weaponState == MG_STATE_IDLE:
             self.windUp()

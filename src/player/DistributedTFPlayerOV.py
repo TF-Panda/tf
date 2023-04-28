@@ -161,9 +161,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.predictionErrorTime = 0.0
 
     def getPredictionErrorSmoothingVector(self):
-        errorAmount = (globalClock.frame_time - self.predictionErrorTime) / 0.1
+        errorAmount = (base.clockMgr.getClientTime() - self.predictionErrorTime) / 0.1
         if errorAmount >= 1.0:
             return Vec3()
+
+        errorAmount = max(0.0, min(1.0, errorAmount))
 
         errorAmount = 1.0 - errorAmount
 
@@ -178,7 +180,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         # Sum all errors within smoothing time.
         self.predictionError = delta + oldDelta
         # Remember when last error happened.
-        self.predictionErrorTime = globalClock.frame_time
+        self.predictionErrorTime = base.clockMgr.getClientTime()
 
         self.resetInterpolatedVars()
 
@@ -350,7 +352,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             if self.respawnTime < 0:
                 text += TFLocalizer.RespawnWaitNewRound
             else:
-                timeLeft = int(self.respawnTime - globalClock.frame_time)
+                timeLeft = int(self.respawnTime - base.clockMgr.getTime())
                 if timeLeft <= 0:
                     text += TFLocalizer.RespawnWait
                 else:
@@ -713,7 +715,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         if not specTarget:
             return
 
-        self.observerChaseDistance += globalClock.dt * chaseSpeed
+        self.observerChaseDistance += base.clockMgr.getDeltaTime() * chaseSpeed
         self.observerChaseDistance = max(16, min(CHASE_CAM_DISTANCE, self.observerChaseDistance))
 
         viewQuat = Quat()
@@ -748,11 +750,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         killer = base.net.doId2do.get(self.observerTarget)
 
         # Swing to face our killer within half the death anim time.
-        interpolation = (globalClock.frame_time - self.deathTime) / (TF_DEATH_ANIMATION_TIME * 0.5)
+        interpolation = (base.clockMgr.getTime() - self.deathTime) / (TF_DEATH_ANIMATION_TIME * 0.5)
         interpolation = max(0, min(1, interpolation))
         interpolation = TFGlobals.simpleSpline(interpolation)
 
-        self.observerChaseDistance += globalClock.dt * 48.0
+        self.observerChaseDistance += base.clockMgr.getDeltaTime() * 48.0
         self.observerChaseDistance = max(16, min(CHASE_CAM_DISTANCE, self.observerChaseDistance))
 
         aForward = self.viewAngles
@@ -790,7 +792,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.camera.setPos(eyeOrigin)
 
     def calcFreezeCamView(self):
-        curTime = globalClock.frame_time - self.freezeCamStartTime
+        curTime = base.clockMgr.getTime() - self.freezeCamStartTime
 
         target = base.net.doId2do.get(self.observerTarget)
         if not target:
@@ -948,7 +950,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         return self.commands[self.getNextCommandNumber() % self.MaxCommands]
 
     def shouldSendCommand(self):
-        return globalClock.frame_time >= self.nextCommandTime and base.cr.connected
+        return base.clockMgr.getTime() >= self.nextCommandTime and base.cr.connected
 
     def getCommand(self, num):
         cmd = self.commands[num % self.MaxCommands]
@@ -1023,8 +1025,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             # Determine when to send next command.
             cmdIval = 1.0 / cl_cmdrate.getValue()
             maxDelta = min(base.intervalPerTick, cmdIval)
-            delta = max(0.0, min(maxDelta, globalClock.frame_time - self.nextCommandTime))
-            self.nextCommandTime = globalClock.frame_time + cmdIval - delta
+            delta = max(0.0, min(maxDelta, base.clockMgr.getTime() - self.nextCommandTime))
+            self.nextCommandTime = base.clockMgr.getTime() + cmdIval - delta
         else:
             # Not sending yet, but building a list of commands to send.
             self.chokedCommands += 1
@@ -1358,7 +1360,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         if not self.wasFreezeFraming and self.observerMode == ObserverMode.FreezeCam:
             self.freezeFrameStart = base.camera.getPos()
-            self.freezeCamStartTime = globalClock.frame_time
+            self.freezeCamStartTime = base.clockMgr.getTime()
             self.freezeFrameDistance = random.uniform(spec_freeze_distance_min.getValue(), spec_freeze_distance_max.getValue())
             self.freezeZOffset = random.uniform(-30, 20)
             self.sentFreezeFrame = False

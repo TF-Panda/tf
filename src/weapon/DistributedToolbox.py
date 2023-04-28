@@ -223,9 +223,9 @@ class DistributedToolbox(TFWeapon):
                     # Building placed successfully, go to wrench.
                     self.player.setActiveWeapon(2)
                     built = True
-            if not built and (globalClock.frame_time - self.lastDenySound) >= 0.3:
+            if not built and (base.clockMgr.getTime() - self.lastDenySound) >= 0.3:
                 self.player.emitSound("Player.UseDeny", client=self.player.owner)
-                self.lastDenySound = globalClock.frame_time
+                self.lastDenySound = base.clockMgr.getTime()
 
     if not IS_CLIENT:
         def itemPostFrame(self):
@@ -282,7 +282,7 @@ class DistributedToolbox(TFWeapon):
     def updateBuildRotation(self):
         ROTATE_SPEED = 250.0
         targetRotation = self.rotation * 90.0
-        self.currentRotation = TFGlobals.approachAngle(targetRotation, self.currentRotation, ROTATE_SPEED * globalClock.dt)
+        self.currentRotation = TFGlobals.approachAngle(targetRotation, self.currentRotation, ROTATE_SPEED * base.clockMgr.getDeltaTime())
 
     if IS_CLIENT:
         def addPredictionFields(self):

@@ -314,7 +314,7 @@ class BaseObject(BaseClass):
         def onRepairHit(self, player):
             playerId = player.doId
             # The time the repair is going to expire
-            repairExpireTime = globalClock.frame_time + 1.0
+            repairExpireTime = base.clockMgr.getTime() + 1.0
             # Update or add the expire time to the list
             self.repairerList[playerId] = repairExpireTime
 
@@ -324,7 +324,7 @@ class BaseObject(BaseClass):
             # Expire all the old
             for playerId in list(self.repairerList.keys()):
                 expireTime = self.repairerList[playerId]
-                if expireTime < globalClock.frame_time:
+                if expireTime < base.clockMgr.getTime():
                     del self.repairerList[playerId]
                 else:
                     # Each player hitting it builds twice as fast.
@@ -360,7 +360,7 @@ class BaseObject(BaseClass):
             if state == ObjectState.Constructing:
                 # Start building
                 self.setAnim(activity=Activity.Object_Build)
-                self.startBuildTime = globalClock.frame_time
+                self.startBuildTime = base.clockMgr.getTime()
                 self.onStartConstruction()
 
             elif state == ObjectState.Upgrading:
@@ -428,7 +428,7 @@ class BaseObject(BaseClass):
             if self.objectState == ObjectState.Constructing:
 
                 hps = self.maxHealth / self.getCurrentAnimLength()
-                self.hpAccum += hps * globalClock.dt
+                self.hpAccum += hps * base.clockMgr.getDeltaTime()
                 if self.hpAccum >= 1.0:
                     self.health += int(self.hpAccum)
                     self.hpAccum -= int(self.hpAccum)

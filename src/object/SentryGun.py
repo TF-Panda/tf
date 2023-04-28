@@ -213,7 +213,7 @@ class SentryGun(BaseObject):
             if self.currAngles.y != self.goalAngles.y:
                 dir = 1 if self.goalAngles.y > self.currAngles.y else -1
 
-                self.currAngles.y += globalClock.dt * (baseTurnRate * 5) * dir
+                self.currAngles.y += base.clockMgr.getDeltaTime() * (baseTurnRate * 5) * dir
 
                 # If we started below the goal, and now we're past, peg to goal.
                 if dir == 1:
@@ -255,7 +255,7 @@ class SentryGun(BaseObject):
                         if self.turnRate < baseTurnRate * 30:
                             self.turnRate += baseTurnRate * 3
 
-                self.currAngles.x += globalClock.dt * self.turnRate * dir
+                self.currAngles.x += base.clockMgr.getDeltaTime() * self.turnRate * dir
 
                 # If we passed over the goal, peg right to it now
                 if dir == -1:
@@ -272,7 +272,7 @@ class SentryGun(BaseObject):
                 elif self.currAngles.x >= 360:
                     self.currAngles.x -= 360
 
-                if dist < (globalClock.dt * 0.5 * baseTurnRate):
+                if dist < (base.clockMgr.getDeltaTime() * 0.5 * baseTurnRate):
                     self.currAngles.x = self.goalAngles.x
 
                 angles = self.getHpr()
@@ -324,9 +324,9 @@ class SentryGun(BaseObject):
 
             # Update timers, we are attacking now!
             self.sentryState = SentryState.Attacking
-            self.nextAttack = globalClock.frame_time
-            if self.nextRocketAttack < globalClock.frame_time:
-                self.nextRocketAttack = globalClock.frame_time + 0.5
+            self.nextAttack = base.clockMgr.getTime()
+            if self.nextRocketAttack < base.clockMgr.getTime():
+                self.nextRocketAttack = base.clockMgr.getTime() + 0.5
 
         def attack(self):
             self.character.update()
@@ -363,20 +363,20 @@ class SentryGun(BaseObject):
             self.moveTurret()
 
             # Fire on the target if it's within 10 units of being aimed right at it.
-            if self.nextAttack <= globalClock.frame_time and (self.goalAngles - self.currAngles).length() <= 10:
+            if self.nextAttack <= base.clockMgr.getTime() and (self.goalAngles - self.currAngles).length() <= 10:
                 self.fire()
 
                 if self.level == 1:
                     # Level 1 sentries fire slower.
-                    self.nextAttack = globalClock.frame_time + 0.2
+                    self.nextAttack = base.clockMgr.getTime() + 0.2
                 else:
-                    self.nextAttack = globalClock.frame_time + 0.1
+                    self.nextAttack = base.clockMgr.getTime() + 0.1
 
         def fire(self):
             aimDir = Vec3()
 
             # Level 3 turrets fire rockets every 3 seconds
-            if self.level == 3 and self.ammoRockets > 0 and self.nextRocketAttack < globalClock.frame_time:
+            if self.level == 3 and self.ammoRockets > 0 and self.nextRocketAttack < base.clockMgr.getTime():
                 trans = self.character.getAttachmentNetTransform(2)
                 src = trans.getPos()
 
@@ -400,7 +400,7 @@ class SentryGun(BaseObject):
                 base.air.generateObject(rocket, self.zoneId)
 
                 # Setup next rocket shot
-                self.nextRocketAttack = globalClock.frame_time + 3
+                self.nextRocketAttack = base.clockMgr.getTime() + 3
                 self.ammoRockets -= 1
 
                 # Inform clients that we fired some rockets.  Makes them play

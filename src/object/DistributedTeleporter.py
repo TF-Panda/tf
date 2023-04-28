@@ -163,7 +163,7 @@ class DistributedTeleporter(BaseObject):
             self.emitSoundSpatial("Building_Teleporter.Send")
 
             self.setTeleState(TStateSending)
-            self.myNextThink = globalClock.frame_time + 0.1
+            self.myNextThink = base.clockMgr.getTime() + 0.1
             self.timesUsed += 1
 
         def teleporterReceive(self, player, delay):
@@ -175,7 +175,7 @@ class DistributedTeleporter(BaseObject):
             self.emitSoundSpatial("Building_Teleporter.Receive")
 
             self.setTeleState(TStateReceiving)
-            self.myNextThink = globalClock.frame_time + TELEPORTER_FADEOUT_TIME
+            self.myNextThink = base.clockMgr.getTime() + TELEPORTER_FADEOUT_TIME
             self.timesUsed += 1
 
         def onKilled(self, info):
@@ -202,7 +202,7 @@ class DistributedTeleporter(BaseObject):
         def setTeleState(self, state):
             if state != self.teleState:
                 self.teleState = state
-                self.lastStateChangeTime = globalClock.frame_time
+                self.lastStateChangeTime = base.clockMgr.getTime()
 
         def onBecomeActive(self):
             self.addTask(self.__teleporterThink, "teleporterThink", delay=0.1, appendTask=True)
@@ -273,17 +273,17 @@ class DistributedTeleporter(BaseObject):
                 self.setPlayRate(self.repairMultiplier * 0.5)
 
             else:
-                deltaTime = globalClock.dt
+                deltaTime = base.clockMgr.getDeltaTime()
 
                 if self.teleState == TStateReady:
                     # Spin up to 1.0 from whatever we're at, at some high rate.
                     playRate = TFGlobals.approach(1.0, playRate, 0.5 * deltaTime)
 
                 elif self.teleState == TStateRecharging:
-                    timeSinceCharge = globalClock.frame_time - self.lastStateChangeTime
+                    timeSinceCharge = base.clockMgr.getTime() - self.lastStateChangeTime
                     lowSpinSpeed = 0.15
                     if timeSinceCharge <= 4.0:
-                        playRate = TFGlobals.remapVal(globalClock.frame_time,
+                        playRate = TFGlobals.remapVal(base.clockMgr.getTime(),
                             self.lastStateChangeTime,
                             self.lastStateChangeTime + 4.0,
                             1.0,
@@ -291,7 +291,7 @@ class DistributedTeleporter(BaseObject):
                     elif timeSinceCharge > 4.0 and timeSinceCharge <= 6.0:
                         playRate = lowSpinSpeed
                     else:
-                        playRate = TFGlobals.remapVal(globalClock.frame_time,
+                        playRate = TFGlobals.remapVal(base.clockMgr.getTime(),
                             self.lastStateChangeTime + 6.0,
                             self.lastStateChangeTime + 10.0,
                             lowSpinSpeed,
@@ -322,7 +322,7 @@ class DistributedTeleporter(BaseObject):
                     self.showDirectionArrow(False)
                 return task.again
 
-            if self.myNextThink and self.myNextThink > globalClock.frame_time:
+            if self.myNextThink and self.myNextThink > base.clockMgr.getTime():
                 return task.again
 
             match = self.other
@@ -348,7 +348,7 @@ class DistributedTeleporter(BaseObject):
                         break
 
             elif self.teleState == TStateRecharging:
-                now = globalClock.frame_time
+                now = base.clockMgr.getTime()
                 if now > self.rechargeTime:
                     #self.chargePerct = 1.0
                     self.setTeleState(TStateReady)
@@ -363,7 +363,7 @@ class DistributedTeleporter(BaseObject):
                 match.teleporterReceive(self.teleportingPlayer, 1.0)
                 self.rechargeStartTime = base.tickCount
                 match.rechargeStartTime = base.tickCount
-                self.rechargeTime = globalClock.frame_time + (TELEPORTER_FADEOUT_TIME + TELEPORTER_FADEIN_TIME + TELEPORTER_RECHARGE_TIME)
+                self.rechargeTime = base.clockMgr.getTime() + (TELEPORTER_FADEOUT_TIME + TELEPORTER_FADEIN_TIME + TELEPORTER_RECHARGE_TIME)
                 self.rechargeEndTime = base.timeToTicks(self.rechargeTime)
                 match.rechargeEndTime = self.rechargeEndTime
                 # Start recharging for next teleport.
@@ -385,7 +385,7 @@ class DistributedTeleporter(BaseObject):
                     telePlayer.teleport()
 
                 self.setTeleState(TStateReceivingRelease)
-                self.myNextThink = globalClock.frame_time + TELEPORTER_FADEIN_TIME
+                self.myNextThink = base.clockMgr.getTime() + TELEPORTER_FADEIN_TIME
 
             elif self.teleState == TStateReceivingRelease:
                 telePlayer = self.teleportingPlayer
@@ -397,7 +397,7 @@ class DistributedTeleporter(BaseObject):
                 match.teleportingPlayer = None
 
                 self.setTeleState(TStateRecharging)
-                self.myNextThink = globalClock.frame_time + TELEPORTER_RECHARGE_TIME
+                self.myNextThink = base.clockMgr.getTime() + TELEPORTER_RECHARGE_TIME
 
             task.delayTime = 0.05
             return task.again
@@ -446,12 +446,12 @@ class DistributedTeleporter(BaseObject):
             if self.showingBlur:
                 if self.currBlurAlpha < 1.0:
                     nodes = self.getBodygroupNodes("teleporter_blur", 1)
-                    self.currBlurAlpha = TFGlobals.approach(1.0, self.currBlurAlpha, 1.0 * globalClock.dt)
+                    self.currBlurAlpha = TFGlobals.approach(1.0, self.currBlurAlpha, 1.0 * base.clockMgr.getDeltaTime())
                     nodes.setColorScale(1, 1, 1, self.currBlurAlpha)
 
             elif self.currBlurAlpha > 0.0:
                 nodes = self.getBodygroupNodes("teleporter_blur", 1)
-                self.currBlurAlpha = TFGlobals.approach(0.0, self.currBlurAlpha, 1.0 * globalClock.dt)
+                self.currBlurAlpha = TFGlobals.approach(0.0, self.currBlurAlpha, 1.0 * base.clockMgr.getDeltaTime())
                 nodes.setColorScale(1, 1, 1, self.currBlurAlpha)
 
                 if self.currBlurAlpha <= 0.0:

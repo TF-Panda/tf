@@ -118,10 +118,10 @@ class DistributedMedigun(TFWeaponGun):
         dist = (targetPoint - src).length()
         stickRange = self.getStickRange()
         if dist < stickRange:
-            if self.nextTargetCheckTime > globalClock.frame_time:
+            if self.nextTargetCheckTime > base.clockMgr.getTime():
                 return
 
-            self.nextTargetCheckTime = globalClock.frame_time + 1.0
+            self.nextTargetCheckTime = base.clockMgr.getTime() + 1.0
 
             q = Quat()
             q.setHpr(self.player.viewAngles)
@@ -175,7 +175,7 @@ class DistributedMedigun(TFWeaponGun):
                 if not IS_CLIENT:
                     self.addTask(self.__healTargetThink, 'healTargetThink', appendTask=True, sim=True)
                 self.healingTargetId = tr['ent'].doId
-                self.nextTargetCheckTime = globalClock.frame_time + 1.0
+                self.nextTargetCheckTime = base.clockMgr.getTime() + 1.0
 
     if not IS_CLIENT:
 
@@ -187,7 +187,7 @@ class DistributedMedigun(TFWeaponGun):
 
             owner = self.player
 
-            time = globalClock.frame_time - owner.getTimeBase()
+            time = base.clockMgr.getTime() - owner.getTimeBase()
             if time > 5.0 or not self.allowedToHealTarget(target):
                 self.removeHealingTarget(True)
 
@@ -211,7 +211,7 @@ class DistributedMedigun(TFWeaponGun):
 
                 newTarget.recalculateInvuln(False)
 
-                if self.releaseStartedAt and self.releaseStartedAt < (globalClock.frame_time + 0.2):
+                if self.releaseStartedAt and self.releaseStartedAt < (base.clockMgr.getTime() + 0.2):
                     # When we release, everyone we heal rockets to full health.
                     newTarget.takeHealth(newTarget.maxHealth)
 
@@ -223,7 +223,7 @@ class DistributedMedigun(TFWeaponGun):
             if not self.chargeRelease:
                 boostMax = math.floor(newTarget.getMaxBuffedHealth() * 0.95)
 
-                chargeAmount = globalClock.dt / weapon_medigun_charge_rate
+                chargeAmount = base.clockMgr.getDeltaTime() / weapon_medigun_charge_rate
 
                 # Reduce charge for healing fully healed guys
                 if newTarget.health >= boostMax and (not base.game.inSetup()):
@@ -247,7 +247,7 @@ class DistributedMedigun(TFWeaponGun):
         if TFWeaponGun.activate(self):
             self.deploying = True
             self.holstered = False
-            self.nextTargetCheckTime = globalClock.frame_time
+            self.nextTargetCheckTime = base.clockMgr.getTime()
             if IS_CLIENT:
                 self.addTask(self.__weaponSoundUpdate, 'medigunSound', appendTask=True, sim=True)
             return True
@@ -305,10 +305,10 @@ class DistributedMedigun(TFWeaponGun):
             self.healing = True
         else:
             if IS_CLIENT:
-                if globalClock.frame_time >= self.lastRejectSoundTime + 0.5:
+                if base.clockMgr.getTime() >= self.lastRejectSoundTime + 0.5:
                     if base.cr.prediction.firstTimePredicted:
                         self.player.emitSound("Player.UseDeny")
-                    self.lastRejectSoundTime = globalClock.frame_time
+                    self.lastRejectSoundTime = base.clockMgr.getTime()
             self.removeHealingTarget(False)
 
         if not IS_CLIENT:

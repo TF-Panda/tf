@@ -100,7 +100,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
 
     def __timerUpdate(self, task):
         prevTime = self.timeLeft
-        self.timeLeft -= globalClock.dt
+        self.timeLeft -= base.clockMgr.getDeltaTime()
         self.timeLeft = max(0.0, self.timeLeft)
         self.timeLeftInteger = math.ceil(self.timeLeft)
 

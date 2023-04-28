@@ -49,7 +49,7 @@ class KillFeed:
             lbl['bg'] = (0.984, 0.925, 0.796, 1.0)
         lbl.hide()
 
-        time = globalClock.frame_time
+        time = base.clockMgr.getTime()
         if time == self.latestTime:
             # Weird fudge to prevent events with identical times.
             # If two events have identical times the sorting goes weird.
@@ -79,7 +79,7 @@ class KillFeed:
     def __update(self, task):
         removedEvents = []
 
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
         for ev in self.events:
             if now >= ev.expireTime:
                 removedEvents.append(ev)

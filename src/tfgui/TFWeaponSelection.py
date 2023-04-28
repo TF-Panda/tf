@@ -69,7 +69,7 @@ class TFWeaponSelection(DirectObject):
                 label.setScale(self.IdleScale)
         self.index = index
         self.scrollSound.play()
-        self.activeTime = globalClock.frame_time
+        self.activeTime = base.clockMgr.getTime()
 
     def hoverNextWeapon(self):
         if base.localAvatar.isDead() or base.localAvatar.isLoser():
@@ -93,11 +93,11 @@ class TFWeaponSelection(DirectObject):
         self.hoverWeapon(base.localAvatar.getActiveWeapon())
         self.root.show()
         self.isActive = True
-        self.activeTime = globalClock.frame_time
+        self.activeTime = base.clockMgr.getTime()
         base.taskMgr.add(self.__update, 'wpnselectupdate')
 
     def __update(self, task):
-        now = globalClock.frame_time
+        now = base.clockMgr.getTime()
         if (now - self.activeTime) >= self.InactiveTime:
             self.hide()
             return task.done

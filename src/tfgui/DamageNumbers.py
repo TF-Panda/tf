@@ -80,7 +80,7 @@ class DamageNumbers(DirectObject):
 
     def updateDmgText(self, dmgText, task):
         self.calcDmgTextPos(dmgText)
-        dmgText.upMove += 0.05 * globalClock.dt
+        dmgText.upMove += 0.05 * base.clockMgr.getDeltaTime()
         dmgText.textNp.setZ(dmgText.textNp.getZ() + dmgText.upMove)
         return task.cont
 

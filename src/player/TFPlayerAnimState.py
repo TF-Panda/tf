@@ -101,7 +101,7 @@ class TFPlayerAnimState:
                 else:
                     act = Activity.Deployed_Attack_Stand
                 self.restartGesture(GestureSlot.AttackAndReload, act)
-                self.holdDeployedPoseUntilTime = globalClock.frame_time + 2.0
+                self.holdDeployedPoseUntilTime = base.clockMgr.getTime() + 2.0
             else:
                 # Weapon primary fire.
                 self.restartGesture(GestureSlot.AttackAndReload, Activity.Attack_Stand)
@@ -147,13 +147,13 @@ class TFPlayerAnimState:
         elif event == PlayerAnimEvent.Jump:
             self.jumping = True
             self.firstJumpFrame = True
-            self.jumpStartTime = globalClock.frame_time
+            self.jumpStartTime = base.clockMgr.getTime()
             self.restartMainSequence()
         elif event == PlayerAnimEvent.DoubleJump:
             if not self.jumping:
                 self.jumping = True
                 self.firstJumpFrame = True
-                self.jumpStartTime = globalClock.frame_time
+                self.jumpStartTime = base.clockMgr.getTime()
                 self.restartMainSequence()
 
             self.inAirWalk = False
@@ -189,7 +189,7 @@ class TFPlayerAnimState:
             if self.lastAimTurnTime <= 0.0:
                 self.goalFeetYaw = self.eyeYaw
                 self.currentFeetYaw = self.eyeYaw
-                self.lastAimTurnTime = globalClock.frame_time
+                self.lastAimTurnTime = base.clockMgr.getTime()
             else:
                 yawDelta = self.angleNormalize(self.goalFeetYaw - self.eyeYaw)
                 if abs(yawDelta) > 45:
@@ -203,8 +203,8 @@ class TFPlayerAnimState:
                 self.currentFeetYaw = self.goalFeetYaw
             else:
                 self.currentFeetYaw = self.convergeYawAngles(
-                    self.goalFeetYaw, 720.0, globalClock.dt, self.currentFeetYaw)
-                self.lastAimTurnTime = globalClock.frame_time
+                    self.goalFeetYaw, 720.0, base.clockMgr.getDeltaTime(), self.currentFeetYaw)
+                self.lastAimTurnTime = base.clockMgr.getTime()
 
         # Rotate the body into position.
         angles = self.player.getHpr()
@@ -312,7 +312,7 @@ class TFPlayerAnimState:
                 # Don't check if he's on the ground for a sec.. sometimes the
                 # client still has the on-ground flag set right when the
                 # message comes in.
-                if globalClock.frame_time - self.jumpStartTime > 0.2:
+                if base.clockMgr.getTime() - self.jumpStartTime > 0.2:
                     if self.player.onGround:
                         self.jumping = False
                         self.restartMainSequence()
@@ -321,7 +321,7 @@ class TFPlayerAnimState:
 
                 # If we're still jumping
                 if self.jumping:
-                    if globalClock.frame_time - self.jumpStartTime > 0.5:
+                    if base.clockMgr.getTime() - self.jumpStartTime > 0.5:
                         self.idealActivity = Activity.Jump_Float
                     else:
                         self.idealActivity = Activity.Jump_Start
@@ -333,7 +333,7 @@ class TFPlayerAnimState:
             speed = self.vel.getXy().length()
             if speed < 0.5:
                 self.idealActivity = Activity.Crouch
-                if self.player.inCondition(self.player.CondAiming) or self.holdDeployedPoseUntilTime > globalClock.frame_time:
+                if self.player.inCondition(self.player.CondAiming) or self.holdDeployedPoseUntilTime > base.clockMgr.getTime():
                     self.idealActivity = Activity.Deployed_Idle_Crouch
             else:
                 self.idealActivity = Activity.Crouch_Walk
@@ -367,7 +367,7 @@ class TFPlayerAnimState:
             else:
                 self.idealActivity = Activity.Deployed_Idle
             return True
-        elif self.holdDeployedPoseUntilTime > globalClock.frame_time:
+        elif self.holdDeployedPoseUntilTime > base.clockMgr.getTime():
             self.idealActivity = Activity.Deployed_Idle
             return True
         elif speed > 0.5:
@@ -481,7 +481,7 @@ class TFPlayerAnimState:
         return speed
 
     def estimateYaw(self):
-        dt = globalClock.dt
+        dt = base.clockMgr.getDeltaTime()
         if dt == 0.0:
             return
 

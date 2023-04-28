@@ -43,7 +43,7 @@ class TFWeaponGun(BaseClass):
             return
 
         # Are we capable of firing again.
-        if self.nextPrimaryAttack > globalClock.frame_time:
+        if self.nextPrimaryAttack > base.clockMgr.getTime():
             return
 
         # Get the player owning the weapon.
@@ -68,9 +68,9 @@ class TFWeaponGun(BaseClass):
         self.fireProjectile(player)
 
         # Set next attack times
-        self.nextPrimaryAttack = globalClock.frame_time + self.primaryAttackInterval
+        self.nextPrimaryAttack = base.clockMgr.getTime() + self.primaryAttackInterval
 
-        self.timeWeaponIdle = globalClock.frame_time + self.getVMSequenceLength()
+        self.timeWeaponIdle = base.clockMgr.getTime() + self.getVMSequenceLength()
 
         # Check the reload mode and behave appriopriately
         if self.reloadsSingly:
@@ -85,7 +85,7 @@ class TFWeaponGun(BaseClass):
 
         self.player.doClassSpecialSkill()
         self.inAttack2 = True
-        self.nextSecondaryAttack = globalClock.frame_time + 0.5
+        self.nextSecondaryAttack = base.clockMgr.getTime() + 0.5
 
     def fireProjectile(self, player):
         self.syncAllHitBoxes()

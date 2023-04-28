@@ -175,7 +175,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
     def __burningLightUpdate(self, task):
         bias = 0.3
-        frac = math.sin(globalClock.frame_time * 50) * 0.5 + 0.5
+        frac = math.sin(base.clockMgr.getTime() * 50) * 0.5 + 0.5
         self.burningLight.setColorSrgb(Vec3(2, 1.2, 0) * (frac * bias + (1.0 - bias)))
         self.burningLight.setPos(self.getWorldSpaceCenter())
         return task.cont

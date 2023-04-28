@@ -837,12 +837,18 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
 
     def doTracers(self, origin, ends):
-        if base.cr.prediction.inPrediction:
-            saveFrameTime = float(base.frameTime)
-            base.setFrameTime(base.getRenderTime())
+        if base.clockMgr.isInSimulationClock():
+            # If we call this in the simulation, we need to temporarily override
+            # the clock to the true client frame time, so the particle system
+            # and interval is timed correctly.
+            saveTime = base.clockMgr.getClientTime()
+            base.clock.frame_time = base.clockMgr.getClientFrameTime()
 
         for i in range(len(ends)):
             self.doTracer(origin, ends[i])
 
-        if base.cr.prediction.inPrediction:
-            base.setFrameTime(saveFrameTime)
+        if base.clockMgr.isInSimulationClock():
+            # Restore the simulation time.
+            base.clock.frame_time = saveTime
+
+

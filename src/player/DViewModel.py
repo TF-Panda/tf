@@ -329,10 +329,10 @@ class DViewModel(DistributedChar, DViewModelShared):
         up = info.angles.getUp()
 
         # Add an entry to the history.
-        self.ivLagAngles.recordValue(info.angles, globalClock.frame_time, False)
+        self.ivLagAngles.recordValue(info.angles, base.clockMgr.getTime(), False)
 
         # Interpolate back 100 ms.
-        self.ivLagAngles.interpolate(globalClock.frame_time)
+        self.ivLagAngles.interpolate(base.clockMgr.getTime())
 
         lagAngles = self.ivLagAngles.getInterpolatedValue()
 
@@ -360,7 +360,7 @@ class DViewModel(DistributedChar, DViewModelShared):
         # calculate our drift
         forward = info.angles.getForward()
 
-        if globalClock.dt != 0.0:
+        if base.clockMgr.getDeltaTime() != 0.0:
             difference = forward - self.lastFacing
 
             speed = 5.0
@@ -370,7 +370,7 @@ class DViewModel(DistributedChar, DViewModelShared):
                 scale = diff / maxViewModelLag
                 speed *= scale
 
-            self.lastFacing += difference * (speed * globalClock.dt)
+            self.lastFacing += difference * (speed * base.clockMgr.getDeltaTime())
             self.lastFacing.normalize()
             info.origin += difference * -5.0
 

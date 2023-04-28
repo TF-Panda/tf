@@ -90,7 +90,7 @@ class DistributedWeaponShared:
     def activate(self):
         assert self.player
         self.sendWeaponAnim(Activity.VM_Draw)
-        self.nextPrimaryAttack = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
+        self.nextPrimaryAttack = base.clockMgr.getTime() + self.viewModel.getCurrentAnimLength()
         self.nextSecondaryAttack = self.nextPrimaryAttack
 
     def deactivate(self):
@@ -160,17 +160,17 @@ class DistributedWeaponShared:
             return False
 
         self.viewModel.setAnim(seq, act)
-        self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
+        self.timeWeaponIdle = base.clockMgr.getTime() + self.viewModel.getCurrentAnimLength()
 
         return True
 
     def weaponIdle(self):
         if self.hasWeaponIdleTimeElapsed():
             self.sendWeaponAnim(Activity.VM_Idle)
-            self.timeWeaponIdle = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
+            self.timeWeaponIdle = base.clockMgr.getTime() + self.viewModel.getCurrentAnimLength()
 
     def hasWeaponIdleTimeElapsed(self):
-        return globalClock.frame_time > self.timeWeaponIdle
+        return base.clockMgr.getTime() > self.timeWeaponIdle
 
     def reloadOrSwitchWeapons(self):
         """
@@ -182,7 +182,7 @@ class DistributedWeaponShared:
         self.fireOnEmpty = False
 
         # If we don't have any ammo, switch to the next best weapon.
-        if not self.hasAnyAmmo() and self.nextPrimaryAttack < globalClock.frame_time and self.nextSecondaryAttack < globalClock.frame_time:
+        if not self.hasAnyAmmo() and self.nextPrimaryAttack < base.clockMgr.getTime() and self.nextSecondaryAttack < base.clockMgr.getTime():
             # Weapon isn't useable, switch.
             switched = False
             # Cycle through all the weapons starting at the weapon next to this
@@ -201,11 +201,11 @@ class DistributedWeaponShared:
                     break
                 index = (index + 1) % len(self.player.weapons)
             if switched:
-                self.nextPrimaryAttack = globalClock.frame_time + 0.3
+                self.nextPrimaryAttack = base.clockMgr.getTime() + 0.3
                 return True
         else:
             # Weapon is useable.  Reload is empty and weapon has waited as long as it has to after firing.
-            if self.usesClip and (self.clip == 0) and self.nextPrimaryAttack < globalClock.frame_time and self.nextSecondaryAttack < globalClock.frame_time:
+            if self.usesClip and (self.clip == 0) and self.nextPrimaryAttack < base.clockMgr.getTime() and self.nextSecondaryAttack < base.clockMgr.getTime():
                 # If we're successfully reloading, we're done.
                 if self.reload():
                     return True
@@ -247,7 +247,7 @@ class DistributedWeaponShared:
             if not self.player:
                 return
 
-            if self.inReload and self.nextPrimaryAttack <= globalClock.frame_time:
+            if self.inReload and self.nextPrimaryAttack <= base.clockMgr.getTime():
                 if (self.player.buttons & (InputFlag.Attack1 | InputFlag.Attack2)) and self.clip > 0:
                     # We loaded in at least one shell and we want to fire.  Stop reloading.
                     self.inReload = False
@@ -266,14 +266,14 @@ class DistributedWeaponShared:
                 else:
                     # Clip full, stop reloading.
                     self.finishReload()
-                    self.nextPrimaryAttack = globalClock.frame_time
-                    self.nextSecondaryAttack = globalClock.frame_time
+                    self.nextPrimaryAttack = base.clockMgr.getTime()
+                    self.nextSecondaryAttack = base.clockMgr.getTime()
                     return
         else:
-            if self.inReload and self.nextPrimaryAttack <= globalClock.frame_time:
+            if self.inReload and self.nextPrimaryAttack <= base.clockMgr.getTime():
                 self.finishReload()
-                self.nextPrimaryAttack = globalClock.frame_time
-                self.nextSecondaryAttack = globalClock.frame_time
+                self.nextPrimaryAttack = base.clockMgr.getTime()
+                self.nextSecondaryAttack = base.clockMgr.getTime()
                 self.inReload = False
 
     def finishReload(self):
@@ -319,7 +319,7 @@ class DistributedWeaponShared:
         self.sendWeaponAnim(activity)
         #self.setPlayerGesture(playerActivity)
 
-        sequenceEndTime = globalClock.frame_time + self.viewModel.getCurrentAnimLength()
+        sequenceEndTime = base.clockMgr.getTime() + self.viewModel.getCurrentAnimLength()
         self.nextPrimaryAttack = self.nextSecondaryAttack = sequenceEndTime
 
         self.inReload = True
@@ -331,15 +331,15 @@ class DistributedWeaponShared:
             self.reloadOrSwitchWeapons()
             self.fireDuration = 0.0
         else:
-            if self.nextEmptySoundTime < globalClock.frame_time:
+            if self.nextEmptySoundTime < base.clockMgr.getTime():
                 self.playSound(self.getEmptySound())
-                self.nextEmptySoundTime = globalClock.frame_time + 0.5
+                self.nextEmptySoundTime = base.clockMgr.getTime() + 0.5
             self.fireOnEmpty = True
 
     def primaryAttack(self):
         self.sendWeaponAnim(Activity.VM_Fire)
         #self.setPlayerGesture(Activity.Primary_Stand_Attack)
-        self.nextPrimaryAttack = globalClock.frame_time + self.primaryAttackInterval
+        self.nextPrimaryAttack = base.clockMgr.getTime() + self.primaryAttackInterval
         if self.usesClip:
             self.clip -= 1
 
@@ -360,7 +360,7 @@ class DistributedWeaponShared:
             return
 
         # Track the duration of the fire.
-        self.fireDuration = (self.fireDuration + globalClock.frame_time) if (self.player.buttons & InputFlag.Attack2) else 0.0
+        self.fireDuration = (self.fireDuration + base.clockMgr.getTime()) if (self.player.buttons & InputFlag.Attack2) else 0.0
 
         if self.usesClip:
             self.checkReload()
@@ -368,11 +368,11 @@ class DistributedWeaponShared:
         fired = False
 
         # Secondary attack has priority
-        if (self.player.buttons & InputFlag.Attack2) and (self.nextSecondaryAttack <= globalClock.frame_time):
+        if (self.player.buttons & InputFlag.Attack2) and (self.nextSecondaryAttack <= base.clockMgr.getTime()):
             if self.usesAmmo2 and self.ammo2 <= 0:
-                if self.nextEmptySoundTime < globalClock.frame_time:
+                if self.nextEmptySoundTime < base.clockMgr.getTime():
                     self.playSound(self.getEmptySound())
-                    self.nextSecondaryAttack = self.nextEmptySoundTime = globalClock.frame_time + 0.5
+                    self.nextSecondaryAttack = self.nextEmptySoundTime = base.clockMgr.getTime() + 0.5
             else:
                 fired = True
                 self.secondaryAttack()
@@ -382,7 +382,7 @@ class DistributedWeaponShared:
                         self.ammo2 -= 1
                         self.clip2 += 1
 
-        if not fired and (self.player.buttons & InputFlag.Attack1) and globalClock.frame_time > self.nextPrimaryAttack:
+        if not fired and (self.player.buttons & InputFlag.Attack1) and base.clockMgr.getTime() > self.nextPrimaryAttack:
             # It's time to primary attack.
 
             if not self.meleeWeapon and (self.usesClip and self.clip <= 0) or ((not self.usesClip) and (self.usesAmmo and self.ammo <= 0)):

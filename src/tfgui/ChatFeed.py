@@ -13,7 +13,7 @@ class Chat:
     def __init__(self, lbl, lifetime, size):
         self.lbl = lbl
         self.lifetime = lifetime
-        self.removeTime = globalClock.frame_time + self.lifetime
+        self.removeTime = base.clockMgr.getTime() + self.lifetime
         self.size = size
         self.track = Sequence(
             LerpColorScaleInterval(self.lbl, 0.3, (1, 1, 1, 1), (1, 1, 1, 0)),
@@ -113,7 +113,7 @@ class ChatFeed:
     def update(self):
         removeChats = []
         for chat in self.chats:
-            if globalClock.frame_time >= chat.removeTime:
+            if base.clockMgr.getTime() >= chat.removeTime:
                 removeChats.append(chat)
 
         for chat in removeChats:

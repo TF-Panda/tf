@@ -275,6 +275,18 @@ class TFBase(ShowBase, FSM):
         tracer = PhysAudioTracer(self.physicsWorld, CollisionGroups.World)
         self.audioEngine.setTracer(tracer)
 
+    def postRunFrame(self):
+        ShowBase.postRunFrame(self)
+
+        if __debug__:
+            self.onScreenDebug.add("client time", base.clockMgr.getTime())
+            self.onScreenDebug.add("client frame", globalClock.frame_count)
+            self.onScreenDebug.add("client dt", base.clockMgr.getDeltaTime())
+            self.onScreenDebug.add("sim time", self.tickCount * self.intervalPerTick)
+            self.onScreenDebug.add("sim frame", self.tickCount)
+            self.onScreenDebug.add("client to sim", self.clockMgr.simulationDelta)
+            self.onScreenDebug.add("ticks", self.totalTicksThisFrame)
+
     def enableReverb(self, probeData):
         """
         Shortcut to enable the Steam Audio reverb DSP on SFX.  In order to
@@ -292,7 +304,7 @@ class TFBase(ShowBase, FSM):
         self.sfxManager.clearReverb()
 
     def addDynamicLight(self, lnp, followParent=None, fadeTime=0.0):
-        self.dynamicLights.append((lnp, Vec3(lnp.getColorLinear()), followParent, fadeTime, self.getRenderTime()))
+        self.dynamicLights.append((lnp, Vec3(lnp.getColorLinear()), followParent, fadeTime, base.clockMgr.getClientFrameTime()))
         self.lightMgr.addDynamicLight(lnp)
 
     def removeDynamicLight(self, lnp):
@@ -310,7 +322,7 @@ class TFBase(ShowBase, FSM):
             if data[2] is not None:
                 data[0].setPos(data[2].getPos(self.render))
             if data[3] > 0.0:
-                now = globalClock.frame_time
+                now = base.clockMgr.getTime()
                 elapsed = now - data[4]
                 frac = max(0.0, min(1.0, elapsed / data[3]))
                 if frac >= 1.0:
@@ -389,7 +401,7 @@ class TFBase(ShowBase, FSM):
         return task.cont
 
     def __updateParticles2(self, task):
-        self.particleMgr2.update(globalClock.dt)
+        self.particleMgr2.update(base.clockMgr.getDeltaTime())
         return task.cont
 
     def __updateAudioListener(self, task):
@@ -397,7 +409,7 @@ class TFBase(ShowBase, FSM):
         pos = ts.getPos()
         q = ts.getQuat()
 
-        vel = (pos - self.lastListenerPos) / globalClock.dt
+        vel = (pos - self.lastListenerPos) / base.clockMgr.getDeltaTime()
 
         self.audioEngine.set3dListenerAttributes(pos, q, vel)
 

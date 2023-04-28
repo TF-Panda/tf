@@ -48,7 +48,7 @@ class TriggerCaptureArea(DistributedTrigger):
             self.setCapperCount(numPlayersOnCap)
             for i in range(1, numPlayersOnCap):
                 delta += step / (i + 1)
-            return delta * globalClock.dt
+            return delta * base.clockMgr.getDeltaTime()
 
         def canTeamCap(self, team):
             ret = (team is not None) and (team in self.canCapTeams) and (base.game.controlPointMaster.canTeamWin(team))
@@ -164,7 +164,7 @@ class TriggerCaptureArea(DistributedTrigger):
                     decrease = self.timeToCap * 2 * self.numRequiredToCap[self.teamProgress]
                     decrease /= decayFactor
                     prog = self.capProgress
-                    prog -= (1.0 / decrease) * globalClock.dt
+                    prog -= (1.0 / decrease) * base.clockMgr.getDeltaTime()
                     prog = max(0.0, prog)
                     self.setCapProgress(prog)
                 else:

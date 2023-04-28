@@ -78,7 +78,8 @@ class TFServerBase(HostBase):
 
     def postRunFrame(self):
         HostBase.postRunFrame(self)
-        elapsed = self.globalClock.getRealTime() - self.frameTime
+        self.globalClock.tick()
+        elapsed = self.clockMgr.getDeltaTime()
         # Sleep for a fraction of the simulation tick interval.  The server
         # only does stuff on simulation ticks.
         minDt = self.intervalPerTick * 0.08

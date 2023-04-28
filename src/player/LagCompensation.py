@@ -40,15 +40,15 @@ class LagCompensation(DirectObject):
             del self.playerRecords[plyr.doId]
 
     def recordPlayerPositions(self):
-        minTime = globalClock.frame_time - maxUnlag
+        minTime = base.clockMgr.getTime() - maxUnlag
 
-        #self.notify.debug("Recording player positions at time " + str(globalClock.frame_time) + ", min time " + str(minTime))
+        #self.notify.debug("Recording player positions at time " + str(base.clockMgr.getTime()) + ", min time " + str(minTime))
 
         for doId, record in self.playerRecords.items():
             record.track = [x for x in record.track if x.simulationTime >= minTime]
             track = record.track
 
-            if track and track[0].simulationTime >= globalClock.frame_time:
+            if track and track[0].simulationTime >= base.clockMgr.getTime():
                 continue
 
             plyr = base.air.doId2do.get(doId)
@@ -59,7 +59,7 @@ class LagCompensation(DirectObject):
 
             sample = PlayerSample()
             sample.alive = not plyr.isDead()
-            sample.simulationTime = globalClock.frame_time
+            sample.simulationTime = base.clockMgr.getTime()
             sample.pos = plyr.getPos()
             sample.hpr = plyr.getHpr()
             sample.eyeH = plyr.eyeH
@@ -82,7 +82,7 @@ class LagCompensation(DirectObject):
 
         targetTime = base.ticksToTime(targetTick)
 
-        assert self.notify.debug("Start lag comp for plyr " + str(plyr.doId) + ", targetTime " + str(targetTime) + ", currentTime " + str(globalClock.frame_time))
+        assert self.notify.debug("Start lag comp for plyr " + str(plyr.doId) + ", targetTime " + str(targetTime) + ", currentTime " + str(base.clockMgr.getTime()))
         assert self.notify.debug("Half-RTT is " + str(plyr.owner.averageRtt * 0.0005) + " seconds")
         assert self.notify.debug("Lerp time is " + str(plyr.owner.interpAmount))
         assert self.notify.debug("Lerp ticks " + str(lerpTicks))

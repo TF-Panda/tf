@@ -63,8 +63,8 @@ class Response:
         line = random.choice(self.availableLines)
         self.availableLines.remove(line)
 
-        system.speakTime = globalClock.frame_time + exactOrRandomRange(line.preDelay)
-        system.nextSpeakTime = globalClock.frame_time + exactOrRandomRange(line.postDelay)
+        system.speakTime = base.clockMgr.getTime() + exactOrRandomRange(line.preDelay)
+        system.nextSpeakTime = base.clockMgr.getTime() + exactOrRandomRange(line.postDelay)
 
         return line.line
 
@@ -130,12 +130,12 @@ class ResponseSystem:
 
     def updateMemory(self):
         for name, data in list(self.memory.items()):
-            if data['expireTime'] > 0 and globalClock.frame_time >= data['expireTime']:
+            if data['expireTime'] > 0 and base.clockMgr.getTime() >= data['expireTime']:
                 del self.memory[name]
 
     def addMemory(self, name, value, expireTime=-1):
         if expireTime != -1:
-            expireTime = globalClock.frame_time + expireTime
+            expireTime = base.clockMgr.getTime() + expireTime
         self.memory[name] = {'value': value, 'expireTime': expireTime}
 
     def clearMemory(self, name):
@@ -145,7 +145,7 @@ class ResponseSystem:
     def speakConcept(self, data):
         concept = data['concept']
 
-        if globalClock.frame_time < self.nextSpeakTime:
+        if base.clockMgr.getTime() < self.nextSpeakTime:
             self.notify.debug("Not time to speak yet")
             return None
 
