@@ -5,6 +5,6 @@ The game is still a work-in-progress.
 
 In order for gameplay mechanics to be as accurate as possible, a lot of the code from original TF2 was used as reference.
 
-The game cannot be run from this repository as-is -- it must be built against the rest of the engine using its build system, and integrated into the development environment.  The engine is a collection of separate repositories, which are available [here](https://github.com/toontownretro).  Instructions for setting up the development environment and building the engine is available in the wiki of the documentation repository.
+The game cannot be run from this repository as-is -- it must be built against the rest of the engine using its build system, and integrated into the development environment.  The engine is a collection of separate repositories, which are available [here](https://github.com/toontownretro).  Instructions for setting up a developer build of the game are available in the [Wiki](https://github.com/TF-Panda/.github/wiki).
 
 The assets for the game are stored in a separate repository: [tfmodels](https://github.com/TF-Panda/tfmodels)
