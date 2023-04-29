@@ -19,6 +19,8 @@ from .PlanarReflector import PlanarReflector
 from . import CollisionGroups
 from . import Sounds
 
+from direct.distributed2.ClientConfig import *
+
 #from .Console import Console
 
 import random
@@ -274,6 +276,25 @@ class TFBase(ShowBase, FSM):
         # sound occlusion.
         tracer = PhysAudioTracer(self.physicsWorld, CollisionGroups.World)
         self.audioEngine.setTracer(tracer)
+
+    def preClientFrame(self):
+        ShowBase.preClientFrame(self)
+
+        if not __debug__ or not self.config.GetBool('tf-paranoid-clock-sync', False):
+            return
+
+        if not self.cr or self.cr.lastUpdateTime == 0:
+            return
+
+        lastUpdate = self.cr.lastUpdateTime
+        now = base.clockMgr.getClientTime()
+        elapsed = now - lastUpdate
+        serverTickMultiple = 1
+        interpAmount = self.ticksToTime(self.timeToTicks(getClientInterpAmount()) + serverTickMultiple)
+        interpTime = now - interpAmount
+
+        if interpTime > lastUpdate:
+            self.notify.warning("Clock out of sync: interp time %f, last update time %f" % (interpTime, lastUpdate))
 
     def postRunFrame(self):
         ShowBase.postRunFrame(self)
