@@ -352,7 +352,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             if self.respawnTime < 0:
                 text += TFLocalizer.RespawnWaitNewRound
             else:
-                timeLeft = int(self.respawnTime - base.clockMgr.getTime())
+                timeLeft = int(self.respawnTime - base.clockMgr.getNetworkTime())
                 if timeLeft <= 0:
                     text += TFLocalizer.RespawnWait
                 else:
