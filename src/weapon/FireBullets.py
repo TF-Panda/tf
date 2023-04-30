@@ -24,6 +24,12 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     if not IS_CLIENT:
         base.air.lagComp.startLagCompensation(player, player.currentCommand)
 
+    elif base.cr.prediction.hasBeenPredicted():
+        # Don't see why we would need to predict bullets more than once.  It's only used
+        # to create client-side effects like decals and such.  The result of the bullet
+        # hit doesn't affect prediction results.
+        return
+
     # Sync hitboxes *after* lag compensation.
     base.net.syncAllHitBoxes()
 
