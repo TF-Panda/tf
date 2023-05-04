@@ -277,10 +277,13 @@ class TFBase(ShowBase, FSM):
         tracer = PhysAudioTracer(self.physicsWorld, CollisionGroups.World)
         self.audioEngine.setTracer(tracer)
 
+        self.wantParanoidClockSync = __debug__ and ConfigVariableBool('tf-paranoid-clock-sync', False)
+        self.wantClockOsd = __debug__ and ConfigVariableBool('tf-want-clock-osd', False)
+
     def preClientFrame(self):
         ShowBase.preClientFrame(self)
 
-        if not __debug__ or not self.config.GetBool('tf-paranoid-clock-sync', False):
+        if not self.wantParanoidClockSync:
             return
 
         if not self.cr or self.cr.lastUpdateTime == 0:
@@ -299,7 +302,7 @@ class TFBase(ShowBase, FSM):
     def postRunFrame(self):
         ShowBase.postRunFrame(self)
 
-        if __debug__ and base.config.GetBool('tf-want-clock-osd', False):
+        if self.wantClockOsd:
             self.onScreenDebug.add("client time", base.clockMgr.getTime())
             self.onScreenDebug.add("client frame", globalClock.frame_count)
             self.onScreenDebug.add("client dt", base.clockMgr.getDeltaTime())
