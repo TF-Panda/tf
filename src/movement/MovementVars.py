@@ -1,18 +1,18 @@
 from panda3d.core import ConfigVariableDouble
 
-sv_maxspeed = ConfigVariableDouble("sv-maxspeed", 400)
-sv_maxvelocity = ConfigVariableDouble("sv-maxvelocity", 3500)
-sv_rollspeed = ConfigVariableDouble("sv-rollspeed", 200)
-sv_rollangle = ConfigVariableDouble("sv-rollangle", 0)
-sv_friction = ConfigVariableDouble("sv-friction", 4)
-sv_bounce = ConfigVariableDouble("sv-bounce")
-sv_stepsize = ConfigVariableDouble("sv-stepsize")
-sv_accelerate = ConfigVariableDouble("sv-accelerate", 10)
-sv_airaccelerate = ConfigVariableDouble("sv-airaccelerate", 10)
-sv_wateraccelerate = ConfigVariableDouble("sv-wateraccelerate", 10)
-sv_waterfriction = ConfigVariableDouble("sv-waterfriction")
-sv_stopspeed = ConfigVariableDouble("sv-stopspeed", 100)
-sv_gravity = ConfigVariableDouble("sv-gravity", 800)
+sv_maxspeed = ConfigVariableDouble("sv-maxspeed", 400).value
+sv_maxvelocity = ConfigVariableDouble("sv-maxvelocity", 3500).value
+sv_rollspeed = ConfigVariableDouble("sv-rollspeed", 200).value
+sv_rollangle = ConfigVariableDouble("sv-rollangle", 0).value
+sv_friction = ConfigVariableDouble("sv-friction", 4).value
+sv_bounce = ConfigVariableDouble("sv-bounce").value
+sv_stepsize = ConfigVariableDouble("sv-stepsize").value
+sv_accelerate = ConfigVariableDouble("sv-accelerate", 10).value
+sv_airaccelerate = ConfigVariableDouble("sv-airaccelerate", 10).value
+sv_wateraccelerate = ConfigVariableDouble("sv-wateraccelerate", 10).value
+sv_waterfriction = ConfigVariableDouble("sv-waterfriction").value
+sv_stopspeed = ConfigVariableDouble("sv-stopspeed", 100).value
+sv_gravity = ConfigVariableDouble("sv-gravity", 800).value
 
 GAMEMOVEMENT_DUCK_TIME = 1000
 GAMEMOVEMENT_JUMP_TIME = 510

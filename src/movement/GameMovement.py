@@ -11,7 +11,9 @@ from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.player.TFClass import Class
 from tf.tfbase import TFFilters
-from tf.tfbase.TFGlobals import VEC_HULL_MAX, VEC_HULL_MIN, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX, VEC_DUCK_VIEW
+from tf.tfbase.TFGlobals import (
+    VEC_HULL_MAX, VEC_HULL_MIN, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX,
+    VEC_DUCK_VIEW, DUCK_HULL_HALF_HEIGHT, STAND_HULL_HALF_HEIGHT)
 
 import math
 
@@ -29,6 +31,9 @@ PLAYER_MIN_BOUNCE_SPEED = 200
 PLAYER_FALL_PUNCH_THRESHOLD = 350
 DAMAGE_FOR_FALL_SPEED = 100.0 / (PLAYER_FATAL_FALL_SPEED - PLAYER_MAX_SAFE_FALL_SPEED)
 
+tf_clamp_back_speed = 0.9
+tf_clamp_back_speed_min = 100
+
 class GameMovement:
 
     def __init__(self):
@@ -39,17 +44,23 @@ class GameMovement:
         self.forward = Vec3(0)
         self.up = Vec3(0)
         self.right = Vec3(0)
+        self.dt = 0.0
+        self.viewAngleQuat = Quat()
 
     def getMovementFilter(self):
-        return TFFilters.TFQueryFilter(self.player, [TFFilters.ignoreTeammateBuildings_nonBuilder])
+        return TFFilters.TFQueryFilter(self.player, (TFFilters.ignoreTeammateBuildings_nonBuilder,))
 
     def processMovement(self, player, moveData):
-        #storeDeltaTime = base.clockMgr.getDeltaTime()
+        #storeDeltaTime = self.dt
         self.speedCropped = False
         self.player = player
+        self.dt = base.clockMgr.getDeltaTime()
+        self.isDead = self.player.isDead()
         self.mv = moveData
-        #self.mv.maxSpeed = sv_maxspeed.value
+        #self.mv.maxSpeed = sv_maxspeed
         self.mv.maxSpeed = self.player.maxSpeed
+        self.movementFilter = self.getMovementFilter()
+        self.playerCollideMask = self.player.getPlayerCollideMask()
         #self.mv.onGround = self.isControllerOnGround()
         #if self.mv.onGround:
         #    self.player.airDashing = False
@@ -61,7 +72,7 @@ class GameMovement:
         self.playerMove()
         self.finishMove()
 
-        #base.clockMgr.getDeltaTime() = storeDeltaTime
+        #self.dt = storeDeltaTime
         #base.deltaTime = storeDeltaTime
 
         #self.player.velocity = self.mv.velocity
@@ -92,7 +103,7 @@ class GameMovement:
 
     def decayPunchAngle(self):
         if self.player.punchAngle.lengthSquared() > 0.001 or self.player.punchAngleVel.lengthSquared() > 0.001:
-            dt = base.clockMgr.getDeltaTime()
+            dt = self.dt
             self.player.punchAngle += self.player.punchAngleVel * dt
             damping = 1 - (PUNCH_DAMPING * dt)
             if damping < 0:
@@ -110,7 +121,7 @@ class GameMovement:
             self.player.punchAngleVel.set(0, 0, 0)
 
     def checkParameters(self):
-        if self.player.moveType not in [MoveType.Isometric, MoveType.NoClip, MoveType.Observer]:
+        if self.player.moveType not in (MoveType.Isometric, MoveType.NoClip, MoveType.Observer):
             spd = (self.mv.forwardMove * self.mv.forwardMove) + \
                   (self.mv.sideMove * self.mv.sideMove) + \
                   (self.mv.upMove * self.mv.upMove)
@@ -131,21 +142,22 @@ class GameMovement:
 
         self.decayPunchAngle()
 
-        if not self.player.isDead():
-            angle = Vec3(self.mv.angles)
-            angle += self.player.punchAngle
+        if not self.isDead:
+            self.mv.angles += self.player.punchAngle
+            #angle = Vec3(self.mv.angles)
+            #angle += self.player.punchAngle
 
             # Now adjust roll angle
-            if self.player.moveType not in [MoveType.Isometric, MoveType.NoClip]:
-                self.mv.angles[2] = self.calcRoll(angle, self.mv.velocity, sv_rollangle.value, sv_rollspeed.value)
-            else:
-                self.mv.angles[2] = 0.0
-            self.mv.angles[1] = angle[1]
-            self.mv.angles[0] = angle[0]
+            #if self.player.moveType not in (MoveType.Isometric, MoveType.NoClip):
+            #    self.mv.angles[2] = self.calcRoll(angle, self.mv.velocity, sv_rollangle, sv_rollspeed)
+            #else:
+            #    self.mv.angles[2] = 0.0
+            #self.mv.angles[1] = angle[1]
+            #self.mv.angles[0] = angle[0]
         else:
             self.mv.angles = self.mv.oldAngles
 
-        if self.player.isDead():
+        if self.isDead:
             pass
 
         # Adjust client view angles to match values used on server
@@ -153,7 +165,7 @@ class GameMovement:
             self.mv.angles[0] -= 360
 
     def reduceTimers(self):
-        frameMSec = base.clockMgr.getDeltaTime() * 1000.0
+        frameMSec = self.dt * 1000.0
 
         if self.player.duckTime > 0:
             self.player.duckTime -= frameMSec
@@ -309,7 +321,7 @@ class GameMovement:
         else:
             self.mv.oldButtons &= ~InputFlag.Crouch
 
-        if self.player.isDead():
+        if self.isDead:
             return
 
         # Slow down ducked players.
@@ -429,19 +441,16 @@ class GameMovement:
         return Vec3(VEC_DUCK_HULL_MAX) if ducked else Vec3(VEC_HULL_MAX)
 
     def tracePlayerHull(self, start, end):
-        mask = self.player.getPlayerCollideMask()
-        filter = TFFilters.TFQueryFilter(self.player, [TFFilters.ignoreTeammateBuildings_nonBuilder])
         mins = self.getPlayerHullMins(self.player.ducked)
         maxs = self.getPlayerHullMaxs(self.player.ducked)
-        tr = TFFilters.traceBox(start, end, mins, maxs, mask, filter)
+        tr = TFFilters.traceBox(start, end, mins, maxs, self.playerCollideMask, self.movementFilter)
         return tr
 
     def testPlayerPosition(self, pos):
-        intoMask = self.player.getPlayerCollideMask()
         tr = TFFilters.traceBox(pos, pos, self.getPlayerHullMins(self.player.ducked), self.getPlayerHullMaxs(self.player.ducked),
-                                intoMask, TFFilters.TFQueryFilter(self.player, [TFFilters.ignoreTeammateBuildings_nonBuilder]))
+                                self.playerCollideMask, self.movementFilter)
         if tr['hit'] and tr['ent']:
-            if tr['actor'].getFromCollideMask() & intoMask:
+            if tr['actor'].getFromCollideMask() & self.playerCollideMask:
                 return tr
 
         return None
@@ -500,11 +509,10 @@ class GameMovement:
 
         self.reduceTimers()
 
-        q = Quat()
-        q.setHpr(self.mv.viewAngles)
-        self.forward = q.getForward()
-        self.right = q.getRight()
-        self.up = q.getUp()
+        self.viewAngleQuat.setHpr(self.mv.viewAngles)
+        self.forward = self.viewAngleQuat.getForward()
+        self.right = self.viewAngleQuat.getRight()
+        self.up = self.viewAngleQuat.getUp()
 
         if self.mv.velocity.z > 250.0:
             self.mv.onGround = False
@@ -528,25 +536,16 @@ class GameMovement:
         # TODO: TF water interaction
 
     def checkVelocity(self):
-        for i in range(3):
-            #if math.isnan(self.mv.velocity[i]):
-            #    self.mv.velocity[i] = 0
-
-            #if math.isnan(self.mv.origin[i]):
-            #    self.mv.origin[i] = 0
-
-            if self.mv.velocity[i] > sv_maxvelocity.value:
-                self.mv.velocity[i] = sv_maxvelocity.value
-            elif self.mv.velocity[i] < -sv_maxvelocity.value:
-                self.mv.velocity[i] = -sv_maxvelocity.value
+        self.mv.velocity = self.mv.velocity.fmin(sv_maxvelocity)
+        self.mv.velocity = self.mv.velocity.fmax(-sv_maxvelocity)
 
     def startGravity(self):
         if self.player.gravity:
             entGravity = self.player.gravity
         else:
             entGravity = 1.0
-        self.mv.velocity[2] -= (entGravity * sv_gravity.value * 0.5 * base.clockMgr.getDeltaTime())
-        self.mv.velocity[2] += self.player.baseVelocity[2] * base.clockMgr.getDeltaTime()
+        self.mv.velocity[2] -= (entGravity * sv_gravity * 0.5 * self.dt)
+        self.mv.velocity[2] += self.player.baseVelocity[2] * self.dt
 
         temp = Vec3(self.player.baseVelocity)
         temp[2] = 0
@@ -572,7 +571,7 @@ class GameMovement:
             return
 
         # Determine amount of acceleration
-        accelspeed = accel * base.clockMgr.getDeltaTime() * wishspeed * self.player.surfaceFriction
+        accelspeed = accel * self.dt * wishspeed * self.player.surfaceFriction
 
         # Cap at addspeed
         if accelspeed > addspeed:
@@ -606,21 +605,20 @@ class GameMovement:
 
         # Accelerate in the x/y plane.
         self.mv.velocity.z = 0.0
-        self.accelerate(wishDirection, wishSpeed, sv_accelerate.value)
+        self.accelerate(wishDirection, wishSpeed, sv_accelerate)
 
         # Clamp the players speed in x/y.
-        newSpeed = self.mv.velocity.length()
-        if newSpeed > self.mv.maxSpeed:
-            scale = self.mv.maxSpeed / newSpeed
+        speed = self.mv.velocity.length()
+        if speed > self.mv.maxSpeed:
+            scale = self.mv.maxSpeed / speed
             self.mv.velocity.x *= scale
             self.mv.velocity.y *= scale
+            speed = self.mv.velocity.length()
 
         # Now reduce their backwards speed to some percent of max,
         # if they are travelling backwards unless they are under some minimum,
         # to not penalize deployed snipers or heavies.
-        tf_clamp_back_speed = 0.9
-        tf_clamp_back_speed_min = 100
-        if (tf_clamp_back_speed < 1.0 and self.mv.velocity.length() > tf_clamp_back_speed_min):
+        if (speed > tf_clamp_back_speed_min):
             dot = forward.dot(self.mv.velocity)
 
             # Are we moving backwards at all?
@@ -641,27 +639,26 @@ class GameMovement:
         # Add in any base velocity to the current velocity
         self.mv.velocity += self.player.baseVelocity
 
-        spd = self.mv.velocity.length()
+        speed = self.mv.velocity.length()
         #if spd < 1.0:
         #    self.mv.velocity.set(0, 0, 0)
         #    self.mv.velocity -= self.player.baseVelocity
         #    return
 
-        vel = self.mv.velocity * base.clockMgr.getDeltaTime()
+        vel = self.mv.velocity * self.dt
         vel[2] = -2 # To detect if we're on the ground.
 
         self.mv.oldOrigin = self.mv.origin
-        filter = self.getMovementFilter()
         self.updateControllerSize()
         self.player.controller.foot_position = self.mv.origin
-        flags = self.player.controller.move(base.clockMgr.getDeltaTime(), vel, 0.0,
-            self.player.getPlayerCollideMask(), filter.filter)
+        flags = self.player.controller.move(self.dt, vel, 0.0,
+            self.playerCollideMask, self.movementFilter.filter)
         self.mv.origin = self.player.controller.foot_position
 
         self.mv.outWishVel += wishDirection * wishSpeed
 
         # This is the new, clipped velocity.
-        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / base.clockMgr.getDeltaTime()
+        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / self.dt
 
         # Pull the base velocity back out
         self.mv.velocity -= self.player.baseVelocity
@@ -669,7 +666,7 @@ class GameMovement:
     def airAccelerate(self, wishdir, wishspeed, accel):
         wishspd = wishspeed
 
-        if self.player.isDead():
+        if self.isDead:
             # ???
             return
 
@@ -689,15 +686,17 @@ class GameMovement:
             return
 
         # Determine acceleration speed after acceleration
-        accelspeed = accel * wishspeed * base.clockMgr.getDeltaTime() * self.player.surfaceFriction
+        accelspeed = accel * wishspeed * self.dt * self.player.surfaceFriction
 
         # Cap it
         if (accelspeed > addspeed):
             accelspeed = addspeed
 
+        velocityIncrease = wishdir * accelspeed
+
         # Adjust move vel
-        self.mv.velocity += wishdir * accelspeed
-        self.mv.outWishVel += wishdir * accelspeed
+        self.mv.velocity += velocityIncrease
+        self.mv.outWishVel += velocityIncrease
 
     def airMove(self):
         forward = Vec3(self.forward)
@@ -725,23 +724,22 @@ class GameMovement:
             wishvel *= self.mv.maxSpeed / wishspeed
             wishspeed = self.mv.maxSpeed
 
-        self.airAccelerate(wishdir, wishspeed, sv_airaccelerate.value)
+        self.airAccelerate(wishdir, wishspeed, sv_airaccelerate)
 
         # Add in any base velocity to the current velo.
         self.mv.velocity += self.player.baseVelocity
 
         self.mv.oldOrigin = self.mv.origin
-        filter = self.getMovementFilter()
         self.updateControllerSize()
         self.player.controller.foot_position = self.mv.origin
-        flags = self.player.controller.move(base.clockMgr.getDeltaTime(), self.mv.velocity * base.clockMgr.getDeltaTime(), 0.1,
-            self.player.getPlayerCollideMask(), filter.filter)
+        flags = self.player.controller.move(self.dt, self.mv.velocity * self.dt, 0.1,
+            self.playerCollideMask, self.movementFilter.filter)
         self.mv.origin = self.player.controller.foot_position
 
         self.mv.outWishVel += wishdir * wishspeed
 
         # This is the new, clipped velocity.
-        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / base.clockMgr.getDeltaTime()
+        self.mv.velocity = (self.mv.origin - self.mv.oldOrigin) / self.dt
 
         # Pull the base velocity back out
         self.mv.velocity -= self.player.baseVelocity
@@ -758,11 +756,11 @@ class GameMovement:
 
         # Apply ground friction
         if self.mv.onGround:
-            friction = sv_friction.value * self.player.surfaceFriction
-            control = sv_stopspeed.value if (speed < sv_stopspeed.value) else speed
+            friction = sv_friction * self.player.surfaceFriction
+            control = sv_stopspeed if (speed < sv_stopspeed) else speed
 
             # Add the amount to the drop amount
-            drop += control * friction * base.clockMgr.getDeltaTime()
+            drop += control * friction * self.dt
 
             #print("Drop is", drop)
 
@@ -783,7 +781,7 @@ class GameMovement:
         else:
             entGravity = 1.0
 
-        self.mv.velocity[2] -= (entGravity * sv_gravity.value * base.clockMgr.getDeltaTime() * 0.5)
+        self.mv.velocity[2] -= (entGravity * sv_gravity * self.dt * 0.5)
 
         self.checkVelocity()
 
@@ -795,7 +793,7 @@ class GameMovement:
         Performs a jump.
         """
 
-        if self.player.isDead():
+        if self.isDead:
             return False
 
         # TODO: See if we are water jumping.
@@ -849,8 +847,8 @@ class GameMovement:
 
         groundFactor = 1.0
 
-        #mul = math.sqrt(2 * sv_gravity.value * GAMEMOVEMENT_JUMP_HEIGHT)
-        assert (sv_gravity.value == 800)
+        #mul = math.sqrt(2 * sv_gravity * GAMEMOVEMENT_JUMP_HEIGHT)
+        assert (sv_gravity == 800)
         mul = 268.3281572999747 * groundFactor
 
         # Accelerate upward
@@ -877,7 +875,7 @@ class GameMovement:
         Does a Scout air dash.
         """
 
-        assert(sv_gravity.value == 800)
+        assert(sv_gravity == 800)
         dashZ = 268.3281572999747
 
         # Get the wish direction.
@@ -919,7 +917,7 @@ class GameMovement:
         self.mv.velocity *= fraction
 
     def checkFalling(self):
-        if self.mv.onGround and not self.player.isDead() and self.player.fallVelocity >= PLAYER_FALL_PUNCH_THRESHOLD:
+        if self.mv.onGround and not self.isDead and self.player.fallVelocity >= PLAYER_FALL_PUNCH_THRESHOLD:
             #alive = True
             vol = 0.5
 
@@ -996,8 +994,6 @@ class GameMovement:
         # Make sure velocity is valid.
         self.checkVelocity()
 
-        origVel = Vec3(self.mv.velocity)
-
         # Do the move.  This will clip our velocity and tell us if we are on
         # the ground.
         if self.mv.onGround:
@@ -1028,8 +1024,8 @@ class GameMovement:
 
     def updateControllerSize(self):
         if self.player.ducked:
-            self.player.controller.resize((VEC_DUCK_HULL_MAX.z - VEC_DUCK_HULL_MIN.z) * 0.5)
+            self.player.controller.resize(DUCK_HULL_HALF_HEIGHT)
         else:
-            self.player.controller.resize((VEC_HULL_MAX.z - VEC_HULL_MIN.z) * 0.5)
+            self.player.controller.resize(STAND_HULL_HALF_HEIGHT)
 
 g_game_movement = GameMovement()

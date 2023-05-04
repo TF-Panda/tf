@@ -1563,7 +1563,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             # base.sv.tickCount after all commands have been executed.
             self.tickBase = base.tickCount - simulationTicks + base.currentTicksThisFrame
         else:
-            correctionSeconds = max(0.0, min(1.0, sv_clockcorrection_msecs.getValue() / 100.0))
+            correctionSeconds = max(0.0, min(1.0, sv_clockcorrection_msecs.value / 100.0))
             correctionTicks = base.timeToTicks(correctionSeconds)
 
             # Set the target tick correctionSeconds (rounded to ticks) ahead in

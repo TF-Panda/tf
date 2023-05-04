@@ -335,6 +335,8 @@ VEC_DUCK_VIEW = Vec3(0, 0, 45)
 VEC_OBS_HULL_MIN = Vec3(-10, -10, -10)
 VEC_OBS_HULL_MAX = Vec3(10, 10, 10)
 VEC_DEAD_VIEWHEIGHT = Vec3(0, 0, 14)
+DUCK_HULL_HALF_HEIGHT = (VEC_DUCK_HULL_MAX.z - VEC_DUCK_HULL_MIN.z) * 0.5
+STAND_HULL_HALF_HEIGHT = (VEC_HULL_MAX.z - VEC_HULL_MIN.z) * 0.5
 
 # List of models that we should preload at game launch.
 # Anything that could be used during the course of the game
