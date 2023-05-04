@@ -98,11 +98,11 @@ class FlameProjectile:
                 self.flame = None
 
     def update(self):
-        #origDt = base.clockMgr.getDeltaTime()
-        #base.clockMgr.getDeltaTime() = base.intervalPerTick
+        origDt = base.clock.dt
+        base.clock.dt = base.intervalPerTick
 
         if base.clockMgr.getTime() >= self.killTime:
-            #base.clockMgr.getDeltaTime() = origDt
+            base.clock.dt = origDt
             self.kill()
             return
 
@@ -172,7 +172,7 @@ class FlameProjectile:
             self.flame.setScale((FLAME_START_SCALE / self.explScale) * (1.0 - frac) + (FLAME_END_SCALE / self.explScale) * frac)
             self.flameLight.setPos(self.pos)
 
-        #base.clockMgr.getDeltaTime() = origDt
+        base.clock.dt = origDt
 
 class DistributedFlameThrower(TFWeaponGun):
 
