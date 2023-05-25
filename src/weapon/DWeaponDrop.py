@@ -5,9 +5,6 @@ else:
     from tf.actor.DistributedChar import DistributedChar
     BaseClass = DistributedChar
 
-from panda3d.core import CallbackObject, NodePath
-from panda3d.pphysics import PhysTriggerCallbackData
-
 from tf.tfbase.TFGlobals import SolidShape, SolidFlag
 from tf.tfbase import CollisionGroups
 

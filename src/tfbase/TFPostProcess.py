@@ -1,6 +1,6 @@
-from panda3d.core import Shader, PTA_LVecBase3f, Vec3, loadPrcFileData, TextNode
-from panda3d.core import PostProcess, PostProcessPass, PostProcessEffect, HDREffect, \
-    BloomEffect, FXAA_Effect, SSAO_Effect, MotionBlur, PTA_LVecBase2f, AUXTEXTUREBITS_NORMAL, AUXTEXTURE_NORMAL, ToneMappingEffect, \
+from panda3d.core import PTA_LVecBase3f, Vec3, loadPrcFileData, TextNode
+from panda3d.core import PostProcess, HDREffect, \
+    BloomEffect, FXAA_Effect, MotionBlur, ToneMappingEffect, \
     PostProcessFinalOutput, FreezeFrameEffect
 
 from direct.gui.DirectGui import *

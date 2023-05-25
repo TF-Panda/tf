@@ -17,20 +17,16 @@ from tf.weapon.TakeDamageInfo import addMultiDamage, TakeDamageInfo
 
 from tf.tfbase import TFGlobals, Sounds, TFFilters, CollisionGroups
 from tf.tfbase.TFGlobals import TakeDamage, DamageType, TFTeam, SpeechConcept
-from tf.object.BaseObject import BaseObject
-from tf.object.ObjectType import ObjectType
 
 from tf.actor.HitBox import HitBoxGroup
 
 from panda3d.core import *
-from panda3d.pphysics import PhysRayCastResult
 
 from . import ResponseClassRegistry
 from . import ResponseSystem
 from . import ResponseCriteria
 from . import ResponseSystemBase
 
-import copy
 import random
 
 tf_damage_range = 0.5

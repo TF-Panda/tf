@@ -7,8 +7,6 @@ from tf.tfbase.TFGlobals import SolidShape
 from panda3d.core import *
 from panda3d.direct import *
 
-import random
-
 class DistributedChar(Actor, DistributedEntity):
 
     AllChars = []

@@ -3,7 +3,6 @@ from panda3d.core import *
 
 from tf.tfbase import Sounds
 from direct.interval.IntervalGlobal import Sequence, LerpFunc, Func
-import random
 
 def lerp(v0, v1, amt):
     return v0 * amt + v1 * (1 - amt)

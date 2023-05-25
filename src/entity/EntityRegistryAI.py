@@ -1,8 +1,5 @@
 """EntityRegistry module: contains the EntityRegistry class."""
 
-from direct.showbase.DirectObject import DirectObject
-
-
 """
 This module contains a mapping of level entity classnames to Python classes,
 similar to how the DC file maps dclasses to Python classes.  When a level

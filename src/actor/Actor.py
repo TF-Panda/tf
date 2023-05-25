@@ -12,7 +12,6 @@ from tf.tfbase import CollisionGroups
 from .HitBox import HitBox
 from .Ragdoll import Ragdoll
 
-from .Activity import Activity
 from .AnimEvents import AnimEventType, AnimEvent
 
 class Actor(Model):

@@ -3,7 +3,7 @@
 from panda3d.core import LineStream, Notify, StreamWriter, TextNode
 
 from direct.directnotify.Notifier import Notifier
-from direct.gui.DirectGui import DirectLabel, DGG
+from direct.gui.DirectGui import DirectLabel
 
 class NotifyView:
     """

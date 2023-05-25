@@ -12,8 +12,7 @@ else:
     from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
-from panda3d.core import NodePath, Vec3, Point3
-from panda3d.pphysics import PhysSweepResult
+from panda3d.core import Vec3
 
 from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo

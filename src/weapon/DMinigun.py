@@ -12,7 +12,6 @@ from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfbase import TFGlobals, TFLocalizer
 from tf.actor.Activity import Activity
-from tf.tfbase import Sounds
 
 import math
 

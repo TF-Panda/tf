@@ -1,9 +1,7 @@
 """ DistributedTFPlayerOV: Local TF player """
 
-from panda3d.core import WindowProperties, MouseData, Point2, Vec2, Datagram, OmniBoundingVolume, NodePath, Point3, Vec3, lookAt
+from panda3d.core import WindowProperties, Vec2, Datagram, Point3, Vec3, lookAt
 from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker, Quat
-
-from panda3d.pphysics import PhysSweepResult, PhysRayCastResult, PhysSphere
 
 from .DistributedTFPlayer import DistributedTFPlayer
 from .PlayerCommand import PlayerCommand
@@ -24,14 +22,12 @@ from .TFPlayerState import TFPlayerState
 
 from direct.distributed2.ClientConfig import *
 from direct.showbase.InputStateGlobal import inputState
-from direct.directbase import DirectRender
 from direct.gui.DirectGui import *
 
 from tf.tfgui.TFClassMenu import TFClassMenu
 from tf.tfgui.TFTeamMenu import TFTeamMenu
 from tf.tfgui.VoiceCommandMenu import VoiceCommandMenu
 
-import copy
 import random
 
 spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)

@@ -1,7 +1,6 @@
 
 from panda3d.core import *
 
-from tf.actor.Activity import Activity
 from tf.tfbase import TFLocalizer
 
 class VoiceCommand:

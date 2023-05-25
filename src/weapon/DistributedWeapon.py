@@ -3,8 +3,6 @@ from tf.actor.DistributedChar import DistributedChar
 
 from .DistributedWeaponShared import DistributedWeaponShared
 
-from tf.tfbase import Sounds
-
 class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
     def __init__(self):

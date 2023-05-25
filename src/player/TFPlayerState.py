@@ -1,7 +1,5 @@
 """TFPlayerState module: contains the TFPlayerState class."""
 
-
-
 class TFPlayerState:
     """
     Top-level TF player state.

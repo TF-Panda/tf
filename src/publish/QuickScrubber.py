@@ -3,10 +3,7 @@ import sys
 import getopt
 import os
 import shutil
-import string
 import py_compile
-import time
-import re
 import platform
 
 from direct.dist import FreezeTool

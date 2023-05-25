@@ -4,7 +4,7 @@ from direct.fsm.StateData import StateData
 import platform
 #import psutil
 
-from panda3d.core import TextNode, TextProperties, TextPropertiesManager, ConfigVariableInt, ConfigVariableString
+from panda3d.core import TextNode, ConfigVariableInt, ConfigVariableString
 
 from tf.tfbase import TFLocalizer
 

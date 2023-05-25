@@ -10,8 +10,7 @@ from panda3d.core import *
 from panda3d.pphysics import *
 from panda3d.tf import PredictedObject, PredictionField, PredictionCopy
 
-from tf.actor.Actor import Actor
-from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, SolidShape, SolidFlag, angleMod
+from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, SolidShape, SolidFlag
 from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
 from tf.tfbase import TFFilters, Sounds, CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
@@ -21,10 +20,6 @@ from .EntityBase import EntityBase
 
 if IS_CLIENT:
     from tf.player.Prediction import *
-else:
-    from .EntityConnectionManager import EntityConnectionManager, OutputConnection
-
-import random
 
 class DistributedEntity(BaseClass, NodePath, EntityBase):
 

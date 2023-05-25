@@ -9,7 +9,7 @@ from .TFWeaponGun import TFWeaponGun
 from tf.tfbase import TFLocalizer
 
 from .WeaponMode import TFWeaponMode, TFWeaponType
-from tf.tfbase.TFGlobals import DamageType, TFTeam, SpeechConcept
+from tf.tfbase.TFGlobals import SpeechConcept
 from tf.tfbase import TFFilters, TFEffects, CollisionGroups
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent

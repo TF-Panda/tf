@@ -1,5 +1,3 @@
-
-from tf.tfbase.TFGlobals import DamageType
 from .TakeDamageInfo import *
 
 from panda3d.core import *

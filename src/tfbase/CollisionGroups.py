@@ -1,7 +1,5 @@
 """CollisionGroups module: contains the CollisionGroups class."""
 
-from panda3d.core import BitMask32
-
 World = 1 << 0
 Sky = 1 << 1
 PlayerClip = 1 << 2

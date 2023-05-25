@@ -6,13 +6,11 @@ from .DistributedTFPlayerShared import DistributedTFPlayerShared
 from .TFClass import *
 from .TFPlayerAnimState import TFPlayerAnimState
 
-from tf.tfbase import Sounds, TFGlobals, TFEffects
+from tf.tfbase import Sounds, TFEffects
 from tf.actor.Eyes import Eyes
 from tf.actor.Expressions import Expressions
 from .PlayerGibs import PlayerGibs
 from .TFPlayerState import TFPlayerState
-
-#from test_talker import Talker
 
 from panda3d.core import *
 from panda3d.direct import *
@@ -20,7 +18,6 @@ from panda3d.direct import *
 from direct.interval.IntervalGlobal import *
 from direct.directbase import DirectRender
 
-import random
 import math
 
 sentences = SentenceCollection()

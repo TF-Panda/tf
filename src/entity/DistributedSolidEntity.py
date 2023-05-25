@@ -5,7 +5,6 @@ from panda3d.pphysics import *
 
 from .DistributedEntity import DistributedEntity
 from tf.tfbase.SurfaceProperties import SurfaceProperties
-from tf.tfbase import TFGlobals
 
 import random
 

@@ -8,8 +8,8 @@ else:
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import TakeDamage, DamageType
-from tf.weapon.TakeDamageInfo import TakeDamageInfo, applyMultiDamage
+from tf.tfbase.TFGlobals import DamageType
+from tf.weapon.TakeDamageInfo import TakeDamageInfo
 from tf.tfbase import TFFilters, Sounds, TFEffects, CollisionGroups, TFGlobals
 
 TF_ROCKET_RADIUS = (110.0 * 1.1)

@@ -12,7 +12,7 @@ GameZone = 2
 
 ###############################################################################
 
-from panda3d.core import BitMask32, Vec3, DynamicTextFont, SamplerState, NodePath, LineSegs
+from panda3d.core import Vec3, DynamicTextFont, NodePath, LineSegs
 
 class WinReason:
     Stalemate = 0

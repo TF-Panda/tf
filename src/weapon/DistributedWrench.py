@@ -9,9 +9,6 @@ from tf.tfbase import TFFilters, CollisionGroups, TFGlobals
 
 from .WeaponMode import TFWeaponType, TFWeaponMode
 
-from tf.object.BaseObject import BaseObject
-from tf.player.DistributedTFPlayerShared import DistributedTFPlayerShared
-
 SWING_MINS = Vec3(-18)
 SWING_MAXS = Vec3(18)
 

@@ -3,7 +3,6 @@
 from panda3d.core import Point3, TextNode
 
 from direct.gui.DirectGui import *
-from direct.showbase.DirectObject import DirectObject
 
 from tf.tfbase import TFGlobals
 from .GuiPanel import GuiPanel

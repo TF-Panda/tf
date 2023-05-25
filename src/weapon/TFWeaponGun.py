@@ -16,8 +16,6 @@ from .WeaponEffects import makeMuzzleFlash
 
 from tf.tfbase import TFFilters, TFGlobals, CollisionGroups
 
-from tf.actor.Actor import Actor
-
 if not IS_CLIENT:
     from .RocketProjectile import RocketProjectileAI
     from .DPipeBombProjectile import DPipeBombProjectileAI

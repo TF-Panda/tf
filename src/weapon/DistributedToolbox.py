@@ -4,13 +4,11 @@
 
 from .TFWeapon import TFWeapon
 
-from .WeaponMode import TFWeaponType, TFWeaponMode
+from .WeaponMode import TFWeaponType
 
 from tf.tfbase import TFLocalizer, TFGlobals, TFFilters, CollisionGroups
 from direct.gui.DirectGui import *
-from tf.actor.Activity import Activity
 from tf.actor.Actor import Actor
-from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.player.InputButtons import InputFlag
 
 from direct.directbase import DirectRender

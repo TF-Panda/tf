@@ -5,7 +5,7 @@ from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
-from tf.tfbase.TFGlobals import getTF2BuildFont, TFTeam, SpeechConcept
+from tf.tfbase.TFGlobals import getTF2BuildFont, SpeechConcept
 from tf.tfbase import TFLocalizer, CollisionGroups
 
 from .BaseObject import BaseObject

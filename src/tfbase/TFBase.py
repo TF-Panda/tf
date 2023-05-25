@@ -3,7 +3,7 @@ from panda3d.pphysics import *
 
 from direct.showbase.ShowBase import ShowBase
 from direct.directnotify.DirectNotifyGlobal import directNotify
-from direct.gui.DirectGui import DGG, OnscreenText, OnscreenImage
+from direct.gui.DirectGui import DGG
 from direct.directbase import DirectRender
 
 from direct.fsm.FSM import FSM

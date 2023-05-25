@@ -9,7 +9,6 @@ from panda3d.core import Vec3, Vec2
 
 from .InputButtons import InputFlag
 
-import copy
 import random
 
 class PlayerCommand:

@@ -14,7 +14,7 @@ from .ObserverMode import ObserverMode
 from tf.tfbase import TFGlobals, TFFilters, Sounds, CollisionGroups
 
 from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
-from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce, addMultiDamage
+from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce
 from tf.movement.MoveType import MoveType
 from tf.movement.GameMovement import g_game_movement
 from tf.movement.MoveData import MoveData
@@ -22,7 +22,6 @@ from tf.movement.MoveData import MoveData
 from .TFPlayerState import TFPlayerState
 
 import math
-import random
 
 tf_max_health_boost = 1.5
 

@@ -2,17 +2,14 @@
 
 from .TFWeapon import TFWeapon
 
-from .WeaponMode import TFWeaponType, TFWeaponMode
+from .WeaponMode import TFWeaponType
 
 from tf.tfbase import TFLocalizer, TFGlobals
 from direct.gui.DirectGui import *
-from tf.actor.Activity import Activity
-from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfgui.GuiPanel import GuiPanel
 from tf.tfgui import TFGuiProperties
 
 from direct.fsm.FSM import FSM
-from direct.showbase.DirectObject import DirectObject
 
 from panda3d.core import *
 

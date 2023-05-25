@@ -3,10 +3,10 @@ Builds the sound list from the script file.
 """
 
 import math
-from enum import IntEnum, auto
+from enum import IntEnum
 from panda3d.core import (
-    ConfigVariableDouble, ConfigVariableList, Filename, KeyValues, AudioManager,
-    PitchShiftDSP, PStatCollector, SteamAudioProperties, loadPrcFileData, ProxyAudioSound)
+    ConfigVariableDouble, ConfigVariableList, Filename, KeyValues,
+    PStatCollector, SteamAudioProperties, loadPrcFileData, ProxyAudioSound)
 import random
 
 csc_coll = PStatCollector("App:Sounds:CreateSoundClient")

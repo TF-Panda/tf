@@ -10,7 +10,6 @@ from tf.tfbase.SoundEmitter import SoundEmitter
 from tf.tfgui import TFGuiProperties
 
 from direct.interval.IntervalGlobal import Sequence, Wait, Func
-from direct.interval.ActorInterval import ActorInterval
 
 from tf.actor.Actor import Actor
 

@@ -1,11 +1,10 @@
 
-from panda3d.core import Vec3, Quat, NodePath
-from panda3d.pphysics import PhysSweepResult, PhysRayCastResult
+from panda3d.core import Vec3, Quat
 
 from .TFWeapon import TFWeapon
 
 from .WeaponMode import TFWeaponMode
-from .TakeDamageInfo import TakeDamageInfo, applyMultiDamage, clearMultiDamage, calculateMeleeDamageForce
+from .TakeDamageInfo import TakeDamageInfo, applyMultiDamage, calculateMeleeDamageForce
 from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfbase.TFGlobals import DamageType

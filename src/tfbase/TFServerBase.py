@@ -3,7 +3,7 @@ from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from tf.distributed.TFServerRepository import TFServerRepository
 
-from tf.tfbase import Sounds, TFGlobals, SurfaceProperties, TFLocalizer
+from tf.tfbase import Sounds, TFGlobals, SurfaceProperties
 from tf.entity.EntityManager import EntityManager
 from tf.entity.EntityConnectionManager import EntityConnectionManager
 

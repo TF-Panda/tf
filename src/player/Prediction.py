@@ -8,8 +8,6 @@ from direct.showbase.DirectObject import DirectObject
 
 from tf.actor.Actor import Actor
 
-import copy
-
 from tf.movement.GameMovement import g_game_movement
 
 runSimulationPCollector = PStatCollector("Prediction:RunSimulation")

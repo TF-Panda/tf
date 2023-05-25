@@ -7,7 +7,7 @@ from panda3d.core import *
 
 from tf.actor.AnimEvents import AnimEvent
 
-import random, math
+import math
 
 class ViewInfo:
     pass

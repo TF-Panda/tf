@@ -1,13 +1,13 @@
 """DistributedFlameThrower module: contains the DistributedFlameThrower class."""
 
 from .TFWeaponGun import TFWeaponGun
-from .WeaponMode import TFWeaponMode, TFWeaponType
+from .WeaponMode import TFWeaponMode
 
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.actor.Actor import Actor
 from tf.actor.Activity import Activity
-from tf.tfbase import TFLocalizer, Sounds, TFFilters, TFGlobals, CollisionGroups
+from tf.tfbase import TFLocalizer, TFFilters, TFGlobals, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 from direct.directbase import DirectRender
 

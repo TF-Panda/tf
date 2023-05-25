@@ -1,10 +1,8 @@
 """SoldierResponses module: contains the SoldierResponses class."""
 
 from tf.tfbase.TFGlobals import SpeechConcept
-from tf.player.TFClass import Class
-import random
 
-from .ResponseSystem import ResponseSystem, Rule, Response, ResponseLine
+from .ResponseSystem import Rule, Response, ResponseLine
 from .ResponseSystemBase import *
 
 # All classes share a lot of response rules but

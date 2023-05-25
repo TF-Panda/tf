@@ -1,10 +1,8 @@
 """EngineerResponses module: contains the EngineerResponses class."""
 
 from tf.tfbase.TFGlobals import SpeechConcept
-from tf.player.TFClass import Class
-import random
 
-from .ResponseSystem import ResponseSystem, Rule, Response, ResponseLine
+from .ResponseSystem import Rule, Response, ResponseLine
 from .ResponseCriteria import *
 from .ResponseSystemBase import *
 

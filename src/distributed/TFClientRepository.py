@@ -1,6 +1,5 @@
 from direct.distributed2.ClientRepository import ClientRepository
 from direct.fsm.FSM import FSM
-from direct.gui.DirectGui import DirectDialog, RetryCancelDialog, OkCancelDialog, OkDialog
 from direct.gui import DirectGuiGlobals as DGG
 
 from tf.tfgui.TFDialog import TFDialog

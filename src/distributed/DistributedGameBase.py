@@ -395,7 +395,6 @@ class DistributedGameBase:
             mdl = self.lvlData.getModel(i)
             gn = mdl.getGeomNode()
             for i in reversed(range(gn.getNumGeoms())):
-                geom = gn.getGeom(i)
                 state = gn.getGeomState(i)
                 if state.hasAttrib(MaterialAttrib):
                     mattr = state.getAttrib(MaterialAttrib)

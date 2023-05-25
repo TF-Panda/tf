@@ -2,7 +2,7 @@
 
 from .DistributedSolidEntity import DistributedSolidEntity
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag, TFTeam, WorldParent
+from tf.tfbase.TFGlobals import SolidShape, SolidFlag, WorldParent
 from tf.tfbase import CollisionGroups
 
 class DistributedFuncRegenerate(DistributedSolidEntity):
