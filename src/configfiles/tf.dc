@@ -28,7 +28,7 @@ from tf.entity.DistributedFuncBrush import DistributedFuncBrush/AI
 from tf.entity.DistributedPointSpotlight import DistributedPointSpotlight/AI
 from tf.entity.DistributedFuncRotating import DistributedFuncRotating/AI
 from tf.entity.Ropes import RopeKeyFrame/AI
-from tf.entity.TriggerCaptureArea import TriggerCaptureArea/AI
+from tf.entity.TriggerCaptureArea/AI import TriggerCaptureArea/AI
 from tf.entity.TeamControlPoint import TeamControlPoint/AI
 from tf.entity.TeamRoundTimer/AI import TeamRoundTimer/AI
 from tf.entity.TeamControlPointMaster/AI import TeamControlPointMaster/AI
@@ -36,14 +36,15 @@ from tf.distributed.DistributedGame/AI import DistributedGame/AI
 from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
 from tf.actor.DistributedChar/AI import DistributedChar/AI
 from tf.distributed.DTestChar/AI import DTestChar/AI
-from tf.distributed.World import World/AI
-from tf.distributed.DPickupItemBase import DPickupItemBase/AI
-from tf.distributed.DAmmoPack/AI import DAmmoPackSmall/AI
-from tf.distributed.DAmmoPack/AI import DAmmoPackMedium/AI
-from tf.distributed.DAmmoPack/AI import DAmmoPackFull/AI
-from tf.distributed.DHealthKit/AI import DHealthKitSmall/AI
-from tf.distributed.DHealthKit/AI import DHealthKitMedium/AI
-from tf.distributed.DHealthKit/AI import DHealthKitFull/AI
+from tf.entity.World import World/AI
+from tf.entity.DPickupItemBase import DPickupItemBase/AI
+from tf.entity.DAmmoPack/AI import DAmmoPackSmall/AI
+from tf.entity.DAmmoPack/AI import DAmmoPackMedium/AI
+from tf.entity.DAmmoPack/AI import DAmmoPackFull/AI
+from tf.entity.DHealthKit/AI import DHealthKitSmall/AI
+from tf.entity.DHealthKit/AI import DHealthKitMedium/AI
+from tf.entity.DHealthKit/AI import DHealthKitFull/AI
+from tf.entity.DistributedTeamFlag import DistributedTeamFlag/AI
 from tf.player.DViewModel/AI import DViewModel/AI
 from tf.weapon.DistributedWeapon/AI import DistributedWeapon/AI
 from tf.weapon.TFWeapon import TFWeapon/AI
@@ -89,8 +90,6 @@ from tf.weapon.DistributedSniperRifle import DistributedSniperRifle/AI
 from tf.weapon.DistributedStickyBombLauncher import DistributedStickyBombLauncher/AI
 from tf.weapon.DistributedStickyBomb import DistributedStickyBomb/AI
 from tf.weapon.DistributedFlameThrower import DistributedFlameThrower/AI
-
-from tf.distributed.DistributedTeamFlag import DistributedTeamFlag/AI
 
 // Coordinate range (per axis): -21474836.47 to 21474836.47
 // Two decimals of precision.

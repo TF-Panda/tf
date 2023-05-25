@@ -18,27 +18,27 @@ from .World import WorldAI
 from .DHealthKitAI import DHealthKitSmallAI, DHealthKitMediumAI, DHealthKitFullAI
 from .DAmmoPackAI import DAmmoPackSmallAI, DAmmoPackMediumAI, DAmmoPackFullAI
 from .DistributedTeamFlag import DistributedTeamFlagAI
-from tf.entity.DistributedTrigger import DistributedTriggerAI
-from tf.entity.DistributedFuncRegenerate import DistributedFuncRegenerateAI
-from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
-from tf.entity.DistributedFuncDoor import DistributedFuncDoorAI
-from tf.entity.DistributedFuncBrush import DistributedFuncBrushAI
-from tf.entity.DistributedPointSpotlight import DistributedPointSpotlightAI
-from tf.entity.DistributedTriggerHurt import DistributedTriggerHurtAI
-from tf.entity.DistributedFuncRotating import DistributedFuncRotatingAI
-from tf.entity.TFEntityFilters import FilterActivatorTFTeam
-from tf.entity.Ropes import RopeKeyFrameAI
-from tf.entity.TFLogicArena import TFLogicArena
-from tf.entity.TriggerCaptureArea import TriggerCaptureAreaAI
-from tf.entity.TeamControlPoint import TeamControlPointAI
-from tf.entity.LogicRelay import LogicRelay
-from tf.entity.TeamRoundTimerAI import TeamRoundTimerAI
-from tf.entity.InfoPlayerTeamspawn import InfoPlayerTeamspawn
-from tf.entity.GameRoundWin import GameRoundWin
-from tf.entity.TeamControlPointMasterAI import TeamControlPointMasterAI
-from tf.entity.TeamControlPointRoundAI import TeamControlPointRoundAI
-from tf.entity.LogicAutoAI import LogicAutoAI
-from tf.entity.TFGameRulesProxyAI import TFGameRulesProxyAI
+from .DistributedTrigger import DistributedTriggerAI
+from .DistributedFuncRegenerate import DistributedFuncRegenerateAI
+from .DistributedPropDynamic import DistributedPropDynamicAI
+from .DistributedFuncDoor import DistributedFuncDoorAI
+from .DistributedFuncBrush import DistributedFuncBrushAI
+from .DistributedPointSpotlight import DistributedPointSpotlightAI
+from .DistributedTriggerHurt import DistributedTriggerHurtAI
+from .DistributedFuncRotating import DistributedFuncRotatingAI
+from .TFEntityFilters import FilterActivatorTFTeam
+from .Ropes import RopeKeyFrameAI
+from .TFLogicArena import TFLogicArena
+from .TriggerCaptureAreaAI import TriggerCaptureAreaAI
+from .TeamControlPoint import TeamControlPointAI
+from .LogicRelay import LogicRelay
+from .TeamRoundTimerAI import TeamRoundTimerAI
+from .InfoPlayerTeamspawn import InfoPlayerTeamspawn
+from .GameRoundWin import GameRoundWin
+from .TeamControlPointMasterAI import TeamControlPointMasterAI
+from .TeamControlPointRoundAI import TeamControlPointRoundAI
+from .LogicAutoAI import LogicAutoAI
+from .TFGameRulesProxyAI import TFGameRulesProxyAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,

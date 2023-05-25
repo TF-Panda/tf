@@ -3,7 +3,6 @@ from direct.distributed2.ServerRepository import ServerRepository
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from tf.distributed.DistributedGameAI import DistributedGameAI
-from tf.distributed.World import WorldAI
 from tf.tfbase import TFGlobals
 
 from tf.player.LagCompensation import LagCompensation

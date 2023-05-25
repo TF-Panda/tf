@@ -31,7 +31,7 @@ class GameModeCTF:
         return False
 
     def returnFlags(self):
-        from tf.distributed.DistributedTeamFlag import DistributedTeamFlagAI
+        from tf.entity.DistributedTeamFlag import DistributedTeamFlagAI
         for do in base.air.doId2do.values():
             if isinstance(do, DistributedTeamFlagAI):
                 do.returnFlag(False, False)

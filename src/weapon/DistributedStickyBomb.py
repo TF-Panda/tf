@@ -93,7 +93,7 @@ class DistributedStickyBomb(BaseClass):
             base.air.deleteObject(self)
 
         def canStickTo(self, entity):
-            from tf.distributed.World import WorldAI
+            from tf.entity.World import WorldAI
             from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
             # Stickies can stick to the world and dynamic props only.
             return isinstance(entity, (WorldAI, DistributedPropDynamicAI))
