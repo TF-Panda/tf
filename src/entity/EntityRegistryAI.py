@@ -17,7 +17,7 @@ specified in the level file.
 from .World import WorldAI
 from .DHealthKitAI import DHealthKitSmallAI, DHealthKitMediumAI, DHealthKitFullAI
 from .DAmmoPackAI import DAmmoPackSmallAI, DAmmoPackMediumAI, DAmmoPackFullAI
-from .DistributedTeamFlag import DistributedTeamFlagAI
+from .DistributedTeamFlagAI import DistributedTeamFlagAI
 from .DistributedTrigger import DistributedTriggerAI
 from .DistributedFuncRegenerate import DistributedFuncRegenerateAI
 from .DistributedPropDynamic import DistributedPropDynamicAI

@@ -43,7 +43,7 @@ from tf.entity.DAmmoPack/AI import DAmmoPackFull/AI
 from tf.entity.DHealthKit/AI import DHealthKitSmall/AI
 from tf.entity.DHealthKit/AI import DHealthKitMedium/AI
 from tf.entity.DHealthKit/AI import DHealthKitFull/AI
-from tf.entity.DistributedTeamFlag import DistributedTeamFlag/AI
+from tf.entity.DistributedTeamFlag/AI import DistributedTeamFlag/AI
 from tf.player.DViewModel/AI import DViewModel/AI
 from tf.weapon.DistributedWeapon/AI import DistributedWeapon/AI
 from tf.weapon.TFWeapon import TFWeapon/AI

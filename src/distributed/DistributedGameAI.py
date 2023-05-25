@@ -3,10 +3,9 @@ from direct.distributed2.DistributedObjectAI import DistributedObjectAI
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
-from tf.player.DViewModelAI import DViewModelAI
 
-from tf.tfbase import TFGlobals, Sounds, TFLocalizer, TFFilters, CollisionGroups
-from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
+from tf.tfbase import TFGlobals, TFLocalizer, TFFilters, CollisionGroups
+from tf.weapon.TakeDamageInfo import calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
 from tf.tfbase.TFGlobals import DamageType, TakeDamage, GameZone, TFTeam
 from tf.player.TFClass import *
 from tf.object.BaseObject import BaseObject
@@ -15,7 +14,6 @@ import random
 import copy
 
 from panda3d.core import *
-from panda3d.pphysics import PhysRayCastResult
 
 from .DistributedGameBase import DistributedGameBase
 from .GameMode import *
@@ -148,7 +146,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
     def getSpawnPointForPlayer(self, player):
         #print("current round", self.controlPointMaster.currentRound)
-        spawnPoints = [x for x in base.game.teamSpawns if self.spawnPointFilter(x, player)]
+        spawnPoints = [x for x in self.teamSpawns if self.spawnPointFilter(x, player)]
         return random.choice(spawnPoints)
 
     def canFinishRound(self):
@@ -253,11 +251,11 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         return team
 
     def enemySound(self, snd, team):
-        for plyr in base.game.playersByTeam[not team]:
+        for plyr in self.playersByTeam[not team]:
             base.world.emitSound(snd, client=plyr.owner)
 
     def teamSound(self, snd, team):
-        for plyr in base.game.playersByTeam[team]:
+        for plyr in self.playersByTeam[team]:
             base.world.emitSound(snd, client=plyr.owner)
 
     def newRound(self):
@@ -412,7 +410,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.loadLevelEntities(preserveEntClassNames)
 
     def loadLevelEntities(self, ignoreClassNames=[]):
-        from .EntityRegistry import EntityRegistry
+        from tf.entity.EntityRegistryAI import EntityRegistry
 
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
