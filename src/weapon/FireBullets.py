@@ -7,9 +7,9 @@ from .WeaponEffects import *
 import random
 
 if IS_CLIENT:
-    tf_client_lag_comp_debug = ConfigVariableBool("tf-client-lag-comp-debug", False)
+    tf_client_lag_comp_debug = ConfigVariableBool("tf-client-lag-comp-debug", False).value
 else:
-    tf_server_lag_comp_debug = ConfigVariableBool("tf-server-lag-comp-debug", False)
+    tf_server_lag_comp_debug = ConfigVariableBool("tf-server-lag-comp-debug", False).value
 
 def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.0, critical = False, tracerAttachment = None, tracerStagger=0.0, tracerSpread=0.0):
     """
@@ -31,7 +31,7 @@ def fireBullets(player, origin, angles, weapon, mode, seed, spread, damage = -1.
     # Sync hitboxes *after* lag compensation.
     base.net.syncAllHitBoxes()
 
-    doLagCompDebug = tf_client_lag_comp_debug.value if IS_CLIENT else tf_server_lag_comp_debug.value
+    doLagCompDebug = __debug__ and tf_client_lag_comp_debug if IS_CLIENT else tf_server_lag_comp_debug
     if doLagCompDebug:
         hitBoxPositions = []
         if IS_CLIENT:
