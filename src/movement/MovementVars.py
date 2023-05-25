@@ -13,7 +13,7 @@ sv_stopspeed = ConfigVariableDouble("sv-stopspeed", 100).value
 sv_gravity = ConfigVariableDouble("sv-gravity", 800).value
 # These two are unused, don't know the default values.
 sv_bounce = ConfigVariableDouble("sv-bounce", 1.0).value
-sv_stepsize = ConfigVariableDouble("sv-stepsize", 1.0).values
+sv_stepsize = ConfigVariableDouble("sv-stepsize", 1.0).value
 
 GAMEMOVEMENT_DUCK_TIME = 1000
 GAMEMOVEMENT_JUMP_TIME = 510
