@@ -9,7 +9,6 @@ from tf.tfbase import TFGlobals, Sounds, TFLocalizer, TFFilters, CollisionGroups
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
 from tf.tfbase.TFGlobals import DamageType, TakeDamage, GameZone, TFTeam
 from tf.player.TFClass import *
-from .DTestCharAI import DTestCharAI
 from tf.object.BaseObject import BaseObject
 
 import random

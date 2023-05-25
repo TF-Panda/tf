@@ -35,7 +35,6 @@ from tf.entity.TeamControlPointMaster/AI import TeamControlPointMaster/AI
 from tf.distributed.DistributedGame/AI import DistributedGame/AI
 from tf.player.DistributedTFPlayer/AI/OV import DistributedTFPlayer/AI/OV
 from tf.actor.DistributedChar/AI import DistributedChar/AI
-from tf.distributed.DTestChar/AI import DTestChar/AI
 from tf.entity.World import World/AI
 from tf.entity.DPickupItemBase import DPickupItemBase/AI
 from tf.entity.DAmmoPack/AI import DAmmoPackSmall/AI
@@ -393,9 +392,6 @@ dclass TFWeaponGun : TFWeapon {
 };
 
 dclass TFWeaponMelee : TFWeapon {
-};
-
-dclass DTestChar : DistributedChar {
 };
 
 dclass DViewModel : DistributedChar {
