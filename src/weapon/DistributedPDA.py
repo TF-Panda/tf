@@ -9,6 +9,9 @@ from direct.gui.DirectGui import *
 from tf.tfgui.GuiPanel import GuiPanel
 from tf.tfgui import TFGuiProperties
 
+from tf.object.ObjectDefs import ObjectDefs
+from tf.object.ObjectType import ObjectType
+
 from direct.fsm.FSM import FSM
 
 from panda3d.core import *
@@ -91,38 +94,25 @@ class ConstructionScreen(GuiPanel):
         self.lbl = OnscreenText(text=TFLocalizer.BUILD, parent=self, pos=(-1.16, 0.34), fg=TFGuiProperties.TextColorLight,
             scale=0.15, align=TextNode.ALeft, font=TFGlobals.getTF2BuildFont(), shadow=TFGuiProperties.TextShadowColor)
 
+        self.buildings = []
+
         x = -0.9
         spacing = 0.6
 
-        s = ConstructionObject(self, TFLocalizer.SentryGun, 130, "1")
-        s.setX(x)
-
-        x += spacing
-
-        d = ConstructionObject(self, TFLocalizer.Dispenser, 100, "2")
-        d.setX(x)
-
-        x += spacing
-
-        en = ConstructionObject(self, TFLocalizer.Entrance, 50, "3")
-        en.setX(x)
-
-        x += spacing
-
-        ex = ConstructionObject(self, TFLocalizer.Exit, 50, "4")
-        ex.setX(x)
-
-        self.buildings = [s, d, en, ex]
+        key = 1
+        for objType, objDef in list(ObjectDefs.items()):
+            o = ConstructionObject(self, TFLocalizer.getLocalizedString(objDef['name']),
+                                   objDef['cost'], str(key))
+            o.setX(x)
+            self.bindButton(str(key), wpn.sendUpdate, ['selectBuilding', [objType]])
+            self.buildings.append(o)
+            x += spacing
+            key += 1
 
         self.updateBuildingStates()
 
         self.accept('localPlayerMetalChanged', self.updateBuildingStates)
         self.accept('localPlayerObjectsChanged', self.updateBuildingStates)
-
-        self.bindButton('1', wpn.sendUpdate, ['selectBuilding', [0]])
-        self.bindButton('2', wpn.sendUpdate, ['selectBuilding', [1]])
-        self.bindButton('3', wpn.sendUpdate, ['selectBuilding', [2]])
-        self.bindButton('4', wpn.sendUpdate, ['selectBuilding', [3]])
 
         self.openPanel()
 
@@ -153,8 +143,6 @@ class DistributedConstructionPDA(TFWeapon):
     WeaponModel = "models/weapons/w_builder"
     WeaponViewModel = "models/weapons/v_builder_engineer"
     UsesViewModel = True
-
-    Metal = [130, 100, 50, 50]
 
     def __init__(self):
         TFWeapon.__init__(self)
@@ -201,11 +189,11 @@ class DistributedConstructionPDA(TFWeapon):
             if base.air.clientSender != self.player.owner:
                 return
 
-            index = max(0, min(3, index))
+            index = max(0, min(ObjectType.COUNT - 1, index))
             if not self.active or self.player.hasObject(index):
                 return
 
-            if self.player.metal < self.Metal[index]:
+            if self.player.metal < ObjectDefs[index]['cost']:
                 return
 
             self.player.selectedBuilding = index
@@ -229,18 +217,18 @@ class DistributedDestructionPDA(TFWeapon):
             return False
 
         if IS_CLIENT and self.isOwnedByLocalPlayer():
-            self.accept('1', self.sendUpdate, ['destroyBuilding', [0]])
-            self.accept('2', self.sendUpdate, ['destroyBuilding', [1]])
-            self.accept('3', self.sendUpdate, ['destroyBuilding', [2]])
-            self.accept('4', self.sendUpdate, ['destroyBuilding', [3]])
+            key = 1
+            for objType in list(ObjectDefs.keys()):
+                self.accept(str(key), self.sendUpdate, ['destroyBuilding', [objType]])
+                key += 1
 
     def deactivate(self):
         TFWeapon.deactivate(self)
         if IS_CLIENT and self.isOwnedByLocalPlayer():
-            self.ignore('1')
-            self.ignore('2')
-            self.ignore('3')
-            self.ignore('4')
+            key = 1
+            for _ in list(ObjectDefs.items()):
+                self.ignore(str(key))
+                key += 1
 
     def primaryAttack(self):
         pass
@@ -250,7 +238,7 @@ class DistributedDestructionPDA(TFWeapon):
 
     if not IS_CLIENT:
         def destroyBuilding(self, index):
-            index = max(0, min(3, index))
+            index = max(0, min(ObjectType.COUNT - 1, index))
             if not self.player or not self.active:
                 return
 

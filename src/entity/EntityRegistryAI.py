@@ -37,6 +37,10 @@ from .TeamControlPointRoundAI import TeamControlPointRoundAI
 from .LogicAutoAI import LogicAutoAI
 from .TFGameRulesProxyAI import TFGameRulesProxyAI
 
+from tf.object.SentryGun import SentryGunAI
+from tf.object.DistributedDispenser import DistributedDispenserAI
+from tf.object.DistributedTeleporter import DistributedTeleporterEntranceAI, DistributedTeleporterExitAI
+
 EntityRegistry = {
     "worldspawn": WorldAI,
     "trigger_once": DistributedTriggerAI,
@@ -68,5 +72,9 @@ EntityRegistry = {
     "team_control_point_master": TeamControlPointMasterAI,
     "team_control_point_round": TeamControlPointRoundAI,
     "logic_auto": LogicAutoAI,
-    "tf_gamerules": TFGameRulesProxyAI
+    "tf_gamerules": TFGameRulesProxyAI,
+    "tf_obj_sentrygun": SentryGunAI,
+    "tf_obj_dispenser": DistributedDispenserAI,
+    "tf_obj_teleporter_entrance": DistributedTeleporterEntranceAI,
+    "tf_obj_teleporter_exit": DistributedTeleporterExitAI
 }

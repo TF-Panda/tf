@@ -618,49 +618,34 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         return False
 
-        #if self.tfClass == Class.Engineer:
-        #    self.placeSentry()
-
-    def placeSentry(self, pos, rotation):
-        if self.selectedBuilding < 0 or self.selectedBuilding > 3:
+    def placeObject(self, pos, rotation):
+        if self.tfClass != Class.Engineer:
             return False
 
-        metals = [
-            130,
-            100,
-            50,
-            50
-        ]
-        if self.hasObject(self.selectedBuilding) or self.metal < metals[self.selectedBuilding]:
+        from tf.object.ObjectType import ObjectType
+        from tf.object.ObjectDefs import ObjectDefs
+
+        if self.selectedBuilding < 0 or self.selectedBuilding >= ObjectType.COUNT:
             return False
 
-        if self.selectedBuilding == 0:
-            from tf.object.SentryGun import SentryGunAI
-            sg = SentryGunAI()
-        elif self.selectedBuilding == 1:
-            from tf.object.DistributedDispenser import DistributedDispenserAI
-            sg = DistributedDispenserAI()
-        elif self.selectedBuilding == 2:
-            from tf.object.DistributedTeleporter import DistributedTeleporterEntranceAI
-            sg = DistributedTeleporterEntranceAI()
-        elif self.selectedBuilding == 3:
-            from tf.object.DistributedTeleporter import DistributedTeleporterExitAI
-            sg = DistributedTeleporterExitAI()
+        bldgDef = ObjectDefs.get(self.selectedBuilding)
+        if not bldgDef:
+            return False
+        if self.hasObject(self.selectedBuilding) or self.metal < bldgDef['cost']:
+            return False
 
-        sg.setBuilderDoId(self.doId)
-        sg.setH(rotation)
-        sg.setPos(pos)
+        bldg = base.entMgr.makeEntity(bldgDef['entity'])
+        if not bldg:
+            return False
+        bldg.setBuilderDoId(self.doId)
+        bldg.setH(rotation)
+        bldg.setPos(pos)
 
-        self.metal -= metals[self.selectedBuilding]
+        self.metal -= bldgDef["cost"]
 
-        base.net.generateObject(sg, self.zoneId)
+        base.net.generateObject(bldg, self.zoneId)
 
-        if self.selectedBuilding == 0:
-            self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': 'sentry'})
-        elif self.selectedBuilding == 1:
-            self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': 'dispenser'})
-        else:
-            self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': 'teleporter'})
+        self.speakConcept(SpeechConcept.ObjectBuilding, {'objecttype': bldgDef['objecttype']})
 
         return True
 

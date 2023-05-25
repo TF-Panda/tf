@@ -11,6 +11,8 @@ from direct.gui.DirectGui import *
 from tf.actor.Actor import Actor
 from tf.player.InputButtons import InputFlag
 
+from tf.object.ObjectDefs import ObjectDefs
+
 from direct.directbase import DirectRender
 
 from panda3d.core import *
@@ -24,23 +26,6 @@ class DistributedToolbox(TFWeapon):
 
     BlueprintOffset = Point3(0, 64, 0)
 
-    Blueprints = [
-        "models/buildables/sentry1_blueprint",
-        "models/buildables/dispenser_blueprint",
-        "models/buildables/teleporter_blueprint_enter",
-        "models/buildables/teleporter_blueprint_exit"
-    ]
-
-    BuildHulls = [
-        # Sentry.
-        (Vec3(-17, -23, 0), Vec3(17, 20, 45)),
-        # Dispenser
-        (Vec3(-26, -15, 0), Vec3(26, 15, 56)),
-        # Teleporter
-        (Vec3(-25.5, -15, 0), Vec3(25.5, 15, 18)),
-        (Vec3(-25.5, -15, 0), Vec3(25.5, 15, 18))
-    ]
-
     GroundClearance = 32
 
     def __init__(self):
@@ -52,6 +37,7 @@ class DistributedToolbox(TFWeapon):
 
         self.rotation = 0
 
+        self.bldgDef = None
         self.buildOrigin = Vec3()
         self.buildMins = Vec3()
         self.buildMaxs = Vec3()
@@ -217,7 +203,7 @@ class DistributedToolbox(TFWeapon):
             valid = self.isPlacementPosValid()
             built = False
             if valid:
-                if self.player.placeSentry(self.buildOrigin, self.currentRotation + self.player.viewAngles[0]):
+                if self.player.placeObject(self.buildOrigin, self.currentRotation + self.player.viewAngles[0]):
                     # Building placed successfully, go to wrench.
                     self.player.setActiveWeapon(2)
                     built = True
@@ -248,8 +234,11 @@ class DistributedToolbox(TFWeapon):
 
         self.lastDenySound = 0.0
 
-        self.buildMins = self.BuildHulls[self.player.selectedBuilding][0]
-        self.buildMaxs = self.BuildHulls[self.player.selectedBuilding][1]
+        self.bldgDef = ObjectDefs.get(self.player.selectedBuilding)
+        assert self.bldgDef
+
+        self.buildMins = self.bldgDef['buildhull'][0]
+        self.buildMaxs = self.bldgDef['buildhull'][1]
 
         if IS_CLIENT and self.isOwnedByLocalPlayer():
             # Load the blueprint and place in front of player.
@@ -257,7 +246,7 @@ class DistributedToolbox(TFWeapon):
             if self.blueprint:
                 self.blueprint.removeNode()
             self.blueprint = Actor()
-            self.blueprint.loadModel(self.Blueprints[self.player.selectedBuilding])
+            self.blueprint.loadModel(self.bldgDef['blueprint'])
             self.blueprint.setSkin(self.player.team)
             self.blueprint.setAnim('idle', loop=True)
             self.blueprint.modelNp.reparentTo(self.blueprintRoot)

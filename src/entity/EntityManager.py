@@ -2,10 +2,21 @@
 
 import re
 
+from .EntityRegistryAI import EntityRegistry
+
 class EntityManager:
 
     def __init__(self):
         self.ents = []
+
+    def getEntityClass(self, classname):
+        return EntityRegistry.get(classname)
+
+    def makeEntity(self, classname):
+        entCls = self.getEntityClass(classname)
+        if not entCls:
+            return None
+        return entCls()
 
     def findAllEntities(self, pattern):
         ents = []

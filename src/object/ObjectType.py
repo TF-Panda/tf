@@ -5,4 +5,5 @@ class ObjectType:
     Dispenser = 1
     TeleporterEntrance = 2
     TeleporterExit = 3
-    Sapper = 4
+
+    COUNT = 4
