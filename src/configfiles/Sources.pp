@@ -1,5 +1,5 @@
 #define INSTALL_CONFIG \
-  50_tf.prc
+  $[ODIR_GEN]/50_tf.prc
 
 #if $[CTPROJS]
   // These files only matter to ctattach users.

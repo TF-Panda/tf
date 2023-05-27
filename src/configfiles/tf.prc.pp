@@ -6,7 +6,9 @@
 // parameters, in particular the default display types.
 //
 
-#output 50_tf.prc notouch
+#mkdir $[ODIR_GEN]
+
+#output $[ODIR_GEN]/50_tf.prc notouch
 #### Generated automatically by $[PPREMAKE] $[PPREMAKE_VERSION] from $[notdir $[THISFILENAME]].
 ################################# DO NOT EDIT ###########################
 
@@ -177,4 +179,4 @@ cull-bin decal 29 state_sorted
 cull-bin refract 32 state_sorted
 cull-bin gui-panel 61 fixed
 
-#end 50_tf.prc
+#end $[ODIR_GEN]/50_tf.prc
