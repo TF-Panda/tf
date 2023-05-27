@@ -5,7 +5,7 @@
 Makefile
 pp.dep
 /built/
-Opt?-*
+*Opt?-*
 *.sln
 *.vcxproj
 *.vcxproj.filters
