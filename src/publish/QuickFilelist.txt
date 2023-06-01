@@ -98,7 +98,7 @@ file $DTOOL/built/lib/panda3d/physics.pyd . WIN32
 # PANDATOOL DLLs and programs.
 # Publish pstats during development so testers can profile
 # the game.  Useful info.
-file $PANDATOOL/built/bin/pstats.exe . WIN32
+#file $PANDATOOL/built/bin/pstats.exe . WIN32
 # We might also publish the asset converter tools in the future.
 
 # DIRECT DLLs.
@@ -167,5 +167,4 @@ multifile shaders.mf.pz
 dir $DMODELS/built/shaders shaders
 
 multifile levels.mf.pz
-file $PLAYER/ctf_2fort.bam .
-file $PLAYER/cp_dustbowl.bam .
+file $TFMODELS/built/levels levels
