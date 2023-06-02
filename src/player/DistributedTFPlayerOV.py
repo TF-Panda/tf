@@ -634,7 +634,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         Main routine to calculate position and angles for the camera.
         """
 
-        base.camLens.setMinFov(self.fov / (4./3.))
+        fov = self.fov / (4./3.)
+        if fov != base.camLens.getMinFov():
+            base.camLens.setMinFov(fov)
 
         if self.playerState == TFPlayerState.Died:
             if self.observerMode == ObserverMode.DeathCam:
