@@ -14,22 +14,23 @@ texorder = [0,2,1,3,4,5]
 
 class SkyBox:
 
-    def __init__(self, skyName = "sky_well_01_hdr"):
-        self.root = base.sky2DTop.attachNewNode("skybox")
+    def __init__(self, skyName = "sky_well_01_hdr", parent=None):
+        if not parent:
+            parent = base.sky2DCamNp
+
+        self.root = loader.loadModel("models/effects/skybox")
+        self.root.reparentTo(parent)
+        self.root.setScale(512)
 
         for i in range(6):
-            cm = CardMaker('cm')
-            cm.setFrame(-1, 1, -1, 1)
-            card = self.root.attachNewNode(cm.generate())
-            card.setMaterial(MaterialPool.loadMaterial("materials/" + skyName + suffixes[texorder[i]] + ".mto"))
-            card.setShaderInput("u_zFar_index", Vec2(base.camLens.getFar(), i))
+            face = suffixes[texorder[i]]
+            faceNp = self.root.find("**/" + face)
+            faceNp.setMaterial(MaterialPool.loadMaterial("materials/" + skyName + face + ".mto"))
 
         self.root.setBin("background", 0)
-        self.root.setDepthWrite(False)
-        #self.root.setTwoSided(True)
+        self.root.setDepthWrite(True)
         self.root.flattenStrong()
-        self.root.node().setBounds(OmniBoundingVolume())
-        self.root.node().setFinal(True)
+        self.root.setCompass()
 
     def destroy(self):
         self.root.removeNode()
