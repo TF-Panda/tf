@@ -79,10 +79,35 @@ class PlanarReflector:
 
         self.lens = lens
 
+        self.sky2DCam = Camera("sky2DCam")
+        self.sky2DCam.setLens(base.camLens)
+        self.sky2DCam.setCameraMask(DirectRender.ReflectionCameraBitmask)
+        self.sky2DCamNp = NodePath(self.sky2DCam)
+        self.sky2DDisplayRegion = self.buffer.makeDisplayRegion()
+        self.sky2DDisplayRegion.disableClears()
+        self.sky2DDisplayRegion.setClearDepthActive(True)
+        self.sky2DDisplayRegion.setSort(-2)
+        self.sky2DDisplayRegion.setCamera(self.sky2DCamNp)
+
+        # Separate 3-D skybox scene graph and display region.
+        self.sky3DCam = Camera("sky3DCam")
+        self.sky3DCam.setLens(base.camLens)
+        self.sky3DCam.setCameraMask(DirectRender.ReflectionCameraBitmask)
+        self.sky3DCamNp = NodePath(self.sky3DCam)
+        self.sky3DDisplayRegion = self.buffer.makeDisplayRegion()
+        #self.sky3DDisplayRegion.setActive(False)
+        self.sky3DDisplayRegion.disableClears()
+        # Clear the depth here as this is the first display region rendered
+        # for the main scene.  The actual 3D world display region clears
+        # nothing.
+        self.sky3DDisplayRegion.setClearDepthActive(True)
+        self.sky3DDisplayRegion.setSort(-1)
+        self.sky3DDisplayRegion.setCamera(self.sky3DCamNp)
+
         self.displayRegion = self.buffer.makeDisplayRegion()
         self.displayRegion.disableClears()
         self.displayRegion.setClearDepthActive(True)
-        self.displayRegion.setClearColorActive(True)
+        #self.displayRegion.setClearColorActive(True)
         self.displayRegion.setCamera(self.cameraNP)
         #self.displayRegion.setActive(False)
 
@@ -120,6 +145,8 @@ class PlanarReflector:
             stateNP.setAttrib(CullFaceAttrib.makeReverse(), 100)
         stateNP.setAntialias(False, 100)
         self.camera.setInitialState(stateNP.getState())
+        self.sky3DCamNp.node().setInitialState(stateNP.getState())
+        self.sky2DCamNp.node().setInitialState(stateNP.getState())
 
         #self.displayRegion.setActive(True)
 
@@ -127,6 +154,8 @@ class PlanarReflector:
             self.buffer.setActive(True)
 
         self.cameraNP.reparentTo(base.render)
+        self.sky2DCamNp.reparentTo(base.sky2DTop)
+        self.sky3DCamNp.reparentTo(base.sky3DTop)
 
         # Determine PVS for reflection from position of main camera, not the
         # reflection camera.  The reflection camera is most likely flipped
@@ -156,4 +185,6 @@ class PlanarReflector:
         if self.reflect:
             mat *= self.reflMat
         self.cameraNP.setMat(render, mat)
+        self.sky2DCamNp.setMat(render, mat)
+        self.sky3DCamNp.setMat(render, mat * base.sky3DMat)
         return task.cont
