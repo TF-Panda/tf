@@ -748,7 +748,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         killer = base.net.doId2do.get(self.observerTarget)
 
         # Swing to face our killer within half the death anim time.
-        interpolation = (base.clockMgr.getTime() - self.deathTime) / (TF_DEATH_ANIMATION_TIME * 0.5)
+        interpolation = (base.clockMgr.getTime() - base.clockMgr.networkToClientTime(self.deathTime)) / (TF_DEATH_ANIMATION_TIME * 0.5)
         interpolation = max(0, min(1, interpolation))
         interpolation = TFGlobals.simpleSpline(interpolation)
 
