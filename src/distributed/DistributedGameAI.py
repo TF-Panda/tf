@@ -85,6 +85,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
             # minimum 5 seconds.
             frac = (numPlayers - 3) / 5
             return min(5.0, waveTime * frac + 5.0 * (1 - frac))
+        else:
+            return waveTime
 
     def getNextRespawnWaveTimeForTeam(self, team):
         """
