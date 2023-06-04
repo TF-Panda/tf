@@ -707,6 +707,20 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         base.camera.setPos(eyeOrigin)
 
+    def getTargetSpecOrigin(self, target, deathOffset=40):
+        if self.isInRagdoll(target):
+            # If the target is ragdolled, look at their ragdoll.
+            origin = target.ragdoll[1].getRagdollPosition()
+            origin.z += deathOffset
+        elif self.isInGibs(target):
+            # If the target is gibbed, look at their gib head.
+            origin = target.gibs.getHeadPosition()
+            origin.z += deathOffset
+        else:
+            # Otherwise, they're alive, so look at their eyes.
+            origin = target.getEyePosition()
+        return origin
+
     def calcSpectatorView(self, specTarget=None, chaseSpeed=48.0):
         if not specTarget:
             specTarget = base.net.doId2do.get(self.observerTarget)
@@ -720,15 +734,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         viewQuat.setHpr(self.viewAngles)
         base.camera.setHpr(self.viewAngles)
 
-        origin = specTarget.getEyePosition()
-
-        if specTarget.isPlayer():
-            if (specTarget.deathType == self.DTRagdoll) and specTarget.ragdoll:
-                origin = specTarget.ragdoll[1].getRagdollPosition()
-                origin.z += 40
-            elif (specTarget.deathType == self.DTGibs) and specTarget.gibs and specTarget.gibs.valid:
-                origin = specTarget.gibs.getHeadPosition()
-                origin.z += 40
+        origin = self.getTargetSpecOrigin(specTarget)
 
         vForward = viewQuat.getForward()
         eyeOrigin = Point3(origin + (vForward * -self.observerChaseDistance))
@@ -759,18 +765,12 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         qForward = Quat()
         qForward.setHpr(aForward)
 
-        if (self.deathType == self.DTRagdoll) and self.ragdoll:
-            origin = self.ragdoll[1].getRagdollPosition()
-            origin.z += 40
-        elif (self.deathType == self.DTGibs) and self.gibs and self.gibs.valid:
-            origin = self.gibs.getHeadPosition()
-            origin.z += 40
-        else:
-            origin = self.getEyePosition()
+        origin = self.getTargetSpecOrigin(self)
 
         if killer and killer != self:
             # Compute angles to look at killer.
-            vKiller = killer.getEyePosition() - origin
+            killerOrigin = self.getTargetSpecOrigin(killer)
+            vKiller = killerOrigin - origin
             qKiller = Quat()
             lookAt(qKiller, vKiller)
             Quat.slerp(qForward, qKiller, interpolation, qForward)
@@ -801,29 +801,16 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         blendPerc = max(0, min(1, curTime / spec_freeze_traveltime.getValue()))
         blendPerc = TFGlobals.simpleSpline(blendPerc)
 
-        camDesired = target.getPos()
-        if target.isPlayer():
-            if (target.deathType == self.DTRagdoll) and target.ragdoll:
-                camDesired = target.ragdoll[1].getRagdollPosition()
-            elif (target.deathType == self.DTGibs) and target.gibs and target.gibs.valid:
-                camDesired = target.gibs.getHeadPosition()
-        if target.health > 0:
-            camDesired[2] += target.viewOffset[2]
-        #else:
-        #    camDesired[2] += 40
+        camDesired = self.getTargetSpecOrigin(target, deathOffset=0)
         camTarget = Point3(camDesired)
-        if target.health > 0:
-            mins = Vec3()
-            maxs = Vec3()
-            # Look at their chest, not their head.
-            target.calcTightBounds(mins, maxs, base.render)
-            camTarget[2] -= (maxs[2] * 0.5)
-        else:
+        if self.isInRagdoll(target) or self.isInGibs(target):
             # Look over ragdoll, not through.
             camTarget[2] += 40
+        else:
+            # Look at alive player's chests from afar.
+            camTarget[2] -= (target.viewOffset[2] * 0.5)
 
         # Figure out a view position in front of the target
-        #print("eye on plane", base.camera.getPos())
         eyeOnPlane = base.camera.getPos()
         eyeOnPlane[2] = camTarget[2]
         targetPos = Vec3(camTarget)
@@ -868,8 +855,13 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             # frame has been taken, so we add it as a task with a delay of 0, which achieves
             # that.
             base.taskMgr.doMethodLater(0.1, self.__hideSceneFreezeFrame, 'hideSceneFreezeFrame')
+
+            # TODO: Need some categorization on sounds here.  In OG TF2, gameplay sounds
+            # are silenced, except for taunt voice lines, announcer, and UI.
             #for mgr in base.sfxManagerList:
             #    mgr.setVolume(0.0)
+
+            # Display a label showing the killer name.
             if self.killedByLabel:
                 self.killedByLabel.destroy()
             if target.isObject():

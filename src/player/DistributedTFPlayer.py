@@ -100,6 +100,12 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.healerDoIds = []
 
+    def isInRagdoll(self, target):
+        return target.isPlayer() and (target.deathType == self.DTRagdoll) and target.ragdoll
+
+    def isInGibs(self, target):
+        return target.isPlayer() and (target.deathType == self.DTGibs) and target.gibs and target.gibs.valid
+
     def getWorldSpaceCenter(self):
         return DistributedTFPlayerShared.getWorldSpaceCenter(self)
 
@@ -240,7 +246,14 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         return True
 
     def getSpatialAudioCenter(self):
-        if self.deathType == self.DTNone:
+        if self.isInRagdoll(self):
+            # If we're ragdolling, position spatial audio relative to
+            # the ragdoll head.
+            return self.ragdoll[1].getJointActor("bip_head").getTransform().getMat()
+        elif self.isInGibs(self):
+            # Spatial sounds follow the head gib when gibbed.
+            return self.gibs.getHeadMatrix()
+        else:
             # Return world space transform of player + view offset.
             # Assumes no pitch or roll in angles.  Proper way would
             # be to put view offset in a translation matrix and multiply
@@ -250,15 +263,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             trans = self.getMat(base.render)
             trans.setRow(3, trans.getRow3(3) + self.viewOffset)
             return trans
-        elif self.deathType == self.DTGibs and self.gibs:
-            # Spatial sounds follow the head gib when gibbed.
-            return self.gibs.getHeadMatrix()
-        elif self.deathType == self.DTRagdoll and self.ragdoll:
-            # If we're ragdolling, position spatial audio relative to
-            # the ragdoll head.
-            return self.ragdoll[1].getJointActor("bip_head").getTransform().getMat()
-
-        return Mat4.identMat()
 
     def RecvProxy_rot(self, r, i, j, k):
         # Ignoring this because the player angles are set in TFPlayerAnimState.
