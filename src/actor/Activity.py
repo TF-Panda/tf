@@ -1,3 +1,6 @@
 from panda3d.core import AnimActivity
 
-Activity = AnimActivity.ptr()
+class ActivityCls:
+    pass
+Activity = ActivityCls()
+AnimActivity.ptr().fillPythonObject(Activity)

@@ -8,4 +8,8 @@ class AnimEventType:
     Client_Server = (Server | Client)
 
 from panda3d.core import AnimEvent as AE
-AnimEvent = AE.ptr()
+
+class AnimEventCls:
+    pass
+AnimEvent = AnimEventCls()
+AE.ptr().fillPythonObject(AnimEvent)
