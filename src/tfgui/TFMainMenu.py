@@ -92,15 +92,11 @@ class TFMainMenu(StateData):
         %s
         %s
         %s
-        %i Ghz
-        %i Threads
-        %i GB Memory
         %s
         %s
         OpenGL %s
         GLSL %i.%i
         """ % (uname[0], uname[1], uname[2], uname[3], uname[4], uname[5],
-             0, 0, 0,#psutil.cpu_freq().max / 1000, psutil.cpu_count(logical=True), psutil.virtual_memory().total / 1e+9,
              gsg.getDriverVendor(), gsg.getDriverRenderer(), gsg.getDriverVersion(),
              gsg.getDriverShaderVersionMajor(), gsg.getDriverShaderVersionMinor())
 
