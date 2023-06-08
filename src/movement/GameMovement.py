@@ -502,6 +502,46 @@ class GameMovement:
                 duckFraction = simpleSpline(1.0 - (duckSec / TIME_TO_UNDUCK))
                 self.setDuckedEyeOffset(duckFraction)
 
+    def fullNoClipMove(self):
+        self.friction()
+
+        # Get movement direction, ignoring Z.
+        forward = Vec3(self.forward)
+        right = Vec3(self.right)
+        forward.normalize()
+        right.normalize()
+
+        fmove = self.mv.forwardMove
+        smove = self.mv.sideMove
+
+        wishDirection = Vec3(
+            forward.x * fmove + right.x * smove,
+            forward.y * fmove + right.y * smove,
+            forward.z * fmove + right.z * smove
+        )
+
+        # Calculate the speed and direction of movement, then clamp the speed.
+        wishSpeed = wishDirection.length()
+        if wishSpeed > 0.0:
+            wishDirection /= wishSpeed
+        wishSpeed = max(0.0, min(self.mv.maxSpeed, wishSpeed))
+
+        # Accelerate in the x/y plane.
+        self.accelerate(wishDirection, wishSpeed, sv_accelerate)
+
+        # Clamp the players speed in x/y.
+        speed = self.mv.velocity.length()
+        if speed > self.mv.maxSpeed:
+            scale = self.mv.maxSpeed / speed
+            self.mv.velocity.x *= scale
+            self.mv.velocity.y *= scale
+            self.mv.velocity.z *= scale
+            speed = self.mv.velocity.length()
+
+        self.mv.oldOrigin = self.mv.origin
+        self.mv.origin = self.mv.origin + self.mv.velocity * self.dt
+        self.mv.outWishVel += wishDirection * wishSpeed
+
     def playerMove(self):
         self.checkParameters()
         self.mv.outWishVel.set(0, 0, 0)
@@ -530,6 +570,8 @@ class GameMovement:
         # Handle movement modes.
         if self.player.moveType == MoveType.Walk:
             self.fullWalkMove()
+        elif self.player.moveType == MoveType.NoClip:
+            self.fullNoClipMove()
         else:
             assert False
 
