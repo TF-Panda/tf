@@ -5,6 +5,8 @@ from direct.gui import DirectGuiGlobals as DGG
 from tf.tfgui.TFDialog import TFDialog
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.distributed2.NetMessages import NetMessages
+from direct.distributed.PyDatagram import PyDatagram
 
 from tf.player.Prediction import Prediction
 
@@ -26,6 +28,55 @@ class TFClientRepository(ClientRepository, FSM):
         self.accept('connectionLost', self.handleConnectionLost)
 
         self.request("Connect", info)
+
+        self.captchaTex = None
+
+    def handleServerAuthenticateRequest(self, dgi):
+        if self.getCurrentStateOrTransition() != 'Authenticate':
+            return
+
+        imgData = dgi.getRemainingBytes()
+        self.request("Captcha", imgData)
+
+    def handleServerAuthenticateResponse(self, dgi):
+        if self.getCurrentStateOrTransition() != 'Captcha':
+            return
+
+        ret = dgi.getBool()
+        if not ret:
+            self.captcha.triesLeft = dgi.getUint8()
+            self.captcha.request("Prompt")
+        else:
+            self.isAuthed = True
+
+            self.clientId = dgi.getUint16()
+
+            self.serverTickRate = dgi.getUint8()
+            self.serverIntervalPerTick = 1.0 / self.serverTickRate
+            # Use the same simulation rate as the server!
+            base.setTickRate(self.serverTickRate)
+            tickCount = dgi.getUint32()
+            base.resetSimulation(tickCount)
+
+            self.notify.info("Authenticated with server")
+            self.request("JoinGame")
+
+    def enterCaptcha(self, imgData):
+        from tf.tfgui.CaptchaEntry import CaptchaEntry
+        self.captcha = CaptchaEntry(imgData)
+        self.captcha.request("Prompt")
+        self.accept('CaptchaPromptAck', self.__handleCaptchaAck)
+
+    def __handleCaptchaAck(self, entry):
+        self.captcha.request("Validating")
+        dg = PyDatagram()
+        dg.addUint16(NetMessages.CL_AuthenticateResponse)
+        dg.addString(entry)
+        self.sendDatagram(dg)
+
+    def exitCaptcha(self):
+        self.captcha.cleanup()
+        del self.captcha
 
     def syncAllHitBoxes(self):
         from tf.actor.DistributedChar import DistributedChar

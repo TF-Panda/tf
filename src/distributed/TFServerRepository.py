@@ -1,4 +1,7 @@
 from direct.distributed2.ServerRepository import ServerRepository
+from direct.distributed2.ServerRepository import ClientState
+from direct.distributed2.NetMessages import NetMessages
+from direct.distributed.PyDatagram import PyDatagram
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
@@ -25,6 +28,74 @@ class TFServerRepository(ServerRepository):
         self.game = DistributedGameAI()
         base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)
+
+    def wantAuthentication(self):
+        return base.config.GetBool('tf-want-captcha', False)
+
+    def sendClientAuthRequest(self, client):
+        # Generate a Captcha for the client to answer.
+        from captcha.image import ImageCaptcha
+        import random
+        from direct.distributed2.NetMessages import NetMessages
+
+        img = ImageCaptcha()
+        numChars = random.randint(4, 6)
+        validChars = [
+            'A', 'B', 'C', 'D', 'E', 'F',
+            'G', 'H', 'I', 'J', 'K', 'L',
+            'M', 'N', 'O', 'P', 'Q', 'R',
+            'S', 'T', 'U', 'V', 'W', 'X',
+            'Y', 'Z', '?', '!', '+', '#',
+            '$', '%', '@', '&'
+        ]
+        chars = ""
+        for i in range(numChars):
+            chars += random.choice(validChars)
+        client.authString = chars
+        client.authAttemptsLeft = base.config.GetInt('tf-captcha-attempts', 4)
+        data = img.generate(chars, 'jpeg')
+
+        dg = PyDatagram()
+        dg.addUint16(NetMessages.SV_AuthenticateRequest)
+        dg.appendData(data.read())
+
+        self.sendDatagram(dg, client.connection)
+
+    def handleClientAuthResponse(self, client, dgi):
+        answer = dgi.getString()
+        if answer == client.authString:
+            # Good to go.
+            client.state = ClientState.Verified
+            client.id = self.clientIdAllocator.allocate()
+
+            self.notify.info("Client %i authenticated, given ID %i" % (client.connection, client.id))
+            self.notify.info("Client lerp time: " + str(client.interpAmount))
+
+            dg = PyDatagram()
+            dg.addUint16(NetMessages.SV_AuthenticateResponse)
+            dg.addBool(True)
+            # Tell the client their ID and our tick rate.
+            dg.addUint16(client.id)
+            dg.addUint8(base.ticksPerSec)
+            dg.addUint32(base.tickCount)
+
+            self.numClients += 1
+
+            self.sendDatagram(dg, client.connection)
+
+            messenger.send('clientConnected', [client])
+        else:
+            client.authAttemptsLeft -= 1
+            if client.authAttemptsLeft <= 0:
+                self.notify.info("Client %i failed to complete auth, dropping." % client.connection)
+                self.closeClientConnection(client)
+            else:
+                self.notify.info("Client %i failed auth, %i attempts left." % (client.connection, client.authAttemptsLeft))
+                dg = PyDatagram()
+                dg.addUint16(NetMessages.SV_AuthenticateResponse)
+                dg.addBool(False)
+                dg.addUint8(client.authAttemptsLeft)
+                self.sendDatagram(dg, client.connection)
 
     def sendUpdatePHSOnly(self, do, name, args, refPos, client=None, excludeClients=[]):
         if client:
