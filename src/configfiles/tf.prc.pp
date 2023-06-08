@@ -107,7 +107,7 @@ fmod-use-steam-audio 1
 fmod-speaker-mode stereo
 fmod-mixer-sample-rate 44100
 fmod-dsp-buffer-size 1024
-fmod-number-of-sound-channels 256
+fmod-number-of-sound-channels 4095
 fmod-compressed-samples 1
 fmod-reverb-mix 0.25
 fmod-steam-audio-reflection-job 1
