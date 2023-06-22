@@ -249,7 +249,7 @@ motion-blur-enable 0
 
 # Specify the field-of-view of the viewmodel.
 # Let's use some preferred modern values as default.
-viewmodel-fov 70
+viewmodel-fov 54
 fov 90
 
 # Your mouse sensitivity (maps to original TF2).

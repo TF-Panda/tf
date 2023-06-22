@@ -117,7 +117,7 @@ sfx-volume 0.72
 # Default viewmodel and normal camera FOVs.
 # Taken from original TF2.
 # Actually, let's use some preferred modern values as default.
-viewmodel-fov 70
+viewmodel-fov 54
 fov 90
 
 default-cube-map maps/sky.txo
