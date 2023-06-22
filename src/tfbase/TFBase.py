@@ -223,6 +223,7 @@ class TFBase(ShowBase, FSM):
             self.accept('shift-l', self.render.ls)
             self.accept('shift-k', self.vmRender.ls)
             self.accept('shift-j', self.sky3DTop.ls)
+            self.accept('shift-0', self.toggleLocalAvNoClip)
         #self.accept('shift-j', self.printVMRenderMasks)
 
         self.planarReflect = PlanarReflector(1024, "reflection", True)
@@ -279,6 +280,12 @@ class TFBase(ShowBase, FSM):
 
         self.wantParanoidClockSync = __debug__ and ConfigVariableBool('tf-paranoid-clock-sync', False)
         self.wantClockOsd = __debug__ and ConfigVariableBool('tf-want-clock-osd', False)
+
+    def toggleLocalAvNoClip(self):
+        if not hasattr(base, 'localAvatar') or not base.localAvatar:
+            return
+        base.localAvatar.toggleNoClip()
+        base.localAvatar.sendUpdate('toggleNoClip')
 
     def preClientFrame(self):
         ShowBase.preClientFrame(self)

@@ -149,6 +149,12 @@ class DistributedTFPlayerShared:
 
         self.numDetonateables = 0
 
+    def toggleNoClip(self):
+        if self.moveType == MoveType.NoClip:
+            self.moveType = MoveType.Walk
+        else:
+            self.moveType = MoveType.NoClip
+
     def getWorldSpaceCenter(self):
         # Special code for world space center of players.
         # Use the player origin, with the Z raised up to the center of
