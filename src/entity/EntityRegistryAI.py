@@ -24,7 +24,7 @@ from .DistributedPointSpotlight import DistributedPointSpotlightAI
 from .DistributedTriggerHurt import DistributedTriggerHurtAI
 from .DistributedFuncRotating import DistributedFuncRotatingAI
 from .TFEntityFilters import FilterActivatorTFTeam
-from .Ropes import RopeKeyFrameAI
+from .RopesAI import RopeKeyFrameAI
 from .TFLogicArena import TFLogicArena
 from .TriggerCaptureAreaAI import TriggerCaptureAreaAI
 from .TeamControlPoint import TeamControlPointAI

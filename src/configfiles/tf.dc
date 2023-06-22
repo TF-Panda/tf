@@ -27,7 +27,7 @@ from tf.entity.DistributedFuncDoor import DistributedFuncDoor/AI
 from tf.entity.DistributedFuncBrush import DistributedFuncBrush/AI
 from tf.entity.DistributedPointSpotlight import DistributedPointSpotlight/AI
 from tf.entity.DistributedFuncRotating import DistributedFuncRotating/AI
-from tf.entity.Ropes import RopeKeyFrame/AI
+from tf.entity.Ropes/AI import RopeKeyFrame/AI
 from tf.entity.TriggerCaptureArea/AI import TriggerCaptureArea/AI
 from tf.entity.TeamControlPoint import TeamControlPoint/AI
 from tf.entity.TeamRoundTimer/AI import TeamRoundTimer/AI
@@ -217,6 +217,9 @@ dclass DistributedGame : DistributedObject {
 
   showWinPanel(int8 winTeam, uint8 winReason) broadcast;
   hideWinPanel() broadcast;
+
+  makeBot(string botName) clsend airecv;
+  clearBots() clsend airecv;
 };
 
 dclass DistributedChar : DistributedEntity {

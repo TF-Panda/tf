@@ -1,12 +1,11 @@
 """Ropes module: contains the Ropes class."""
 
 from panda3d.core import *
+from panda3d.pphysics import *
 
 from .DistributedEntity import DistributedEntity
 
-from direct.showutil.Rope import Rope
-
-import math
+from . import RopePhysics
 
 class RopeKeyFrame(DistributedEntity):
 
@@ -16,73 +15,91 @@ class RopeKeyFrame(DistributedEntity):
         # If we have one, we will generate a rope (nurbs curve)
         # between this node and the next one.
         self.nextKeyFrame = -1
-        self.nextKeyFrameTargetName = ""
         self.slack = 0
         self.subdiv = 1
         self.thickness = 1
-        self.rope = None
+        self.curve = None
+        self.ropeNode = None
+        self.sim = None
 
-    if IS_CLIENT:
-        def genCurve(self):
-            if self.rope:
-                self.rope.removeNode()
-                self.rope = None
+    def updateCurve(self, task):
+        self.sim.simulate(globalClock.dt, 0.98)
+        for i in range(len(self.sim.nodes)):
+            self.curve.setVertex(i, self.sim.nodes[i].smoothPos)
+        return task.cont
 
-            start = self.getPos()
-            endNode = base.cr.doId2do.get(self.nextKeyFrame)
-            if not endNode:
-                return
-            end = endNode.getPos()
+    def startRope(self):
+        self.addTask(self.updateCurve, "updateCurve", sim=False, appendTask=True)
 
-            self.rope = Rope()
-            self.rope.setColorScale(0, 0, 0, 1)
-            self.rope.ropeNode.setRenderMode(RopeNode.RMBillboard)
-            self.rope.ropeNode.setUseVertexColor(0)
-            self.rope.ropeNode.setUseVertexThickness(1)
-            thick = self.thickness * 2
-            slack = self.slack * 0.5
-            if base.sky3DRoot.isAncestorOf(self):
-                thick /= 16
-                slack /= 16
-            ps = []
-            totalPoints = 2 + self.subdiv
-            for i in range(totalPoints):
-                t = i / (totalPoints - 1)
-                point = start + (end - start) * t
-                point += Vec3.down() * math.sin(t * math.pi) * slack
-                ps.append({'node': base.render, 'point': point, 'thickness': thick})
-            self.rope.setup(4, ps)
-            #self.rope.reparentTo(self.getParent())
+    def stopRope(self):
+        self.removeTask("updateCurve")
 
-        def announceGenerate(self):
-            DistributedEntity.announceGenerate(self)
-            self.genCurve()
+    def destroyRope(self):
+        self.stopRope()
+        self.sim = None
+        self.curve = None
+        if self.ropeNode:
+            self.ropeNode.removeNode()
+            self.ropeNode = None
 
-        def disable(self):
-            if self.rope:
-                self.rope.removeNode()
-                self.rope = None
-            DistributedEntity.disable(self)
+    def genCurve(self):
+        self.destroyRope()
 
-    else:
-        def initFromLevel(self, ent, props):
-            DistributedEntity.initFromLevel(self, ent, props)
-            if props.hasAttribute("width"):
-                self.thickness = props.getAttributeValue("width").getFloat()
-            if props.hasAttribute("Subdiv"):
-                self.subdiv = props.getAttributeValue("Subdiv").getInt()
-            if props.hasAttribute("Slack"):
-                self.slack = props.getAttributeValue("Slack").getFloat()
-            if props.hasAttribute("NextKey"):
-                self.nextKeyFrameTargetName = props.getAttributeValue("NextKey").getString()
+        start = self.getPos()
+        endNode = base.cr.doId2do.get(self.nextKeyFrame)
+        if not endNode:
+            return
+        end = endNode.getPos()
+        delta = end - start
+        numVerts = 10
+        if numVerts < 3:
+            return
+        thick = self.thickness * 2
+        slack = self.slack
+        if base.sky3DRoot.isAncestorOf(self):
+            thick /= 16
+            slack /= 16
 
-        def announceGenerate(self):
-            DistributedEntity.announceGenerate(self)
-            if self.nextKeyFrameTargetName:
-                ent = base.entMgr.findExactEntity(self.nextKeyFrameTargetName)
-                if ent:
-                    self.nextKeyFrame = ent.doId
+        springDist = (delta.length() + slack - 100) / (numVerts - 1)
 
-if not IS_CLIENT:
-    RopeKeyFrameAI = RopeKeyFrame
-    RopeKeyFrameAI.__name__ = 'RopeKeyFrameAI'
+        self.sim = RopePhysics.RopePhysicsSimulation()
+
+        for i in range(numVerts):
+            frac = float(i) / (numVerts - 1)
+            pos = start + delta * frac
+            node = RopePhysics.RopePhysicsNode(pos)
+            if i == 0 or i == (numVerts - 1):
+                node.fixed = True
+            self.sim.nodes.append(node)
+
+        for i in range(1, len(self.sim.nodes)):
+            nodeA = self.sim.nodes[i - 1]
+            nodeB = self.sim.nodes[i]
+            spring = RopePhysics.RopePhysicsConstraint(nodeA, nodeB)
+            spring.springDist = springDist
+            self.sim.springs.append(spring)
+
+        self.curve = NurbsCurveEvaluator()
+        self.curve.setOrder(4)
+        self.curve.reset(numVerts)
+
+        rope = RopeNode("rope")
+        rope.setCurve(self.curve)
+        rope.setThickness(thick)
+        rope.setNumSubdiv(self.subdiv)
+        #rope.setNumSlices(1)
+        rope.setRenderMode(RopeNode.RMBillboard)
+        rope.setNormalMode(RopeNode.NMNone)
+        self.ropeNode = NodePath(rope)
+        self.ropeNode.wrtReparentTo(self)
+        self.ropeNode.setColorScale((0, 0, 0, 1))
+
+        self.startRope()
+
+    def announceGenerate(self):
+        DistributedEntity.announceGenerate(self)
+        self.genCurve()
+
+    def disable(self):
+        self.destroyRope()
+        DistributedEntity.disable(self)
