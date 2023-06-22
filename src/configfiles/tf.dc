@@ -361,6 +361,8 @@ dclass DistributedTFPlayer : DistributedChar {
   dropFlag() ownsend airecv;
 
   setDefaultFOV(uint8 fov) ownsend airecv;
+
+  toggleNoClip() ownsend airecv;
 };
 
 dclass DistributedWeapon : DistributedChar {
