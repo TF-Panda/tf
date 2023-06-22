@@ -404,7 +404,7 @@ static LVecBase2f *Dtool_Coerce_LVecBase2f(PyObject *args, LVecBase2f &coerced) 
     // 1-inline LVecBase2f::LVecBase2f(float fill_value)
     if (PyNumber_Check(arg)) {
       coerced = LVecBase2f((float)PyFloat_AsDouble(arg));
-      if (_PyErr_OCCURRED()) {
+      if (PyErr_Occurred()) {
         return nullptr;
       } else {
         return &coerced;
@@ -417,7 +417,7 @@ static LVecBase2f *Dtool_Coerce_LVecBase2f(PyObject *args, LVecBase2f &coerced) 
       float param1;
       if (PyArg_ParseTuple(args, "ff:LVecBase2f", &param0, &param1)) {
         coerced = LVecBase2f((float)param0, (float)param1);
-        if (_PyErr_OCCURRED()) {
+        if (PyErr_Occurred()) {
           return nullptr;
         } else {
           return &coerced;
@@ -451,7 +451,7 @@ static LVecBase3f *Dtool_Coerce_LVecBase3f(PyObject *args, LVecBase3f &coerced) 
     // 1-inline LVecBase3f::LVecBase3f(float fill_value)
     if (PyNumber_Check(arg)) {
       coerced = LVecBase3f((float)PyFloat_AsDouble(arg));
-      if (_PyErr_OCCURRED()) {
+      if (PyErr_Occurred()) {
         return nullptr;
       } else {
         return &coerced;
@@ -466,7 +466,7 @@ static LVecBase3f *Dtool_Coerce_LVecBase3f(PyObject *args, LVecBase3f &coerced) 
         float param2;
         if (PyArg_ParseTuple(args, "fff:LVecBase3f", &param0, &param1, &param2)) {
           coerced = LVecBase3f((float)param0, (float)param1, (float)param2);
-          if (_PyErr_OCCURRED()) {
+          if (PyErr_Occurred()) {
             return nullptr;
           } else {
             return &coerced;
@@ -503,7 +503,7 @@ static LVecBase4f *Dtool_Coerce_LVecBase4f(PyObject *args, LVecBase4f &coerced) 
       // -2 inline LVecBase4f::LVecBase4f(float fill_value)
       if (PyNumber_Check(arg)) {
         coerced = LVecBase4f((float)PyFloat_AsDouble(arg));
-        if (_PyErr_OCCURRED()) {
+        if (PyErr_Occurred()) {
           return nullptr;
         } else {
           return &coerced;
@@ -520,7 +520,7 @@ static LVecBase4f *Dtool_Coerce_LVecBase4f(PyObject *args, LVecBase4f &coerced) 
         float param3;
         if (PyArg_ParseTuple(args, "ffff:LVecBase4f", &param0, &param1, &param2, &param3)) {
           coerced = LVecBase4f((float)param0, (float)param1, (float)param2, (float)param3);
-          if (_PyErr_OCCURRED()) {
+          if (PyErr_Occurred()) {
             return nullptr;
           } else {
             return &coerced;
