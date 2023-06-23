@@ -219,9 +219,6 @@ dclass DistributedGame : DistributedObject {
 
   showWinPanel(int8 winTeam, uint8 winReason) broadcast;
   hideWinPanel() broadcast;
-
-  makeBot(string botName) clsend airecv;
-  clearBots() clsend airecv;
 };
 
 dclass DistributedChar : DistributedEntity {
@@ -303,9 +300,7 @@ dclass DistributedTFPlayer : DistributedChar {
   // Client request to change class.
   changeClass(uint8 classId) ownsend airecv;
   changeTeam(uint8 team) ownsend airecv;
-  die() ownsend airecv;
 
-  swing() broadcast ownrecv;
   speak(uint32 soundIndex) broadcast ownrecv;
 
   makeAngry() broadcast;
@@ -366,8 +361,6 @@ dclass DistributedTFPlayer : DistributedChar {
   dropFlag() ownsend airecv;
 
   setDefaultFOV(uint8 fov) ownsend airecv;
-
-  toggleNoClip() ownsend airecv;
 };
 
 dclass DistributedWeapon : DistributedChar {
@@ -668,4 +661,6 @@ dclass TeamRoundTimer : DistributedObject {
 };
 
 dclass TFMagicWordManager : DistributedObject {
+  setMagicWord(string cmd, string args[]) clsend airecv;
+  magicWordResp(string resp);
 };

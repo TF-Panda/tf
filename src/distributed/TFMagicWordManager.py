@@ -23,13 +23,10 @@ class TFMagicWordManager(DistributedObject):
             "visdbg": self.__toggleVisDebug,
             "reloadshaders": self.__reloadShaders,
             "toggleik": self.__toggleIk,
-            "clearbots": self.__clearBots,
-            "bot": self.__makeBot,
             "bounds": self.__toggleBounds,
             "wireframe": self.__toggleWireframe,
             "ls": self.__ls,
             "analyze": self.__analyze,
-            "noclip": self.__toggleNoClip,
             "buildcubemaps": self.__buildCubeMaps
         }
 
@@ -66,17 +63,8 @@ class TFMagicWordManager(DistributedObject):
         else:
             return "Vis debug OFF"
 
-    def __makeBot(self, args):
-        count = 1
-        if len(args) > 0:
-            count = int(args[0])
-        for _ in range(count):
-            base.game.sendUpdate('makeBot', [''])
-
-    def __clearBots(self, _):
-        base.game.sendUpdate('clearBots')
-
     def __reloadShaders(self, _):
+        from panda3d.core import ShaderManager
         ShaderManager.getGlobalPtr().reloadShaders()
         return "Shaders reloaded"
 
@@ -125,15 +113,6 @@ class TFMagicWordManager(DistributedObject):
         else:
             return "Unknown scene to analyze: " + args[1]
 
-    def __toggleNoClip(self, _):
-        from tf.movement.MoveType import MoveType
-        base.localAvatar.toggleNoClip()
-        base.localAvatar.sendUpdate('toggleNoClip')
-        if base.localAvatar.moveType == MoveType.NoClip:
-            return "No clip ON"
-        else:
-            return "No clip OFF"
-
     def extractArgs(self, expr : str):
         """
         Extracts the magic word expression into a command and list of
@@ -167,7 +146,11 @@ class TFMagicWordManager(DistributedObject):
                 return "Exception thrown in " + cmd + ": " + str(e)
         else:
             # Try it on the server.
-            #self.sendUpdate('setMagicWord', (cmd, args))
+            self.sendUpdate('setMagicWord', (cmd, args))
             return ""
+
+    def magicWordResp(self, resp):
+        if resp:
+            base.localAvatar.chatFeed.addChat("Magic words: " + resp)
 
 
