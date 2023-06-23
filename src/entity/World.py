@@ -121,7 +121,8 @@ class World(DistributedSolidEntity):
         self.initWorldCollisions()
 
         # Enable Z-prepass on the world geometry.
-        self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask|DirectRender.ReflectionCameraBitmask))
+        if base.config.GetBool('tf-do-z-prepass', True):
+            self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask|DirectRender.ReflectionCameraBitmask))
         self.flattenLight()
 
         """
