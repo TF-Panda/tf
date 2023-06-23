@@ -9,6 +9,8 @@ from panda3d.core import (
     PStatCollector, SteamAudioProperties, loadPrcFileData, ProxyAudioSound)
 import random
 
+from tf.tfbase import TFGlobals
+
 csc_coll = PStatCollector("App:Sounds:CreateSoundClient")
 get_sound_coll = PStatCollector("App:Sounds:CreateSoundClient:GetSound")
 
@@ -38,14 +40,16 @@ def distMultToSoundLevel(distMult):
     else:
         return 0.0
 
-def remapVal(val, A, B, C, D):
-    if A == B:
-        return D if val >= B else C
-
-    return C + (D - C) * (val - A) / (B - A)
-
 def setSoundLevel(sound, sndlvl):
     sound.set3dMinDistance(1.0 / soundLevelToDistMult(sndlvl))
+
+def sourcePitchToPlayRate(pitch):
+    if pitch < 100:
+        return TFGlobals.remapVal(pitch, 0, 100, 0.5, 1.0)
+    elif pitch > 100:
+        return TFGlobals.remapVal(pitch, 100, 255, 1.0, 2.0)
+    else:
+        return 1.0
 
 class Channel(IntEnum):
 
@@ -319,19 +323,8 @@ def processSound(kv):
                 else:
                     info.pitch = [float(minmax[0]), float(minmax[0])]
 
-            if info.pitch[0] < 100:
-                info.pitch[0] = remapVal(info.pitch[0], 0, 100, 0.5, 1.0)
-            elif info.pitch[0] > 100:
-                info.pitch[0] = remapVal(info.pitch[0], 100, 255, 1.0, 2.0)
-            else:
-                info.pitch[0] = 1.0
-
-            if info.pitch[1] < 100:
-                info.pitch[1] = remapVal(info.pitch[1], 0, 100, 0.5, 1.0)
-            elif info.pitch[1] > 100:
-                info.pitch[1] = remapVal(info.pitch[1], 100, 255, 1.0, 2.0)
-            else:
-                info.pitch[1] = 1.0
+            info.pitch[0] = sourcePitchToPlayRate(info.pitch[0])
+            info.pitch[1] = sourcePitchToPlayRate(info.pitch[1])
 
     for i in range(kv.getNumChildren()):
         child = kv.getChild(i)

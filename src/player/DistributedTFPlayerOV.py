@@ -1,7 +1,7 @@
 """ DistributedTFPlayerOV: Local TF player """
 
 from panda3d.core import WindowProperties, Vec2, Datagram, Point3, Vec3, lookAt
-from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker, Quat
+from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker, Quat, ConfigVariableFilename
 
 from .DistributedTFPlayer import DistributedTFPlayer
 from .PlayerCommand import PlayerCommand
@@ -28,6 +28,8 @@ from tf.tfgui.TFClassMenu import TFClassMenu
 from tf.tfgui.TFTeamMenu import TFTeamMenu
 from tf.tfgui.VoiceCommandMenu import VoiceCommandMenu
 
+from tf.tfbase import Sounds
+
 import random
 
 spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
@@ -39,6 +41,13 @@ mouse_sensitivity = ConfigVariableDouble("mouse-sensitivity", 3.0)
 mouse_raw_input = ConfigVariableBool("mouse-raw-input", True)
 
 tf_show_damage_numbers = ConfigVariableBool("tf-show-damage-numbers", False)
+
+tf_damage_sound = ConfigVariableBool("tf-damage-sound", False)
+tf_damage_sound_filename = ConfigVariableFilename("tf-damage-sound-filename", "")
+tf_damage_sound_volume = ConfigVariableDouble("tf-damage-sound-volume", 1.0)
+tf_damage_sound_pitch_min = ConfigVariableDouble("tf-damage-sound-pitch-min", 255)
+tf_damage_sound_pitch_max = ConfigVariableDouble("tf-damage-sound-pitch-max", 0.5)
+tf_damage_sound_interval = ConfigVariableDouble("tf-damage-sound-interval", 0.0)
 
 # My nvidia so is crashing when I enable relative mode on linux,
 # so doing MConfined on linux for now.
@@ -155,6 +164,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.predictionError = Vec3()
         self.predictionErrorTime = 0.0
+
+        self.lastDamageSoundTime = 0.0
 
     def getPredictionErrorSmoothingVector(self):
         errorAmount = (base.clockMgr.getClientTime() - self.predictionErrorTime) / 0.1
@@ -365,6 +376,18 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
     def onDamagedOther(self, amount, pos):
         if tf_show_damage_numbers.value:
             self.dmgNumbers.addDamage(amount, pos)
+
+        if tf_damage_sound.value:
+            now = base.clockMgr.getClientFrameTime()
+            if (now - self.lastDamageSoundTime) >= tf_damage_sound_interval.value:
+                self.lastDamageSoundTime = now
+                snd = base.loader.loadSfx(tf_damage_sound_filename.value)
+                pitch = Sounds.sourcePitchToPlayRate(
+                    TFGlobals.remapValClamped(amount, 10, 150, tf_damage_sound_pitch_min.value, tf_damage_sound_pitch_max.value)
+                )
+                snd.setPlayRate(pitch)
+                snd.setVolume(tf_damage_sound_volume.value)
+                snd.play()
 
     def hitBoxDebug(self, positions, rayStart, rayDirs):
         rayStart = Point3(rayStart[0], rayStart[1], rayStart[2])
