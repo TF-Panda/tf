@@ -6,6 +6,7 @@ from direct.distributed.PyDatagram import PyDatagram
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
 from tf.distributed.DistributedGameAI import DistributedGameAI
+from tf.distributed.TFMagicWordManagerAI import TFMagicWordManagerAI
 from tf.tfbase import TFGlobals
 
 from tf.player.LagCompensation import LagCompensation
@@ -28,6 +29,13 @@ class TFServerRepository(ServerRepository):
         self.game = DistributedGameAI()
         base.game = self.game
         self.generateObject(self.game, TFGlobals.UberZone)
+
+        self.magicWordManager = TFMagicWordManagerAI()
+        self.generateObject(self.magicWordManager, TFGlobals.MagicWordZone)
+
+    def isValidClientInterest(self, zoneId):
+        # The client can only request interest to the uber zone.
+        return zoneId == TFGlobals.UberZone
 
     def wantAuthentication(self):
         return base.config.GetBool('tf-want-captcha', False)

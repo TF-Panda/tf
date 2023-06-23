@@ -10,6 +10,9 @@ UberZone = 1
 # level partitioning structure.
 GameZone = 2
 
+# Zone granted to avatars with magic word access.
+MagicWordZone = 3
+
 ###############################################################################
 
 from panda3d.core import Vec3, DynamicTextFont, NodePath, LineSegs

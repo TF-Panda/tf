@@ -214,17 +214,6 @@ class TFBase(ShowBase, FSM):
         self.enableIk = True
         # Development debug shortcuts.
         self.wantDevHotkeys = __debug__ and self.config.GetBool('tf-want-dev-hotkeys', True)
-        if self.wantDevHotkeys:
-            self.accept('shift-w', self.toggleWireframe)
-            self.accept('shift-b', self.toggleBounds)
-            self.accept('shift-r', ShaderManager.getGlobalPtr().reloadShaders)
-            self.accept('shift-p', self.togglePbr)
-            self.accept('shift-i', self.toggleIk)
-            self.accept('shift-l', self.render.ls)
-            self.accept('shift-k', self.vmRender.ls)
-            self.accept('shift-j', self.sky3DTop.ls)
-            self.accept('shift-0', self.toggleLocalAvNoClip)
-        #self.accept('shift-j', self.printVMRenderMasks)
 
         self.planarReflect = PlanarReflector(1024, "reflection", True)
         self.planarRefract = PlanarReflector(1024, "refraction", False)

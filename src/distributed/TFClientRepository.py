@@ -31,6 +31,8 @@ class TFClientRepository(ClientRepository, FSM):
 
         self.captchaTex = None
 
+        self.magicWordManager = None
+
     def handleServerAuthenticateRequest(self, dgi):
         if self.getCurrentStateOrTransition() != 'Authenticate':
             return

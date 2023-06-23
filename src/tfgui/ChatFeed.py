@@ -88,10 +88,16 @@ class ChatFeed:
     def onEnterChat(self, text):
         # Don't send empty chats.  Server also checks this.
         if text:
-            # Send to server so it can relay the chat to other clients.
-            base.localAvatar.sendUpdate('say', [text, self.teamOnlyChat])
-            # Display on our end immediately.
-            base.localAvatar.playerChat(text, self.teamOnlyChat)
+            if text[0] == '~' and base.cr.magicWordManager:
+                # It's a magic word, don't actually say it.
+                response = base.cr.magicWordManager.b_setMagicWord(text)
+                if response:
+                    self.addChat("Magic words: " + response)
+            else:
+                # Send to server so it can relay the chat to other clients.
+                base.localAvatar.sendUpdate('say', [text, self.teamOnlyChat])
+                # Display on our end immediately.
+                base.localAvatar.playerChat(text, self.teamOnlyChat)
         base.localAvatar.enableControls()
         self.hideChatEntry()
 

@@ -55,9 +55,8 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.skyClnp = None
         self.waterGeomNp = None
 
-        if base.wantDevHotkeys:
-            self.accept('shift-v', self.toggleVisDebug)
-        #self.accept('c', self.renderCubeMaps)
+        self.probeVis = False
+        self.probeVisRoot = None
 
         self.goalLbl = DirectLabel(text='', pos=(0, 0, 0.55), text_shadow=TFGuiProperties.TextShadowColor, text_align=TextNode.ACenter, text_scale=0.05,
                                       parent=base.aspect2d, suppressKeys=False, suppressMouse=False, text_fg=TFGuiProperties.TextColorLight,
@@ -73,6 +72,20 @@ class DistributedGame(DistributedObject, DistributedGameBase):
 
         self.winPanel = None
         self.winPanelRemoveTask = None
+
+    def toggleProbeVis(self):
+        self.probeVis = not self.probeVis
+        if not self.probeVis:
+            self.probeVisRoot.removeNode()
+            self.probeVisRoot = None
+        else:
+            self.probeVisRoot = base.render.attachNewNode("probeVisRoot")
+            sm = base.loader.loadModel("models/misc/smiley")
+            sm.setTextureOff(1)
+            for i in range(self.lvlData.getNumAmbientProbes()):
+                probe = self.lvlData.getAmbientProbe(i)
+                np = sm.copyTo(self.probeVisRoot)
+                np.setPos(probe.getPos())
 
     def showWinPanel(self, winTeam, winReason):
         self.winPanel = WinPanel(winTeam, winReason)

@@ -651,7 +651,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         #self.d_displayChat("%s was automatically assigned to team %s." % (name, self.getTeamName(team)))
         player.doChangeClass(random.randint(0, Class.COUNT - 1), respawn=False, force=True,
                              sendRespawn=False, giveWeapons=False)
-        base.sv.generateObject(player, TFGlobals.GameZone, client)
+        base.air.generateObject(player, TFGlobals.GameZone, client)
         player.startWaitingToRespawn()
 
         if self.waitingForPlayers:
@@ -660,3 +660,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
 
         self.sendUpdate('joinGameResp', [base.tickCount], client=client)
 
+        # Give them magic word access.
+        # TODO: Determine who should have access.
+        base.air.addExplicitInterest(client, [TFGlobals.MagicWordZone])
