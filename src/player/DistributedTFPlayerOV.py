@@ -165,6 +165,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.predictionError = Vec3()
         self.predictionErrorTime = 0.0
 
+        self.damageSound = None
         self.lastDamageSoundTime = 0.0
 
     def getPredictionErrorSmoothingVector(self):
@@ -373,6 +374,11 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
     #def disableController(self):
     #    pass
 
+    def getDamageSound(self):
+        if not self.damageSound:
+            self.damageSound = base.loader.loadSfx(tf_damage_sound_filename.value)
+        return base.sfxManager.getSound(self.damageSound)
+
     def onDamagedOther(self, amount, pos):
         if tf_show_damage_numbers.value:
             self.dmgNumbers.addDamage(amount, pos)
@@ -381,7 +387,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             now = base.clockMgr.getClientFrameTime()
             if (now - self.lastDamageSoundTime) >= tf_damage_sound_interval.value:
                 self.lastDamageSoundTime = now
-                snd = base.loader.loadSfx(tf_damage_sound_filename.value)
+                snd = self.getDamageSound()
                 pitch = Sounds.sourcePitchToPlayRate(
                     TFGlobals.remapValClamped(amount, 10, 150, tf_damage_sound_pitch_min.value, tf_damage_sound_pitch_max.value)
                 )
