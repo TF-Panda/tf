@@ -21,7 +21,9 @@ from tf.tfgui.KillFeed import KillFeed
 from tf.tfgui.ObjectPanel import (DispenserPanel, EntrancePanel, ExitPanel,
                                   SentryPanel)
 from tf.tfgui.TFClassMenu import TFClassMenu
+from tf.tfgui.TFHud import TFHud
 from tf.tfgui.TFTeamMenu import TFTeamMenu
+from tf.tfgui.TFWeaponSelection import TFWeaponSelection
 from tf.tfgui.VoiceCommandMenu import VoiceCommandMenu
 
 from .DistributedTFPlayer import DistributedTFPlayer
