@@ -127,6 +127,7 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                     continue
 
                 if entity.isDead():
+                    self.touching.remove(entity)
                     continue
 
                 # If the round is over and non-stalemate, only the
