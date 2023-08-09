@@ -44,6 +44,7 @@ from tf.entity.DHealthKit/AI import DHealthKitSmall/AI
 from tf.entity.DHealthKit/AI import DHealthKitMedium/AI
 from tf.entity.DHealthKit/AI import DHealthKitFull/AI
 from tf.entity.DistributedTeamFlag/AI import DistributedTeamFlag/AI
+from tf.entity.DistributedFuncRespawnRoom/AI import DistributedFuncRespawnRoom/AI
 from tf.player.DViewModel/AI import DViewModel/AI
 from tf.weapon.DistributedWeapon/AI import DistributedWeapon/AI
 from tf.weapon.TFWeapon import TFWeapon/AI
@@ -663,4 +664,7 @@ dclass TeamRoundTimer : DistributedObject {
 dclass TFMagicWordManager : DistributedObject {
   setMagicWord(string cmd, string args[]) clsend airecv;
   magicWordResp(string resp);
+};
+
+dclass DistributedFuncRespawnRoom : DistributedTrigger {
 };

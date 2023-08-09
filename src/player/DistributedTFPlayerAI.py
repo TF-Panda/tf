@@ -121,6 +121,19 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.recentKills = []
 
+        self.respawnRooms = set()
+
+    def addRespawnRoom(self, doId):
+        if not doId in self.respawnRooms:
+            self.respawnRooms.add(doId)
+
+    def clearRespawnRoom(self, doId):
+        if doId in self.respawnRooms:
+            self.respawnRooms.remove(doId)
+
+    def isInRespawnRoom(self):
+        return len(self.respawnRooms) > 0
+
     def getWorldSpaceCenter(self):
         return DistributedTFPlayerShared.getWorldSpaceCenter(self)
 
@@ -1277,6 +1290,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             else:
                 base.game.d_displayChat("%s joined team %s" % (self.playerName, base.game.getTeamName(self.team)))
 
+    def canChangeClassImmediately(self):
+        return not self.isInRespawnRoom()
+
     def changeClass(self, cls, respawn = True, force = False, sendRespawn = True, giveWeapons = True):
         if not base.game.isChangeClassAllowed():
             return
@@ -1288,11 +1304,10 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if (cls < Class.Scout) or (cls > Class.Spy):
             return
 
-        if self.playerState == TFPlayerState.Playing:
-            # TODO: Check if we are in a respawn room.
+        if self.playerState == TFPlayerState.Playing and not self.isInRespawnRoom():
             self.die()
 
-        if self.playerState != TFPlayerState.Fresh:
+        if self.playerState not in (TFPlayerState.Fresh, TFPlayerState.Playing):
             self.pendingChangeClass = cls
             base.game.d_displayChat("You will spawn as %s." % (ClassInfos[self.pendingChangeClass].Name), client=self.owner)
         else:
