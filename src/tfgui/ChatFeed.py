@@ -1,19 +1,20 @@
 """ChatFeed module: contains the ChatFeed class."""
 
-from direct.interval.IntervalGlobal import *
-from direct.gui.DirectGui import *
-
-from tf.tfbase import TFGlobals
-from tf.tfgui import TFGuiProperties
-
 from panda3d.core import *
+
+from direct.gui.DirectGui import *
+from direct.interval.IntervalGlobal import *
+from tf.tfbase import TFGlobals
+
+from .TextBuffer import TextBuffer
+
 
 class Chat:
 
     def __init__(self, lbl, lifetime, size):
         self.lbl = lbl
         self.lifetime = lifetime
-        self.removeTime = base.clockMgr.getTime() + self.lifetime
+        self.removeTime = globalClock.frame_time + self.lifetime
         self.size = size
         self.track = Sequence(
             LerpColorScaleInterval(self.lbl, 0.3, (1, 1, 1, 1), (1, 1, 1, 0)),
@@ -41,110 +42,109 @@ class ChatFeed:
     MaxWindowSizeZ = 0.5
     ChatColor = (0.984, 0.925, 0.796, 1.0)
 
-    def __init__(self):
-        self.root = base.a2dBottomLeft.attachNewNode("chatFeedRoot")
-        self.root.setPos(0.1, 0, 0.4)
-        self.chatRoot = self.root.attachNewNode("chatRoot")
-        self.chatRoot.setEffect(
-            ScissorEffect.makeNode((0, 0, 0), (0, 0, self.ChatWindowSizeY),
-                                  (self.ChatWindowSizeX, 0, self.ChatWindowSizeY),
-                                  (self.ChatWindowSizeX, 0, 0), self.root))
-        self.chats = []
+    # Amount of time we show the chat feed after activity.
+    PeekInterval = 10.0
 
+    def __init__(self):
         self.chatSound = base.loader.loadSfx("sound/ui/chat_display_text.wav")
         self.chatSound.setVolume(0.5)
 
         self.task = base.taskMgr.add(self.__updateTask, 'chatFeedUpdate')
 
-        self.chatEntry = None
-        self.suppressFrame = None
         self.teamOnlyChat = False
 
+        self.hideTime = 0.0
+
+        self.root = NodePath("chatRoot")
+        self.root.reparentTo(base.a2dBottomLeft)
+        self.root.setPos(0.1, 0, 1.0)
+
+        bufferDim = (0, 1, -0.5, 0)
+
+        self.buffer = TextBuffer(dimensions=bufferDim, enterCallback=self.onEnterChat, font=TFGlobals.getTF2SecondaryFont(), parent=self.root)
+
+        # Hide the buffer window and all that but keep the text.
+        self.canvasInstanceRoot = self.root.attachNewNode("canvasInstance")
+        self.canvasInstanceRoot.setTransparency(True)
+        self.canvasInstance = self.buffer.scrollFrame.getCanvas().instanceTo(self.canvasInstanceRoot)
+
+        self.alpha = 0.0
+        self.goalAlpha = 0.0
+        self.fadeOutSpeed = 4.0
+        self.fadeInSpeed = 4.0
+
+    def showPeek(self):
+        self.goalAlpha = 1.0
+        self.canvasInstanceRoot.unstash()
+
+    def hidePeek(self):
+        self.goalAlpha = 0.0
+
     def hideChatEntry(self):
-        #if self.suppressFrame:
-        #    self.suppressFrame.destroy()
-        #    self.suppressFrame = None
-        if self.chatEntry:
-            self.chatEntry.destroy()
-            self.chatEntry = None
+        self.buffer.close()
+        if self.hideTime > globalClock.frame_time:
+            self.showPeek()
 
     def showChatEntry(self, teamOnly):
-        if self.chatEntry:
+        if self.buffer.isOpen:
             return
 
         self.teamOnlyChat = teamOnly
 
-        base.localAvatar.disableControls()
+        if hasattr(base, 'localAvatar'):
+            base.localAvatar.disableControls()
 
-        #self.suppressFrame = DirectFrame(frameSize=(-1000, 1000, -1000, 1000), parent=self.root, relief=DGG.FLAT, suppressKeys=True, suppressMouse=True,
-        #                                 frameColor=(0.5, 0.5, 0.5, 0.5))
-        #self.suppressFrame.guiItem.setFocus(1)
-        #self.suppressFrame.guiItem.setBackgroundFocus(1)
-        #print(self.suppressFrame.guiItem.getFrame())
-        self.chatEntry = DirectEntry(overflow=0, parent=self.root, scale=self.ChatScale, pos=(0, 0, -0.05), width=25,
-                                     frameColor=TFGuiProperties.BackgroundColorNeutralTranslucent, text_fg=self.ChatColor, text_shadow=(0, 0, 0, 1), focus=1,
-                                     command=self.onEnterChat, entryFont=TFGlobals.getTF2SecondaryFont(), suppressKeys=1, suppressMouse=1)
+        self.buffer.open()
+        self.hidePeek()
 
     def onEnterChat(self, text):
         # Don't send empty chats.  Server also checks this.
         if text:
-            if text[0] == '~' and base.cr.magicWordManager:
-                # It's a magic word, don't actually say it.
-                response = base.cr.magicWordManager.b_setMagicWord(text)
-                if response:
-                    self.addChat("Magic words: " + response)
+            if hasattr(base, 'localAvatar'):
+                if text[0] == '~' and base.cr.magicWordManager:
+                    # It's a magic word, don't actually say it.
+                    response = base.cr.magicWordManager.b_setMagicWord(text)
+                    if response:
+                        self.addChat("Magic words: " + response)
+                else:
+                    # Send to server so it can relay the chat to other clients.
+                    base.localAvatar.sendUpdate('say', [text, self.teamOnlyChat])
+                    # Display on our end immediately.
+                    base.localAvatar.playerChat(text, self.teamOnlyChat)
             else:
-                # Send to server so it can relay the chat to other clients.
-                base.localAvatar.sendUpdate('say', [text, self.teamOnlyChat])
-                # Display on our end immediately.
-                base.localAvatar.playerChat(text, self.teamOnlyChat)
-        base.localAvatar.enableControls()
+                self.addChat(text)
+        if hasattr(base, 'localAvatar'):
+            base.localAvatar.enableControls()
         self.hideChatEntry()
 
     def cleanup(self):
-        for chat in self.chats:
-            chat.cleanup()
-        self.chats = None
-        self.chatRoot.removeNode()
-        self.chatRoot = None
-        self.root.removeNode()
-        self.root = None
-        self.task.remove()
-        self.task = None
-
-    def removeChat(self, info):
-        info.cleanup()
-        self.chats.remove(info)
+        self.buffer.cleanup()
+        self.buffer = None
 
     def update(self):
-        removeChats = []
-        for chat in self.chats:
-            if base.clockMgr.getTime() >= chat.removeTime:
-                removeChats.append(chat)
+        if self.hideTime <= globalClock.frame_time:
+            self.hidePeek()
 
-        for chat in removeChats:
-            self.removeChat(chat)
+        if self.alpha != self.goalAlpha:
+            if self.alpha > self.goalAlpha:
+                # Fade out.
+                self.alpha = TFGlobals.approach(self.goalAlpha, self.alpha, self.fadeOutSpeed * globalClock.dt)
+                if self.alpha == self.goalAlpha:
+                    self.canvasInstanceRoot.stash()
+            else:
+                # Fade in.
+                self.alpha = TFGlobals.approach(self.goalAlpha, self.alpha, self.fadeInSpeed * globalClock.dt)
+
+            self.canvasInstanceRoot.setColorScale(1, 1, 1, self.alpha)
 
     def __updateTask(self, task):
         self.update()
         return task.cont
 
     def addChat(self, text, playSound=True):
-        lbl = OnscreenText(text, align=TextNode.ALeft, scale=self.ChatScale, wordwrap=self.ChatWordwrap,
-                           fg=self.ChatColor, shadow=(0, 0, 0, 1), font=TFGlobals.getTF2SecondaryFont())
-        lbl.reparentTo(self.chatRoot)
-        mins = Point3()
-        maxs = Point3()
-        lbl.calcTightBounds(mins, maxs)
-        sizeZ = maxs[2] - mins[2]
-        self.chatRoot.setZ(self.chatRoot, sizeZ + self.ChatVPad)
-        lbl.setZ(-self.chatRoot.getZ() + sizeZ * 0.5 + self.ChatVPad)
-
+        self.buffer.addLine(text)
         if playSound:
             self.chatSound.play()
-
-        self.chats.append(Chat(lbl, self.ChatLifetime, sizeZ))
-
-        if len(self.chats) > self.MaxChats:
-            # Remove oldest chat.
-            self.removeChat(self.chats[0])
+        if not self.buffer.isOpen:
+            self.showPeek()
+        self.hideTime = globalClock.frame_time + self.PeekInterval
