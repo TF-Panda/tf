@@ -1,5 +1,8 @@
 from panda3d.core import *
 
+from tf.tfbase import TFGlobals
+from tf.tfbase.TFGlobals import TFTeam
+
 ExplosionWallEffect = None
 def getExplosionWallEffect():
     global ExplosionWallEffect
@@ -333,7 +336,6 @@ def getRocketBackBlastEffect():
 StickybombPulse = [None, None]
 def getStickybombPulseEffect(team):
     if not StickybombPulse[team]:
-        from tf.tfbase import TFGlobals
         system = ParticleSystem2()
         system.setPoolSize(3)
         emitter = ContinuousParticleEmitter()
@@ -407,8 +409,6 @@ def getStickybombPulseEffect(team):
 PipebombTimer = [None, None]
 def getPipebombTimerEffect(team):
     if not PipebombTimer[team]:
-        from tf.tfbase import TFGlobals
-
         # Timer child
         system2 = ParticleSystem2()
         system2.setPoolSize(51)
@@ -481,9 +481,6 @@ def getPipebombTimerEffect(team):
 PipebombTrail = [None, None]
 def getPipebombTrailEffect(team):
     if not PipebombTrail[team]:
-
-        from tf.tfbase import TFGlobals
-
         system = ParticleSystem2()
         system.setPoolSize(124)
 
@@ -863,7 +860,6 @@ OverhealedEffect = [None, None]
 def getOverhealedEffect(team):
     global OverhealedEffect
     if not OverhealedEffect[team]:
-        from tf.tfbase import TFGlobals
 
         system = ParticleSystem2()
         system.setPoolSize(30)
@@ -913,7 +909,6 @@ PlayerTeleportEffect = [None, None]
 def getPlayerTeleportEffect(team):
     global PlayerTeleportEffect
     if not PlayerTeleportEffect[team]:
-        from tf.tfbase import TFGlobals
 
         system = ParticleSystem2()
         system.setPoolSize(200)
@@ -990,7 +985,6 @@ MedigunHealBeam = [None, None]
 def getMedigunHealBeam(team):
     global MedigunHealBeam
     if not MedigunHealBeam[team]:
-        from tf.tfbase.TFGlobals import TFTeam
 
         sys = ParticleSystem2()
         sys.setPoolSize(166)
@@ -1067,7 +1061,6 @@ DispenserHealBeam = [None, None]
 def getDispenserHealBeam(team):
     global DispenserHealBeam
     if not DispenserHealBeam[team]:
-        from tf.tfbase.TFGlobals import TFTeam
 
         sys = ParticleSystem2()
         sys.setPoolSize(166)

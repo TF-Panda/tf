@@ -1,8 +1,9 @@
 """TFGameRulesProxyAI module: contains the TFGameRulesProxyAI class."""
 
+from tf.tfbase import TFGlobals
+
 from .EntityBase import EntityBase
 
-from tf.tfbase import TFGlobals
 
 class TFGameRulesProxyAI(EntityBase):
 

@@ -1,6 +1,6 @@
 """SoundEmitter module: contains the SoundEmitter class."""
 
-from panda3d.core import Vec3, Quat, PStatCollector
+from panda3d.core import PStatCollector, Quat, Vec3
 
 from direct.showbase.DirectObject import DirectObject
 

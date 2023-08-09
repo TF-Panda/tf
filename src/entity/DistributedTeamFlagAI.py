@@ -1,13 +1,15 @@
 """DistributedTeamFlagAI module: contains the DistributedTeamFlagAI class."""
 
-from panda3d.pphysics import *
 from panda3d.core import *
+from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import TFTeam, SpeechConcept, WorldParent, SolidShape, SolidFlag
-from tf.tfbase import CollisionGroups, TFFilters
 from tf.distributed.GameContextMessages import GameContextMessage
+from tf.tfbase import CollisionGroups, TFFilters, TFGlobals
+from tf.tfbase.TFGlobals import (SolidFlag, SolidShape, SpeechConcept, TFTeam,
+                                 WorldParent)
 
 from .DistributedEntity import DistributedEntityAI
+
 
 # TODO: Use the trigger from the map.
 class CaptureZone:

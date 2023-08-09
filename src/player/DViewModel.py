@@ -1,13 +1,13 @@
 
-from tf.actor.DistributedChar import DistributedChar
-
-from .DViewModelShared import DViewModelShared
+import math
 
 from panda3d.core import *
 
 from tf.actor.AnimEvents import AnimEvent
+from tf.actor.DistributedChar import DistributedChar
 
-import math
+from .DViewModelShared import DViewModelShared
+
 
 class ViewInfo:
     pass

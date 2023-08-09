@@ -1,6 +1,7 @@
 """CubemapRendering module: contains the CubemapRendering class."""
 
 from panda3d.core import *
+
 from direct.directbase import DirectRender
 
 CubeFaces = [

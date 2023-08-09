@@ -1,11 +1,11 @@
-from .TFWeaponMelee import TFWeaponMelee
+import random
 
+from tf.actor.Activity import Activity
+from tf.tfbase import TFLocalizer
+
+from .TFWeaponMelee import TFWeaponMelee
 from .WeaponMode import TFWeaponMode, TFWeaponType
 
-from tf.tfbase import TFLocalizer
-from tf.actor.Activity import Activity
-
-import random
 
 class DistributedFists(TFWeaponMelee):
 

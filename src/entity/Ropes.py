@@ -3,9 +3,9 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
+from . import RopePhysics
 from .DistributedEntity import DistributedEntity
 
-from . import RopePhysics
 
 class RopeKeyFrame(DistributedEntity):
 

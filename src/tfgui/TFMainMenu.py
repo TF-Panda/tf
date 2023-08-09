@@ -1,15 +1,15 @@
-from direct.gui.DirectGui import DirectButton, OnscreenImage, OnscreenText
-from direct.fsm.StateData import StateData
-
 import platform
-#import psutil
-
-from panda3d.core import TextNode, ConfigVariableInt, ConfigVariableString
-
-from tf.tfbase import TFLocalizer
-
 import random
 import sys
+
+from panda3d.core import ConfigVariableInt, ConfigVariableString, TextNode
+
+from direct.fsm.StateData import StateData
+from direct.gui.DirectGui import DirectButton, OnscreenImage, OnscreenText
+from tf.tfbase import TFLocalizer
+
+#import psutil
+
 
 class TFMainMenu(StateData):
 

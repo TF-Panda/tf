@@ -3,16 +3,16 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.directbase import DirectRender
-
-from .Model import Model
-from tf.tfbase.SurfaceProperties import SurfaceProperties
+from direct.directnotify.DirectNotifyGlobal import directNotify
 from tf.tfbase import CollisionGroups
+from tf.tfbase.SurfaceProperties import SurfaceProperties
+
+from .AnimEvents import AnimEvent, AnimEventType
 from .HitBox import HitBox
+from .Model import Model
 from .Ragdoll import Ragdoll
 
-from .AnimEvents import AnimEventType, AnimEvent
 
 class Actor(Model):
     """

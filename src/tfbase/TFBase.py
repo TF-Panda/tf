@@ -1,25 +1,29 @@
+import os
+import random
+
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from direct.showbase.ShowBase import ShowBase
-from direct.directnotify.DirectNotifyGlobal import directNotify
-from direct.gui.DirectGui import DGG
 from direct.directbase import DirectRender
-
-from direct.fsm.FSM import FSM
-
-from tf.distributed.TFClientRepository import TFClientRepository
-from tf.tfbase import TFGlobals, TFLocalizer, SurfaceProperties, Soundscapes, Sounds
-from tf.tfgui.TFMainMenu import TFMainMenu
-from tf.tfgui.NotifyView import NotifyView
-from tf.tfgui.GuiPanel import GuiPanel
-from tf.tfgui.TFDialog import TFDialog
-from .TFPostProcess import TFPostProcess
-from .PlanarReflector import PlanarReflector
-from . import CollisionGroups
-from . import Sounds
-
+from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed2.ClientConfig import *
+from direct.fsm.FSM import FSM
+from direct.gui.DirectGui import DGG, OnscreenImage, OnscreenText
+from direct.interval.IntervalGlobal import (Func, LerpColorScaleInterval,
+                                            Sequence, Wait)
+from direct.showbase.ShowBase import ShowBase
+from tf.actor.Actor import Actor
+from tf.distributed.TFClientRepository import TFClientRepository
+from tf.tfbase import (Sounds, Soundscapes, SurfaceProperties, TFGlobals,
+                       TFLocalizer)
+from tf.tfgui.GuiPanel import GuiPanel
+from tf.tfgui.NotifyView import NotifyView
+from tf.tfgui.TFDialog import TFDialog
+from tf.tfgui.TFMainMenu import TFMainMenu
+
+from . import CollisionGroups, Sounds
+from .PlanarReflector import PlanarReflector
+from .TFPostProcess import TFPostProcess
 
 #from .Console import Console
 
@@ -356,7 +360,6 @@ class TFBase(ShowBase, FSM):
         return task.cont
 
     def doScreenshot(self):
-        import os
         if not os.path.isdir("screenshots"):
             os.mkdir("screenshots")
         self.screenshot('screenshots/screenshot')
@@ -383,7 +386,6 @@ class TFBase(ShowBase, FSM):
         self.particleQueue.append((system, parent, duration))
 
     def processParticleQueue(self):
-        from direct.interval.IntervalGlobal import Sequence, Wait, Func
         for sys, parent, duration in self.particleQueue:
             sys.start(parent)
             Sequence(Wait(duration), Func(sys.softStop)).start()
@@ -404,7 +406,6 @@ class TFBase(ShowBase, FSM):
             self.r_printNodeMasks(child, indent + 2)
 
     def __updateCharacters(self, task):
-        from tf.actor.Actor import Actor
         Actor.updateAllAnimations()
         return task.cont
 
@@ -640,8 +641,6 @@ class TFBase(ShowBase, FSM):
         ShowBase.windowEvent(self, win)
 
     def enterIntro(self):
-        from direct.interval.IntervalGlobal import Sequence, Wait, LerpColorScaleInterval, Func
-        from direct.gui.DirectGui import OnscreenImage, OnscreenText
         bgCard = CardMaker('bgCard')
         bgCard.setFrameFullscreenQuad()
         bgCardNp = self.render2d.attachNewNode(bgCard.generate())

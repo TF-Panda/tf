@@ -1,6 +1,7 @@
+from panda3d.core import *
+
 from .BaseRocket import BaseRocket
 
-from panda3d.core import *
 
 class RocketProjectile(BaseRocket):
 

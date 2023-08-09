@@ -1,21 +1,19 @@
 """DistributedMedigun module: contains the DistributedMedigun class."""
 
 
+import math
+
 from panda3d.core import *
 from panda3d.physics import *
 
-from .TFWeaponGun import TFWeaponGun
-
-from tf.tfbase import TFLocalizer
-
-from .WeaponMode import TFWeaponMode, TFWeaponType
-from tf.tfbase.TFGlobals import SpeechConcept
-from tf.tfbase import TFFilters, TFEffects, CollisionGroups
+from tf.actor.Activity import Activity
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
-from tf.actor.Activity import Activity
+from tf.tfbase import CollisionGroups, TFEffects, TFFilters, TFLocalizer
+from tf.tfbase.TFGlobals import SpeechConcept
 
-import math
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFWeaponMode, TFWeaponType
 
 # heal()
 # recalculateInvuln()

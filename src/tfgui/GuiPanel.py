@@ -3,6 +3,7 @@
 from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
 
+
 class GuiPanel(DirectFrame):
     """
     This is a base class for a popup GUI panel that associates commands

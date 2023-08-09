@@ -1,19 +1,19 @@
 """DistributedFlameThrower module: contains the DistributedFlameThrower class."""
 
-from .TFWeaponGun import TFWeaponGun
-from .WeaponMode import TFWeaponMode
+import random
 
+from panda3d.core import Point3, Quat, Vec3, qpLight
+
+from direct.directbase import DirectRender
+from tf.actor.Activity import Activity
+from tf.actor.Actor import Actor
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
-from tf.actor.Actor import Actor
-from tf.actor.Activity import Activity
-from tf.tfbase import TFLocalizer, TFFilters, TFGlobals, CollisionGroups
+from tf.tfbase import CollisionGroups, TFFilters, TFGlobals, TFLocalizer
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
-from direct.directbase import DirectRender
 
-from panda3d.core import Vec3, Quat, Point3, qpLight
-
-import random
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFWeaponMode
 
 FLAME_VELOCITY = 2300
 FLAME_DRAG = 0.89

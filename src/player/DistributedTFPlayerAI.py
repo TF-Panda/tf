@@ -1,33 +1,32 @@
 
-from tf.actor.DistributedCharAI import DistributedCharAI
-from direct.distributed2.ServerConfig import *
-from .DistributedTFPlayerShared import DistributedTFPlayerShared
-
-from direct.directnotify.DirectNotifyGlobal import directNotify
-
-from .PlayerCommand import PlayerCommand
-from .InputButtons import InputFlag
-from .TFPlayerAnimStateAI import TFPlayerAnimStateAI
-from .PlayerAnimEvent import PlayerAnimEvent
-from .TFClass import *
-from .DViewModelAI import DViewModelAI
-from .ObserverMode import ObserverMode
-from .TFPlayerState import TFPlayerState
-from tf.weapon.TakeDamageInfo import addMultiDamage, TakeDamageInfo
-
-from tf.tfbase import TFGlobals, Sounds, TFFilters, CollisionGroups
-from tf.tfbase.TFGlobals import TakeDamage, DamageType, TFTeam, SpeechConcept
-
-from tf.actor.HitBox import HitBoxGroup
+import random
 
 from panda3d.core import *
 
-from . import ResponseClassRegistry
-from . import ResponseSystem
-from . import ResponseCriteria
-from . import ResponseSystemBase
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.distributed2.ServerConfig import *
+from tf.actor.DistributedCharAI import DistributedCharAI
+from tf.actor.HitBox import HitBoxGroup
+from tf.object.ObjectDefs import ObjectDefs
+from tf.object.ObjectType import ObjectType
+from tf.tfbase import CollisionGroups, Sounds, TFFilters, TFGlobals
+from tf.tfbase.TFGlobals import DamageType, SpeechConcept, TakeDamage, TFTeam
+from tf.weapon import WeaponRegistry
+from tf.weapon.DistributedRocketLauncher import DistributedRocketLauncherAI
+from tf.weapon.DistributedShotgun import DistributedScattergunScoutAI
+from tf.weapon.TakeDamageInfo import TakeDamageInfo, addMultiDamage
 
-import random
+from . import (ResponseClassRegistry, ResponseCriteria, ResponseSystem,
+               ResponseSystemBase)
+from .DistributedTFPlayerShared import DistributedTFPlayerShared
+from .DViewModelAI import DViewModelAI
+from .InputButtons import InputFlag
+from .ObserverMode import ObserverMode
+from .PlayerAnimEvent import PlayerAnimEvent
+from .PlayerCommand import PlayerCommand
+from .TFClass import *
+from .TFPlayerAnimStateAI import TFPlayerAnimStateAI
+from .TFPlayerState import TFPlayerState
 
 tf_damage_range = 0.5
 tf_damageforcescale_other = 6.0
@@ -66,7 +65,7 @@ class PlayerCmdInfo:
 
 class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     notify = directNotify.newCategory("DistributedTFPlayerAI")
-    notify.setDebug(True)
+    notify.setDebug(False)
 
     MaxCMDBackup = 64
 
@@ -622,9 +621,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if self.tfClass != Class.Engineer:
             return False
 
-        from tf.object.ObjectType import ObjectType
-        from tf.object.ObjectDefs import ObjectDefs
-
         if self.selectedBuilding < 0 or self.selectedBuilding >= ObjectType.COUNT:
             return False
 
@@ -793,8 +789,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 if center > 0.5:
                     if info.attacker and info.attacker.isPlayer():
                         wpn = info.attacker.getActiveWeaponObj()
-                        from tf.weapon.DistributedRocketLauncher import DistributedRocketLauncherAI
-                        from tf.weapon.DistributedShotgun import DistributedScattergunScoutAI
                         if isinstance(wpn, DistributedRocketLauncherAI):
                             # Rocket launcher only has half the bonus of the other weapons at short range.
                             damageMod *= 0.5
@@ -1348,7 +1342,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.responseSystem = system
 
     def giveClassWeapons(self):
-        from tf.weapon import WeaponRegistry
         for wpnId in self.classInfo.Weapons:
             wpnCls = WeaponRegistry.Weapons[wpnId]
             wpn = wpnCls()

@@ -4,6 +4,7 @@ import random
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 
+
 def exactOrRandomRange(data):
     if isinstance(data, (tuple, list)):
         return random.uniform(data[0], data[1])

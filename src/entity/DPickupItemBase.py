@@ -2,11 +2,11 @@
 
 from panda3d.core import Vec3
 
-from tf.entity.DistributedEntity import DistributedEntity
-from tf.tfbase import TFGlobals, CollisionGroups
-from tf.actor.Model import Model
-
 from direct.interval.IntervalGlobal import LerpHprInterval
+from tf.actor.Model import Model
+from tf.entity.DistributedEntity import DistributedEntity
+from tf.tfbase import CollisionGroups, TFGlobals
+
 
 class DPickupItemBase(DistributedEntity):
     """

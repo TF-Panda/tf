@@ -1,26 +1,30 @@
 
-from direct.distributed2.DistributedObjectAI import DistributedObjectAI
-from direct.directnotify.DirectNotifyGlobal import directNotify
-
-from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
-
-from tf.tfbase import TFGlobals, TFLocalizer, TFFilters, CollisionGroups
-from tf.weapon.TakeDamageInfo import calculateExplosiveDamageForce, clearMultiDamage, applyMultiDamage
-from tf.tfbase.TFGlobals import DamageType, TakeDamage, GameZone, TFTeam
-from tf.player.TFClass import *
-from tf.object.BaseObject import BaseObject
-
-import random
 import copy
+import random
 
 from panda3d.core import *
 
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.distributed2.DistributedObjectAI import DistributedObjectAI
+from direct.distributed2.ServerRepository import ServerRepository
+from tf.entity.DistributedEntity import DistributedEntity
+from tf.entity.EntityRegistryAI import EntityRegistry
+from tf.entity.TFGameRulesProxyAI import TFGameRulesProxyAI
+from tf.object.BaseObject import BaseObject
+from tf.player.DistributedTFPlayerAI import DistributedTFPlayerAI
+from tf.player.TFClass import *
+from tf.tfbase import CollisionGroups, TFFilters, TFGlobals, TFLocalizer
+from tf.tfbase.TFGlobals import DamageType, GameZone, TakeDamage, TFTeam
+from tf.weapon.TakeDamageInfo import (applyMultiDamage,
+                                      calculateExplosiveDamageForce,
+                                      clearMultiDamage)
+
 from .DistributedGameBase import DistributedGameBase
 from .GameMode import *
-from .GameModeCTF import GameModeCTF
-from .GameModeTraining import GameModeTraining
-from .GameModePayload import GameModePayload
 from .GameModeArena import GameModeArena
+from .GameModeCTF import GameModeCTF
+from .GameModePayload import GameModePayload
+from .GameModeTraining import GameModeTraining
 from .RoundState import *
 
 class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
@@ -412,8 +416,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.loadLevelEntities(preserveEntClassNames)
 
     def loadLevelEntities(self, ignoreClassNames=[]):
-        from tf.entity.EntityRegistryAI import EntityRegistry
-
         for i in range(self.lvlData.getNumEntities()):
             ent = self.lvlData.getEntity(i)
 
@@ -443,7 +445,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         if gameRulesProxies:
             self.gameRulesProxy = gameRulesProxies[0]
         else:
-            from tf.entity.TFGameRulesProxyAI import TFGameRulesProxyAI
             self.gameRulesProxy = TFGameRulesProxyAI()
 
         self.logicAutos = base.entMgr.findAllEntitiesByClassName("logic_auto")
@@ -504,8 +505,6 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.sendUpdate('doExplosion', [pos, scale, dir])
 
     def radiusDamage(self, info, origin, radius, ignoreClass, ignoreEntity):
-        from tf.entity.DistributedEntity import DistributedEntity
-
         # I don't think other players/buildings should block splash damage.
         mask = CollisionGroups.World# | CollisionGroups.Mask_AllTeam
 

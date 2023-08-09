@@ -1,8 +1,9 @@
 """DistributedTrigger module: contains the DistributedTrigger class."""
 
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape, WorldParent
+
 from .DistributedSolidEntity import DistributedSolidEntity
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag, WorldParent
 
 class DistributedTrigger(DistributedSolidEntity):
 

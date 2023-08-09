@@ -5,9 +5,7 @@ from panda3d.tf import PredictionCopy
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.showbase.DirectObject import DirectObject
-
 from tf.actor.Actor import Actor
-
 from tf.movement.GameMovement import g_game_movement
 
 runSimulationPCollector = PStatCollector("Prediction:RunSimulation")

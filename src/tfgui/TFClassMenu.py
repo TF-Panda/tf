@@ -3,15 +3,13 @@
 from panda3d.core import *
 
 from direct.gui.DirectGui import *
-
+from direct.interval.IntervalGlobal import Func, Sequence, Wait
+from tf.actor.Actor import Actor
 from tf.player.TFClass import *
-from tf.tfbase import TFGlobals, Sounds, TFLocalizer
+from tf.tfbase import Sounds, TFGlobals, TFLocalizer
 from tf.tfbase.SoundEmitter import SoundEmitter
 from tf.tfgui import TFGuiProperties
 
-from direct.interval.IntervalGlobal import Sequence, Wait, Func
-
-from tf.actor.Actor import Actor
 
 def lightColor(light, temp, intensity):
     light.setColorTemperature(temp)

@@ -2,8 +2,9 @@
 
 from tf.tfbase.TFGlobals import SpeechConcept
 
-from .ResponseSystem import ResponseSystem, Rule, Response, ResponseLine
 from .ResponseCriteria import *
+from .ResponseSystem import Response, ResponseLine, ResponseSystem, Rule
+
 
 def stringList(baseStr, ranges):
   strings = []

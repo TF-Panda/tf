@@ -1,8 +1,9 @@
 """GameRoundWin module: contains the GameRoundWin class."""
 
+from tf.tfbase import TFGlobals
+
 from .EntityBase import EntityBase
 
-from tf.tfbase import TFGlobals
 
 class GameRoundWin(EntityBase):
 

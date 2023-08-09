@@ -5,19 +5,21 @@ else:
     from .DistributedWeaponAI import DistributedWeaponAI
     BaseClass = DistributedWeaponAI
 
-from panda3d.core import Quat, Vec3
-
-from .WeaponMode import TFWeaponMode, TFReloadMode, TFWeaponType, TFProjectileType
-from .WeaponEffects import makeMuzzleFlash
-
-from tf.actor.Activity import Activity
-from tf.player.PlayerAnimEvent import PlayerAnimEvent
-from tf.player.InputButtons import InputFlag
-
-from tf.tfbase.TFGlobals import SolidFlag, SolidShape, remapVal
-
 import math
 import random
+
+from panda3d.core import Quat, Vec3
+
+from tf.actor.Activity import Activity
+from tf.player.InputButtons import InputFlag
+from tf.player.PlayerAnimEvent import PlayerAnimEvent
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape, remapVal
+
+from .WeaponMode import (TFProjectileType, TFReloadMode, TFWeaponMode,
+                         TFWeaponType)
+
+if not IS_CLIENT:
+    from .DWeaponDrop import DWeaponDropAI
 
 class TFWeapon(BaseClass):
 
@@ -615,7 +617,6 @@ class TFWeapon(BaseClass):
                 # Don't drop if the weapon shouldn't drop ammo.
                 return
 
-            from .DWeaponDrop import DWeaponDropAI
             p = DWeaponDropAI()
             #p.skin = self.team
             p.solidShape = SolidShape.Model

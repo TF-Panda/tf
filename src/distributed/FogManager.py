@@ -1,8 +1,9 @@
 """FogManager module: contains the FogManager class."""
 
+from panda3d.core import *
+
 from direct.showbase.DirectObject import DirectObject
 
-from panda3d.core import *
 
 class FogManager(DirectObject):
 

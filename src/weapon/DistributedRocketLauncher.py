@@ -1,9 +1,10 @@
 
-from .TFWeaponGun import TFWeaponGun
-
 from tf.tfbase import TFLocalizer
 from tf.tfbase.TFGlobals import DamageType
-from .WeaponMode import TFWeaponMode, TFProjectileType
+
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFProjectileType, TFWeaponMode
+
 
 class DistributedRocketLauncher(TFWeaponGun):
 
@@ -35,7 +36,7 @@ class DistributedRocketLauncher(TFWeaponGun):
         def doFireEffects(self):
             TFWeaponGun.doFireEffects(self)
             if not self.isOwnedByLocalPlayer():
-                from direct.interval.IntervalGlobal import Sequence, Wait, Func
+                from direct.interval.IntervalGlobal import Func, Sequence, Wait
                 from tf.tfbase import TFEffects
                 node = self.find("**/backblast")
                 if not node.isEmpty():

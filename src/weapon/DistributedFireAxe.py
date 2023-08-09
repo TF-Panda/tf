@@ -1,10 +1,10 @@
 """DistributedFireAxe module: contains the DistributedFireAxe class."""
 
-from .TFWeaponMelee import TFWeaponMelee
-
-from .WeaponMode import TFWeaponType, TFWeaponMode
-
 from tf.tfbase import TFLocalizer
+
+from .TFWeaponMelee import TFWeaponMelee
+from .WeaponMode import TFWeaponMode, TFWeaponType
+
 
 class DistributedFireAxe(TFWeaponMelee):
 

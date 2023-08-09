@@ -1,17 +1,14 @@
-from direct.distributed2.ClientRepository import ClientRepository
-from direct.fsm.FSM import FSM
-from direct.gui import DirectGuiGlobals as DGG
-
-from tf.tfgui.TFDialog import TFDialog
-
 from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.distributed2.ClientRepository import ClientRepository
 from direct.distributed2.NetMessages import NetMessages
 from direct.distributed.PyDatagram import PyDatagram
-
+from direct.fsm.FSM import FSM
+from tf.actor.DistributedChar import DistributedChar
 from tf.player.Prediction import Prediction
+from tf.tfbase import TFGlobals, TFLocalizer
+from tf.tfgui.CaptchaEntry import CaptchaEntry
+from tf.tfgui.TFDialog import TFDialog
 
-from tf.tfbase import TFLocalizer
-from tf.tfbase import TFGlobals
 
 class TFClientRepository(ClientRepository, FSM):
     notify = directNotify.newCategory("TFClientRepository")
@@ -64,7 +61,6 @@ class TFClientRepository(ClientRepository, FSM):
             self.request("JoinGame")
 
     def enterCaptcha(self, imgData):
-        from tf.tfgui.CaptchaEntry import CaptchaEntry
         self.captcha = CaptchaEntry(imgData)
         self.captcha.request("Prompt")
         self.accept('CaptchaPromptAck', self.__handleCaptchaAck)
@@ -81,7 +77,6 @@ class TFClientRepository(ClientRepository, FSM):
         del self.captcha
 
     def syncAllHitBoxes(self):
-        from tf.actor.DistributedChar import DistributedChar
         DistributedChar.syncAllHitBoxes()
 
     def runPrediction(self):

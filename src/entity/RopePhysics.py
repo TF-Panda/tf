@@ -1,9 +1,10 @@
 """RopePhysics module: contains the RopePhysics class."""
 
-from panda3d.core import Vec3, Point3
-
 import math
 import random
+
+from panda3d.core import Point3, Vec3
+
 
 class RopePhysicsNode:
 

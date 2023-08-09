@@ -1,5 +1,5 @@
-from panda3d.pphysics import *
 from panda3d.core import *
+from panda3d.pphysics import *
 
 if IS_CLIENT:
     from tf.actor.DistributedChar import DistributedChar
@@ -8,13 +8,13 @@ else:
     from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
+from tf.actor.Activity import Activity
+from tf.player.TFClass import Class
+from tf.tfbase import CollisionGroups, Sounds, TFGlobals
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape, SpeechConcept, TFTeam
+
 from .ObjectState import ObjectState
 from .ObjectType import ObjectType
-from tf.actor.Activity import Activity
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag, TFTeam, SpeechConcept
-from tf.tfbase import CollisionGroups
-from tf.player.TFClass import Class
-from tf.tfbase import Sounds
 
 if not IS_CLIENT:
     from tf.weapon.DWeaponDrop import DWeaponDropAI

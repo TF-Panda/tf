@@ -14,7 +14,7 @@ else:
 
 from panda3d.core import Vec3
 
-from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects, CollisionGroups
+from tf.tfbase import CollisionGroups, Sounds, TFEffects, TFFilters, TFGlobals
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
 PIPE_DMG_RADIUS = 146

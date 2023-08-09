@@ -2,6 +2,7 @@
 
 from direct.distributed2.DistributedObjectAI import DistributedObjectAI
 
+
 class TFMagicWordManagerAI(DistributedObjectAI):
 
     def __init__(self):
@@ -36,8 +37,8 @@ class TFMagicWordManagerAI(DistributedObjectAI):
             return "No clip OFF"
 
     def __kill(self, args, av):
-        from tf.weapon.TakeDamageInfo import TakeDamageInfo
         from tf.tfbase.TFGlobals import DamageType
+        from tf.weapon.TakeDamageInfo import TakeDamageInfo
         info = TakeDamageInfo()
         info.damageType = DamageType.Generic
         info.inflictor = av
@@ -46,8 +47,8 @@ class TFMagicWordManagerAI(DistributedObjectAI):
         av.takeDamage(info)
 
     def __explode(self, args, av):
-        from tf.weapon.TakeDamageInfo import TakeDamageInfo
         from tf.tfbase.TFGlobals import DamageType
+        from tf.weapon.TakeDamageInfo import TakeDamageInfo
         info = TakeDamageInfo()
         info.damageType = DamageType.Blast
         info.inflictor = av

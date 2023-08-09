@@ -1,12 +1,13 @@
 """DistributedStickyBombLauncher module: contains the DistributedStickyBombLauncher class."""
 
-from .TFWeaponGun import TFWeaponGun
-
+from tf.actor.Activity import Activity
+from tf.player.InputButtons import InputFlag
 from tf.tfbase import TFLocalizer
 from tf.tfbase.TFGlobals import DamageType
-from .WeaponMode import TFWeaponMode, TFProjectileType, TFWeaponType
-from tf.player.InputButtons import InputFlag
-from tf.actor.Activity import Activity
+
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFProjectileType, TFWeaponMode, TFWeaponType
+
 
 class DistributedStickyBombLauncher(TFWeaponGun):
 

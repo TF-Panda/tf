@@ -1,10 +1,11 @@
 """DistributedSMG module: contains the DistributedSMG class."""
 
-from .TFWeaponGun import TFWeaponGun
-from .WeaponMode import TFWeaponType, TFWeaponMode
-
 from tf.tfbase import TFLocalizer
 from tf.tfbase.TFGlobals import DamageType
+
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFWeaponMode, TFWeaponType
+
 
 class DistributedSMG(TFWeaponGun):
     WeaponModel = "models/weapons/w_smg"

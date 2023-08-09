@@ -1,9 +1,10 @@
 """TeamControlPointMasterAI module: contains the TeamControlPointMasterAI class."""
 
-from .TeamControlPointManagerAI import TeamControlPointManagerAI
 from direct.distributed2.DistributedObjectAI import DistributedObjectAI
-
 from tf.tfbase import TFGlobals
+
+from .TeamControlPointManagerAI import TeamControlPointManagerAI
+
 
 class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
 

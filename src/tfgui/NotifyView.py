@@ -5,6 +5,7 @@ from panda3d.core import LineStream, Notify, StreamWriter, TextNode
 from direct.directnotify.Notifier import Notifier
 from direct.gui.DirectGui import DirectLabel
 
+
 class NotifyView:
     """
     Redirects notify output to a set of DirectGUI labels on screen.

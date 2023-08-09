@@ -1,16 +1,16 @@
 """TeamControlPointMaster module: contains the TeamControlPointMaster class."""
 
+from panda3d.core import *
+
 from direct.distributed2.DistributedObject import DistributedObject
+from direct.gui.DirectGui import *
+from direct.interval.IntervalGlobal import LerpFunc, Sequence
+from direct.showbase.DirectObject import DirectObject
+from tf.tfbase import TFGlobals
+from tf.tfgui import TFGuiProperties
 
 from . import CapState
 
-from direct.showbase.DirectObject import DirectObject
-from direct.gui.DirectGui import *
-from direct.interval.IntervalGlobal import Sequence, LerpFunc
-from panda3d.core import *
-
-from tf.tfbase import TFGlobals
-from tf.tfgui import TFGuiProperties
 
 class ControlPointWidget(DirectObject):
 

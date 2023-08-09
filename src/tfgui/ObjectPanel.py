@@ -1,12 +1,12 @@
 
-from panda3d.core import TextNode, NodePath
+from panda3d.core import NodePath, TextNode
 
 from direct.fsm.ClassicFSM import ClassicFSM
 from direct.fsm.State import State
-from direct.gui.DirectGui import DirectFrame, OnscreenText, DirectWaitBar, DGG
-
-from tf.tfbase import TFLocalizer, TFGlobals
+from direct.gui.DirectGui import DGG, DirectFrame, DirectWaitBar, OnscreenText
+from tf.tfbase import TFGlobals, TFLocalizer
 from tf.tfgui import TFGuiProperties
+
 
 class ObjectPanel(NodePath):
 

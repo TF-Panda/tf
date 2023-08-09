@@ -1,10 +1,10 @@
 
-from .TFWeaponGun import TFWeaponGun
-
 from tf.tfbase import TFLocalizer
-
-from .WeaponMode import TFWeaponMode, TFWeaponType
 from tf.tfbase.TFGlobals import DamageType
+
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFWeaponMode, TFWeaponType
+
 
 class DistributedShotgun(TFWeaponGun):
 

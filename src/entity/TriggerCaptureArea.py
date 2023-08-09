@@ -1,7 +1,8 @@
 """TriggerCaptureArea module: contains the TriggerCaptureArea class."""
 
-from .DistributedTrigger import DistributedTrigger
 from . import CapState
+from .DistributedTrigger import DistributedTrigger
+
 
 class TriggerCaptureArea(DistributedTrigger):
     """

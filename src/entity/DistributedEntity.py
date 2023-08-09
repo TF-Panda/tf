@@ -8,14 +8,20 @@ else:
 
 from panda3d.core import *
 from panda3d.pphysics import *
-from panda3d.tf import PredictedObject, PredictionField, PredictionCopy
+from panda3d.tf import PredictedObject, PredictionCopy, PredictionField
 
-from tf.tfbase.TFGlobals import WorldParent, getWorldParent, TakeDamage, SolidShape, SolidFlag
-from tf.weapon.TakeDamageInfo import addMultiDamage, applyMultiDamage, TakeDamageInfo, clearMultiDamage, calculateBulletDamageForce
-from tf.tfbase import TFFilters, Sounds, CollisionGroups
-from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
-from tf.tfbase.SoundEmitter import SoundEmitter
 from direct.directbase import DirectRender
+from tf.tfbase import CollisionGroups, Sounds, TFFilters
+from tf.tfbase.SoundEmitter import SoundEmitter
+from tf.tfbase.SurfaceProperties import (SurfaceProperties,
+                                         SurfacePropertiesByPhysMaterial)
+from tf.tfbase.TFGlobals import (SolidFlag, SolidShape, TakeDamage, TFTeam,
+                                 WorldParent, getWorldParent)
+from tf.weapon.TakeDamageInfo import (TakeDamageInfo, addMultiDamage,
+                                      applyMultiDamage,
+                                      calculateBulletDamageForce,
+                                      clearMultiDamage)
+
 from .EntityBase import EntityBase
 
 if IS_CLIENT:

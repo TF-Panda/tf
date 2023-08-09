@@ -1,24 +1,22 @@
 
-from tf.actor.DistributedChar import DistributedChar
-from direct.distributed2.DistributedObject import DistributedObject
-from .DistributedTFPlayerShared import DistributedTFPlayerShared
-
-from .TFClass import *
-from .TFPlayerAnimState import TFPlayerAnimState
-
-from tf.tfbase import Sounds, TFEffects
-from tf.actor.Eyes import Eyes
-from tf.actor.Expressions import Expressions
-from .PlayerGibs import PlayerGibs
-from .TFPlayerState import TFPlayerState
+import math
 
 from panda3d.core import *
 from panda3d.direct import *
 
-from direct.interval.IntervalGlobal import *
 from direct.directbase import DirectRender
+from direct.distributed2.DistributedObject import DistributedObject
+from direct.interval.IntervalGlobal import *
+from tf.actor.DistributedChar import DistributedChar
+from tf.actor.Expressions import Expressions
+from tf.actor.Eyes import Eyes
+from tf.tfbase import Sounds, TFEffects, TFGlobals
 
-import math
+from .DistributedTFPlayerShared import DistributedTFPlayerShared
+from .PlayerGibs import PlayerGibs
+from .TFClass import *
+from .TFPlayerAnimState import TFPlayerAnimState
+from .TFPlayerState import TFPlayerState
 
 sentences = SentenceCollection()
 sentences.load("scripts/game_sounds_vo_phonemes.txt")
@@ -220,19 +218,15 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.stopBurningEffect()
 
     def doBloodGoop(self, pos):
-        from tf.tfbase.TFEffects import getBloodGoopEffect
-        from direct.interval.IntervalGlobal import Sequence, Wait, Func
-
         emitNode = base.render.attachNewNode("emitBloodGoop")
         emitNode.setPos(pos)
 
-        effect = getBloodGoopEffect()
+        effect = TFEffects.getBloodGoopEffect()
         effect.setInput(0, emitNode, True)
         effect.start(base.dynRender)
         Sequence(Wait(0.1), Func(effect.softStop)).start()
 
     def createOverhealedEffect(self):
-        from tf.tfbase import TFEffects
         system = TFEffects.getOverhealedEffect(self.team)
         system.setInput(0, self.modelNp, False)
         return system

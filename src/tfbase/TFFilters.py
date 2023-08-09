@@ -1,7 +1,7 @@
 """TFFilters module: contains various physics query filters"""
 
-from panda3d.pphysics import PhysRayCastResult, PhysSweepResult, PhysSphere
 from panda3d.core import *
+from panda3d.pphysics import PhysRayCastResult, PhysSphere, PhysSweepResult
 
 from tf.tfbase import CollisionGroups
 

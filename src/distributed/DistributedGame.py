@@ -1,26 +1,25 @@
 """ DistributedGame module: contains the DistributedGame class """
 
-from direct.distributed2.DistributedObject import DistributedObject
-from direct.directbase import DirectRender
-
 from panda3d.core import *
 from panda3d.pphysics import *
 
+from direct.directbase import DirectRender
+from direct.distributed2.DistributedObject import DistributedObject
 from direct.gui.DirectGui import DirectLabel
+from direct.interval.IntervalGlobal import (Func, LerpPosInterval,
+                                            LerpScaleInterval, Parallel,
+                                            Sequence, Wait)
+from tf.distributed.GameContextMessages import ContextMessages
+from tf.tfbase import TFEffects, TFGlobals, TFLocalizer
+from tf.tfbase.Soundscapes import SoundscapeManager
+from tf.tfgui import TFGuiProperties
+from tf.tfgui.WinPanel import WinPanel
+from tf.weapon import WeaponEffects
 
-from direct.interval.IntervalGlobal import Sequence, Wait, Func, Parallel, LerpPosInterval, LerpScaleInterval
-
-from tf.tfbase import TFLocalizer, TFGlobals
-
+from .CubemapRendering import CubemapRendering
 from .DistributedGameBase import DistributedGameBase
 from .FogManager import FogManager
 from .SkyBox import SkyBox
-from tf.tfbase.Soundscapes import SoundscapeManager
-
-from tf.tfgui import TFGuiProperties
-from tf.tfgui.WinPanel import WinPanel
-
-from .CubemapRendering import CubemapRendering
 
 play_sound_coll = PStatCollector("App:Sounds:PlaySound")
 
@@ -32,8 +31,6 @@ ClusterColors = [
     LColor(0.5, 1.0, 1.0, 1.0),
     LColor(0.5, 0.5, 1.0, 1.0)
 ]
-
-import random
 
 class DistributedGame(DistributedObject, DistributedGameBase):
 
@@ -118,7 +115,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         self.goalIval.start()
 
     def setGameContextMessage(self, id, duration, team):
-        from tf.distributed.GameContextMessages import ContextMessages
         text = ContextMessages.get(id)
         if not text:
             return
@@ -777,7 +773,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         tmp = NodePath("tmp")
         tmp.setPos(pos)
         tmp.setQuat(q)
-        from tf.tfbase import TFEffects
         effect = TFEffects.getExplosionWallEffect()
         effect.setInput(0, tmp, True)
         base.queueParticleSystem(effect, base.dynRender, 0.1)
@@ -832,7 +827,6 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         seq = Sequence()
         seq.append(Wait(delay))
         if doSound:
-            from tf.weapon import WeaponEffects
             seq.append(Func(WeaponEffects.tracerSound, start, end))
 
         p1 = Parallel()

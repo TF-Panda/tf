@@ -1,11 +1,16 @@
 
-from .TFClass import *
-from tf.actor.Activity import Activity
-from .PlayerAnimEvent import PlayerAnimEvent
+import math
 
 from panda3d.core import *
 
-import math
+from tf.actor.Activity import Activity
+from tf.weapon.DistributedMedigun import DistributedMedigun
+from tf.weapon.DistributedSniperRifle import DistributedSniperRifle
+from tf.weapon.DMinigun import DMinigun
+
+from .PlayerAnimEvent import PlayerAnimEvent
+from .TFClass import *
+
 
 class GestureSlot:
     AttackAndReload = 1
@@ -82,9 +87,6 @@ class TFPlayerAnimState:
 
     def doAnimationEvent(self, event, data):
         #print("anim event", event)
-        from tf.weapon.DMinigun import DMinigun
-        from tf.weapon.DistributedSniperRifle import DistributedSniperRifle
-        from tf.weapon.DistributedMedigun import DistributedMedigun
         if event == PlayerAnimEvent.AttackPrimary:
             wpn = self.player.getActiveWeaponObj()
             isMinigun = isinstance(wpn, DMinigun)
@@ -342,7 +344,6 @@ class TFPlayerAnimState:
                     isMinigun = False
                     wpn = self.player.getActiveWeaponObj()
                     if wpn:
-                        from tf.weapon.DMinigun import DMinigun
                         isMinigun = isinstance(wpn, DMinigun)
 
                     if not isMinigun:

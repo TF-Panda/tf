@@ -2,18 +2,18 @@
 
 # Do I hear boss music?
 
+import math
+
 from panda3d.core import *
 
-from .TFWeaponGun import TFWeaponGun
-
-from .WeaponMode import TFWeaponMode, TFWeaponType
-from tf.tfbase.TFGlobals import DamageType
+from tf.actor.Activity import Activity
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.tfbase import TFGlobals, TFLocalizer
-from tf.actor.Activity import Activity
+from tf.tfbase.TFGlobals import DamageType
 
-import math
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFWeaponMode, TFWeaponType
 
 MG_STATE_IDLE = 0
 MG_STATE_STARTFIRING = 1

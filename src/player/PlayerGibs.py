@@ -1,14 +1,14 @@
+import random
+
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.tfbase.SurfaceProperties import SurfaceProperties
-from tf.tfbase import TFEffects, CollisionGroups
-from tf.actor.Model import Model
-
 from direct.directbase import DirectRender
-from direct.interval.IntervalGlobal import Sequence, Wait, Func, LerpColorScaleInterval, Parallel
-
-import random
+from direct.interval.IntervalGlobal import (Func, LerpColorScaleInterval,
+                                            Parallel, Sequence, Wait)
+from tf.actor.Model import Model
+from tf.tfbase import CollisionGroups, TFEffects
+from tf.tfbase.SurfaceProperties import SurfaceProperties
 
 gibForceUp = 1.0
 gibForce = 350.0

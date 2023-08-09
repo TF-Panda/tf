@@ -1,9 +1,10 @@
 """TFDialog module: contains the TFDialog class."""
 
-from direct.gui.DirectGui import *
 from direct.directnotify.DirectNotifyGlobal import directNotify
-from tf.tfbase import TFLocalizer, TFGlobals
+from direct.gui.DirectGui import *
+from tf.tfbase import TFGlobals, TFLocalizer
 from tf.tfgui import TFGuiProperties
+
 
 class TFDialog(DirectDialog):
     notify = directNotify.newCategory('TFDialog')

@@ -2,8 +2,8 @@
 
 from tf.tfbase.TFGlobals import SpeechConcept
 
-from .ResponseSystem import Rule, Response, ResponseLine
 from .ResponseCriteria import *
+from .ResponseSystem import Response, ResponseLine, Rule
 from .ResponseSystemBase import *
 
 # All classes share a lot of response rules but

@@ -1,8 +1,9 @@
-from panda3d.pphysics import *
 from panda3d.core import *
+from panda3d.pphysics import *
 
-from tf.tfbase.SurfaceProperties import SurfaceProperties
 from tf.tfbase import CollisionGroups
+from tf.tfbase.SurfaceProperties import SurfaceProperties
+
 
 class Ragdoll(PhysRagdoll):
 

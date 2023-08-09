@@ -7,11 +7,12 @@ else:
     from tf.actor.DistributedChar import DistributedChar
     BaseClass = DistributedChar
 
+from panda3d.core import (BoundingSphere, Filename, VirtualFileSystem,
+                          getModelPath)
+
 from tf.actor.Actor import Actor
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape
 
-from panda3d.core import Filename, VirtualFileSystem, getModelPath, BoundingSphere
-
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag
 
 class DistributedPropDynamic(BaseClass):
 

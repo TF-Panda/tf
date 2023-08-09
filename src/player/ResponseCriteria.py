@@ -2,8 +2,9 @@
 
 import random
 
-from tf.weapon.WeaponMode import TFWeaponType
 from tf.player.TFClass import Class
+from tf.weapon.WeaponMode import TFWeaponType
+
 
 def isARecentKill(data):
     return data['recentkills'] > 0

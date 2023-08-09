@@ -1,8 +1,9 @@
 """TFEntityFilters module: contains the TFEntityFilters class."""
 
+from tf.tfbase import TFGlobals
+
 from .FilterBase import FilterBase
 
-from tf.tfbase import TFGlobals
 
 class FilterActivatorTFTeam(FilterBase):
 

@@ -1,10 +1,11 @@
 """DistributedGrenadeLauncher module: contains the DistributedGrenadeLauncher class."""
 
-from .TFWeaponGun import TFWeaponGun
-
 from tf.tfbase import TFLocalizer
 from tf.tfbase.TFGlobals import DamageType
-from .WeaponMode import TFWeaponMode, TFProjectileType
+
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFProjectileType, TFWeaponMode
+
 
 class DistributedGrenadeLauncher(TFWeaponGun):
     WeaponModel = "models/weapons/c_grenadelauncher"

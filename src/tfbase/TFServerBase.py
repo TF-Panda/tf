@@ -1,14 +1,12 @@
-from direct.showbase.HostBase import HostBase
-from direct.directnotify.DirectNotifyGlobal import directNotify
-
-from tf.distributed.TFServerRepository import TFServerRepository
-
-from tf.tfbase import Sounds, TFGlobals, SurfaceProperties
-from tf.entity.EntityManager import EntityManager
-from tf.entity.EntityConnectionManager import EntityConnectionManager
-
 from panda3d.core import *
 from panda3d.pphysics import *
+
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.showbase.HostBase import HostBase
+from tf.distributed.TFServerRepository import TFServerRepository
+from tf.entity.EntityConnectionManager import EntityConnectionManager
+from tf.entity.EntityManager import EntityManager
+from tf.tfbase import Sounds, SurfaceProperties, TFGlobals
 
 # Note: The server needs to maintain a minimum of 66 "frames" or simulation
 # ticks per second.  There's a lot more leeway since the server isn't

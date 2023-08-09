@@ -1,9 +1,10 @@
 
+import random
+
+from panda3d.core import Point3, Vec3
+
 from tf.tfbase.TFGlobals import DamageType, TakeDamage
 
-from panda3d.core import Vec3, Point3
-
-import random
 
 class TakeDamageInfo:
     """

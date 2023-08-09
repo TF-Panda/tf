@@ -1,9 +1,10 @@
 """DistributedMachete module: contains the DistributedMachete class."""
 
-from .TFWeaponMelee import TFWeaponMelee
-from .WeaponMode import TFWeaponType, TFWeaponMode
-
 from tf.tfbase import TFLocalizer
+
+from .TFWeaponMelee import TFWeaponMelee
+from .WeaponMode import TFWeaponMode, TFWeaponType
+
 
 class DistributedMachete(TFWeaponMelee):
     WeaponModel = "models/weapons/c_machete"

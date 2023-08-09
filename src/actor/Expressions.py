@@ -2,9 +2,9 @@
 
 import math
 
-from tf.tfbase import TFGlobals
-
 from panda3d.core import *
+
+from tf.tfbase import TFGlobals
 
 #class ExpressionDef:
 

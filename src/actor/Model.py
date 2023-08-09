@@ -3,10 +3,10 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.showbase.DirectObject import DirectObject
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 
-from direct.showbase.DirectObject import DirectObject
-from direct.directnotify.DirectNotifyGlobal import directNotify
 
 class Model(DirectObject):
     """

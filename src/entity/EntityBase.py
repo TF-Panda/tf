@@ -4,6 +4,7 @@ from direct.showbase.DirectObject import DirectObject
 
 from .EntityConnectionManager import EntityConnectionManager, OutputConnection
 
+
 class EntityBase(DirectObject):
 
     def __init__(self):

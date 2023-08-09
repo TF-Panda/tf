@@ -2,14 +2,14 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from tf.tfbase.TFGlobals import TFTeam
+from direct.directbase import DirectRender
 from tf.tfbase import CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties
-from .RoundState import RoundState
-
-from direct.directbase import DirectRender
+from tf.tfbase.TFGlobals import TFTeam
 
 from .GameMode import GameMode
+from .RoundState import RoundState
+
 
 class DistributedGameBase:
 

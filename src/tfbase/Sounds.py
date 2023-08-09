@@ -3,11 +3,12 @@ Builds the sound list from the script file.
 """
 
 import math
-from enum import IntEnum
-from panda3d.core import (
-    ConfigVariableDouble, ConfigVariableList, Filename, KeyValues,
-    PStatCollector, SteamAudioProperties, loadPrcFileData, ProxyAudioSound)
 import random
+from enum import IntEnum
+
+from panda3d.core import (ConfigVariableDouble, ConfigVariableList, Filename,
+                          KeyValues, ProxyAudioSound, PStatCollector,
+                          SteamAudioProperties, loadPrcFileData)
 
 from tf.tfbase import TFGlobals
 

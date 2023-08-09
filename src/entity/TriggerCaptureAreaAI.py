@@ -1,10 +1,11 @@
 """TriggerCaptureAreaAI module: contains the TriggerCaptureAreaAI class."""
 
-from .DistributedTrigger import DistributedTriggerAI
-from . import CapState
-
-from tf.tfbase import TFGlobals
 from tf.player.TFClass import Class
+from tf.tfbase import TFGlobals
+
+from . import CapState
+from .DistributedTrigger import DistributedTriggerAI
+
 
 class TriggerCaptureAreaAI(DistributedTriggerAI):
 

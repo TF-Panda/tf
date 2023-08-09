@@ -1,7 +1,8 @@
+from panda3d.core import TextNode
+
 from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
 
-from panda3d.core import TextNode
 
 class TFWeaponSelection(DirectObject):
 

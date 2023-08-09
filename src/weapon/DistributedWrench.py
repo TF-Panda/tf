@@ -2,12 +2,10 @@
 from panda3d.core import *
 from panda3d.pphysics import *
 
+from tf.tfbase import CollisionGroups, TFFilters, TFGlobals, TFLocalizer
+
 from .TFWeaponMelee import TFWeaponMelee
-
-from tf.tfbase import TFLocalizer
-from tf.tfbase import TFFilters, CollisionGroups, TFGlobals
-
-from .WeaponMode import TFWeaponType, TFWeaponMode
+from .WeaponMode import TFWeaponMode, TFWeaponType
 
 SWING_MINS = Vec3(-18)
 SWING_MAXS = Vec3(18)

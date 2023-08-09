@@ -1,17 +1,14 @@
-from direct.distributed2.ServerRepository import ServerRepository
-from direct.distributed2.ServerRepository import ClientState
-from direct.distributed2.NetMessages import NetMessages
-from direct.distributed.PyDatagram import PyDatagram
+from panda3d.core import BitArray
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
-
+from direct.distributed2.NetMessages import NetMessages
+from direct.distributed2.ServerRepository import ClientState, ServerRepository
+from direct.distributed.PyDatagram import PyDatagram
 from tf.distributed.DistributedGameAI import DistributedGameAI
 from tf.distributed.TFMagicWordManagerAI import TFMagicWordManagerAI
+from tf.player.LagCompensation import LagCompensation
 from tf.tfbase import TFGlobals
 
-from tf.player.LagCompensation import LagCompensation
-
-from panda3d.core import BitArray
 
 class TFServerRepository(ServerRepository):
     notify = directNotify.newCategory("TFServerRepository")
@@ -42,8 +39,10 @@ class TFServerRepository(ServerRepository):
 
     def sendClientAuthRequest(self, client):
         # Generate a Captcha for the client to answer.
-        from captcha.image import ImageCaptcha
         import random
+
+        from captcha.image import ImageCaptcha
+
         from direct.distributed2.NetMessages import NetMessages
 
         img = ImageCaptcha()

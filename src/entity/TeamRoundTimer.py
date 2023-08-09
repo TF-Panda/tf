@@ -1,11 +1,10 @@
 """TeamRoundTimer module: contains the TeamRoundTimer class."""
 
 from direct.distributed2.DistributedObject import DistributedObject
-
+from direct.gui.DirectGui import OnscreenText
 from tf.tfbase import TFGlobals, TFLocalizer
 from tf.tfgui import TFGuiProperties
 
-from direct.gui.DirectGui import OnscreenText, DGG
 
 class TeamRoundTimer(DistributedObject):
 

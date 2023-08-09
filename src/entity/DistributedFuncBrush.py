@@ -1,8 +1,9 @@
 """DistributedFuncBrush module: contains the DistributedFuncBrush class."""
 
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape
+
 from .DistributedSolidEntity import DistributedSolidEntity
 
-from tf.tfbase.TFGlobals import SolidFlag, SolidShape
 
 class DistributedFuncBrush(DistributedSolidEntity):
 

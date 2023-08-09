@@ -1,10 +1,9 @@
-from .TakeDamageInfo import *
+import random
 
 from panda3d.core import *
 
+from .TakeDamageInfo import *
 from .WeaponEffects import *
-
-import random
 
 if IS_CLIENT:
     tf_client_lag_comp_debug = ConfigVariableBool("tf-client-lag-comp-debug", False).value

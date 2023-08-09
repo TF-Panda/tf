@@ -1,10 +1,11 @@
 """DistributedPointSpotlight module: contains the DistributedPointSpotlight class."""
 
-from .DistributedEntity import DistributedEntity
-
 from panda3d.core import *
 
 from direct.directbase import DirectRender
+
+from .DistributedEntity import DistributedEntity
+
 
 class DistributedPointSpotlight(DistributedEntity):
     """

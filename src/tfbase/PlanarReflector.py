@@ -1,8 +1,8 @@
 from panda3d.core import *
 
+from direct.directbase import DirectRender
 from direct.gui.DirectGui import *
 
-from direct.directbase import DirectRender
 
 class PlanarReflector:
 

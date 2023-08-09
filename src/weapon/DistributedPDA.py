@@ -1,20 +1,18 @@
 """DistributedPDA module: contains the DistributedPDA class."""
 
-from .TFWeapon import TFWeapon
-
-from .WeaponMode import TFWeaponType
-
-from tf.tfbase import TFLocalizer, TFGlobals
-from direct.gui.DirectGui import *
-from tf.tfgui.GuiPanel import GuiPanel
-from tf.tfgui import TFGuiProperties
-
-from tf.object.ObjectDefs import ObjectDefs
-from tf.object.ObjectType import ObjectType
+from panda3d.core import *
 
 from direct.fsm.FSM import FSM
+from direct.gui.DirectGui import *
+from tf.object.ObjectDefs import ObjectDefs
+from tf.object.ObjectType import ObjectType
+from tf.tfbase import TFGlobals, TFLocalizer
+from tf.tfgui import TFGuiProperties
+from tf.tfgui.GuiPanel import GuiPanel
 
-from panda3d.core import *
+from .TFWeapon import TFWeapon
+from .WeaponMode import TFWeaponType
+
 
 class ConstructionObject(NodePath, FSM):
 

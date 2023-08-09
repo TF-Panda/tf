@@ -5,23 +5,23 @@ TF player code shared between AI (server) and client.
 """
 
 
+import math
+
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from .TFClass import *
-from .InputButtons import *
-from .ObserverMode import ObserverMode
-from tf.tfbase import TFGlobals, TFFilters, Sounds, CollisionGroups
-
-from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
-from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce
-from tf.movement.MoveType import MoveType
 from tf.movement.GameMovement import g_game_movement
 from tf.movement.MoveData import MoveData
+from tf.movement.MoveType import MoveType
+from tf.tfbase import CollisionGroups, Sounds, TFFilters, TFGlobals
+from tf.tfbase.SurfaceProperties import (SurfaceProperties,
+                                         SurfacePropertiesByPhysMaterial)
+from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce
 
+from .InputButtons import *
+from .ObserverMode import ObserverMode
+from .TFClass import *
 from .TFPlayerState import TFPlayerState
-
-import math
 
 tf_max_health_boost = 1.5
 

@@ -1,9 +1,10 @@
 
+from tf.actor.Activity import Activity
 from tf.actor.DistributedCharAI import DistributedCharAI
+from tf.tfbase import TFGlobals
 
 from .DViewModelShared import DViewModelShared
-from tf.actor.Activity import Activity
-from tf.tfbase import TFGlobals
+
 
 class DViewModelAI(DistributedCharAI):
 

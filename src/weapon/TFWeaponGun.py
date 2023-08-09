@@ -8,13 +8,13 @@ else:
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from .WeaponMode import TFWeaponMode, TFReloadMode, TFProjectileType
 from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
+from tf.tfbase import CollisionGroups, TFFilters, TFGlobals
+
 from .FireBullets import fireBullets
 from .WeaponEffects import makeMuzzleFlash
-
-from tf.tfbase import TFFilters, TFGlobals, CollisionGroups
+from .WeaponMode import TFProjectileType, TFReloadMode, TFWeaponMode
 
 if not IS_CLIENT:
     from .RocketProjectile import RocketProjectileAI
@@ -22,6 +22,7 @@ if not IS_CLIENT:
     from .DistributedStickyBomb import DistributedStickyBombAI
 
 import random
+
 
 class TFWeaponGun(BaseClass):
 

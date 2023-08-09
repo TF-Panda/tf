@@ -1,14 +1,16 @@
 """DistributedSniperRifle module: contains the DistributedSniperRifle class."""
 
-from .TFWeaponGun import TFWeaponGun
-from .WeaponMode import TFWeaponType, TFWeaponMode
+from tf.player.InputButtons import InputFlag
 from tf.tfbase import TFLocalizer
 from tf.tfbase.TFGlobals import DamageType, getTF2Font
-from tf.player.InputButtons import InputFlag
+
+from .TFWeaponGun import TFWeaponGun
+from .WeaponMode import TFWeaponMode, TFWeaponType
 
 if IS_CLIENT:
-    from direct.gui.DirectGui import OnscreenText
     from panda3d.core import TextNode
+
+    from direct.gui.DirectGui import OnscreenText
 
 TF_WEAPON_SNIPERRIFLE_CHARGE_PER_SEC =	50.0
 TF_WEAPON_SNIPERRIFLE_UNCHARGE_PER_SEC =	75.0

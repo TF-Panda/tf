@@ -1,8 +1,10 @@
 """WinPanel module: contains the WinPanel class."""
 
 from direct.gui.DirectGui import *
-from tf.tfbase import TFLocalizer, TFGlobals
+from tf.tfbase import TFGlobals, TFLocalizer
+
 from . import TFGuiProperties
+
 
 class WinPanel:
 

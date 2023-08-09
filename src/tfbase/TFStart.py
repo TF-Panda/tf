@@ -10,9 +10,9 @@ if 1:   # flip this as necessary
     # We want C++ and Python to both go to the same log so they
     # will be interlaced properly.
 
-    import time
-    import sys
     import os
+    import sys
+    import time
 
     if not os.path.isdir("logs"):
         os.mkdir("logs")
@@ -60,7 +60,7 @@ if 1:   # flip this as necessary
 
     # Give Panda the same log we use
     if True:#__debug__:
-        from panda3d.core import Notify, Filename, MultiplexStream
+        from panda3d.core import Filename, MultiplexStream, Notify
         nout = MultiplexStream()
         Notify.ptr().setOstreamPtr(nout, 0)
         nout.addFile(Filename(logfile))
@@ -76,6 +76,7 @@ if 1:   # flip this as necessary
     print("os.environ = ", os.environ)
 
 import argparse
+
 p = argparse.ArgumentParser(description='Team Fortress Entry-Point')
 p.add_argument('-s', '--server', help='Launch a server instance instead of a client.', action='store_true', default=False, required=False)
 p.add_argument('-p', '--port', help='Port number when launching a server instance.', type=int, default=-1, required=False)
@@ -84,6 +85,7 @@ args = p.parse_args()
 print('TFStart: Starting the game.')
 
 import builtins
+
 # Add a builtin variable indicating whether or not this is a client instance.
 # This is used by shared code to differentiate between client and server.
 builtins.IS_CLIENT = (not args.server)

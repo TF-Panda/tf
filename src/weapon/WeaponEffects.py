@@ -1,8 +1,9 @@
 
 from panda3d.core import *
 
-from tf.tfbase import Sounds
-from direct.interval.IntervalGlobal import Sequence, LerpFunc, Func
+from direct.interval.IntervalGlobal import Func, LerpFunc, Sequence, Wait
+from tf.tfbase import Sounds, TFEffects
+
 
 def lerp(v0, v1, amt):
     return v0 * amt + v1 * (1 - amt)
@@ -69,9 +70,6 @@ class MuzzleParticle(NodePath):
         return task.cont
 
 def makeMuzzleFlash(node, pos, hpr, scale, color = (1, 1, 1, 1), viewModel=False):
-    from tf.tfbase import TFEffects
-    from direct.interval.IntervalGlobal import Sequence, Wait, Func
-
     if base.clockMgr.isInSimulationClock():
         # If we call this in the simulation, we need to temporarily override
         # the clock to the true client frame time, so the particle system

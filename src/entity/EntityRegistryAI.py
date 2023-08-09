@@ -11,35 +11,38 @@ object (before `generate()`), passing in the `PDXElement` of entity properties
 specified in the level file.
 """
 
-from .World import WorldAI
-from .DHealthKitAI import DHealthKitSmallAI, DHealthKitMediumAI, DHealthKitFullAI
-from .DAmmoPackAI import DAmmoPackSmallAI, DAmmoPackMediumAI, DAmmoPackFullAI
+from tf.object.DistributedDispenser import DistributedDispenserAI
+from tf.object.DistributedTeleporter import (DistributedTeleporterEntranceAI,
+                                             DistributedTeleporterExitAI)
+from tf.object.SentryGun import SentryGunAI
+
+from .DAmmoPackAI import DAmmoPackFullAI, DAmmoPackMediumAI, DAmmoPackSmallAI
+from .DHealthKitAI import (DHealthKitFullAI, DHealthKitMediumAI,
+                           DHealthKitSmallAI)
+from .DistributedFuncBrush import DistributedFuncBrushAI
+from .DistributedFuncDoor import DistributedFuncDoorAI
+from .DistributedFuncRegenerate import DistributedFuncRegenerateAI
+from .DistributedFuncRespawnRoomAI import DistributedFuncRespawnRoomAI
+from .DistributedFuncRotating import DistributedFuncRotatingAI
+from .DistributedPointSpotlight import DistributedPointSpotlightAI
+from .DistributedPropDynamic import DistributedPropDynamicAI
 from .DistributedTeamFlagAI import DistributedTeamFlagAI
 from .DistributedTrigger import DistributedTriggerAI
-from .DistributedFuncRegenerate import DistributedFuncRegenerateAI
-from .DistributedPropDynamic import DistributedPropDynamicAI
-from .DistributedFuncDoor import DistributedFuncDoorAI
-from .DistributedFuncBrush import DistributedFuncBrushAI
-from .DistributedPointSpotlight import DistributedPointSpotlightAI
 from .DistributedTriggerHurt import DistributedTriggerHurtAI
-from .DistributedFuncRotating import DistributedFuncRotatingAI
-from .TFEntityFilters import FilterActivatorTFTeam
-from .RopesAI import RopeKeyFrameAI
-from .TFLogicArena import TFLogicArena
-from .TriggerCaptureAreaAI import TriggerCaptureAreaAI
-from .TeamControlPoint import TeamControlPointAI
-from .LogicRelay import LogicRelay
-from .TeamRoundTimerAI import TeamRoundTimerAI
-from .InfoPlayerTeamspawn import InfoPlayerTeamspawn
 from .GameRoundWin import GameRoundWin
+from .InfoPlayerTeamspawn import InfoPlayerTeamspawn
+from .LogicAutoAI import LogicAutoAI
+from .LogicRelay import LogicRelay
+from .RopesAI import RopeKeyFrameAI
+from .TeamControlPoint import TeamControlPointAI
 from .TeamControlPointMasterAI import TeamControlPointMasterAI
 from .TeamControlPointRoundAI import TeamControlPointRoundAI
-from .LogicAutoAI import LogicAutoAI
+from .TeamRoundTimerAI import TeamRoundTimerAI
+from .TFEntityFilters import FilterActivatorTFTeam
 from .TFGameRulesProxyAI import TFGameRulesProxyAI
-
-from tf.object.SentryGun import SentryGunAI
-from tf.object.DistributedDispenser import DistributedDispenserAI
-from tf.object.DistributedTeleporter import DistributedTeleporterEntranceAI, DistributedTeleporterExitAI
+from .TFLogicArena import TFLogicArena
+from .TriggerCaptureAreaAI import TriggerCaptureAreaAI
+from .World import WorldAI
 
 EntityRegistry = {
     "worldspawn": WorldAI,
@@ -76,5 +79,6 @@ EntityRegistry = {
     "tf_obj_sentrygun": SentryGunAI,
     "tf_obj_dispenser": DistributedDispenserAI,
     "tf_obj_teleporter_entrance": DistributedTeleporterEntranceAI,
-    "tf_obj_teleporter_exit": DistributedTeleporterExitAI
+    "tf_obj_teleporter_exit": DistributedTeleporterExitAI,
+    "func_respawnroom": DistributedFuncRespawnRoomAI
 }

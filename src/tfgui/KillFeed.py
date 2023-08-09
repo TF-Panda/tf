@@ -1,9 +1,10 @@
 """KillFeed module: contains the KillFeed class."""
 
 from panda3d.core import *
-from direct.gui.DirectGui import *
 
+from direct.gui.DirectGui import *
 from tf.tfbase import TFGlobals
+
 
 class KillFeedEvent:
 

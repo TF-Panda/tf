@@ -8,8 +8,11 @@
 # The magic word manager lives in a special zone that the server gives
 # the player interest to, if they have magic word privileges.
 
-from direct.distributed2.DistributedObject import DistributedObject
+from panda3d.core import ShaderManager
+
 from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.distributed2.DistributedObject import DistributedObject
+
 
 class TFMagicWordManager(DistributedObject):
 
@@ -64,7 +67,6 @@ class TFMagicWordManager(DistributedObject):
             return "Vis debug OFF"
 
     def __reloadShaders(self, _):
-        from panda3d.core import ShaderManager
         ShaderManager.getGlobalPtr().reloadShaders()
         return "Shaders reloaded"
 

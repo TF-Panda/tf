@@ -7,10 +7,14 @@ else:
     from tf.actor.DistributedCharAI import DistributedCharAI
     BaseClass = DistributedCharAI
 
-from tf.tfbase import TFGlobals, TFFilters, Sounds, TFEffects, CollisionGroups
+from panda3d.core import *
+
+if not IS_CLIENT:
+    from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
+    from tf.entity.World import WorldAI
+from tf.tfbase import CollisionGroups, Sounds, TFEffects, TFFilters, TFGlobals
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
 
-from panda3d.core import *
 
 class DistributedStickyBomb(BaseClass):
 
@@ -93,8 +97,6 @@ class DistributedStickyBomb(BaseClass):
             base.air.deleteObject(self)
 
         def canStickTo(self, entity):
-            from tf.entity.World import WorldAI
-            from tf.entity.DistributedPropDynamic import DistributedPropDynamicAI
             # Stickies can stick to the world and dynamic props only.
             return isinstance(entity, (WorldAI, DistributedPropDynamicAI))
 

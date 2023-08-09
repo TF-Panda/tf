@@ -2,12 +2,12 @@
 
 from panda3d.core import *
 
-from tf.tfbase import TFFilters, TFGlobals, TFLocalizer, CollisionGroups
-from tf.player import TFClass
+from direct.gui.DirectGui import DGG, DirectFrame, OnscreenText
 from tf.object.ObjectType import ObjectType
+from tf.player import TFClass
+from tf.tfbase import CollisionGroups, TFFilters, TFGlobals, TFLocalizer
 from tf.tfgui import TFGuiProperties
-
-from direct.gui.DirectGui import DirectFrame, OnscreenText, DGG
+from tf.weapon.DistributedMedigun import DistributedMedigun
 
 CTX_NONE = -1
 CTX_HOVERED = 0
@@ -114,7 +114,6 @@ class CrossHairInfo:
                     miscInfoText += TFLocalizer.Metal % self.ent.metal
                 elif self.ent.tfClass == TFClass.Class.Medic:
                     # Show medic's charge level.
-                    from tf.weapon.DistributedMedigun import DistributedMedigun
                     if isinstance(wpn, DistributedMedigun):
                         miscInfoText += TFLocalizer.Charge + str(int(wpn.chargeLevel * 100)) + "%"
             else:

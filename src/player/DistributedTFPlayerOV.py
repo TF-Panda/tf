@@ -1,36 +1,36 @@
 """ DistributedTFPlayerOV: Local TF player """
 
-from panda3d.core import WindowProperties, Vec2, Datagram, Point3, Vec3, lookAt
-from panda3d.core import ConfigVariableDouble, InterpolatedVec3, CardMaker, Quat, ConfigVariableFilename
+import random
 
-from .DistributedTFPlayer import DistributedTFPlayer
-from .PlayerCommand import PlayerCommand
-from .InputButtons import InputFlag
-from .TFClass import *
-from .ObserverMode import ObserverMode
-from .ScreenShake import ScreenShake
-from tf.object.ObjectType import ObjectType
-
-from tf.tfgui.TFHud import TFHud
-from tf.tfgui.KillFeed import KillFeed
-from tf.tfgui.TFWeaponSelection import TFWeaponSelection
-from tf.tfgui import CrossHairInfo
-from tf.tfgui.DamageNumbers import DamageNumbers
-from tf.tfgui.ChatFeed import ChatFeed
-from tf.tfbase import TFGlobals, TFFilters, TFLocalizer, CollisionGroups
-from .TFPlayerState import TFPlayerState
+from panda3d.core import (CardMaker, ConfigVariableDouble,
+                          ConfigVariableFilename, Datagram, InterpolatedVec3,
+                          Point3, Quat, Vec2, Vec3, WindowProperties, lookAt)
 
 from direct.distributed2.ClientConfig import *
-from direct.showbase.InputStateGlobal import inputState
 from direct.gui.DirectGui import *
-
+from direct.interval.IntervalGlobal import (Func, LerpColorScaleInterval,
+                                            LerpFunc, Parallel, Sequence)
+from direct.showbase.InputStateGlobal import inputState
+from tf.object.ObjectType import ObjectType
+from tf.tfbase import (CollisionGroups, Sounds, TFFilters, TFGlobals,
+                       TFLocalizer)
+from tf.tfgui import CrossHairInfo
+from tf.tfgui.ChatFeed import ChatFeed
+from tf.tfgui.DamageNumbers import DamageNumbers
+from tf.tfgui.KillFeed import KillFeed
+from tf.tfgui.ObjectPanel import (DispenserPanel, EntrancePanel, ExitPanel,
+                                  SentryPanel)
 from tf.tfgui.TFClassMenu import TFClassMenu
 from tf.tfgui.TFTeamMenu import TFTeamMenu
 from tf.tfgui.VoiceCommandMenu import VoiceCommandMenu
 
-from tf.tfbase import Sounds
-
-import random
+from .DistributedTFPlayer import DistributedTFPlayer
+from .InputButtons import InputFlag
+from .ObserverMode import ObserverMode
+from .PlayerCommand import PlayerCommand
+from .ScreenShake import ScreenShake
+from .TFClass import *
+from .TFPlayerState import TFPlayerState
 
 spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
 spec_freeze_traveltime = ConfigVariableDouble("spec-freeze-travel-time", 0.4)
@@ -528,7 +528,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         b = 1.0
         cmnp.setColorScale(r, g, b, 0.5)
 
-        from direct.interval.IntervalGlobal import LerpFunc, Sequence, LerpColorScaleInterval, Func, Parallel
         track = Parallel()
         track.append(LerpFunc(base.camLens.setMinFov, fovDuration, fovStart, origFov, blendType='easeOut'))
         track.append(LerpFunc(base.vmLens.setMinFov, fovDuration, fovStart, origVMFov, blendType='easeOut'))
@@ -1198,7 +1197,6 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.disableControls()
 
     def createObjectPanels(self):
-        from tf.tfgui.ObjectPanel import SentryPanel, DispenserPanel, EntrancePanel, ExitPanel
         self.objectPanels[ObjectType.SentryGun] = SentryPanel()
         self.objectPanels[ObjectType.SentryGun].updateState()
         self.objectPanels[ObjectType.Dispenser] = DispenserPanel()

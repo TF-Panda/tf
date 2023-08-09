@@ -4,13 +4,15 @@ from panda3d.core import *
 from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
-
-from tf.tfbase.TFGlobals import getTF2BuildFont, SpeechConcept
-from tf.tfbase import TFLocalizer, CollisionGroups
+from tf.tfbase import CollisionGroups, TFLocalizer
+from tf.tfbase.TFGlobals import SpeechConcept, TFTeam, getTF2BuildFont
 
 from .BaseObject import BaseObject
-from .ObjectType import ObjectType
 from .ObjectState import ObjectState
+from .ObjectType import ObjectType
+
+if IS_CLIENT:
+    from tf.tfbase import TFEffects
 
 DISPENSER_MAX_METAL_AMMO = 400
 DISPENSER_MAX_HEALING_TARGETS = 32
@@ -277,7 +279,6 @@ class DistributedDispenser(BaseObject):
             healBeamTargetNode = target.attachNewNode("healTargetDispenser")
             healBeamTargetNode.setPos(0, 0, 48)
 
-            from tf.tfbase import TFEffects
             sys = TFEffects.getDispenserHealBeam(self.team)
             sys.setInput(0, self.healBeamSourceNode, False) # medigun muzzle
             sys.setInput(1, healBeamTargetNode, True) # heal target

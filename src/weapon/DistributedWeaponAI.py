@@ -1,8 +1,9 @@
 
 from tf.actor.DistributedCharAI import DistributedCharAI
+from tf.tfbase.TFGlobals import WorldParent, getTeamSkin
+
 from .DistributedWeaponShared import DistributedWeaponShared
 
-from tf.tfbase.TFGlobals import WorldParent
 
 class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
 

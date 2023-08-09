@@ -1,10 +1,10 @@
 """Eyes module: contains the Eyes class."""
 
+import random
+
 from panda3d.core import *
 
 from direct.interval.IntervalGlobal import *
-
-import random
 
 
 class Eyes:

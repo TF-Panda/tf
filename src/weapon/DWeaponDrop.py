@@ -5,8 +5,9 @@ else:
     from tf.actor.DistributedChar import DistributedChar
     BaseClass = DistributedChar
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag
 from tf.tfbase import CollisionGroups
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape
+
 
 class DWeaponDrop(BaseClass):
 

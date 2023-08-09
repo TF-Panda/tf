@@ -1,11 +1,12 @@
 
-from tf.entity.DistributedEntity import DistributedEntity
-from .Actor import Actor
-
-from tf.tfbase.TFGlobals import SolidShape
-
 from panda3d.core import *
 from panda3d.direct import *
+
+from tf.entity.DistributedEntity import DistributedEntity
+from tf.tfbase.TFGlobals import SolidShape
+
+from .Actor import Actor
+
 
 class DistributedChar(Actor, DistributedEntity):
 

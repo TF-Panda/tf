@@ -1,21 +1,22 @@
 # Code referenced exactly from gamemovement.cpp/tf_gamemovement.cpp.
 # It's horrible, want to clean it up eventually.
 
+import math
+
 from panda3d.core import *
 from panda3d.pphysics import *
-
-from .MovementVars import *
-from .MoveType import MoveType
 
 from tf.player.InputButtons import InputFlag
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
 from tf.player.TFClass import Class
 from tf.tfbase import TFFilters
-from tf.tfbase.TFGlobals import (
-    VEC_HULL_MAX, VEC_HULL_MIN, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX,
-    VEC_DUCK_VIEW, DUCK_HULL_HALF_HEIGHT, STAND_HULL_HALF_HEIGHT)
+from tf.tfbase.TFGlobals import (DUCK_HULL_HALF_HEIGHT, STAND_HULL_HALF_HEIGHT,
+                                 VEC_DUCK_HULL_MAX, VEC_DUCK_HULL_MIN,
+                                 VEC_DUCK_VIEW, VEC_HULL_MAX, VEC_HULL_MIN)
 
-import math
+from .MovementVars import *
+from .MoveType import MoveType
+
 
 def simpleSpline(val):
     valueSquared = val * val

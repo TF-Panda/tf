@@ -1,20 +1,22 @@
 
-from panda3d.core import Vec3, Quat, lookAt, Filename, InterpolatedFloat, Point3
-
-from .BaseObject import BaseObject
+from panda3d.core import (InterpolatedFloat, Point3, Quat, Vec3,
+                          lookAt)
 
 from tf.actor.Activity import Activity
-from tf.tfbase import TFGlobals, TFLocalizer, CollisionGroups
-from tf.tfbase.TFGlobals import DamageType, TFTeam, SpeechConcept
+from tf.tfbase import CollisionGroups, TFGlobals, TFLocalizer
+from tf.tfbase.TFGlobals import DamageType, SpeechConcept, TFTeam
 from tf.weapon.WeaponEffects import makeMuzzleFlash
+
+from .BaseObject import BaseObject
 
 if not IS_CLIENT:
     from .DistributedSentryRocket import DistributedSentryRocketAI
 
+import random
+
 from .ObjectState import ObjectState
 from .ObjectType import ObjectType
 
-import random
 
 # Only means anything when object is active.
 class SentryState:

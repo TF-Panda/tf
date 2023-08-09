@@ -1,15 +1,14 @@
-from tf.entity.DistributedSolidEntity import DistributedSolidEntity
+import random
 
 from panda3d.core import *
 from panda3d.pphysics import *
 
 from direct.directbase import DirectRender
-
-from tf.tfbase.TFGlobals import TakeDamage, SolidShape, SolidFlag, WorldParent
+from tf.entity.DistributedSolidEntity import DistributedSolidEntity
 from tf.tfbase import CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape, TakeDamage, WorldParent
 
-import random
 
 class World(DistributedSolidEntity):
 

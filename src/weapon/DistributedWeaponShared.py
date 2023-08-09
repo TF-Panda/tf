@@ -1,12 +1,12 @@
 """DistributedWeaponShared module: contains the DistributedWeaponShared class"""
 
-from tf.actor.Actor import Actor
+from panda3d.core import *
+from panda3d.pphysics import *
 
 from tf.actor.Activity import Activity
+from tf.actor.Actor import Actor
 from tf.player.InputButtons import InputFlag
 
-from panda3d.pphysics import *
-from panda3d.core import *
 
 class DistributedWeaponShared:
     """

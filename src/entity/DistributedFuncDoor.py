@@ -1,11 +1,12 @@
 """DistributedFuncDoor module: contains the DistributedFuncDoor class."""
 
-from .DistributedSolidEntity import DistributedSolidEntity
-
 from panda3d.core import *
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag
 from tf.tfbase import Sounds
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape
+
+from .DistributedSolidEntity import DistributedSolidEntity
+
 
 class DistributedFuncDoor(DistributedSolidEntity):
 

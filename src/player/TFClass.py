@@ -3,6 +3,7 @@ from panda3d.core import *
 
 from tf.tfbase import TFLocalizer
 
+
 class VoiceCommand:
     Medic = 0
     Help = 1

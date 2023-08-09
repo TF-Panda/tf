@@ -1,14 +1,13 @@
 """CaptchaEntry module: contains the CaptchaEntry class."""
 
-from panda3d.core import PNMImage, Texture, TextNode, StringStream
-
-from tf.tfgui.TFDialog import TFDialog
-from direct.gui.DirectGui import OnscreenImage, DirectEntry, OnscreenText
-
-from tf.tfbase import TFGlobals
-from tf.tfgui import TFGuiProperties
+from panda3d.core import PNMImage, StringStream, TextNode, Texture
 
 from direct.fsm.FSM import FSM
+from direct.gui.DirectGui import DirectEntry, OnscreenImage, OnscreenText
+from tf.tfbase import TFGlobals
+from tf.tfgui import TFGuiProperties
+from tf.tfgui.TFDialog import TFDialog
+
 
 class CaptchaEntry(FSM):
 

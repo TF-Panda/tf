@@ -1,10 +1,10 @@
 
-import sys
 import getopt
 import os
-import shutil
-import py_compile
 import platform
+import py_compile
+import shutil
+import sys
 
 from direct.dist import FreezeTool
 
@@ -219,9 +219,10 @@ else:
 
 print("Platform:", platform)
 
-from direct.directnotify.DirectNotifyGlobal import *
 from panda3d.core import *
 from panda3d.direct import *
+
+from direct.directnotify.DirectNotifyGlobal import *
 
 # Now that we have PandaModules, make Filename objects for our
 # parameters.

@@ -1,9 +1,9 @@
 """ScreenShake module: contains the ScreenShake class."""
 
-from panda3d.core import *
-
-import random
 import math
+import random
+
+from panda3d.core import *
 
 SHAKE_START = 0
 SHAKE_STOP = 1

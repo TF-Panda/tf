@@ -1,10 +1,10 @@
 
 from tf.entity.DistributedEntity import DistributedEntityAI
-from .Actor import Actor
-
 from tf.tfbase.TFGlobals import SolidShape
 
+from .Actor import Actor
 from .AnimEvents import AnimEventType
+
 
 class DistributedCharAI(Actor, DistributedEntityAI):
 

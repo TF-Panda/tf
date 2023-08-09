@@ -1,10 +1,9 @@
-from direct.gui.DirectGui import *
-from direct.showbase.DirectObject import DirectObject
-
 from panda3d.core import *
 
-from tf.tfbase import TFLocalizer
+from direct.gui.DirectGui import *
+from direct.showbase.DirectObject import DirectObject
 from tf.player.TFClass import *
+from tf.tfbase import TFLocalizer
 from tf.tfgui import TFGuiProperties
 
 cl_crosshairscale = ConfigVariableDouble("cl-crosshair-scale", 32)

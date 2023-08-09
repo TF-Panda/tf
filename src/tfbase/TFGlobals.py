@@ -15,7 +15,8 @@ MagicWordZone = 3
 
 ###############################################################################
 
-from panda3d.core import Vec3, DynamicTextFont, NodePath, LineSegs
+from panda3d.core import DynamicTextFont, LineSegs, NodePath, Vec3
+
 
 class WinReason:
     Stalemate = 0

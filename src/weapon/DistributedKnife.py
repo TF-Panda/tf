@@ -1,14 +1,14 @@
 """DistributedKnife module: contains the DistributedKnife class."""
 
-from .TFWeaponMelee import TFWeaponMelee
+from panda3d.core import *
 
-from .WeaponMode import TFWeaponType, TFWeaponMode
-
-from tf.tfbase import TFLocalizer
 from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
+from tf.tfbase import TFLocalizer
 
-from panda3d.core import *
+from .TFWeaponMelee import TFWeaponMelee
+from .WeaponMode import TFWeaponMode, TFWeaponType
+
 
 class DistributedKnife(TFWeaponMelee):
 

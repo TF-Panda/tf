@@ -1,8 +1,11 @@
 """DistributedTeamFlag module: contains the DistributedTeamFlag class."""
 
-from tf.entity.DistributedEntity import DistributedEntity
-from tf.actor.Model import Model
 from direct.interval.IntervalGlobal import LerpHprInterval
+from tf.actor.Model import Model
+from tf.entity.DistributedEntity import DistributedEntity
+from tf.player.DistributedTFPlayer import DistributedTFPlayer
+from tf.tfbase import TFGlobals
+
 
 class DistributedTeamFlag(DistributedEntity):
     """
@@ -18,7 +21,6 @@ class DistributedTeamFlag(DistributedEntity):
         self.playerWithFlag = -1
 
     def parentChanged(self):
-        from tf.player.DistributedTFPlayer import DistributedTFPlayer
         if self.parentEntity and isinstance(self.parentEntity, DistributedTFPlayer):
             # Flag is carried by a player, actually parent the flag to the
             # "flag" expose joint.

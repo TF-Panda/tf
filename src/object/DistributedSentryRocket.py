@@ -1,8 +1,9 @@
 """DistributedSentryRocket module: contains the DistributedSentryRocket class."""
 
+from panda3d.pphysics import PhysBox
+
 from tf.weapon.BaseRocket import BaseRocket
 
-from panda3d.pphysics import PhysBox
 
 class DistributedSentryRocket(BaseRocket):
 

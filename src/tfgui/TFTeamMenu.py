@@ -4,10 +4,10 @@ from panda3d.core import *
 
 from direct.gui.DirectGui import *
 from direct.showbase.DirectObject import DirectObject
-
-from tf.tfbase import TFLocalizer, TFGlobals
+from tf.tfbase import TFGlobals, TFLocalizer
 from tf.tfbase.TFGlobals import TFTeam
 from tf.tfgui import TFGuiProperties
+
 
 class TFTeamMenu(DirectObject):
 

@@ -1,8 +1,9 @@
 """TeamControlPointManagerAI module: contains the TeamControlPointManagerAI class."""
 
+from tf.tfbase import TFGlobals
+
 from .EntityBase import EntityBase
 
-from tf.tfbase import TFGlobals
 
 class TeamControlPointManagerAI(EntityBase):
     """

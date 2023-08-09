@@ -1,9 +1,9 @@
 """LagCompensation module: contains the LagCompensation class."""
 
-from direct.showbase.DirectObject import DirectObject
-from direct.directnotify.DirectNotifyGlobal import directNotify
-
 from panda3d.core import *
+
+from direct.directnotify.DirectNotifyGlobal import directNotify
+from direct.showbase.DirectObject import DirectObject
 
 maxUnlag = 1.0
 

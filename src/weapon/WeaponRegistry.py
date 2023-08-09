@@ -1,32 +1,33 @@
 from tf.player.TFClass import Weapon
 
-from .DistributedShotgun import (
-  DistributedShotgunEngineer, DistributedShotgunSoldier,
-  DistributedShotgunHeavy, DistributedShotgunPyro,
-  DistributedScattergunScout)
-
-from .DistributedPistol import DistributedPistolEngineer, DistributedPistolScout
-
-from .DistributedWrench import DistributedWrench
-from .DistributedRocketLauncher import DistributedRocketLauncher
-from .DistributedShovel import DistributedShovel
-from .DistributedBottle import DistributedBottle
-from .DMinigun import DMinigun
-from .DistributedGrenadeLauncher import DistributedGrenadeLauncher
 from .DistributedBat import DistributedBat
-from .DistributedFists import DistributedFists
-from .DistributedFireAxe import DistributedFireAxe
-from .DistributedRevolver import DistributedRevolver
-from .DistributedKnife import DistributedKnife
-from .DistributedPDA import DistributedConstructionPDA, DistributedDestructionPDA
-from .DistributedToolbox import DistributedToolbox
 from .DistributedBoneSaw import DistributedBoneSaw
-from .DistributedMedigun import DistributedMedigun
-from .DistributedSMG import DistributedSMG
+from .DistributedBottle import DistributedBottle
+from .DistributedFireAxe import DistributedFireAxe
+from .DistributedFists import DistributedFists
+from .DistributedFlameThrower import DistributedFlameThrower
+from .DistributedGrenadeLauncher import DistributedGrenadeLauncher
+from .DistributedKnife import DistributedKnife
 from .DistributedMachete import DistributedMachete
+from .DistributedMedigun import DistributedMedigun
+from .DistributedPDA import (DistributedConstructionPDA,
+                             DistributedDestructionPDA)
+from .DistributedPistol import (DistributedPistolEngineer,
+                                DistributedPistolScout)
+from .DistributedRevolver import DistributedRevolver
+from .DistributedRocketLauncher import DistributedRocketLauncher
+from .DistributedShotgun import (DistributedScattergunScout,
+                                 DistributedShotgunEngineer,
+                                 DistributedShotgunHeavy,
+                                 DistributedShotgunPyro,
+                                 DistributedShotgunSoldier)
+from .DistributedShovel import DistributedShovel
+from .DistributedSMG import DistributedSMG
 from .DistributedSniperRifle import DistributedSniperRifle
 from .DistributedStickyBombLauncher import DistributedStickyBombLauncher
-from .DistributedFlameThrower import DistributedFlameThrower
+from .DistributedToolbox import DistributedToolbox
+from .DistributedWrench import DistributedWrench
+from .DMinigun import DMinigun
 
 Weapons = {
   Weapon.ShotgunEngineer: DistributedShotgunEngineer,

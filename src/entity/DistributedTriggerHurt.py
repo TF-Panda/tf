@@ -1,9 +1,10 @@
 """DistributedTriggerHurt module: contains the DistributedTriggerHurt class."""
 
-from .DistributedTrigger import DistributedTrigger
-
 from tf.tfbase.TFGlobals import DamageType
 from tf.weapon.TakeDamageInfo import TakeDamageInfo
+
+from .DistributedTrigger import DistributedTrigger
+
 
 class DistributedTriggerHurt(DistributedTrigger):
 

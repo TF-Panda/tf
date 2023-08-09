@@ -1,12 +1,13 @@
 """Soundscapes module: contains the Soundscapes class."""
 
-from panda3d.core import *
+import random
 
-from .Sounds import attenToDistMult
+from panda3d.core import *
 
 from tf.tfbase import TFGlobals
 
-import random
+from .Sounds import attenToDistMult
+
 
 class SoundscapeComponentDef:
 

@@ -1,10 +1,11 @@
 """TeamControlPoint module: contains the TeamControlPoint class."""
 
-from .DistributedEntity import DistributedEntity
 from tf.actor.Model import Model
 from tf.tfbase import TFGlobals
 
 from . import CapState
+from .DistributedEntity import DistributedEntity
+
 
 class TeamControlPoint(DistributedEntity):
 

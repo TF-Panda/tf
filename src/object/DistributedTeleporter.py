@@ -2,15 +2,16 @@
 
 from panda3d.core import *
 
-from .BaseObject import BaseObject
-from .ObjectType import ObjectType
-from .ObjectState import ObjectState
-
-from tf.tfbase import TFGlobals, TFLocalizer, CollisionGroups
-
-from direct.interval.IntervalGlobal import *
-
 from direct.directbase import DirectRender
+from direct.interval.IntervalGlobal import *
+from tf.tfbase import CollisionGroups, TFGlobals, TFLocalizer
+
+from .BaseObject import BaseObject
+from .ObjectState import ObjectState
+from .ObjectType import ObjectType
+
+if IS_CLIENT:
+    from tf.tfbase import TFEffects
 
 TStateBuilding = 0
 TStateIdle = 1
@@ -409,7 +410,6 @@ class DistributedTeleporter(BaseObject):
             if not plyr:
                 return
 
-            from tf.tfbase import TFEffects
             system = TFEffects.getPlayerTeleportEffect(plyr.team)
             system.setInput(0, plyr.modelNp, False)
             # TODO: make the bounce be able to take the plane from an input or something.

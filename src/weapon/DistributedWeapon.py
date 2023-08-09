@@ -3,6 +3,7 @@ from tf.actor.DistributedChar import DistributedChar
 
 from .DistributedWeaponShared import DistributedWeaponShared
 
+
 class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
     def __init__(self):

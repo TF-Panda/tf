@@ -5,11 +5,12 @@ This class contains the inputs of a player for a particular server tick.  The
 server runs the commands and the client predicts his own commands.
 """
 
-from panda3d.core import Vec3, Vec2
+import random
+
+from panda3d.core import Vec2, Vec3
 
 from .InputButtons import InputFlag
 
-import random
 
 class PlayerCommand:
 

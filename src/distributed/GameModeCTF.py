@@ -1,8 +1,10 @@
 """GameModeCTF module: contains the GameModeCTF class."""
 
+from tf.entity.DistributedTeamFlagAI import DistributedTeamFlagAI
 from tf.tfbase.TFGlobals import TFTeam
 
 from .RoundState import RoundState
+
 
 class GameModeCTF:
 
@@ -31,7 +33,6 @@ class GameModeCTF:
         return False
 
     def returnFlags(self):
-        from tf.entity.DistributedTeamFlagAI import DistributedTeamFlagAI
         for do in base.air.doId2do.values():
             if isinstance(do, DistributedTeamFlagAI):
                 do.returnFlag(False, False)

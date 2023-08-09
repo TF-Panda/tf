@@ -1,11 +1,12 @@
 """DamageNumbers module: contains the DamageNumbers class."""
 
-from panda3d.core import TextNode, Point2
+from panda3d.core import Point2, TextNode
 
+from direct.interval.IntervalGlobal import (LerpColorScaleInterval, Sequence,
+                                            Wait)
 from direct.showbase.DirectObject import DirectObject
-from direct.interval.IntervalGlobal import Wait, LerpColorScaleInterval, Sequence
-
 from tf.tfbase import TFGlobals
+
 
 class DamageText:
 

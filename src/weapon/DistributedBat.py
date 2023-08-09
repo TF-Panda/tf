@@ -1,8 +1,8 @@
-from .TFWeaponMelee import TFWeaponMelee
+from tf.tfbase import TFLocalizer
 
+from .TFWeaponMelee import TFWeaponMelee
 from .WeaponMode import TFWeaponMode, TFWeaponType
 
-from tf.tfbase import TFLocalizer
 
 class DistributedBat(TFWeaponMelee):
     WeaponModel = "models/weapons/c_bat"

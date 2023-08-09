@@ -1,11 +1,13 @@
 """TeamRoundTimerAI module: contains the TeamRoundTimerAI class."""
 
-from direct.distributed2.DistributedObjectAI import DistributedObjectAI
+import math
+import random
 
-from .EntityBase import EntityBase
+from direct.distributed2.DistributedObjectAI import DistributedObjectAI
 from tf.tfbase import TFGlobals
 
-import random, math
+from .EntityBase import EntityBase
+
 
 class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
 

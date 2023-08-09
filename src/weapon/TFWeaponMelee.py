@@ -1,16 +1,17 @@
 
-from panda3d.core import Vec3, Quat
+from panda3d.core import Quat, Vec3
 
-from .TFWeapon import TFWeapon
-
-from .WeaponMode import TFWeaponMode
-from .TakeDamageInfo import TakeDamageInfo, applyMultiDamage, calculateMeleeDamageForce
 from tf.actor.Activity import Activity
 from tf.player.PlayerAnimEvent import PlayerAnimEvent
+from tf.tfbase import CollisionGroups, TFFilters
+from tf.tfbase.SurfaceProperties import (SurfaceProperties,
+                                         SurfacePropertiesByPhysMaterial)
 from tf.tfbase.TFGlobals import DamageType
-from tf.tfbase import TFFilters, CollisionGroups
 
-from tf.tfbase.SurfaceProperties import SurfaceProperties, SurfacePropertiesByPhysMaterial
+from .TakeDamageInfo import (TakeDamageInfo, applyMultiDamage,
+                             calculateMeleeDamageForce)
+from .TFWeapon import TFWeapon
+from .WeaponMode import TFWeaponMode
 
 SWING_MINS = Vec3(-18)
 SWING_MAXS = Vec3(18)

@@ -1,7 +1,8 @@
 from panda3d.core import *
 
-from tf.player.InputButtons import InputFlag
 from tf.movement.MoveType import MoveType
+from tf.player.InputButtons import InputFlag
+
 
 class MoveData:
 

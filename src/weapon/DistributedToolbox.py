@@ -2,20 +2,18 @@
 
 # Toolbox weapon for placing buildings.
 
-from .TFWeapon import TFWeapon
-
-from .WeaponMode import TFWeaponType
-
-from tf.tfbase import TFLocalizer, TFGlobals, TFFilters, CollisionGroups
-from direct.gui.DirectGui import *
-from tf.actor.Actor import Actor
-from tf.player.InputButtons import InputFlag
-
-from tf.object.ObjectDefs import ObjectDefs
+from panda3d.core import *
 
 from direct.directbase import DirectRender
+from direct.gui.DirectGui import *
+from tf.actor.Actor import Actor
+from tf.object.ObjectDefs import ObjectDefs
+from tf.player.InputButtons import InputFlag
+from tf.tfbase import CollisionGroups, TFFilters, TFGlobals, TFLocalizer
 
-from panda3d.core import *
+from .TFWeapon import TFWeapon
+from .WeaponMode import TFWeaponType
+
 
 class DistributedToolbox(TFWeapon):
 

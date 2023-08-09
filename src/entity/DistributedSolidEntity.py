@@ -1,12 +1,16 @@
 """DistributedSolidEntity module: contains the DistributedSolidEntity class."""
 
+import random
+
 from panda3d.core import *
 from panda3d.pphysics import *
 
-from .DistributedEntity import DistributedEntity
+from direct.directbase import DirectRender
+from tf.entity.DecalRegistry import Decals
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 
-import random
+from .DistributedEntity import DistributedEntity
+
 
 class DistributedSolidEntity(DistributedEntity):
     """
@@ -88,17 +92,9 @@ class DistributedSolidEntity(DistributedEntity):
             if not root or root.isHidden():
                 return
 
-            from tf.entity.DecalRegistry import Decals
-
-            from direct.directbase import DirectRender
-
             info = Decals.get(decalName)
             if not info:
                 return
-
-            #print("projecting decal onto", root)
-
-            import random
             matData = random.choice(info['materials'])
             if isinstance(matData, tuple):
                 materialFilename, texPos, texSize = matData

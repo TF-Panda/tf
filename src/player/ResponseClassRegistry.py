@@ -1,15 +1,10 @@
 """ResponseClassRegistry module: contains the ResponseClassRegistry class."""
 
-from . import EngineerResponses
-from . import SoldierResponses
-from . import ScoutResponses
-from . import PyroResponses
-from . import DemoResponses
-from . import HeavyResponses
-from . import MedicResponses
-from . import SniperResponses
-from . import SpyResponses
 from tf.player.TFClass import Class
+
+from . import (DemoResponses, EngineerResponses, HeavyResponses,
+               MedicResponses, PyroResponses, ScoutResponses, SniperResponses,
+               SoldierResponses, SpyResponses)
 
 ResponseClasses = {
   Class.Engineer: EngineerResponses,

@@ -1,10 +1,10 @@
 """DistributedBoneSaw module: contains the DistributedBoneSaw class."""
 
-from .TFWeaponMelee import TFWeaponMelee
+from tf.tfbase import TFLocalizer
 
+from .TFWeaponMelee import TFWeaponMelee
 from .WeaponMode import TFWeaponMode, TFWeaponType
 
-from tf.tfbase import TFLocalizer
 
 class DistributedBoneSaw(TFWeaponMelee):
     WeaponModel = "models/weapons/w_bonesaw"
