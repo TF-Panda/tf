@@ -1,9 +1,10 @@
 """DistributedFuncRegenerate module: contains the DistributedFuncRegenerate class."""
 
+from tf.tfbase import CollisionGroups
+from tf.tfbase.TFGlobals import SolidFlag, SolidShape, TFTeam, WorldParent
+
 from .DistributedSolidEntity import DistributedSolidEntity
 
-from tf.tfbase.TFGlobals import SolidShape, SolidFlag, WorldParent
-from tf.tfbase import CollisionGroups
 
 class DistributedFuncRegenerate(DistributedSolidEntity):
     """
@@ -133,7 +134,7 @@ class DistributedFuncRegenerate(DistributedSolidEntity):
                 if base.game.isRoundEnded():
                     if entity.team != base.game.winTeam:
                         continue
-                elif self.team >= 0 and entity.team != self.team:
+                elif self.team != TFTeam.NoTeam and entity.team != self.team:
                     continue
 
                 lastRegenTime = self.lastRegenTimes.get(entity.doId, 0.0)
