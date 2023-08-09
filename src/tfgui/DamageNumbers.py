@@ -44,7 +44,7 @@ class DamageNumbers(DirectObject):
         text.setFont(TFGlobals.getTF2Font())
         text.setTextColor(1, 0, 0, 1)
         text.setAlign(TextNode.ACenter)
-        text.setTextScale(0.075)
+        text.setTextScale(0.065)
         textNp = base.render2d.attachNewNode(text.generate())
         textNp.setTransparency(True)
         textNp.setScale(0.075)
