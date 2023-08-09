@@ -7,6 +7,7 @@ from panda3d.core import *
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed2.DistributedObjectAI import DistributedObjectAI
 from direct.distributed2.ServerRepository import ServerRepository
+from tf.bot.DistributedTFPlayerBotAI import DistributedTFPlayerBotAI
 from tf.entity.DistributedEntity import DistributedEntity
 from tf.entity.EntityRegistryAI import EntityRegistry
 from tf.entity.TFGameRulesProxyAI import TFGameRulesProxyAI
@@ -26,6 +27,8 @@ from .GameModeCTF import GameModeCTF
 from .GameModePayload import GameModePayload
 from .GameModeTraining import GameModeTraining
 from .RoundState import *
+
+BotNames = ["Bot"]
 
 class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
     notify = directNotify.newCategory("DistributedGameAI")
@@ -74,6 +77,9 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.levelEnts = []
 
         self.allPlayers = {}
+
+        self.availableBotNames = list(BotNames)
+        self.bots = []
 
     def getRespawnWaveTimeForTeam(self, team):
         waveTime = self.respawnWaves[team]['time']
@@ -662,3 +668,43 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         # Give them magic word access.
         # TODO: Determine who should have access.
         base.air.addExplicitInterest(client, [TFGlobals.MagicWordZone])
+
+    def botRemoved(self, bot):
+        if bot in self.bots:
+            self.bots.remove(bot)
+        #if bot.playerName not in self.availableBotNames:
+        #    self.availableBotNames.append(bot.playerName)
+
+    def makeBot(self, _):
+        #botName = random.choice(self.availableBotNames)
+        #self.availableBotNames.remove(botName)
+
+        botName = "Bot %i" % (len(self.bots) + 1)
+
+        print("Bot " + botName + " has joined the game.")
+
+        dummyClient = ServerRepository.Client(0, 0)
+
+        player = DistributedTFPlayerBotAI()
+        player.playerName = botName
+        dummyClient.player = player
+        # Automatically assign to team with fewest players.
+        team = self.getAvailableTeam()
+        # This should be made somewhat cleaner.
+        # Changing class cannot force a respawn because we might join in the middle
+        # of a round end.
+        # We also can't give class weapons until we actually respawn because the
+        # player is not yet assigned a doId until we call generateObject().
+        player.doChangeTeam(team, respawn=False, giveWeapons=False, isAuto=True)
+        #self.d_displayChat("%s was automatically assigned to team %s." % (name, self.getTeamName(team)))
+        player.doChangeClass(random.randint(0, Class.COUNT - 1), respawn=False, force=True,
+                             sendRespawn=False, giveWeapons=False)
+        base.sv.generateObject(player, TFGlobals.GameZone, dummyClient, dclassName='DistributedTFPlayerAI')
+        player.startWaitingToRespawn()
+
+        self.bots.append(player)
+
+    def clearBots(self):
+        for b in list(self.bots):
+            base.air.deleteObject(b)
+        self.bots = []

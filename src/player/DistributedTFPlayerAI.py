@@ -1076,6 +1076,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.setPlayerState(TFPlayerState.Died)
 
+        messenger.send('PlayerDied', [self])
+
     def freezeFrameTask(self, task):
 
         now = base.clockMgr.getTime()
