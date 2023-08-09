@@ -27,7 +27,6 @@ from .TFPostProcess import TFPostProcess
 
 #from .Console import Console
 
-import random
 
 class TFBase(ShowBase, FSM):
 
