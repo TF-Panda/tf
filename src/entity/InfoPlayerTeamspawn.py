@@ -35,7 +35,7 @@ class InfoPlayerTeamspawn(EntityBase):
             self.spawnHpr[0] = self.spawnHpr[1] - 90
             self.spawnHpr[1] = -tmp
         if props.hasAttribute("TeamNum"):
-            self.team = props.getAttributeValue("TeamNum").getInt() - 2
+            self.team = props.getAttributeValue("TeamNum").getInt()
         if props.hasAttribute("round_bluespawn"):
             self.blueCPRoundName = props.getAttributeValue("round_bluespawn").getString()
         if props.hasAttribute("round_redspawn"):

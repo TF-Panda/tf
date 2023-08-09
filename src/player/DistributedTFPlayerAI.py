@@ -318,7 +318,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         # else is playing the same class.
         teammates = [x for x in base.game.playersByTeam[self.team] if x != self]
         if tf_spectate_enemies.value:
-            teammates += base.game.playersByTeam[not self.team]
+            teammates += base.game.playersByTeam[TFGlobals.getEnemyTeam(self.team)]
         if teammates:
             teammates.sort(key=lambda x: (pos - x.getPos()).lengthSquared())
 
@@ -1255,11 +1255,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             base.game.playersByTeam[team].append(self)
 
         self.team = team
-        self.setSkin(team)
+        self.setSkin(TFGlobals.getTeamSkin(team))
 
         if self.viewModel:
             self.viewModel.team = team
-            self.viewModel.setSkin(team)
+            self.viewModel.setSkin(self.skin)
 
         #if giveWeapons:
         #    self.giveClassWeapons()

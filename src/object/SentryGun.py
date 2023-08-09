@@ -486,7 +486,7 @@ class SentryGun(BaseObject):
             oldTarget = self.enemy
             oldTargetDist2 = 1e+9
 
-            opposingTeam = int(not self.team)
+            opposingTeam = TFGlobals.getEnemyTeam(self.team)
 
             # Try to attack players first, then objects.
             for player in base.game.playersByTeam[opposingTeam]:

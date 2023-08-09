@@ -55,8 +55,8 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         self.numEngineer = 1
         self.numDemo = 0
 
-        self.playersByTeam = {0: [], 1: []}
-        self.objectsByTeam = {0: [], 1: []}
+        self.playersByTeam = {TFTeam.Red: [], TFTeam.Blue: []}
+        self.objectsByTeam = {TFTeam.Red: [], TFTeam.Blue: []}
 
         self.respawnWaves = {TFGlobals.TFTeam.Red: {'time': 10.0, 'wave': 0, 'nextWave': 0.0},
                              TFGlobals.TFTeam.Blue: {'time': 10.0, 'wave': 0, 'nextWave': 0.0}}
@@ -257,7 +257,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         return team
 
     def enemySound(self, snd, team):
-        for plyr in self.playersByTeam[not team]:
+        for plyr in self.playersByTeam[TFGlobals.getEnemyTeam(team)]:
             base.world.emitSound(snd, client=plyr.owner)
 
     def teamSound(self, snd, team):

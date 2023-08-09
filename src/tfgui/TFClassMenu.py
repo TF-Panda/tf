@@ -198,7 +198,7 @@ class TFClassMenu:
 
         info = ClassInfos[classId]
         self.classChar.loadModel(info.PlayerModel)
-        self.classChar.setSkin(base.localAvatar.team)
+        self.classChar.setSkin(TFGlobals.getTeamSkin(base.localAvatar.team))
         self.classChar.modelNp.reparentTo(self.classRoot)
         #self.classChar.modelNp.setScale(0.01)
         self.classChar.modelNp.setPos(30, 170, -48)
@@ -222,5 +222,5 @@ class TFClassMenu:
                 char.loadModel(wpn)
                 char.modelNp.reparentTo(self.classChar.modelNp)
                 char.setJointMergeParent(self.classChar)
-                char.setSkin(base.localAvatar.team)
+                char.setSkin(TFGlobals.getTeamSkin(base.localAvatar.team))
                 self.weaponChars.append(char)

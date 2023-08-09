@@ -77,11 +77,12 @@ class SpeechConcept:
     ChargeReady = 39
 
 class TFTeam:
-    NoTeam = -1
-    Red = 0
-    Blue = 1
+    NoTeam = 0
+    Spectator = 1
+    Red = 2
+    Blue = 3
 
-    COUNT = 2
+    COUNT = 4
 
 class SolidShape:
     Empty = 0 # Nothing.
@@ -328,6 +329,25 @@ def getLineViz(start, end, thickness, color):
     segs.moveTo(start)
     segs.drawTo(end)
     return NodePath(segs.create())
+
+def getEnemyTeam(team):
+    """
+    Returns the enemy team of the given team.
+
+    TODO: This only works for 2 teams!
+    """
+    return TFTeam.Red if team == TFTeam.Blue else TFTeam.Blue
+
+def getTeamSkin(team):
+    """
+    Returns the model skin index to use for the given team.
+    """
+    if team == TFTeam.Red:
+        return 0
+    elif team == TFTeam.Blue:
+        return 1
+    else:
+        return 0
 
 # All classes use the same standing/ducking collision hulls.
 VEC_VIEW = Vec3(0, 0, 72)

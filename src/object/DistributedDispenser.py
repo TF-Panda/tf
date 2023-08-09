@@ -311,7 +311,7 @@ class DistributedDispenser(BaseObject):
             self.text1 = None
 
         def screenColor(self):
-            if self.team == 0:
+            if self.team == TFTeam.Red:
                 return (0.9, 0.3, 0.3, 1)
             else:
                 return (0.5, 0.75, 1, 1)

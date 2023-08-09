@@ -418,7 +418,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         # Load new player model.
         self.loadModel(self.classInfo.PlayerModel)
-        self.setSkin(self.team)
+        self.setSkin(TFGlobals.getTeamSkin(self.team))
         if self.viewModel:
             self.viewModel.loadModel(self.classInfo.ViewModel)
 

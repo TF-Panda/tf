@@ -245,7 +245,7 @@ class DistributedToolbox(TFWeapon):
                 self.blueprint.removeNode()
             self.blueprint = Actor()
             self.blueprint.loadModel(self.bldgDef['blueprint'])
-            self.blueprint.setSkin(self.player.team)
+            self.blueprint.setSkin(TFGlobals.getTeamSkin(self.player.team))
             self.blueprint.setAnim('idle', loop=True)
             self.blueprint.modelNp.reparentTo(self.blueprintRoot)
             self.blueprint.modelNp.setEffect(MapLightingEffect.make(DirectRender.MainCameraBitmask))

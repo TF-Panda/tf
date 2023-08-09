@@ -16,7 +16,7 @@ class GameRoundWin(EntityBase):
     def initFromLevel(self, ent, props):
         EntityBase.initFromLevel(self, ent, props)
         if props.hasAttribute("TeamNum"):
-            self.team = props.getAttributeValue("TeamNum").getInt() - 2
+            self.team = props.getAttributeValue("TeamNum").getInt()
         if props.hasAttribute("switch_teams"):
             self.switchTeams = props.getAttributeValue("switch_teams").getBool()
         if props.hasAttribute("force_map_reset"):

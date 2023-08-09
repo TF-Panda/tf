@@ -190,7 +190,7 @@ class BaseObject(BaseClass):
                 ap.solidShape = SolidShape.Model
                 ap.solidFlags |= SolidFlag.Tangible
                 ap.kinematic = False
-                ap.skin = self.team
+                ap.skin = TFGlobals.getTeamSkin(self.team)
                 ap.setModel(model)
                 ap.node().setSleepThreshold(0.25)
                 ap.node().setCcdEnabled(True)
@@ -347,7 +347,7 @@ class BaseObject(BaseClass):
             # Be on same team as builder.
             self.team = bldr.team
             base.game.objectsByTeam[self.team].append(self)
-            self.setSkin(bldr.team)
+            self.setSkin(TFGlobals.getTeamSkin(bldr.team))
             self.setCollideMasks()
 
         #def getRepairRate(self):
@@ -487,7 +487,7 @@ class BaseObject(BaseClass):
         def announceGenerate(self):
             BaseClass.announceGenerate(self)
 
-            self.setSkin(self.team)
+            self.setSkin(TFGlobals.getTeamSkin(self.team))
 
             self.setCollideMasks()
 

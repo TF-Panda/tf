@@ -14,7 +14,7 @@ class FilterActivatorTFTeam(FilterBase):
     def initFromLevel(self, ent, props):
         FilterBase.initFromLevel(self, ent, props)
         if props.hasAttribute("TeamNum"):
-            self.teamNum = props.getAttributeValue("TeamNum").getInt() - 2
+            self.teamNum = props.getAttributeValue("TeamNum").getInt()
 
     def doFilter(self, activator):
         if not activator.isPlayer():

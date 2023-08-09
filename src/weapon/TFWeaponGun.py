@@ -218,7 +218,7 @@ class TFWeaponGun(BaseClass):
             rocket.damage = rocket.fullDamage * 0.6
             rocket.damageType = self.damageType
             rocket.team = self.player.team
-            rocket.skin = self.player.team
+            rocket.skin = TFGlobals.getTeamSkin(self.player.team)
             # Material for grenade comes from surfaceproperties now.
             rocket.setModel("models/weapons/w_grenade_grenadelauncher")
             #physMat = PhysMaterial(0.6, 0.2, 0.2)
@@ -245,7 +245,7 @@ class TFWeaponGun(BaseClass):
             bomb.damage = self.getWeaponDamage()
             bomb.damageType = self.getWeaponDamageType()
             bomb.team = player.team
-            bomb.skin = player.team
+            bomb.skin = TFGlobals.getTeamSkin(bomb.team)
             bomb.setModel("models/weapons/w_stickybomb")
             bomb.node().addForce(vel, bomb.node().FTVelocityChange)
             bomb.node().addTorque((random.uniform(-1200, 1200), -600, 0), bomb.node().FTVelocityChange)

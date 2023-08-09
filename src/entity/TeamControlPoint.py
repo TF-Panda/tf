@@ -52,7 +52,7 @@ class TeamControlPoint(DistributedEntity):
         def initFromLevel(self, ent, props):
             DistributedEntity.initFromLevel(self, ent, props)
             if props.hasAttribute("point_default_owner"):
-                self.ownerTeam = props.getAttributeValue("point_default_owner").getInt() - 2
+                self.ownerTeam = props.getAttributeValue("point_default_owner").getInt()
                 self.defaultOwner = self.ownerTeam
             if props.hasAttribute("point_index"):
                 self.pointIndex = props.getAttributeValue("point_index").getInt()

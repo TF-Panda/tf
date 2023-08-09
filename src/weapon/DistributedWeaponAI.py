@@ -20,7 +20,7 @@ class DistributedWeaponAI(DistributedCharAI, DistributedWeaponShared):
         # Be on same team as player and use team-colored skin for
         # weapon model.
         self.team = self.player.team
-        self.skin = self.player.skin
+        self.skin = getTeamSkin(self.team)
 
     def activate(self):
         self.active = True

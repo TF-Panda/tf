@@ -57,7 +57,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
 
     def input_AddTeamTime(self, caller, data):
         data = data.split()
-        rewardedTeam = int(data[0]) - 2
+        rewardedTeam = int(data[0])
         time = float(data[1])
         self.timeLeft += time
 
@@ -220,7 +220,7 @@ class TeamRoundTimerAI(DistributedObjectAI, EntityBase):
     def initFromLevel(self, ent, props):
         EntityBase.initFromLevel(self, ent, props)
         if props.hasAttribute("TeamNum"):
-            self.team = props.getAttributeValue("TeamNum").getInt() - 2
+            self.team = props.getAttributeValue("TeamNum").getInt()
         if props.hasAttribute("start_paused"):
             self.startPaused = props.getAttributeValue("start_paused").getBool()
         if props.hasAttribute("setup_length"):

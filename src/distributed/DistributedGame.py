@@ -120,7 +120,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
             return
         self.contextLbl.show()
         self.contextLbl['text'] = text
-        if team == 0:
+        if team == TFGlobals.TFTeam.Red:
             self.contextLbl['text_bg'] = TFGuiProperties.BackgroundColorRedTranslucent
         else:
             self.contextLbl['text_bg'] = TFGuiProperties.BackgroundColorBlueTranslucent
@@ -608,7 +608,7 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         base.graphicsEngine.renderFrame()
 
     def getTeamFormat(self, team):
-        if team == 0:
+        if team == TFGlobals.TFTeam.Red:
             return "\1redteam\1"
         else:
             return "\1blueteam\1"

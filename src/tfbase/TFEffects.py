@@ -333,7 +333,7 @@ def getRocketBackBlastEffect():
 
     return RocketBackBlast.makeCopy()
 
-StickybombPulse = [None, None]
+StickybombPulse = [None] * TFTeam.COUNT
 def getStickybombPulseEffect(team):
     if not StickybombPulse[team]:
         system = ParticleSystem2()
@@ -406,7 +406,7 @@ def getStickybombPulseEffect(team):
 
     return StickybombPulse[team].makeCopy()
 
-PipebombTimer = [None, None]
+PipebombTimer = [None] * TFTeam.COUNT
 def getPipebombTimerEffect(team):
     if not PipebombTimer[team]:
         # Timer child
@@ -478,7 +478,7 @@ def getPipebombTimerEffect(team):
         PipebombTimer[team] = system2
     return PipebombTimer[team].makeCopy()
 
-PipebombTrail = [None, None]
+PipebombTrail = [None] * TFTeam.COUNT
 def getPipebombTrailEffect(team):
     if not PipebombTrail[team]:
         system = ParticleSystem2()
@@ -547,7 +547,7 @@ def getPipebombTrailEffect(team):
 
     return PipebombTrail[team].makeCopy()
 
-MuzzleFlashEffect = [None, None]
+MuzzleFlashEffect = [None] * TFTeam.COUNT
 def getMuzzleFlashEffect(isViewModel):
     if not MuzzleFlashEffect[isViewModel]:
         system = ParticleSystem2()
@@ -856,7 +856,7 @@ def getRocketTrailEffect():
 
     return RocketTrailEffect.makeCopy()
 
-OverhealedEffect = [None, None]
+OverhealedEffect = [None] * TFTeam.COUNT
 def getOverhealedEffect(team):
     global OverhealedEffect
     if not OverhealedEffect[team]:
@@ -905,7 +905,7 @@ def getOverhealedEffect(team):
 
     return OverhealedEffect[team].makeCopy()
 
-PlayerTeleportEffect = [None, None]
+PlayerTeleportEffect = [None] * TFTeam.COUNT
 def getPlayerTeleportEffect(team):
     global PlayerTeleportEffect
     if not PlayerTeleportEffect[team]:
@@ -981,7 +981,7 @@ def getPlayerTeleportEffect(team):
 
     return PlayerTeleportEffect[team].makeCopy()
 
-MedigunHealBeam = [None, None]
+MedigunHealBeam = [None] * TFTeam.COUNT
 def getMedigunHealBeam(team):
     global MedigunHealBeam
     if not MedigunHealBeam[team]:
@@ -1057,7 +1057,7 @@ def getMedigunHealBeam(team):
 
     return MedigunHealBeam[team].makeCopy()
 
-DispenserHealBeam = [None, None]
+DispenserHealBeam = [None] * TFTeam.COUNT
 def getDispenserHealBeam(team):
     global DispenserHealBeam
     if not DispenserHealBeam[team]:

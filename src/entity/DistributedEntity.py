@@ -57,7 +57,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         # to contain components that add new data/functionality onto an
         # entity that needs it, without having to modify the base class for
         # all entities.
-        self.team = -1
+        self.team = TFTeam.NoTeam
 
         # Another thing that could be done with components.  Surely, not all
         # entities need health.
@@ -766,7 +766,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
                 properties.getAttributeValue("angles").toVec3(angles)
                 self.setHpr(angles[1] - 90, -angles[0], angles[2])
             if properties.hasAttribute("TeamNum"):
-                self.team = properties.getAttributeValue("TeamNum").getInt() - 2
+                self.team = properties.getAttributeValue("TeamNum").getInt()
             if properties.hasAttribute("parentname"):
                 self.parentEntityName = properties.getAttributeValue("parentname").getString()
 

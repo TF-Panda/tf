@@ -115,7 +115,7 @@ class ObjectPanel(NodePath):
         del self.nbLabel
 
     def enterBuilt(self):
-        if self.object.team == 0:
+        if self.object.team == TFGlobals.TFTeam.Red:
             self.frame['frameColor'] = TFGuiProperties.BackgroundColorRedTranslucent
         else:
             self.frame['frameColor'] = TFGuiProperties.BackgroundColorBlueTranslucent

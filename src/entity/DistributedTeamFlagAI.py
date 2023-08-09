@@ -129,12 +129,12 @@ class DistributedTeamFlagAI(DistributedEntityAI):
 
         base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_PickedUp, 3, self.team, self.team)
         # We send a specific context message to the player that picked it up.
-        base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_PickedUp, 3, self.team, not self.team, exclude=[player])
+        base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_PickedUp, 3, self.team, TFGlobals.getEnemyTeam(self.team), exclude=[player])
         base.game.d_setGameContextMessage(GameContextMessage.CTF_Player_PickedUp, 3, self.team, forPlayer=player)
 
         base.game.sendUpdate('pickedUpFlagEvent', [player.doId])
 
-        self.skin = self.team + 3
+        self.skin = TFGlobals.getTeamSkin(self.team) + 3
 
         self.dropped = 0
 
@@ -153,7 +153,7 @@ class DistributedTeamFlagAI(DistributedEntityAI):
             self.onEnemyTouch(entity)
 
     def enemySound(self, snd):
-        for plyr in base.game.playersByTeam[not self.team]:
+        for plyr in base.game.playersByTeam[TFGlobals.getEnemyTeam(self.team)]:
             base.world.emitSound(snd, client=plyr.owner)
 
     def teamSound(self, snd):
@@ -170,7 +170,7 @@ class DistributedTeamFlagAI(DistributedEntityAI):
         self.enemySound("CaptureFlag.TeamDropped")
         self.teamSound("CaptureFlag.EnemyDropped")
         base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Dropped, 3, self.team, self.team)
-        base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Dropped, 3, self.team, not self.team)
+        base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Dropped, 3, self.team, )
 
         self.setParentEntityId(WorldParent.DynRender)
 
@@ -186,7 +186,7 @@ class DistributedTeamFlagAI(DistributedEntityAI):
             self.setHpr(plyr.getH(), 0, 0)
             self.teleport()
 
-        self.skin = self.team
+        self.skin = TFGlobals.getTeamSkin(self.team)
 
         self.dropped = 1
 
@@ -200,18 +200,18 @@ class DistributedTeamFlagAI(DistributedEntityAI):
         self.setPos(self.initialPos)
         self.setHpr(self.initialHpr)
         self.teleport()
-        self.skin = self.team
+        self.skin = TFGlobals.getTeamSkin(self.team)
         if announce:
             if captured:
                 # Flag was captured.
                 self.enemySound("CaptureFlag.TeamCaptured")
                 self.teamSound("CaptureFlag.EnemyCaptured")
                 base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Captured, 3, self.team, self.team)
-                base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Captured, 3, self.team, not self.team)
+                base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Captured, 3, self.team, TFGlobals.getEnemyTeam(self.team))
             else:
                 self.enemySound("CaptureFlag.TeamReturned")
                 self.teamSound("CaptureFlag.EnemyReturned")
-                base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Returned, 3, self.team, not self.team)
+                base.game.d_setGameContextMessage(GameContextMessage.CTF_Enemy_Returned, 3, self.team, TFGlobals.getEnemyTeam(self.team))
                 base.game.d_setGameContextMessage(GameContextMessage.CTF_Team_Returned, 3, self.team, self.team)
         if self.playerWithFlag != -1:
             plyr = base.air.doId2do.get(self.playerWithFlag)

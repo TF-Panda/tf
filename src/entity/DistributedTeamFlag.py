@@ -43,7 +43,7 @@ class DistributedTeamFlag(DistributedEntity):
             self.flagModel = None
         self.flagModel = Model()
         # Set to color of team.
-        self.flagModel.setSkin(self.team)
+        self.flagModel.setSkin(TFGlobals.getTeamSkin(self.team))
         self.flagModel.loadModel(model)
         self.flagModel.modelNp.reparentTo(self)
 
