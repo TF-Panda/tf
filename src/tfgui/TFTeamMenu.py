@@ -27,9 +27,7 @@ class TFTeamMenu(DirectObject):
           TFTeam.Red: TFLocalizer.RED,
           TFTeam.Blue: TFLocalizer.BLU
         }
-        for team in range(TFTeam.COUNT):
-            name = teamNames[team]
-
+        for team, name in teamNames.items():
             btn = DirectButton(relief = None, text = name,
                                text_font = TFGlobals.getTF2SecondaryFont(),
                                text_scale = 0.08,
