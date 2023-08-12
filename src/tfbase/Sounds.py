@@ -45,12 +45,7 @@ def setSoundLevel(sound, sndlvl):
     sound.set3dMinDistance(1.0 / soundLevelToDistMult(sndlvl))
 
 def sourcePitchToPlayRate(pitch):
-    if pitch < 100:
-        return TFGlobals.remapVal(pitch, 0, 100, 0.5, 1.0)
-    elif pitch > 100:
-        return TFGlobals.remapVal(pitch, 100, 255, 1.0, 2.0)
-    else:
-        return 1.0
+    return pitch * 0.01
 
 def dbToGain(db):
     return pow(10.0, db / 20.0)
