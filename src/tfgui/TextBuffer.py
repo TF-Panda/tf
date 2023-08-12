@@ -36,8 +36,6 @@ class TextBuffer:
 
         self.scrollBarWidth = scrollBarWidth
 
-        self.lines = []
-
         self.isOpen = False
 
         # Chat labels.
@@ -74,6 +72,20 @@ class TextBuffer:
         self.goalAlpha = 0.0
 
         self.root.hide()
+
+    def cleanup(self):
+        for lbl in self.labels:
+            lbl.cleanup()
+        del self.labels
+        self.entry.destroy()
+        del self.entry
+        self.wordWrapObj = None
+        self.stopFadeTask()
+        self.scrollFrame.destroy()
+        del self.scrollFrame
+        self.root.removeNode()
+        del self.root
+        del self.font
 
     def adjustTextWidth(self, width):
         self.width = width

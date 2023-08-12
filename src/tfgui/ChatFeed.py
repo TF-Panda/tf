@@ -92,8 +92,16 @@ class ChatFeed(DirectObject):
         self.hideChatEntry()
 
     def cleanup(self):
+        for lbl in self.buffer.labels:
+            if hasattr(lbl, 'track'):
+                lbl.track.finish()
+                del lbl.track
         self.buffer.cleanup()
         self.buffer = None
+        self.chatSound = None
+        self.root.removeNode()
+        self.root = None
+        self.ignoreAll()
 
     def addChat(self, text, playSound=True):
 
@@ -115,7 +123,7 @@ class ChatFeed(DirectObject):
             Func(finishLblFade, label.label)
         )
         track.start()
-        label.track = track
+        label.label.track = track
 
         if playSound:
             self.chatSound.play()
