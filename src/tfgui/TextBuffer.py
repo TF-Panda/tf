@@ -23,7 +23,7 @@ class TextBuffer:
 
     def __init__(self, dimensions=(-1, 1, 0.25, 1), parent=base.aspect2d, width=30,
                  maxBufLines=100, rootScale=1.0, enterCallback=None, font=None, scrollBarWidth=0.04, margin=0.1,
-                 textColor=(1, 1, 1, 1), bgAlpha=0.75, entryAlpha=1.0):
+                 textColor=(1, 1, 1, 1), bgAlpha=0.8, entryAlpha=0.9):
         # Dimensions. L R B T.  Includes the entry.
         self.dimensions = dimensions
         self.maxBufLines = maxBufLines
@@ -49,7 +49,7 @@ class TextBuffer:
 
         margin = 0.1
         self.margin = margin
-        self.entry = DirectEntry(frameColor = (0, 0, 0, entryAlpha), initialText="", text_font=font,
+        self.entry = DirectEntry(frameColor = (0.05, 0.05, 0.05, entryAlpha), initialText="", text_font=font,
                                  relief=DGG.FLAT, width=width, parent=self.root, overflow=0, command=self.onEnter,
                                  text_fg=textColor, text_shadow=(0, 0, 0, 1), suppressKeys=1, suppressMouse=1)
 
@@ -57,7 +57,7 @@ class TextBuffer:
         self.wordWrapObj.setAlign(TextNode.ALeft)
 
         canvasDim = (self.dimensions[0], self.dimensions[1] - scrollBarWidth, self.dimensions[2], self.dimensions[3])
-        self.scrollFrame = DirectScrolledFrame(frameSize=self.dimensions, canvasSize=canvasDim, frameColor=(0, 0, 0, bgAlpha),
+        self.scrollFrame = DirectScrolledFrame(frameSize=self.dimensions, canvasSize=canvasDim, frameColor=(0.1, 0.1, 0.1, bgAlpha),
                                                parent=self.root, relief=DGG.FLAT, scrollBarWidth=scrollBarWidth,
                                                verticalScroll_thumb_relief=DGG.FLAT, verticalScroll_incButton_relief=DGG.FLAT,
                                                verticalScroll_decButton_relief=DGG.FLAT,
