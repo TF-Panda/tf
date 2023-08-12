@@ -273,8 +273,6 @@ class TFBase(ShowBase, FSM):
         self.wantParanoidClockSync = __debug__ and ConfigVariableBool('tf-paranoid-clock-sync', False).value
         self.wantClockOsd = __debug__ and ConfigVariableBool('tf-want-clock-osd', False).value
 
-        self.listenerSoundVolume = ConfigVariableDouble('tf-listener-sound-volume', 1.5).value
-
         eq = ThreeEQDSP()
         eq.crossover_slope = 24
         eq.setGain(3.6315, 3.571, 5.766)
