@@ -372,7 +372,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
                 plyr.updateClassSpeed()
                 plyr.speakConcept(TFGlobals.SpeechConcept.RoundEnd, conceptData)
                 base.world.emitSound("Game.YourTeamWon", client=plyr.owner)
-            for plyr in self.playersByTeam[not winTeam]:
+            for plyr in self.playersByTeam[TFGlobals.getEnemyTeam(winTeam)]:
                 plyr.setCondition(plyr.CondLoser)
                 plyr.setActiveWeapon(-1)
                 plyr.updateClassSpeed()
