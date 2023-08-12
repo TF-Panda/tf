@@ -470,7 +470,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
     def changeLevel(self, lvlName):
         DistributedGameBase.changeLevel(self, lvlName)
 
-        pfx = lvlName.split('_')[0]
+        pfx = Filename.fromOsSpecific(lvlName).getBasenameWoExtension().split('_')[0]
         self.gameMode = MapPrefixToGameMode.get(pfx, GameMode.Training)
         assert pfx is not None
         self.notify.info("Game mode is %s" % pfx)
