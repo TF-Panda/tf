@@ -41,6 +41,8 @@ spec_freeze_time = ConfigVariableDouble("spec-freeze-time", 4.0)
 spec_freeze_traveltime = ConfigVariableDouble("spec-freeze-travel-time", 0.4)
 tf_respawn_time = ConfigVariableDouble("tf-respawn-time", 5.0)
 tf_spectate_enemies = ConfigVariableBool("tf-spectate-enemies", True)
+# Make pain sounds from player we damaged louder.
+tf_pain_sound_inflicted_volume = ConfigVariableDouble("tf-pain-sound-inflicted-volume", 1.5)
 
 TF_BURNING_DMG = 3
 TF_BURNING_FREQUENCY = 0.5
@@ -122,6 +124,15 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         self.recentKills = []
 
         self.respawnRooms = set()
+
+    def emitSound(self, soundName, volume=None, loop=False, chan=None, client=None, excludeClients=[]):
+        if chan == Sounds.Channel.CHAN_WEAPON and client == self.owner:
+            # Increase volume on local player weapon sounds.
+            if volume:
+                volume *= Sounds.dbToGain(2.0)
+            else:
+                volume = 1.0 * Sounds.dbToGain(2.0)
+        DistributedCharAI.emitSound(self, soundName, volume, loop, chan, client, excludeClients)
 
     def addRespawnRoom(self, doId):
         if not doId in self.respawnRooms:
@@ -587,12 +598,12 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def pushExpression(self, name):
         self.sendUpdate('pushExpression', [name])
 
-    def d_speak(self, soundName, client = None, excludeClients = []):
+    def d_speak(self, soundName, client = None, excludeClients = [], volume=1.0):
         info = Sounds.Sounds.get(soundName, None)
         if not info:
             return
         #base.air.sendUpdatePHSOnly(self, 'speak', [info.index], self.getEyePosition(), client=client, excludeClients=excludeClients)
-        self.sendUpdate('speak', [info.index], client = client, excludeClients = excludeClients)
+        self.sendUpdate('speak', [info.index, volume], client = client, excludeClients = excludeClients)
 
     def detonateStickies(self):
         # Here we hold the position that each stickybomb was detonated at.
@@ -839,7 +850,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 sharpFname = random.choice(self.classInfo.SharpPainFilenames)
                 self.d_speak(sharpFname, excludeClients=[info.attacker.owner])
                 severeFname = random.choice(self.classInfo.PainFilenames)
-                self.d_speak(severeFname, client=info.attacker.owner)
+                self.d_speak(severeFname, client=info.attacker.owner, volume=tf_pain_sound_inflicted_volume.value)
                 self.lastPainTime = now
 
         self.hitBoxGroup = -1
@@ -1004,6 +1015,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
             dmgPos = Point3()
             dmgType = DamageType.Generic
 
+        killerPlayer = None
+
         if info:
             isSentryKill = False
             if info.inflictor and info.inflictor.isObject():
@@ -1013,7 +1026,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 killer = info.attacker.doId
 
             # Get player that killed me.
-            killerPlayer = None
             if info.inflictor and info.inflictor.isPlayer():
                 killerPlayer = info.inflictor
             elif info.attacker and info.attacker.isPlayer():
@@ -1085,8 +1097,11 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         else:
             pain = random.choice(self.classInfo.PainFilenames)
         if pain:
-            self.d_speak(pain)
-
+            if killerPlayer and killerPlayer.owner:
+                self.d_speak(pain, volume=tf_pain_sound_inflicted_volume.value, client=killerPlayer.owner)
+                self.d_speak(pain, excludeClients=[killerPlayer.owner])
+            else:
+                self.d_speak(pain)
         self.setPlayerState(TFPlayerState.Died)
 
         messenger.send('PlayerDied', [self])

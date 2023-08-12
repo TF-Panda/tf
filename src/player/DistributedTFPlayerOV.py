@@ -170,6 +170,15 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.damageSound = None
         self.lastDamageSoundTime = 0.0
 
+    def emitSound(self, soundName, loop=False, volume=None, chan=None):
+        if chan == Sounds.Channel.CHAN_WEAPON:
+            # Increase volume on local player weapon sounds.
+            if volume:
+                volume *= Sounds.dbToGain(2.0)
+            else:
+                volume = 1.0 * Sounds.dbToGain(2.0)
+        return DistributedTFPlayer.emitSound(self, soundName, loop, volume, chan)
+
     def getPredictionErrorSmoothingVector(self):
         errorAmount = (base.clockMgr.getClientTime() - self.predictionErrorTime) / 0.1
         if errorAmount >= 1.0:

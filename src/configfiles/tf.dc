@@ -302,7 +302,7 @@ dclass DistributedTFPlayer : DistributedChar {
   changeClass(uint8 classId) ownsend airecv;
   changeTeam(uint8 team) ownsend airecv;
 
-  speak(uint32 soundIndex) broadcast ownrecv;
+  speak(uint32 soundIndex, uint16 volume / 1000) broadcast ownrecv;
 
   makeAngry() broadcast;
 

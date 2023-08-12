@@ -115,7 +115,7 @@ class TFBase(ShowBase, FSM):
         #self.taskMgr.add(self.__updateLightMgr, 'updateLightMgr', sort=49)
 
         # 16 units per feet * feet per meter (3.28084)
-        self.audioEngine.set3dUnitScale(52.49344)
+        self.audioEngine.set3dUnitScale(39.37)
         # Enable the steam audio listener-centric reverb on sound effects.
         self.sfxManager = self.sfxManagerList[0]
 
@@ -270,8 +270,23 @@ class TFBase(ShowBase, FSM):
         tracer = PhysAudioTracer(self.physicsWorld, CollisionGroups.World)
         self.audioEngine.setTracer(tracer)
 
-        self.wantParanoidClockSync = __debug__ and ConfigVariableBool('tf-paranoid-clock-sync', False)
-        self.wantClockOsd = __debug__ and ConfigVariableBool('tf-want-clock-osd', False)
+        self.wantParanoidClockSync = __debug__ and ConfigVariableBool('tf-paranoid-clock-sync', False).value
+        self.wantClockOsd = __debug__ and ConfigVariableBool('tf-want-clock-osd', False).value
+
+        self.listenerSoundVolume = ConfigVariableDouble('tf-listener-sound-volume', 1.5).value
+
+        eq = ThreeEQDSP()
+        eq.crossover_slope = 24
+        eq.setGain(3.6315, 3.571, 5.766)
+        eq.setCrossoverFrequencies(1364.4699, 7536.40625)
+        self.sfxManager.addDspToTail(eq)
+        self.eq = eq
+
+    def eqOff(self):
+        self.sfxManager.removeDsp(self.eq)
+
+    def eqOn(self):
+        self.sfxManager.addDspToTail(self.eq)
 
     def toggleLocalAvNoClip(self):
         if not hasattr(base, 'localAvatar') or not base.localAvatar:

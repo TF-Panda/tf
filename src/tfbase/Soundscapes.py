@@ -165,11 +165,11 @@ class SoundscapeComponent:
             #sprops._enable_distance_atten = True
             #sprops._enable_air_absorption = False
             #sprops._enable_directivity = False
-            #sprops._enable_occlusion = True
+            sprops._enable_occlusion = True
             #sprops._enable_transmission = False
             #sprops._enable_reflections = False
             #sprops._enable_pathing = False
-            #sprops._bilinear_hrtf = True
+            sprops._bilinear_hrtf = False
             #sprops._volumetric_occlusion = False
             self.sound.applySteamAudioProperties(sprops)
 

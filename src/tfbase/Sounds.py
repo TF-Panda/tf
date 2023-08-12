@@ -52,6 +52,12 @@ def sourcePitchToPlayRate(pitch):
     else:
         return 1.0
 
+def dbToGain(db):
+    return pow(10.0, db / 20.0)
+
+def gainToDb(gain):
+    return 20 * math.log(gain)
+
 class Channel(IntEnum):
 
     Invalid = -1
@@ -188,6 +194,7 @@ def createSound(info, spatial=False, getWave=False):
         sound.set3dMinDistance(info.minDistance)
         props = SteamAudioProperties()
         props._enable_occlusion = True
+        props._bilinear_hrtf = False
         #props._enable_air_absorption = False
         sound.applySteamAudioProperties(props)
         #print(repr(info))
@@ -241,6 +248,7 @@ def createSoundClient(index, waveIndex, volume, pitch, spatialized = False, getI
         sound.set3dMinDistance(info.minDistance)
         props = SteamAudioProperties()
         props._enable_occlusion = True
+        props._bilinear_hrtf = False
         #props._enable_air_absorption = False
         sound.applySteamAudioProperties(props)
         #print(repr(info))

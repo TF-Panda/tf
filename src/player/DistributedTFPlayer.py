@@ -380,7 +380,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             self.currentSpeech.stop()
             self.currentSpeech = None
 
-    def speak(self, soundIndex):
+    def speak(self, soundIndex, volume=1.0):
         spatial = (self != base.localAvatar)
         info = Sounds.AllSounds[soundIndex]
         data = Sounds.createSound(info, spatial=spatial, getWave=True)
@@ -389,6 +389,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         sound, wave = data
         # Override the attenuation on speech sounds.
         Sounds.setSoundLevel(sound, Sounds.SoundLevel.SNDLVL_TALKING)
+        sound.setVolume(sound.getVolume() * volume)
         #if self != base.localAvatar:
         #    sound.setVolume(sound.getVolume() * 0.65)
         self.stopSpeech()
