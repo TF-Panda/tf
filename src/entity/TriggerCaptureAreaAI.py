@@ -22,8 +22,8 @@ class TriggerCaptureAreaAI(DistributedTriggerAI):
 
         # List of team numbers that are allowed to capture this
         # control point.
-        self.canCapTeams = []
-        self.numRequiredToCap = []
+        self.canCapTeams = set()
+        self.numRequiredToCap = {TFGlobals.TFTeam.Red: 1, TFGlobals.TFTeam.Blue: 1}
 
         self.playersOnCap = []
         self.capperCount = 0
@@ -194,17 +194,13 @@ class TriggerCaptureAreaAI(DistributedTriggerAI):
         if props.hasAttribute("area_time_to_cap"):
             self.timeToCap = props.getAttributeValue("area_time_to_cap").getFloat()
         if props.hasAttribute("team_cancap_2") and props.getAttributeValue("team_cancap_2").getBool():
-            self.canCapTeams.append(TFGlobals.TFTeam.Red)
+            self.canCapTeams.add(TFGlobals.TFTeam.Red)
         if props.hasAttribute("team_cancap_3") and props.getAttributeValue("team_cancap_3").getBool():
-            self.canCapTeams.append(TFGlobals.TFTeam.Blue)
+            self.canCapTeams.add(TFGlobals.TFTeam.Blue)
         if props.hasAttribute("team_numcap_2"):
-            self.numRequiredToCap.append(props.getAttributeValue("team_numcap_2").getInt())
-        else:
-            self.numRequiredToCap.append(1)
+            self.numRequiredToCap[TFGlobals.TFTeam.Red] = props.getAttributeValue("team_numcap_2").getInt()
         if props.hasAttribute("team_numcap_3"):
-            self.numRequiredToCap.append(props.getAttributeValue("team_numcap_3").getInt())
-        else:
-            self.numRequiredToCap.append(1)
+            self.numRequiredToCap[TFGlobals.TFTeam.Blue] = props.getAttributeValue("team_numcap_3").getInt()
 
     def announceGenerate(self):
         DistributedTriggerAI.announceGenerate(self)
