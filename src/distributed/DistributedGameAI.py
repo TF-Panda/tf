@@ -270,6 +270,15 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         for plyr in self.playersByTeam[team]:
             base.world.emitSound(snd, client=plyr.owner)
 
+    def getNextTeam(self, team):
+        """
+        Returns team to switch to on a round end with team switch.
+        """
+        if team == TFTeam.Red:
+            return TFTeam.Blue
+        else:
+            return TFTeam.Red
+
     def newRound(self):
         """
         Starts a new round of the game.  Resets all players to spawn locations,
@@ -307,7 +316,7 @@ class DistributedGameAI(DistributedObjectAI, DistributedGameBase):
         for players in teamCopy.values():
             for plyr in players:
                 if self.switchTeamsOnNewRound:
-                    otherTeam = not plyr.team
+                    otherTeam = self.getNextTeam(plyr.team)
                     plyr.doChangeTeam(otherTeam, removeNemesises=False, announce=False)
                 else:
                     plyr.destroyAllObjects()
