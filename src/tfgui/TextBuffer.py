@@ -5,72 +5,88 @@ from panda3d.core import *
 from direct.gui.DirectGui import *
 from tf.tfbase import TFGlobals
 
+class BufferLabel:
+
+    def __init__(self, label, buf):
+        self.buf = buf
+        self.label = label
+        self.label.setTransparency(True)
+        self.createTime = globalClock.frame_time
+
+    def setLabelAlpha(self, alpha):
+        self.label.setAlphaScale(alpha, 1)
+
+    def clearLabelAlpha(self, alpha):
+        self.label.clearAlphaScale()
 
 class TextBuffer:
 
     def __init__(self, dimensions=(-1, 1, 0.25, 1), parent=base.aspect2d, width=30,
                  maxBufLines=100, rootScale=1.0, enterCallback=None, font=None, scrollBarWidth=0.04, margin=0.1,
-                 textColor=(1, 1, 1, 1)):
+                 textColor=(1, 1, 1, 1), bgAlpha=0.75, entryAlpha=1.0):
         # Dimensions. L R B T.  Includes the entry.
         self.dimensions = dimensions
         self.maxBufLines = maxBufLines
+
+        self.textColor = textColor
+
+        self.font = font
 
         self.enterCallback = enterCallback
 
         self.scrollBarWidth = scrollBarWidth
 
-        self.width = width
-        # Because the scroll bar is inside the scroll frame, it covers up the text if it
-        # actually extends the entire width of the frame, so we need to wrap the
-        # text before the scroll bar.
-        adjustedWidth = width - scrollBarWidth
-
         self.lines = []
+
+        self.isOpen = False
+
+        # Chat labels.
+        self.labels = []
 
         self.root = parent.attachNewNode("textBuffer")
         self.root.setScale(rootScale)
         self.root.setTransparency(True)
 
         margin = 0.1
-        # Calculate scale to fit the entry to the text buffer dimensions.
-        scale = (self.dimensions[1] - self.dimensions[0]) / (width + (margin * 2))
-        self.scale = scale
-        self.entry = DirectEntry(frameColor = (0, 0, 0, 0.75), initialText="", text_font=font,
-                                 relief=DGG.FLAT, width=width, scale=scale, parent=self.root, overflow=0, command=self.onEnter,
+        self.margin = margin
+        self.entry = DirectEntry(frameColor = (0, 0, 0, entryAlpha), initialText="", text_font=font,
+                                 relief=DGG.FLAT, width=width, parent=self.root, overflow=0, command=self.onEnter,
                                  text_fg=textColor, text_shadow=(0, 0, 0, 1), suppressKeys=1, suppressMouse=1)
-        # Proper height placement.  Calculate the height of the entry.
-        bounds = self.entry.getBounds()
-        # Place the entry at the bottom left corner of the buffer frame.
-        self.entry.setPos(self.dimensions[0] + (margin * scale), 0, self.dimensions[2] - bounds[3] * scale)
 
         self.wordWrapObj = TextNode('wordWrapObj')
-        self.wordWrapObj.setWordwrap(adjustedWidth)
-
-        self.bufferText = OnscreenText('', parent=self.root, wordwrap=adjustedWidth, scale=scale, font=font,
-                                       align=TextNode.ALeft, fg=textColor, shadow=(0, 0, 0, 1),
-                                       pos=(self.dimensions[0] + margin * scale, self.dimensions[3] - (self.wordWrapObj.getLineHeight() * scale * 0.5) - (margin * 2 * scale)))
+        self.wordWrapObj.setAlign(TextNode.ALeft)
 
         canvasDim = (self.dimensions[0], self.dimensions[1] - scrollBarWidth, self.dimensions[2], self.dimensions[3])
-        self.scrollFrame = DirectScrolledFrame(frameSize=self.dimensions, canvasSize=canvasDim, frameColor=(0, 0, 0, 0.5),
+        self.scrollFrame = DirectScrolledFrame(frameSize=self.dimensions, canvasSize=canvasDim, frameColor=(0, 0, 0, bgAlpha),
                                                parent=self.root, relief=DGG.FLAT, scrollBarWidth=scrollBarWidth,
-                                               verticalScroll_scrollSize=self.wordWrapObj.getLineHeight() * self.scale,
                                                verticalScroll_thumb_relief=DGG.FLAT, verticalScroll_incButton_relief=DGG.FLAT,
                                                verticalScroll_decButton_relief=DGG.FLAT,
                                                verticalScroll_thumb_frameColor=((0.4, 0.4, 0.4, 1), (0.25, 0.25, 0.25, 1), (0.75, 0.75, 0.75, 1)),
                                                verticalScroll_incButton_frameColor=((0.45, 0.45, 0.45, 1), (0.25, 0.25, 0.25, 1), (0.75, 0.75, 0.75, 1)),
                                                verticalScroll_decButton_frameColor=((0.45, 0.45, 0.45, 1), (0.25, 0.25, 0.25, 1), (0.75, 0.75, 0.75, 1)))
 
-        self.bufferText.reparentTo(self.scrollFrame.getCanvas())
+        self.adjustTextWidth(width)
 
         self.fadeTask = None
-        self.fadeInSpeed = 4.0 # 0.25 seconds
-        self.fadeOutSpeed = 4.0 # 0.25 seconds
+        self.fadeInSpeed = 5.0 # 0.2 seconds
+        self.fadeOutSpeed = 5.0 # 0.2 seconds
         self.alpha = 0.0
         self.goalAlpha = 0.0
 
-        self.root.stash()
+        self.root.hide()
 
-        self.isOpen = False
+    def adjustTextWidth(self, width):
+        self.width = width
+        scale = (self.dimensions[1] - self.dimensions[0]) / (width + (self.margin * 2))
+        self.scale = scale
+        self.labelRootPos = (self.dimensions[0] + self.margin * self.scale, self.dimensions[3] - (self.wordWrapObj.getLineHeight() * 0.75 * self.scale))
+        self.entry['width'] = width
+        self.entry.setScale(self.scale)
+        self.entry.setPos(0, 0, 0)
+        self.entry.setFrameSize()
+        bounds = self.entry.getBounds()
+        self.entry.setPos(self.dimensions[0] + (self.margin * self.scale), 0, self.dimensions[2] - bounds[3] * self.scale)
+        self.positionLabels()
 
     def setGoalAlpha(self, fade):
         if self.alpha != fade:
@@ -102,7 +118,7 @@ class TextBuffer:
                 # Fade out.
                 self.alpha = TFGlobals.approach(self.goalAlpha, self.alpha, self.fadeOutSpeed * globalClock.dt)
                 if self.alpha == self.goalAlpha:
-                    self.root.stash()
+                    self.root.hide()
             else:
                 # Fade in.
                 self.alpha = TFGlobals.approach(self.goalAlpha, self.alpha, self.fadeInSpeed * globalClock.dt)
@@ -115,7 +131,7 @@ class TextBuffer:
         self.entry.set('')
         self.entry['focus'] = 1
 
-        self.root.unstash()
+        self.root.show()
 
         if fade:
             self.setGoalAlpha(1.0)
@@ -124,26 +140,57 @@ class TextBuffer:
 
         self.isOpen = True
 
+        self.positionLabels()
+
     def close(self, fade=True):
         if fade:
             self.setGoalAlpha(0.0)
         else:
             self.setAlpha(0.0)
-            self.root.stash()
+            self.root.hide()
         self.isOpen = False
+
+        self.positionLabels()
+
+    def getWordwrap(self):
+        if self.isOpen:
+            return self.width - (self.scrollBarWidth / self.scale)
+        else:
+            return self.width
+
+    def positionLabels(self):
+        self.labelZOffset = 0.0
+        ww = self.getWordwrap()
+        self.wordWrapObj.setWordwrap(ww)
+        for lbl in self.labels:
+            lbl.setTextPos(self.labelRootPos[0], self.labelRootPos[1] - self.labelZOffset)
+            lbl.setWordwrap(ww)
+            lbl.setTextScale(self.scale)
+            wrapped = lbl.textNode.getWordwrappedText().split('\n')
+            self.labelZOffset += len(wrapped) * lbl.textNode.getLineHeight() * self.scale
+        self.__updateText()
 
     def addLine(self, line):
         self.wordWrapObj.setText(line)
+
+        labelPos = (self.labelRootPos[0], self.labelRootPos[1] - self.labelZOffset)
+        label = OnscreenText(line, parent=self.scrollFrame.getCanvas(), wordwrap=self.wordWrapObj.getWordwrap(), scale=self.scale, font=self.font,
+                             align=TextNode.ALeft, fg=self.textColor, shadow=(0, 0, 0, 1),
+                             pos=labelPos, mayChange=True)
+
         result = self.wordWrapObj.getWordwrappedText().split('\n')
-        self.lines += result
+        self.labelZOffset += len(result) * self.wordWrapObj.getLineHeight() * self.scale
+        self.labels.append(label)
+
         self.__updateText()
 
-    def __updateText(self):
-        self.lines = self.lines[-self.maxBufLines:]
-        self.bufferText['text'] = '\n'.join(self.lines)
-        bufHeight = (self.wordWrapObj.getLineHeight() * self.scale * len(self.lines))
+        return BufferLabel(label, self)
 
-        scrollSize = (self.dimensions[0], self.dimensions[1] - self.scrollBarWidth, min(self.dimensions[2], self.dimensions[3] - bufHeight),
+    def __updateText(self):
+
+        buffOffset = self.labelZOffset + self.wordWrapObj.getLineHeight() * 0.25 * self.scale
+
+        scrollSize = (self.dimensions[0], self.dimensions[1] - self.scrollBarWidth, min(self.dimensions[2], self.dimensions[3] - buffOffset),
                       self.dimensions[3])
         self.scrollFrame['canvasSize'] = scrollSize
         self.scrollFrame.verticalScroll.setValue(1.0)

@@ -4,32 +4,12 @@ from panda3d.core import *
 
 from direct.gui.DirectGui import *
 from direct.interval.IntervalGlobal import *
-from tf.tfbase import TFGlobals
+from direct.showbase.DirectObject import DirectObject
 
 from .TextBuffer import TextBuffer
 
 
-class Chat:
-
-    def __init__(self, lbl, lifetime, size):
-        self.lbl = lbl
-        self.lifetime = lifetime
-        self.removeTime = globalClock.frame_time + self.lifetime
-        self.size = size
-        self.track = Sequence(
-            LerpColorScaleInterval(self.lbl, 0.3, (1, 1, 1, 1), (1, 1, 1, 0)),
-            Wait(self.lifetime - 0.6),
-            LerpColorScaleInterval(self.lbl, 0.3, (1, 1, 1, 0), (1, 1, 1, 1))
-        )
-        self.track.start()
-
-    def cleanup(self):
-        self.lbl.destroy()
-        self.lbl = None
-        self.track.finish()
-        self.track = None
-
-class ChatFeed:
+class ChatFeed(DirectObject):
 
     # The maximum number of chat labels we can have in the feed at a given time.
     MaxChats = 8
@@ -49,41 +29,36 @@ class ChatFeed:
         self.chatSound = base.loader.loadSfx("sound/ui/chat_display_text.wav")
         self.chatSound.setVolume(0.5)
 
-        self.task = base.taskMgr.add(self.__updateTask, 'chatFeedUpdate')
-
         self.teamOnlyChat = False
-
-        self.hideTime = 0.0
 
         self.root = NodePath("chatRoot")
         self.root.reparentTo(base.a2dBottomLeft)
         self.root.setPos(0.1, 0, 1.0)
 
-        bufferDim = (0, 1, -0.5, 0)
+        bufferDim = (0, 1, -0.4, 0)
 
-        self.buffer = TextBuffer(dimensions=bufferDim, enterCallback=self.onEnterChat, font=TFGlobals.getTF2SecondaryFont(), parent=self.root)
+        font = loader.loadFont("models/fonts/arial.ttf")#TFGlobals.getTF2SecondaryFont()
+        self.buffer = TextBuffer(dimensions=bufferDim, enterCallback=self.onEnterChat, font=font, parent=self.root, textColor=self.ChatColor, width=30)
 
-        # Hide the buffer window and all that but keep the text.
-        self.canvasInstanceRoot = self.root.attachNewNode("canvasInstance")
-        self.canvasInstanceRoot.setTransparency(True)
-        self.canvasInstance = self.buffer.scrollFrame.getCanvas().instanceTo(self.canvasInstanceRoot)
+        self.accept('window-event', self.winEvent)
+        self.lastWinSize = LPoint2i(base.win.getXSize(), base.win.getYSize())
+        self.adjustTextSizeForWindow(self.lastWinSize)
 
-        self.alpha = 0.0
-        self.goalAlpha = 0.0
-        self.fadeOutSpeed = 4.0
-        self.fadeInSpeed = 4.0
+    def winEvent(self, win):
+        if win != base.win:
+            return
 
-    def showPeek(self):
-        self.goalAlpha = 1.0
-        self.canvasInstanceRoot.unstash()
+        newSize = LPoint2i(base.win.getXSize(), base.win.getYSize())
+        if newSize != self.lastWinSize:
+            self.adjustTextSizeForWindow(newSize)
+            self.lastWinSize = newSize
 
-    def hidePeek(self):
-        self.goalAlpha = 0.0
+    def adjustTextSizeForWindow(self, size):
+        factor = max((size.y / 36), 10)
+        self.buffer.adjustTextWidth(factor)
 
     def hideChatEntry(self):
         self.buffer.close()
-        if self.hideTime > globalClock.frame_time:
-            self.showPeek()
 
     def showChatEntry(self, teamOnly):
         if self.buffer.isOpen:
@@ -95,7 +70,6 @@ class ChatFeed:
             base.localAvatar.disableControls()
 
         self.buffer.open()
-        self.hidePeek()
 
     def onEnterChat(self, text):
         # Don't send empty chats.  Server also checks this.
@@ -121,30 +95,27 @@ class ChatFeed:
         self.buffer.cleanup()
         self.buffer = None
 
-    def update(self):
-        if self.hideTime <= globalClock.frame_time:
-            self.hidePeek()
-
-        if self.alpha != self.goalAlpha:
-            if self.alpha > self.goalAlpha:
-                # Fade out.
-                self.alpha = TFGlobals.approach(self.goalAlpha, self.alpha, self.fadeOutSpeed * globalClock.dt)
-                if self.alpha == self.goalAlpha:
-                    self.canvasInstanceRoot.stash()
-            else:
-                # Fade in.
-                self.alpha = TFGlobals.approach(self.goalAlpha, self.alpha, self.fadeInSpeed * globalClock.dt)
-
-            self.canvasInstanceRoot.setColorScale(1, 1, 1, self.alpha)
-
-    def __updateTask(self, task):
-        self.update()
-        return task.cont
-
     def addChat(self, text, playSound=True):
-        self.buffer.addLine(text)
+
+        def lblFade(val, lbl):
+            lbl.setColorScale(1, 1, 1, max(val, self.buffer.alpha), 1)
+
+        def finishLblFade(lbl):
+            lbl.clearColorScale()
+            lbl.show()
+
+        label = self.buffer.addLine(text)
+        label.label.setColorScale(1, 1, 1, 0, 1)
+        label.label.showThrough()
+        # Setup fade track.
+        track = Sequence(
+            LerpFunc(lblFade, fromData=0, toData=1, duration=0.3, extraArgs=[label.label]),
+            Wait(self.ChatLifetime - 0.6),
+            LerpFunc(lblFade, fromData=1, toData=0, duration=0.3, extraArgs=[label.label]),
+            Func(finishLblFade, label.label)
+        )
+        track.start()
+        label.track = track
+
         if playSound:
             self.chatSound.play()
-        if not self.buffer.isOpen:
-            self.showPeek()
-        self.hideTime = globalClock.frame_time + self.PeekInterval
