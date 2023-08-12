@@ -110,7 +110,16 @@ fmod-dsp-buffer-size 1024
 fmod-number-of-sound-channels 4095
 fmod-compressed-samples 1
 fmod-reverb-mix 0.25
-fmod-steam-audio-reflection-job 1
+fmod-steam-audio-reflection-job 0
+fmod-occlusion-db-loss-low -3.0
+fmod-occlusion-db-loss-mid -6.0
+fmod-occlusion-db-loss-high -9.0
+fmod-steam-audio-hrtf-volume 1.0
+fmod-steam-audio-normalized-hrtf 0
+fmod-clip-output 0
+# Reduce volume of spatialized sounds so local player sounds, UI sounds, etc,
+# remain clear in the mix.
+fmod-spatialized-volume 0.5
 music-volume 1.0
 sfx-volume 0.72
 
@@ -138,6 +147,10 @@ tf-version dev
 
 talker-phoneme-filter 0.08
 
+tf-want-captcha 0
+
+tf-show-damage-numbers 1
+
 # Configuration for garbage collection of TransformStates and RenderStates.
 # This is essentially the default, but we reduce the number of states collected
 # each cycle to reduce overhead.
@@ -161,9 +174,7 @@ texture-stage-pool-mode name
 # We do this in App to animate all the characters in parallel,
 # and reduce contention on parallel Cull traversals.
 cull-animation 0
-# Can't do parallel animation at the moment because there is a weird
-# race condition that I haven't figured out yet.
-parallel-animation 0
+parallel-animation 1
 
 use-orig-source-shader 1
 
@@ -178,5 +189,7 @@ model-cache-compiled-shaders 0
 cull-bin decal 29 state_sorted
 cull-bin refract 32 state_sorted
 cull-bin gui-panel 61 fixed
+
+gl-immutable-texture-storage 0
 
 #end $[ODIR_GEN]/50_tf.prc

@@ -79,7 +79,8 @@ gl-check-errors 0
 gl-enable-memory-barriers 0
 # This enables OpenGL 4.3+ vertex buffer binding if it's available.
 gl-fixed-vertex-attrib-locations 1
-gl-immutable-texture-storage 1
+# NOTE: Broken in update.
+gl-immutable-texture-storage 0
 
 # These appear to be old fixed-function and/or munger left overs.
 color-scale-via-lighting 0
@@ -126,9 +127,18 @@ fmod-dsp-buffer-size 1024
 fmod-number-of-sound-channels 256
 fmod-compressed-samples 1
 fmod-reverb-mix 0.25
+fmod-steam-audio-reflection-job 0
+fmod-occlusion-db-loss-low -3.0
+fmod-occlusion-db-loss-mid -6.0
+fmod-occlusion-db-loss-high -9.0
+fmod-steam-audio-hrtf-volume 1.0
+fmod-steam-audio-normalized-hrtf 0
+fmod-clip-output 0
+# Reduce volume of spatialized sounds so local player sounds, UI sounds, etc,
+# remain clear in the mix.
+fmod-spatialized-volume 0.5
 music-volume 1.0
 sfx-volume 0.72
-steam-audio-reflections-job 1
 
 default-cube-map maps/sky.txo
 
@@ -166,9 +176,7 @@ texture-stage-pool-mode name
 # We do this in App to animate all the characters in parallel,
 # and reduce contention on parallel Cull traversals.
 cull-animation 0
-# Can't do parallel animation at the moment because there is a weird
-# race condition that I haven't figured out yet.
-parallel-animation 0
+parallel-animation 1
 
 use-orig-source-shader 1
 
@@ -198,6 +206,10 @@ tf-fast-weapon-switch 0
 
 # Enable/disable damage numbers.
 tf-show-damage-numbers 1
+
+# For servers, do we want a captcha verification to prevent fake
+# players?
+tf-want-captcha 0
 
 # If 1, skips loading screen and immediately connects to server
 # after loading.
