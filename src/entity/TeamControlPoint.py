@@ -47,7 +47,15 @@ class TeamControlPoint(DistributedEntity):
 
         def updateHologramNode(self):
             if self.hologramModel:
-                self.hologramModel.setBodygroupValue("switch", self.ownerTeam + 1)
+                if self.ownerTeam == TFGlobals.TFTeam.NoTeam:
+                    switch = 0
+                elif self.ownerTeam == TFGlobals.TFTeam.Red:
+                    switch = 1
+                elif self.ownerTeam == TFGlobals.TFTeam.Blue:
+                    switch = 2
+                else:
+                    switch = 0
+                self.hologramModel.setBodygroupValue("switch", switch)
     else:
         def initFromLevel(self, ent, props):
             DistributedEntity.initFromLevel(self, ent, props)
