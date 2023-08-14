@@ -6,20 +6,20 @@
  * license.  You should have received a copy of this license along
  * with this source code in a file named "LICENSE."
  *
- * @file tfsymbols.h
+ * @file config_tf.h
  * @author brian
  * @date 2022-05-23
  */
 
-#ifndef TFSYMBOLS_H
-#define TFSYMBOLS_H
+#ifndef CONFIG_TF_H
+#define CONFIG_TF_H
 
-#ifdef BUILDING_TF_PLAYER
-  #define EXPCL_TF_PLAYER EXPORT_CLASS
-  #define EXPTP_TF_PLAYER EXPORT_TEMPL
-#else
-  #define EXPCL_TF_PLAYER IMPORT_CLASS
-  #define EXPTP_TF_PLAYER IMPORT_TEMPL
-#endif
+#include "tfbase.h"
+#include "dconfig.h"
+#include "notifyCategoryProxy.h"
 
-#endif // TFSYMBOLS_H
+ConfigureDecl(config_tf, EXPCL_TF_CXX, EXPTP_TF_CXX);
+
+extern EXPCL_TF_CXX void init_libtf();
+
+#endif // CONFIG_TF_H

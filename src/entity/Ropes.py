@@ -2,8 +2,8 @@
 
 from panda3d.core import *
 from panda3d.pphysics import *
+from panda3d.tf import RopePhysicsSimulation
 
-from . import RopePhysics
 from .DistributedEntity import DistributedEntity
 
 
@@ -24,8 +24,6 @@ class RopeKeyFrame(DistributedEntity):
 
     def updateCurve(self, task):
         self.sim.simulate(globalClock.dt, 0.98)
-        for i in range(len(self.sim.nodes)):
-            self.curve.setVertex(i, self.sim.nodes[i].smoothPos)
         return task.cont
 
     def startRope(self):
@@ -62,32 +60,26 @@ class RopeKeyFrame(DistributedEntity):
 
         springDist = (delta.length() + slack - 100) / (numVerts - 1)
 
-        self.sim = RopePhysics.RopePhysicsSimulation()
+        self.sim = RopePhysicsSimulation()
 
         for i in range(numVerts):
             frac = float(i) / (numVerts - 1)
             pos = start + delta * frac
-            node = RopePhysics.RopePhysicsNode(pos)
-            if i == 0 or i == (numVerts - 1):
-                node.fixed = True
-            self.sim.nodes.append(node)
+            fixed = (i == 0 or i == (numVerts - 1))
+            self.sim.addNode(pos, fixed)
 
-        for i in range(1, len(self.sim.nodes)):
-            nodeA = self.sim.nodes[i - 1]
-            nodeB = self.sim.nodes[i]
-            spring = RopePhysics.RopePhysicsConstraint(nodeA, nodeB)
-            spring.springDist = springDist
-            self.sim.springs.append(spring)
+        self.sim.genSprings(springDist)
 
         self.curve = NurbsCurveEvaluator()
         self.curve.setOrder(4)
         self.curve.reset(numVerts)
 
+        self.sim.setNurbsCurve(self.curve)
+
         rope = RopeNode("rope")
         rope.setCurve(self.curve)
         rope.setThickness(thick)
         rope.setNumSubdiv(self.subdiv)
-        #rope.setNumSlices(1)
         rope.setRenderMode(RopeNode.RMBillboard)
         rope.setNormalMode(RopeNode.NMNone)
         self.ropeNode = NodePath(rope)
