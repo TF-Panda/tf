@@ -25,9 +25,6 @@ from . import CollisionGroups, Sounds
 from .PlanarReflector import PlanarReflector
 from .TFPostProcess import TFPostProcess
 
-#from .Console import Console
-
-
 class TFBase(ShowBase, FSM):
 
     notify = directNotify.newCategory("TFBase")
@@ -35,13 +32,6 @@ class TFBase(ShowBase, FSM):
     def __init__(self):
         ShowBase.__init__(self)
         FSM.__init__(self, 'TFBase')
-
-        # Perform a Z-prepass on the main scene render.
-        self.camNode.setTag("z_pre", "1")
-
-       # self.render.setAttrib(DepthTestAttrib.make(DepthTestAttrib.MEqual))
-
-        #self.accept('shift-c', self.openConsole)
 
         self.console = None
 
@@ -100,7 +90,6 @@ class TFBase(ShowBase, FSM):
 
         self.render.setAntialias(AntialiasAttrib.MMultisample)
         self.render2d.setAntialias(AntialiasAttrib.MMultisample)
-        #self.render2dp.setAntialias(AntialiasAttrib.MMultisample)
         self.pixel2d.setAntialias(AntialiasAttrib.MMultisample)
 
         # Set up the post-processing system
@@ -112,15 +101,13 @@ class TFBase(ShowBase, FSM):
 
         self.lightMgr = qpLightManager()
         self.lightMgr.initialize()
-        #self.taskMgr.add(self.__updateLightMgr, 'updateLightMgr', sort=49)
 
         # 16 units per feet * feet per meter (3.28084)
         self.audioEngine.set3dUnitScale(39.37)
         # Enable the steam audio listener-centric reverb on sound effects.
         self.sfxManager = self.sfxManagerList[0]
 
-        if True:#self.postProcess.enableHDR:
-            self.render.setAttrib(LightRampAttrib.makeIdentity())
+        self.render.setAttrib(LightRampAttrib.makeIdentity())
 
         # We always want to stream music.
         #self.musicManager.setStreamMode(AudioManager.SMStream)
@@ -128,13 +115,7 @@ class TFBase(ShowBase, FSM):
 
         # We always want to preload sound effects.
         for mgr in self.sfxManagerList:
-            #mgr.setStreamMode(AudioManager.SMSample)
             mgr.setVolume(self.config.GetFloat("sfx-volume", 1))
-
-        # Background color of 0.3 in linear space.
-
-        #self.setBackgroundColor(bgLinear, bgLinear, bgLinear)
-        #self.enableMouse()
 
         self.accept('f9', self.doScreenshot)
 
@@ -166,6 +147,7 @@ class TFBase(ShowBase, FSM):
         self.sky2DDisplayRegion.setClearDepthActive(True)
         self.sky2DDisplayRegion.setSort(-2)
         self.sky2DDisplayRegion.setCamera(self.sky2DCamNp)
+        self.sky2DDisplayRegion.setActive(False)
         self.postProcess.addCamera(self.sky2DCamNp, 0, -2)
 
         # Separate 3-D skybox scene graph and display region.
@@ -220,24 +202,6 @@ class TFBase(ShowBase, FSM):
 
         self.planarReflect = PlanarReflector(1024, "reflection", True)
         self.planarRefract = PlanarReflector(1024, "refraction", False)
-
-        #self.enableParticles()
-
-        # Play a constantly looping silence sound so the reverb always has
-        # an input and doesn't go idle and cut off.
-        #self.silenceSound = self.loadSfx("audio/sfx/silence.wav")
-        #self.silenceSound.setLoop(True)
-        #self.silenceSound.play()
-
-        #cm = CardMaker('cm')
-        #cm.setHasUvs(True)
-        #cm.setFrame(-1, 1, -1, 1)
-        #self.csmDebug = self.aspect2d.attachNewNode(cm.generate())
-        #self.csmDebug.setScale(0.3)
-        #self.csmDebug.setZ(-0.7)
-        #self.csmDebug.setShader(Shader.load(Shader.SL_GLSL, "shaders/debug_csm.vert.glsl", "shaders/debug_csm.frag.glsl"))
-
-        #self.csmDebug = OnscreenImage(scale=0.3, pos=(0, 0, -0.7))
 
         self.lastListenerPos = Point3()
         self.taskMgr.add(self.__updateAudioListener, 'updateAudioListener', sort=51)
@@ -427,10 +391,6 @@ class TFBase(ShowBase, FSM):
 
     def __updateDirtyDynamicNodes(self, task):
         self.dynRender.node().updateDirtyChildren()
-        #if self.render.node().isBoundsStale():
-        #    self.render.node().getBounds()
-        #if self.vmRender.node().isBoundsStale():
-        #    self.vmRender.node().getBounds()
         return task.cont
 
     def __updateParticles2(self, task):
@@ -527,8 +487,6 @@ class TFBase(ShowBase, FSM):
         if not hasattr(self, 'world'):
             return task.cont
 
-        #soundsEmitted = 0
-
         chan = Sounds.Channel.CHAN_STATIC
 
         # Process global contact events, play sounds.
@@ -575,8 +533,6 @@ class TFBase(ShowBase, FSM):
             matA = point.getMaterialA(pair.getShapeA())
             matB = point.getMaterialB(pair.getShapeB())
 
-            #force = speed / dt
-
             # Play sounds from materials of both surfaces.
             # This is more realistic, Source only played from one material.
             if matA:
@@ -597,20 +553,13 @@ class TFBase(ShowBase, FSM):
             if speed >= 500:
                 if surfDefA:
                     self.world.emitSoundSpatial(surfDefA.impactHard, position, volume, chan=chan)
-                    #soundsEmitted += 1
                 if surfDefB:
                     self.world.emitSoundSpatial(surfDefB.impactHard, position, volume, chan=chan)
-                    #soundsEmitted += 1
             elif speed >= 70.0:
                 if surfDefA:
                     self.world.emitSoundSpatial(surfDefA.impactSoft, position, volume, chan=chan)
-                    #soundsEmitted += 1
                 if surfDefB:
                     self.world.emitSoundSpatial(surfDefB.impactSoft, position, volume, chan=chan)
-                    #soundsEmitted += 1
-
-        #if soundsEmitted > 0:
-        #    print("emitted", soundsEmitted, "physics contact sounds")
 
         return task.cont
 
@@ -627,10 +576,6 @@ class TFBase(ShowBase, FSM):
             self.vmLens.setAspectRatio(ar)
 
         self.vmCamera.setTransform(render, self.camera.getTransform(render))
-
-        #self.vmRender.getBounds() # Weird hack
-
-        #print(self.vmRender.getBounds())
 
         return task.cont
 
@@ -711,7 +656,6 @@ class TFBase(ShowBase, FSM):
         cm.setFrameFullscreenQuad()
         cm.setHasUvs(True)
         bg = self.render2d.attachNewNode(cm.generate())
-        #bg.setColorScale((0.5, 0.5, 0.5, 1))
 
         aspectRatio = self.win.getXSize() / self.win.getYSize()
         if aspectRatio <= (4./3.):
@@ -735,8 +679,6 @@ class TFBase(ShowBase, FSM):
         for pc in TFGlobals.ModelPrecacheList:
             mdl = loader.loadModel(pc)
             self.precache.append(mdl)
-
-            #self.graphicsEngine.renderFrame()
 
             # Upload textures, vertex buffers, index buffers.
             mdl.prepareScene(self.win.getGsg())
