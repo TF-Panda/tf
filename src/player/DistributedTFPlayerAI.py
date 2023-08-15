@@ -850,7 +850,8 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
                 sharpFname = random.choice(self.classInfo.SharpPainFilenames)
                 self.d_speak(sharpFname, excludeClients=[info.attacker.owner])
                 severeFname = random.choice(self.classInfo.PainFilenames)
-                self.d_speak(severeFname, client=info.attacker.owner, volume=tf_pain_sound_inflicted_volume.value)
+                # Make the pain sound louder for the player that damaged me.
+                self.d_speak(severeFname, client=info.attacker.owner, volume=(tf_pain_sound_inflicted_volume.value if info.attacker != self else 1.0))
                 self.lastPainTime = now
 
         self.hitBoxGroup = -1
@@ -1097,7 +1098,7 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         else:
             pain = random.choice(self.classInfo.PainFilenames)
         if pain:
-            if killerPlayer and killerPlayer.owner:
+            if killerPlayer and killerPlayer.owner and killerPlayer != self:
                 self.d_speak(pain, volume=tf_pain_sound_inflicted_volume.value, client=killerPlayer.owner)
                 self.d_speak(pain, excludeClients=[killerPlayer.owner])
             else:
