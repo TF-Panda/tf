@@ -22,7 +22,7 @@ class BufferLabel:
 class TextBuffer:
 
     def __init__(self, dimensions=(-1, 1, 0.25, 1), parent=base.aspect2d, width=30,
-                 maxBufLines=100, rootScale=1.0, enterCallback=None, font=None, scrollBarWidth=0.04, margin=0.1,
+                 maxBufLines=100, rootScale=1.0, enterCallback=None, font=TFGlobals.getTF2SecondaryFont(), scrollBarWidth=0.04, margin=0.1,
                  textColor=(1, 1, 1, 1), bgAlpha=0.8, entryAlpha=0.9):
         # Dimensions. L R B T.  Includes the entry.
         self.dimensions = dimensions
@@ -51,9 +51,6 @@ class TextBuffer:
                                  relief=DGG.FLAT, width=width, parent=self.root, overflow=0, command=self.onEnter,
                                  text_fg=textColor, text_shadow=(0, 0, 0, 1), suppressKeys=1, suppressMouse=1)
 
-        self.wordWrapObj = TextNode('wordWrapObj')
-        self.wordWrapObj.setAlign(TextNode.ALeft)
-
         canvasDim = (self.dimensions[0], self.dimensions[1] - scrollBarWidth, self.dimensions[2], self.dimensions[3])
         self.scrollFrame = DirectScrolledFrame(frameSize=self.dimensions, canvasSize=canvasDim, frameColor=(0.1, 0.1, 0.1, bgAlpha),
                                                parent=self.root, relief=DGG.FLAT, scrollBarWidth=scrollBarWidth,
@@ -79,7 +76,6 @@ class TextBuffer:
         del self.labels
         self.entry.destroy()
         del self.entry
-        self.wordWrapObj = None
         self.stopFadeTask()
         self.scrollFrame.destroy()
         del self.scrollFrame
@@ -91,7 +87,7 @@ class TextBuffer:
         self.width = width
         scale = (self.dimensions[1] - self.dimensions[0]) / (width + (self.margin * 2))
         self.scale = scale
-        self.labelRootPos = (self.dimensions[0] + self.margin * self.scale, self.dimensions[3] - (self.wordWrapObj.getLineHeight() * 0.75 * self.scale))
+        self.labelRootPos = (self.dimensions[0] + self.margin * self.scale, self.dimensions[3] - (self.font.getLineHeight() * 0.75 * self.scale))
         self.entry['width'] = width
         self.entry.setScale(self.scale)
         self.entry.setPos(0, 0, 0)
@@ -173,7 +169,6 @@ class TextBuffer:
     def positionLabels(self):
         self.labelZOffset = 0.0
         ww = self.getWordwrap()
-        self.wordWrapObj.setWordwrap(ww)
         for lbl in self.labels:
             lbl.setTextPos(self.labelRootPos[0], self.labelRootPos[1] - self.labelZOffset)
             lbl.setWordwrap(ww)
@@ -183,15 +178,13 @@ class TextBuffer:
         self.__updateText()
 
     def addLine(self, line):
-        self.wordWrapObj.setText(line)
-
         labelPos = (self.labelRootPos[0], self.labelRootPos[1] - self.labelZOffset)
-        label = OnscreenText(line, parent=self.scrollFrame.getCanvas(), wordwrap=self.wordWrapObj.getWordwrap(), scale=self.scale, font=self.font,
+        label = OnscreenText(line, parent=self.scrollFrame.getCanvas(), wordwrap=self.getWordwrap(), scale=self.scale, font=self.font,
                              align=TextNode.ALeft, fg=self.textColor, shadow=(0, 0, 0, 1),
                              pos=labelPos, mayChange=True)
 
-        result = self.wordWrapObj.getWordwrappedText().split('\n')
-        self.labelZOffset += len(result) * self.wordWrapObj.getLineHeight() * self.scale
+        result = label.textNode.getWordwrappedText().split('\n')
+        self.labelZOffset += len(result) * self.font.getLineHeight() * self.scale
         self.labels.append(label)
 
         self.__updateText()
@@ -200,7 +193,7 @@ class TextBuffer:
 
     def __updateText(self):
 
-        buffOffset = self.labelZOffset + self.wordWrapObj.getLineHeight() * 0.25 * self.scale
+        buffOffset = self.labelZOffset + self.font.getLineHeight() * 0.25 * self.scale
 
         scrollSize = (self.dimensions[0], self.dimensions[1] - self.scrollBarWidth, min(self.dimensions[2], self.dimensions[3] - buffOffset),
                       self.dimensions[3])
