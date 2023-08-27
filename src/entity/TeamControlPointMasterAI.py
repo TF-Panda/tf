@@ -99,7 +99,7 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
             # Sort points by index.
             self.points.sort(key=lambda x: x.pointIndex)
             self.pointDoIds = [x.doId for x in self.points]
-            self.pointLayout = [i for i in range(len(self.points))]
+            self.pointLayout = [x.pointIndex for x in self.points]
         else:
             # Sort rounds by decreasing priority number.
             self.rounds.sort(key=lambda x: x.roundPriority, reverse=True)
