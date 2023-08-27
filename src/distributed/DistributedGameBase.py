@@ -293,6 +293,8 @@ class DistributedGameBase:
                     assert overlay.isGeomNode()
                 overlayNp = NodePath(overlay).copyTo(propRoot)
                 overlayNp.setDepthWrite(False)
+                overlayNp.setBin('decal', 0)
+                overlayNp.flattenLight()
                 # Add a slight fudge to the bounding volume so axial
                 # decals don't have flat bounding boxes.
                 mins = Point3()
