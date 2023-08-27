@@ -694,7 +694,7 @@ class GameMovement:
         self.mv.oldOrigin = self.mv.origin
         self.updateControllerSize()
         self.player.controller.foot_position = self.mv.origin
-        flags = self.player.controller.move(self.dt, vel, 0.0,
+        flags = self.player.controller.move(self.dt, vel, 0.05,
             self.playerCollideMask, self.movementFilter.filter)
         self.mv.origin = self.player.controller.foot_position
 
@@ -775,7 +775,7 @@ class GameMovement:
         self.mv.oldOrigin = self.mv.origin
         self.updateControllerSize()
         self.player.controller.foot_position = self.mv.origin
-        flags = self.player.controller.move(self.dt, self.mv.velocity * self.dt, 0.1,
+        flags = self.player.controller.move(self.dt, self.mv.velocity * self.dt, 0.05,
             self.playerCollideMask, self.movementFilter.filter)
         self.mv.origin = self.player.controller.foot_position
 
