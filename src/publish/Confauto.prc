@@ -48,8 +48,8 @@ phys-ragdoll-projection 1
 phys-ragdoll-max-depenetration-vel 10000.0
 phys-ragdoll-projection-angular-tolerance 10.0
 phys-ragdoll-projection-linear-tolerance 2.0
-phys-tolerance-length 0.1
-phys-tolerance-speed 20.32
+phys-tolerance-length 1
+phys-tolerance-speed 100
 
 framebuffer-srgb 1
 
@@ -115,7 +115,7 @@ bloom-enable 0
 # The available tone-mappers are urchima, aces, and uncharted2.
 # In my opinion urchima looks the best, but they all introduce
 # a lot of contrast that make the game visually harder to read.
-tone-mapping-enable 0
+tone-mapping-enable 1
 tone-mapping-algorithm urchima
 tone-mapping-urchima-contrast 1.0
 
@@ -269,7 +269,7 @@ mouse-sensitivity 5.0
 
 # Turn this on to enable water reflections.  It is expensive
 # and currently not culled (but the threading helps).
-tf-water-reflections 0
+tf-water-reflections 1
 
 # For servers, the map to load on start.
 tf-map ctf_2fort

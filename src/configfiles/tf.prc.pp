@@ -80,8 +80,8 @@ phys-ragdoll-projection 1
 phys-ragdoll-max-depenetration-vel 10000.0
 phys-ragdoll-projection-angular-tolerance 10.0
 phys-ragdoll-projection-linear-tolerance 2.0
-phys-tolerance-length 0.1
-phys-tolerance-speed 20.32
+phys-tolerance-length 1
+phys-tolerance-speed 100
 
 framebuffer-srgb 1
 
