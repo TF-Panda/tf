@@ -6,29 +6,25 @@
  * license.  You should have received a copy of this license along
  * with this source code in a file named "LICENSE."
  *
- * @file config_tf.cxx
+ * @file quickRopeNode.I
  * @author brian
- * @date 2022-05-23
+ * @date 2023-08-27
  */
 
-#include "config_tf.h"
-#include "quickRopeNode.h"
-
-ConfigureDef(config_tf);
-ConfigureFn(config_tf) {
-  init_libtf();
+/**
+ *
+ */
+INLINE void QuickRopeNode::
+set_point(int n, const LPoint3 &point) {
+  nassertv(n >= 0 && n < (int)_points.size());
+  _points[n] = point;
 }
 
 /**
  *
  */
-void
-init_libtf() {
-  static bool initialized = false;
-  if (initialized) {
-    return;
-  }
-  initialized = true;
-
-  QuickRopeNode::init_type();
+INLINE void QuickRopeNode::
+finish_modify_points() {
+  recompute_interpolated_points();
+  mark_internal_bounds_stale();
 }

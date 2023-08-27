@@ -21,6 +21,7 @@
 #include "pvector.h"
 #include "randomizer.h"
 #include "nurbsCurveEvaluator.h"
+#include "quickRopeNode.h"
 
 /**
  * Defines a node/point in the rope.
@@ -87,6 +88,9 @@ PUBLISHED:
   INLINE void set_nurbs_curve(NurbsCurveEvaluator *nurbs);
   INLINE NurbsCurveEvaluator *get_nurbs_curve() const { return _nurbs; }
 
+  INLINE void set_quick_rope(QuickRopeNode *rope);
+  INLINE QuickRopeNode *get_quick_rope() const { return _quick_rope; }
+
   INLINE int get_num_nodes() const { return (int)_nodes.size(); }
   INLINE const RopePhysicsNode *get_node(int n) const;
 
@@ -131,6 +135,7 @@ private:
 
   // Optional NURBS curve with vertices synchronized to the rope node positions.
   PT(NurbsCurveEvaluator) _nurbs;
+  PT(QuickRopeNode) _quick_rope;
 };
 
 #include "ropePhysics.I"

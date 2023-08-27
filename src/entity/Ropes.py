@@ -2,7 +2,7 @@
 
 from panda3d.core import *
 from panda3d.pphysics import *
-from panda3d.tf import RopePhysicsSimulation
+from panda3d.tf import RopePhysicsSimulation, QuickRopeNode
 
 from .DistributedEntity import DistributedEntity
 
@@ -52,7 +52,7 @@ class RopeKeyFrame(DistributedEntity):
         numVerts = 10
         if numVerts < 3:
             return
-        thick = self.thickness * 2
+        thick = self.thickness
         slack = self.slack
         if base.sky3DRoot.isAncestorOf(self):
             thick /= 16
@@ -70,18 +70,8 @@ class RopeKeyFrame(DistributedEntity):
 
         self.sim.genSprings(springDist)
 
-        self.curve = NurbsCurveEvaluator()
-        self.curve.setOrder(4)
-        self.curve.reset(numVerts)
-
-        self.sim.setNurbsCurve(self.curve)
-
-        rope = RopeNode("rope")
-        rope.setCurve(self.curve)
-        rope.setThickness(thick)
-        rope.setNumSubdiv(self.subdiv)
-        rope.setRenderMode(RopeNode.RMBillboard)
-        rope.setNormalMode(RopeNode.NMNone)
+        rope = QuickRopeNode("rope", numVerts, thick, self.subdiv)
+        self.sim.setQuickRope(rope)
         self.ropeNode = NodePath(rope)
         self.ropeNode.wrtReparentTo(self)
         self.ropeNode.setColorScale((0, 0, 0, 1))

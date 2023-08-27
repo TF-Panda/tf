@@ -171,5 +171,10 @@ simulate(PN_stdfloat dt, PN_stdfloat damping) {
     for (int i = 0; i < (int)_nodes.size() && i < _nurbs->get_num_vertices(); ++i) {
       _nurbs->set_vertex(i, _nodes[i].get_smooth_pos());
     }
+  } else if (_quick_rope != nullptr) {
+    for (int i = 0; i < (int)_nodes.size() && i < _quick_rope->get_num_points(); ++i) {
+      _quick_rope->set_point(i, _nodes[i].get_smooth_pos());
+    }
+    _quick_rope->finish_modify_points();
   }
 }

@@ -25,7 +25,8 @@ RopePhysicsSimulation() :
   _wind_dir(LVector3::forward()),
   _wind_accel(LVector3(0)),
   _gravity(LVector3(0, 0, -1500)),
-  _nurbs(nullptr)
+  _nurbs(nullptr),
+  _quick_rope(nullptr)
 {
 }
 
@@ -36,6 +37,15 @@ INLINE void RopePhysicsSimulation::
 set_nurbs_curve(NurbsCurveEvaluator *nurbs) {
   nassertv(nurbs->get_num_vertices() == (int)_nodes.size());
   _nurbs = nurbs;
+}
+
+/**
+ *
+ */
+INLINE void RopePhysicsSimulation::
+set_quick_rope(QuickRopeNode *rope) {
+  nassertv(rope->get_num_points() == (int)_nodes.size());
+  _quick_rope = rope;
 }
 
 /**
