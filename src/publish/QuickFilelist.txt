@@ -45,7 +45,6 @@ file $PANDA/built/lib/libpandagl.dll . WIN32
 file $PANDA/built/lib/libpandaphysics.dll . WIN32
 file $PANDA/built/lib/libanim.dll . WIN32
 file $PANDA/built/lib/libaudio.dll . WIN32
-file $PANDA/built/lib/libbsp.dll . WIN32
 file $PANDA/built/lib/libcollide.dll . WIN32
 file $PANDA/built/lib/libcull.dll . WIN32
 file $PANDA/built/lib/libdevice.dll . WIN32
@@ -116,7 +115,7 @@ file $DIRECT/built/lib/libshowbase.dll . WIN32
 file $DTOOL/built/lib/panda3d/direct.pyd . WIN32
 
 # TF DLLs.
-file $TF/built/lib/libplayer.dll . WIN32
+file $TF/built/lib/libtf.dll . WIN32
 file $DTOOL/built/lib/panda3d/tf.pyd . WIN32
 
 file $TF/src/publish/Confauto.prc etc
