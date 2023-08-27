@@ -14,6 +14,7 @@ class TeamControlPoint(DistributedEntity):
         self.teamPreviousPointNames = {}
         self.teamPreviousPoints = {}
         self.ownerTeam = TFGlobals.TFTeam.NoTeam
+        self.teamProgress = TFGlobals.TFTeam.NoTeam
         self.capProgress = 0.0
         self.defaultOwner = TFGlobals.TFTeam.NoTeam
         self.pointIndex = 0
@@ -44,6 +45,11 @@ class TeamControlPoint(DistributedEntity):
             if state != self.capState:
                 self.capState = state
                 messenger.send('ControlPointCapperCountChanged', [self])
+
+        def RecvProxy_teamProgress(self, team):
+            if team != self.teamProgress:
+                self.teamProgress = team
+                messenger.send('ControlPointTeamProgressChanged', [self])
 
         def updateHologramNode(self):
             if self.hologramModel:

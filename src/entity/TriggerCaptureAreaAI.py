@@ -139,7 +139,7 @@ class TriggerCaptureAreaAI(DistributedTriggerAI):
                 if self.capProgress == 0:
                     self.capPoint.teamStartCapping(teamOnCap)
                 self.setCapState(CapState.CSCapping)
-                self.teamProgress = teamOnCap
+                self.setTeamProgress(teamOnCap)
                 prog = self.capProgress
                 prog += self.calcProgressDelta(teamOnCap)
                 prog = min(1.0, prog)
@@ -221,3 +221,7 @@ class TriggerCaptureAreaAI(DistributedTriggerAI):
     def setCapperCount(self, count):
         self.capperCount = count
         self.capPoint.capperCount = count
+
+    def setTeamProgress(self, team):
+        self.teamProgress = team
+        self.capPoint.teamProgress = team

@@ -29,6 +29,7 @@ class ControlPointWidget(DirectObject):
         #self.accept('ControlPointOwnerTeamChanged', self.__handlePointUpdate)
         self.accept('ControlPointProgressChanged', self.__handlePointUpdate)
         self.accept('ControlPointCapperCountChanged', self.__handlePointUpdate)
+        self.accept('ControlPointTeamProgressChanged', self.__handlePointUpdate)
 
         self.blinkIval = None
 
@@ -40,19 +41,21 @@ class ControlPointWidget(DirectObject):
         self.updateBar()
 
     def getTeamBarColor(self):
-        if self.point.defaultOwner == TFGlobals.TFTeam.Red:
-            return TFGuiProperties.BackgroundColorBlueOpaque
-        else:
+        if self.point.teamProgress == TFGlobals.TFTeam.Red:
             return TFGuiProperties.BackgroundColorRedOpaque
+        else:
+            return TFGuiProperties.BackgroundColorBlueOpaque
 
     def updateBar(self):
         # Updates the UI state of the capture point widget based on the
         # state of the associated capture point.
 
-        if self.point.defaultOwner == TFGlobals.TFTeam.Red:
+        if self.point.ownerTeam == TFGlobals.TFTeam.Red:
             self.bar['frameColor'] = TFGuiProperties.BackgroundColorRedTranslucent
-        else:
+        elif self.point.ownerTeam == TFGlobals.TFTeam.Blue:
             self.bar['frameColor'] = TFGuiProperties.BackgroundColorBlueTranslucent
+        else:
+            self.bar['frameColor'] = (0.4, 0.4, 0.4, 0.678)
 
         self.bar['barColor'] = self.getTeamBarColor()
 

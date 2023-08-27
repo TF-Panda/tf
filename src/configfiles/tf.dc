@@ -648,6 +648,7 @@ dclass TriggerCaptureArea : DistributedTrigger {
 dclass TeamControlPoint : DistributedEntity {
   int8 ownerTeam;
   int8 defaultOwner;
+  int8 teamProgress;
   uint8 capProgress / 100;
   uint8 capState;
   uint8 capperCount;
