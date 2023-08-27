@@ -596,6 +596,9 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.addPredictionField("duckJumpTime", float, tolerance=0.01)
         self.addPredictionField("jumpTime", float, tolerance=0.01)
         self.addPredictionField("viewOffset", Vec3, networked=False, noErrorCheck=True)
+        # Spy.
+        self.addPredictionField("cloakAmount", float, noErrorCheck=True, tolerance=0.01)
+        self.addPredictionField("invisChangeCompleteTime", float, noErrorCheck=True, tolerance=0.01)
 
     def setActiveWeapon(self, index):
         if self.activeWeapon == index:

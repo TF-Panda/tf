@@ -284,6 +284,11 @@ dclass DistributedTFPlayer : DistributedChar {
   int8 disguiseClass;
   uint8 disguiseWeapon;
 
+  float64 invisChangeCompleteTime;
+  uint8 cloakAmount / 255; // local
+  float64 stealthNoAttackExpire; // local
+  float64 stealthNextChangeTime; // local
+
   uint32 healerDoIds[];
 
   uint8 ducked;

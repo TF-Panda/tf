@@ -25,6 +25,16 @@ from .TFPlayerState import TFPlayerState
 
 tf_max_health_boost = 1.5
 
+tf_invuln_time = 1.0
+tf_spy_invis_time = 1.0
+tf_spy_invis_unstealth_time = 2.0
+tf_spy_max_cloaked_speed = 999
+tf_spy_cloak_consume_rate = 10.0
+tf_spy_cloak_regen_rate = 3.3
+tf_spy_cloak_no_attack_time = 2.0
+tf_spy_stealth_blinktime = 0.3
+tf_spy_stealth_blinkscale = 0.85
+
 class DistributedTFPlayerShared:
 
     DiagonalFactor = math.sqrt(2.) / 2.
@@ -47,12 +57,13 @@ class DistributedTFPlayerShared:
     CondZoomed = 11
     CondLoser = 12
     CondWinner = 13
+    CondStealthed = 14
 
     BadConditions = [
         CondBurning
     ]
 
-    COND_COUNT = 13
+    COND_COUNT = 14
     COND_PERMANENT = -1
 
     def __init__(self):
@@ -149,6 +160,15 @@ class DistributedTFPlayerShared:
 
         self.numDetonateables = 0
 
+        # Cloaking related vars.
+        self.cloakAmount = 0.0
+        self.invisibilityLevel = 0.0
+        self.stealthNoAttackExpire = 0.0
+        self.invisChangeCompleteTime = 0.0
+
+    def getPercentInvisible(self):
+        return self.invisibilityLevel
+
     def toggleNoClip(self):
         if self.moveType == MoveType.NoClip:
             self.moveType = MoveType.Walk
@@ -195,7 +215,46 @@ class DistributedTFPlayerShared:
         if self.desiredFov == 0:
             self.setFOV(0, 0)
 
-    def __conditionThink(self, task):
+    def fadeInvis(self, time):
+        self.removeCondition(self.CondStealthed)
+
+        if time >= 0.15:
+            self.stealthNoAttackExpire = globalClock.frame_time + tf_spy_cloak_no_attack_time
+
+        self.invisChangeCompleteTime = globalClock.frame_time + time
+
+    def invisibilityThink(self):
+        targetInvis = 0.0
+        targetInvisScale = 1.0
+        if self.inCondition(self.CondStealthedBlink):
+            # We were bumped into or hit for some damage.
+            targetInvisScale = tf_spy_stealth_blinkscale
+
+        # Go invisible or appear.
+        if self.invisChangeCompleteTime > globalClock.frame_time:
+            if self.inCondition(self.CondStealthed):
+                targetInvis = 1.0 - (self.invisChangeCompleteTime - globalClock.frame_time)
+            else:
+                targetInvis = (self.invisChangeCompleteTime - globalClock.frame_time) * 0.5
+        else:
+            if self.inCondition(self.CondStealthed):
+                targetInvis = 1.0
+            else:
+                targetInvis = 0.0
+
+        targetInvis *= targetInvisScale
+        self.invisibilityLevel = min(1.0, max(0.0, targetInvis))
+
+    def conditionThink(self):
+        if self.tfClass == Class.Spy:
+            if self.inCondition(self.CondStealthed):
+                self.cloakAmount -= globalClock.dt * tf_spy_cloak_consume_rate
+                if self.cloakAmount <= 0:
+                    self.cloakAmount = 0
+                    self.fadeInvis(tf_spy_invis_unstealth_time)
+            else:
+                self.cloakAmount += globalClock.dt * tf_spy_cloak_regen_rate
+                self.cloakAmount = min(self.cloakAmount, 1.0)
 
         return task.cont
 
@@ -386,7 +445,12 @@ class DistributedTFPlayerShared:
         return self.observerMode != ObserverMode.Off
 
     def doClassSpecialSkill(self):
-        pass
+        # temporary
+        if self.tfClass == Class.Spy:
+            if self.cloakAmount == 0 and not self.inCondition(self.CondCloaking):
+                self.setCondition(self.CondCloaking)
+            elif self.cloakAmount == 1 and self.inCondition(self.CondCloaked):
+                self.setCondition(self.CondUncloaking)
 
     def doAnimationEvent(self, event, data = 0, predicted=True):
         pass
