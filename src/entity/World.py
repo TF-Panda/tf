@@ -8,6 +8,7 @@ from tf.entity.DistributedSolidEntity import DistributedSolidEntity
 from tf.tfbase import CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 from tf.tfbase.TFGlobals import SolidFlag, SolidShape, TakeDamage, WorldParent
+from tf.tfbase.IndexBufferCombiner import IndexBufferCombiner
 
 
 class World(DistributedSolidEntity):
@@ -123,6 +124,9 @@ class World(DistributedSolidEntity):
         if base.config.GetBool('tf-do-z-prepass', True):
             self.setAttrib(DepthPrepassAttrib.make(DirectRender.MainCameraBitmask|DirectRender.ReflectionCameraBitmask))
         self.flattenLight()
+
+        if IS_CLIENT and self.modelNp:
+            IndexBufferCombiner(self.modelNp)
 
         """
         if IS_CLIENT and self.modelNp:

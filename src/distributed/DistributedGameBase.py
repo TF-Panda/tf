@@ -6,10 +6,10 @@ from direct.directbase import DirectRender
 from tf.tfbase import CollisionGroups
 from tf.tfbase.SurfaceProperties import SurfaceProperties
 from tf.tfbase.TFGlobals import TFTeam
+from tf.tfbase.IndexBufferCombiner import IndexBufferCombiner
 
 from .GameMode import GameMode
 from .RoundState import RoundState
-
 
 class DistributedGameBase:
 
@@ -317,6 +317,9 @@ class DistributedGameBase:
         propGr.removeUnusedVertices(propRoot.node())
 
         #propRoot.node().updateDirtyChildren()
+
+        if IS_CLIENT:
+            IndexBufferCombiner(propRoot)
 
         for child in propRoot.getChildren():
             propRoot.node().addObject(child.node())
