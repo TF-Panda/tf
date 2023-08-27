@@ -35,8 +35,9 @@ class TFServerRepository(ServerRepository):
         return zoneId == TFGlobals.UberZone
 
     def wantAuthentication(self):
-        return base.config.GetBool('tf-want-captcha', False)
+        return False#return base.config.GetBool('tf-want-captcha', False)
 
+    """
     def sendClientAuthRequest(self, client):
         # Generate a Captcha for the client to answer.
         import random
@@ -67,6 +68,7 @@ class TFServerRepository(ServerRepository):
         dg.appendData(data.read())
 
         self.sendDatagram(dg, client.connection)
+    """
 
     def handleClientAuthResponse(self, client, dgi):
         answer = dgi.getString()
