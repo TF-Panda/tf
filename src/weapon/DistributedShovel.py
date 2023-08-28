@@ -9,6 +9,7 @@ class DistributedShovel(TFWeaponMelee):
     WeaponModel = "models/weapons/c_shovel"
     WeaponViewModel = "models/weapons/v_shovel_soldier"
     UsesViewModel = True
+    MinViewModelOffset = (10, -6, -12)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

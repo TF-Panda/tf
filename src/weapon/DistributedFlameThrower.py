@@ -179,6 +179,7 @@ class DistributedFlameThrower(TFWeaponGun):
     WeaponModel = "models/weapons/c_flamethrower"
     WeaponViewModel = "models/weapons/c_flamethrower"
     UsesViewModel = False
+    MinViewModelOffset = (10, 0, -10)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

@@ -11,6 +11,7 @@ class DistributedRocketLauncher(TFWeaponGun):
     WeaponModel = "models/weapons/c_rocketlauncher"
     WeaponViewModel = "models/weapons/v_rocketlauncher_soldier"
     UsesViewModel = True
+    MinViewModelOffset = (10, -3, -10)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

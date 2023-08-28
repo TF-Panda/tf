@@ -11,6 +11,7 @@ class DistributedGrenadeLauncher(TFWeaponGun):
     WeaponModel = "models/weapons/c_grenadelauncher"
     WeaponViewModel = "models/weapons/v_grenadelauncher_demo"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -10)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

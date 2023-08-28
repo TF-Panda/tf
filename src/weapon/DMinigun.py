@@ -30,6 +30,7 @@ class DMinigun(TFWeaponGun):
     WeaponModel = "models/weapons/c_minigun"
     WeaponViewModel = "models/weapons/v_minigun_heavy"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -9)
 
     SoundWindUp = 0
     SoundWindDown = 1

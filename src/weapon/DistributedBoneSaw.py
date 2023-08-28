@@ -10,6 +10,7 @@ class DistributedBoneSaw(TFWeaponMelee):
     WeaponModel = "models/weapons/w_bonesaw"
     WeaponViewModel = "models/weapons/v_bonesaw_medic"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -12)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

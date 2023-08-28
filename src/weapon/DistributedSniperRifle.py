@@ -24,6 +24,7 @@ class DistributedSniperRifle(TFWeaponGun):
     WeaponModel = "models/weapons/w_sniperrifle"
     WeaponViewModel = "models/weapons/v_sniperrifle_sniper"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -10)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

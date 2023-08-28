@@ -10,6 +10,7 @@ class DistributedMachete(TFWeaponMelee):
     WeaponModel = "models/weapons/c_machete"
     WeaponViewModel = "models/weapons/c_machete"
     UsesViewModel = False
+    MinViewModelOffset = (10, 0, -6)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

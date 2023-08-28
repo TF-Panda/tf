@@ -8,6 +8,7 @@ class DistributedBat(TFWeaponMelee):
     WeaponModel = "models/weapons/c_bat"
     WeaponViewModel = "models/weapons/v_bat_scout"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -7)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

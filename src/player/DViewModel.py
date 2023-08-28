@@ -24,6 +24,7 @@ class BobState:
 tf_weapon_sway = ConfigVariableBool('tf-weapon-sway', True)
 tf_weapon_sway_interp = ConfigVariableDouble('tf-weapon-sway-interp', 0.1)
 tf_weapon_sway_scale = ConfigVariableDouble('tf-weapon-sway-scale', 5.0)
+tf_use_min_viewmodels = ConfigVariableBool('tf-use-min-viewmodels', False)
 
 class DViewModel(DistributedChar, DViewModelShared):
 
@@ -277,11 +278,17 @@ class DViewModel(DistributedChar, DViewModelShared):
             if wpn:
                 # Add weapon-specific bob.
                 wpn.addViewModelBob(self, info)
+        else:
+            wpn = None
 
         # Add model-specific bob even if no weapon associated (for head bob for off hand models)
         self.addViewModelBob(player, info)
         # Add lag.
         self.calcViewModelLag(info)
+
+        if wpn and tf_use_min_viewmodels.value:
+            offset = wpn.MinViewModelOffset
+            info.origin += info.originalAngles.xform((offset[1], offset[0], offset[2]))
 
         self.setPos(info.origin)
         self.setQuat(info.angles)

@@ -15,6 +15,7 @@ class DistributedKnife(TFWeaponMelee):
     WeaponModel = "models/weapons/w_knife"
     WeaponViewModel = "models/weapons/v_knife_spy"
     UsesViewModel = True
+    MinViewModelOffset = (5, 0, -4)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

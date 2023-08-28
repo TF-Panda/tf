@@ -14,6 +14,7 @@ class DistributedStickyBombLauncher(TFWeaponGun):
     WeaponModel = "models/weapons/w_stickybomb_launcher"
     WeaponViewModel = "models/weapons/v_stickybomb_launcher_demo"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -10)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

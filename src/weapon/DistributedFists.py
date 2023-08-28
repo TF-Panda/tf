@@ -14,6 +14,7 @@ class DistributedFists(TFWeaponMelee):
     UsesViewModel = True
     HideWeapon = True
     DropAmmo = False
+    MinViewModelOffset = (10, 0, -7)
 
     VoiceLines = [
       "Heavy.Meleeing01",

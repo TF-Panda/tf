@@ -9,6 +9,7 @@ class DistributedBottle(TFWeaponMelee):
     WeaponModel = "models/weapons/c_bottle"
     WeaponViewModel = "models/weapons/v_bottle_demoman"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -14)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

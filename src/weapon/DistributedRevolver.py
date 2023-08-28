@@ -12,6 +12,7 @@ class DistributedRevolver(TFWeaponGun):
     WeaponModel = "models/weapons/w_revolver"
     WeaponViewModel = "models/weapons/v_revolver_spy"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -6)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

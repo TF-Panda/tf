@@ -21,6 +21,7 @@ class DistributedToolbox(TFWeapon):
     WeaponViewModel = "models/weapons/v_toolbox_engineer"
     UsesViewModel = True
     HiddenFromUI = True
+    MinViewModelOffset = (10, 0, -8)
 
     BlueprintOffset = Point3(0, 64, 0)
 

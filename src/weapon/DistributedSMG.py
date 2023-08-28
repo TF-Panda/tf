@@ -11,6 +11,7 @@ class DistributedSMG(TFWeaponGun):
     WeaponModel = "models/weapons/w_smg"
     WeaponViewModel = "models/weapons/v_smg_sniper"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -7)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

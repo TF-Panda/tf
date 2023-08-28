@@ -15,6 +15,7 @@ class DistributedWrench(TFWeaponMelee):
     WeaponModel = "models/weapons/c_wrench"
     WeaponViewModel = "models/weapons/v_wrench_engineer"
     UsesViewModel = True
+    MinViewModelOffset = (10, -2, -9)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

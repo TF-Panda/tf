@@ -30,6 +30,7 @@ class DistributedMedigun(TFWeaponGun):
     WeaponModel = "models/weapons/w_medigun"
     WeaponViewModel = "models/weapons/v_medigun_medic"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -9)
 
     def __init__(self):
         TFWeaponGun.__init__(self)

@@ -6,6 +6,8 @@ from .DistributedWeaponShared import DistributedWeaponShared
 
 class DistributedWeapon(DistributedChar, DistributedWeaponShared):
 
+    MinViewModelOffset = (0, 0, 0)
+
     def __init__(self):
         DistributedChar.__init__(self)
         DistributedWeaponShared.__init__(self)

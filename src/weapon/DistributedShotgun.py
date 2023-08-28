@@ -10,6 +10,7 @@ class DistributedShotgun(TFWeaponGun):
 
     WeaponModel = "models/weapons/c_shotgun"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -9)
 
     def __init__(self):
         TFWeaponGun.__init__(self)
@@ -69,6 +70,7 @@ class DistributedShotgunPyro(DistributedShotgunSecondary):
 class DistributedScattergunScout(DistributedShotgun):
     WeaponModel = "models/weapons/w_scattergun"
     WeaponViewModel = "models/weapons/v_scattergun_scout"
+    MinViewModelOffset = (10, 0, -11)
 
     def getName(self):
         return TFLocalizer.ScatterGun

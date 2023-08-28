@@ -11,6 +11,7 @@ class DistributedFireAxe(TFWeaponMelee):
     WeaponModel = "models/weapons/w_fireaxe"
     WeaponViewModel = "models/weapons/v_fireaxe_pyro"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -9)
 
     def __init__(self):
         TFWeaponMelee.__init__(self)

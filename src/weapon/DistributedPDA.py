@@ -141,6 +141,7 @@ class DistributedConstructionPDA(TFWeapon):
     WeaponModel = "models/weapons/w_builder"
     WeaponViewModel = "models/weapons/v_builder_engineer"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -8)
 
     def __init__(self):
         TFWeapon.__init__(self)
@@ -203,6 +204,7 @@ class DistributedDestructionPDA(TFWeapon):
     WeaponModel = "models/weapons/w_pda_engineer"
     WeaponViewModel = "models/weapons/v_pda_engineer"
     UsesViewModel = True
+    MinViewModelOffset = (10, 0, -8)
 
     def __init__(self):
         TFWeapon.__init__(self)
