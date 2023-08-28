@@ -137,8 +137,8 @@ fmod-clip-output 0
 # Reduce volume of spatialized sounds so local player sounds, UI sounds, etc,
 # remain clear in the mix.
 fmod-spatialized-volume 0.5
-music-volume 1.0
-sfx-volume 0.72
+music-volume 0.5
+sfx-volume 0.25
 
 default-cube-map maps/sky.txo
 
@@ -272,4 +272,4 @@ mouse-sensitivity 5.0
 tf-water-reflections 1
 
 # For servers, the map to load on start.
-tf-map ctf_2fort
+tf-map levels/ctf_2fort

@@ -3,6 +3,7 @@ multifile toplevel.mf.pz
 # WINTOOLS DLLs.
 file $WINTOOLS/built/bin/embree3.dll . WIN32
 file $WINTOOLS/built/bin/fmod.dll . WIN32
+file $WINTOOLS/built/bin/fmodstudio.dll . WIN32
 file $WINTOOLS/built/bin/GameNetworkingSockets.dll . WIN32
 file $WINTOOLS/built/bin/GPUUtilities.dll . WIN32
 file $WINTOOLS/built/bin/phonon.dll . WIN32
@@ -166,4 +167,4 @@ multifile shaders.mf.pz
 dir $DMODELS/built/shaders shaders
 
 multifile levels.mf.pz
-file $TFMODELS/built/levels levels
+dir $TFMODELS/built/levels levels
