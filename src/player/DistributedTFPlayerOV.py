@@ -982,7 +982,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         return self.commands[self.getNextCommandNumber() % self.MaxCommands]
 
     def shouldSendCommand(self):
-        return base.clockMgr.getTime() >= self.nextCommandTime and base.cr.connected
+        return globalClock.frame_time >= self.nextCommandTime and base.cr.connected
 
     def getCommand(self, num):
         cmd = self.commands[num % self.MaxCommands]
@@ -1055,10 +1055,10 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.chokedCommands = 0
 
             # Determine when to send next command.
-            cmdIval = 1.0 / cl_cmdrate.getValue()
+            cmdIval = 1.0 / cl_cmdrate.value
             maxDelta = min(base.intervalPerTick, cmdIval)
-            delta = max(0.0, min(maxDelta, base.clockMgr.getTime() - self.nextCommandTime))
-            self.nextCommandTime = base.clockMgr.getTime() + cmdIval - delta
+            delta = max(0.0, min(maxDelta, globalClock.frame_time - self.nextCommandTime))
+            self.nextCommandTime = globalClock.frame_time + cmdIval - delta
         else:
             # Not sending yet, but building a list of commands to send.
             self.chokedCommands += 1

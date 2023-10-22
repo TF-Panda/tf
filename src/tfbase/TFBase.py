@@ -325,6 +325,9 @@ class TFBase(ShowBase, FSM):
     def __processDynamicLights(self, task):
         self.lightMgr.update()
 
+        if not self.dynamicLights:
+            return task.cont
+
         removed = []
         for data in self.dynamicLights:
             if data[2] is not None:
@@ -356,10 +359,14 @@ class TFBase(ShowBase, FSM):
         self.oneOffNodes.add(node)
 
     def __oneOffNodeTask(self, task):
+        if not self.oneOffNodes:
+            return task.cont
+
         for np in self.oneOffNodes:
             if not np.isEmpty():
                 np.removeNode()
         self.oneOffNodes = set()
+
         return task.cont
 
     def __particleQueueTask(self, task):
@@ -370,6 +377,9 @@ class TFBase(ShowBase, FSM):
         self.particleQueue.append((system, parent, duration))
 
     def processParticleQueue(self):
+        if not self.particleQueue:
+            return
+
         for sys, parent, duration in self.particleQueue:
             sys.start(parent)
             Sequence(Wait(duration), Func(sys.softStop)).start()
