@@ -4,7 +4,7 @@
   #define OTHER_LIBS \
     dtool:m dtoolbase:c dtoolutil:c prc interrogatedb \
     pandaexpress:m express:c downloader:c gobj:c pgraph:c pipeline:c \
-    panda:m putil:c linmath:c pstatclient:c parametrics:c mathutil:c
+    panda:m putil:c linmath:c pstatclient:c parametrics:c mathutil:c jobsystem:c
   #define USE_PACKAGES eigen
 
   #define SOURCES \

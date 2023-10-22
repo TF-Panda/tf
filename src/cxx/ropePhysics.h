@@ -138,6 +138,19 @@ private:
   PT(QuickRopeNode) _quick_rope;
 };
 
+class EXPCL_TF_CXX RopeSimulationManager : public MemoryBase {
+PUBLISHED:
+  INLINE RopeSimulationManager() = default;
+
+  void simulate(PN_stdfloat dt, PN_stdfloat damping);
+
+  INLINE void remove_rope(RopePhysicsSimulation *rope);
+  INLINE void add_rope(RopePhysicsSimulation *rope);
+
+private:
+  pvector<PT(RopePhysicsSimulation)> _ropes;
+};
+
 #include "ropePhysics.I"
 
 #endif // ROPEPHYSICS_H

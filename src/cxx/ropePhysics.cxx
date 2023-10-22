@@ -14,6 +14,7 @@
 #include "ropePhysics.h"
 #include "cmath.h"
 #include "mathNumbers.h"
+#include "jobSystem.h"
 
 /**
  *
@@ -177,4 +178,15 @@ simulate(PN_stdfloat dt, PN_stdfloat damping) {
     }
     _quick_rope->finish_modify_points();
   }
+}
+
+/**
+ *
+ */
+void RopeSimulationManager::
+simulate(PN_stdfloat dt, PN_stdfloat damping) {
+  JobSystem *js = JobSystem::get_global_ptr();
+  js->parallel_process((int)_ropes.size(), [&] (int i) {
+    _ropes[i]->simulate(dt, damping);
+  });
 }

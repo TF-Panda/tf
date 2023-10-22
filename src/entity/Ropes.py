@@ -22,15 +22,12 @@ class RopeKeyFrame(DistributedEntity):
         self.ropeNode = None
         self.sim = None
 
-    def updateCurve(self, task):
-        self.sim.simulate(globalClock.dt, 0.98)
-        return task.cont
-
     def startRope(self):
-        self.addTask(self.updateCurve, "updateCurve", sim=False, appendTask=True)
+        base.ropeMgr.addRope(self.sim)
 
     def stopRope(self):
-        self.removeTask("updateCurve")
+        if self.sim:
+            base.ropeMgr.removeRope(self.sim)
 
     def destroyRope(self):
         self.stopRope()

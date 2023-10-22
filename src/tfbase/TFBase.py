@@ -3,6 +3,7 @@ import random
 
 from panda3d.core import *
 from panda3d.pphysics import *
+from panda3d.tf import RopeSimulationManager
 
 from direct.directbase import DirectRender
 from direct.directnotify.DirectNotifyGlobal import directNotify
@@ -243,6 +244,13 @@ class TFBase(ShowBase, FSM):
         eq.setCrossoverFrequencies(1364.4699, 7536.40625)
         self.sfxManager.addDspToTail(eq)
         self.eq = eq
+
+        self.ropeMgr = RopeSimulationManager()
+        self.taskMgr.add(self.__simulateRopes, 'simulateRopes')
+
+    def __simulateRopes(self, task):
+        self.ropeMgr.simulate(globalClock.dt, 0.98)
+        return task.cont
 
     def eqOff(self):
         self.sfxManager.removeDsp(self.eq)

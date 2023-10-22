@@ -183,7 +183,7 @@ add_for_draw(CullTraverser *trav, CullTraverserData &data) {
   LVector3 camera_vec = rel_transform->get_pos();
 
   GeomVertexData *vdata = cam_data->_vertex_data[cam_data->_last_frame];
-  GeomVertexWriter vertex(vdata, InternalName::get_vertex());
+  GeomVertexWriter vertex((GeomVertexArrayData *)vdata->get_array(0).p(), 0);
   for (int i = 0; i < num_points; ++i) {
     // Calculate the tangent vector.
     LVector3 tangent;

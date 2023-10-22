@@ -65,3 +65,22 @@ get_spring(int n) const {
   nassertr(n >= 0 && n < (int)_constraints.size(), nullptr);
   return &_constraints[n];
 }
+
+/**
+ *
+ */
+INLINE void RopeSimulationManager::
+add_rope(RopePhysicsSimulation *rope) {
+  _ropes.push_back(rope);
+}
+
+/**
+ *
+ */
+INLINE void RopeSimulationManager::
+remove_rope(RopePhysicsSimulation *rope) {
+  auto it = std::find(_ropes.begin(), _ropes.end(), rope);
+  if (it != _ropes.end()) {
+    _ropes.erase(it);
+  }
+}
