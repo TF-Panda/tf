@@ -1,4 +1,5 @@
 from panda3d.core import *
+loadPrcFileData("", "job-system-num-worker-threads 0")
 from panda3d.pphysics import *
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
