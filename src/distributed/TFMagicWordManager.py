@@ -8,7 +8,7 @@
 # The magic word manager lives in a special zone that the server gives
 # the player interest to, if they have magic word privileges.
 
-from panda3d.core import ShaderManager
+from panda3d.core import ShaderManager, loadPrcFileData
 
 from direct.directnotify.DirectNotifyGlobal import directNotify
 from direct.distributed2.DistributedObject import DistributedObject
@@ -30,7 +30,8 @@ class TFMagicWordManager(DistributedObject):
             "wireframe": self.__toggleWireframe,
             "ls": self.__ls,
             "analyze": self.__analyze,
-            "buildcubemaps": self.__buildCubeMaps
+            "buildcubemaps": self.__buildCubeMaps,
+            "prc": self.__prc
         }
 
     def announceGenerate(self):
@@ -114,6 +115,14 @@ class TFMagicWordManager(DistributedObject):
             base.sky3DTop.analyze()
         else:
             return "Unknown scene to analyze: " + args[1]
+
+    def __prc(self, args):
+        varName = args[0]
+        if len(args) == 1:
+            return f"{varName} = {ConfigVariable(varName).getStringValue()}"
+        else:
+            loadPrcFileData("magic words", ' '.join(args))
+            return f"set {varName} to {' '.join(args[1:])}"
 
     def extractArgs(self, expr : str):
         """
