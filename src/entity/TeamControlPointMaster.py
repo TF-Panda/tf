@@ -157,6 +157,13 @@ class ControlPointGuiPanel:
         if currRow:
             layout2D.append(currRow)
 
+        pointByIndex = {}
+        for doId in self.master.pointDoIds:
+            p = base.cr.doId2do.get(doId)
+            if p:
+                assert not p.pointIndex in pointByIndex
+                pointByIndex[p.pointIndex] = p
+
         numRows = len(layout2D)
         ySize = self.canvasSize.y / numRows
         for i in range(numRows):
@@ -169,8 +176,9 @@ class ControlPointGuiPanel:
                 xPos = xMin + xSize * 0.5
                 yPos = yMin + ySize * 0.5
 
-                pointDoId = self.master.pointDoIds[layout2D[i][j]]
-                point = base.cr.doId2do.get(pointDoId)
+                point = pointByIndex.get(layout2D[i][j])
+                if not point:
+                    continue
 
                 w = ControlPointWidget(point, self, (xPos, 0, yPos))
                 self.pointWidgets[point] = w

@@ -21,6 +21,7 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
 
         self.pointDoIds = []
         self.pointLayout = []
+        self.gotEntLayout = False
 
     def canTeamWin(self, team):
         if self.currentRound:
@@ -56,7 +57,8 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
         r = self.rounds[index]
         self.currentRound = r
         self.pointDoIds = [x.doId for x in r.points]
-        self.pointLayout = [i for i in range(len(self.pointDoIds))]
+        if not self.gotEntLayout:
+            self.pointLayout = [x.pointIndex for x in r.points]
 
     def hasNextRound(self):
         """
@@ -86,6 +88,17 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
             self.restrictWinTeam = props.getAttributeValue("cpm_restrict_team_cap_win").getInt()
         if props.hasAttribute("switch_teams"):
             self.switchTeams = props.getAttributeValue("switch_teams").getBool()
+        if props.hasAttribute("caplayout"):
+            self.pointLayout = []
+            layoutStr = props.getAttributeValue("caplayout").getString()
+            rows = layoutStr.split(",")
+            for i in range(len(rows)):
+                cols = rows[i].split()
+                for c in cols:
+                    self.pointLayout.append(int(c))
+                if i < (len(rows) - 1):
+                    self.pointLayout.append(-1)
+            self.gotEntLayout = True
 
     def announceGenerate(self):
         DistributedObjectAI.announceGenerate(self)
@@ -99,7 +112,8 @@ class TeamControlPointMasterAI(DistributedObjectAI, TeamControlPointManagerAI):
             # Sort points by index.
             self.points.sort(key=lambda x: x.pointIndex)
             self.pointDoIds = [x.doId for x in self.points]
-            self.pointLayout = [x.pointIndex for x in self.points]
+            if not self.gotEntLayout:
+                self.pointLayout = [x.pointIndex for x in self.points]
         else:
             # Sort rounds by decreasing priority number.
             self.rounds.sort(key=lambda x: x.roundPriority, reverse=True)

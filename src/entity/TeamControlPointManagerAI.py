@@ -23,6 +23,12 @@ class TeamControlPointManagerAI(EntityBase):
         self.points = []
         self.restrictWinTeam = self.RestrictNeither
 
+    def getPointByIndex(self, index):
+        for p in self.points:
+            if p.pointIndex == index:
+                return p
+        return None
+
     def canTeamWin(self, team):
         """
         Returns True if the indicated team is allowed to win by capturing

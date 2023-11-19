@@ -652,6 +652,7 @@ dclass TeamControlPoint : DistributedEntity {
   uint8 capProgress / 100;
   uint8 capState;
   uint8 capperCount;
+  uint8 pointIndex;
 };
 
 dclass TeamControlPointMaster : DistributedObject {

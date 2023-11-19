@@ -27,3 +27,4 @@ class TeamControlPointRoundAI(TeamControlPointManagerAI):
 
         for targetName in self.pointNames:
             self.points.append(base.entMgr.findExactEntity(targetName))
+        self.points.sort(key=lambda x: x.pointIndex)
