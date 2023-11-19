@@ -26,13 +26,10 @@ class TFPostProcess(PostProcess):
         self.finalOutput = None
         self.freezeFrame = None
 
-        self.hbaoControls = []
-        self.hbaoControlZ = -0.2
-
-        self.camDebugs = []
-        self.camDebugZ = -0.2
+        self.camTextNode = OnscreenText("", align=TextNode.ALeft, scale=0.08, pos=(0.05, -0.15), parent=base.a2dTopLeft, fg=(1, 1, 1, 1), bg=(0, 0, 0, 0.75), shadow=(0, 0, 0, 1))
 
         self.enableHDR = base.config.GetBool("hdr-enable", True)
+        self.hdrDebugText = base.config.GetBool("hdr-debug-text", False)
         self.enableToneMapping = base.config.GetBool("tone-mapping-enable", True)
         self.enableBloom = base.config.GetBool("bloom-enable", True)
         self.enableSSAO = base.config.GetBool("ssao-enable", True)
@@ -51,58 +48,50 @@ class TFPostProcess(PostProcess):
         #base.accept('f2', self.incExposureBias)
 
         #self.setupHBAOControls()
-        if self.enableHDR:
-            self.setupCamDebugs()
+        if self.enableHDR and self.hdrDebugText:
             taskMgr.add(self.updateCamDebugs, "updateCamDebugs")
 
-    def addCamDebug(self):
-        self.camDebugs.append(OnscreenText("", align = TextNode.ALeft, scale = 0.1, pos = (0.05, self.camDebugZ), parent=base.a2dTopLeft, fg = (1, 1, 1, 1), shadow=(0, 0, 0, 1)))
-        self.camDebugZ -= 0.1
-
-    def setupCamDebugs(self):
-        for i in range(8):
-            # Auto method, Shutter speed, aperature, ISO, exposure, luminance, lum max
-            self.addCamDebug()
 
     def updateCamDebugs(self, task):
-        method = self.camDebugs[0]
+        text = ""
+
         methodVal = base.config.GetInt("hdr-exposure-auto-method")
         if methodVal == 0:
-            method.setText("Program AE")
+            text += "Program AE\n"
         elif methodVal == 1:
-            method.setText("Shutter priority AE")
+            text += "Shutter priority AE\n"
         elif methodVal == 2:
-            method.setText("Aperture priority AE")
-        shutter = self.camDebugs[1]
+            text += "Aperture priority AE\n"
+        elif methodVal == 3:
+            text += "Manual Exposure\n"
+
         denom = self.hdr.getHdrPass().getShutterSpeed()
         if denom >= 1:
-            shutter.setText(f"Shutter Speed: {int(denom)}\"")
+            text += f"Shutter Speed: {int(denom)}\"\n"
+        elif denom > 0.0:
+            text += f"Shutter Speed: 1/{int(1 / denom)}\n"
         else:
-            shutter.setText(f"Shutter Speed: 1/{int(1 / denom)}")
+            text += f"Invalid shutter speed\n"
 
         apSize = self.hdr.getHdrPass().getAperature()
-        aperature = self.camDebugs[2]
-        aperature.setText(f"Aperture: f{round(apSize * 2) / 2}")
+        text += f"Aperture: f{format(apSize, '.2f')}\n"
 
         isoVal = self.hdr.getHdrPass().getIso()
-        iso = self.camDebugs[3]
-        iso.setText(f"ISO: {int(isoVal)}")
+        text += f"ISO: {int(isoVal)}\n"
 
-        expVal = self.hdr.getHdrPass().getExposureValue()
-        exp = self.camDebugs[4]
-        exp.setText(f"EV: {format(expVal, '.2f')}")
+        expVal = self.hdr.getHdrPass().getExposure()
+        text += f"EV: {expVal}\n"
 
         lumVal = self.hdr.getHdrPass().getLuminance()
-        lum = self.camDebugs[5]
-        lum.setText(f"L Avg: {format(lumVal, '.2f')}")
+        text += f"L Avg: {lumVal}\n"
 
         lMaxVal = self.hdr.getHdrPass().getMaxLuminance()
-        lMax = self.camDebugs[6]
-        lMax.setText(f"L Max: {format(lMaxVal, '.2f')}")
+        text += f"L Max: {lMaxVal}\n"
 
         fVal = base.camLens.getFocalLength() * 25.4
-        f = self.camDebugs[7]
-        f.setText(f"Focal Length: {int(fVal)} mm")
+        text += f"Focal Length: {int(fVal)} mm"
+
+        self.camTextNode.setText(text)
 
         task.delayTime = 1.0
         return task.again
