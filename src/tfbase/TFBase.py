@@ -232,8 +232,10 @@ class TFBase(ShowBase, FSM):
 
         # Set up the tracer for the audio system to calculate
         # sound occlusion.
-        tracer = PhysAudioTracer(self.physicsWorld, CollisionGroups.World)
-        self.audioEngine.setTracer(tracer)
+        #tracer = PhysAudioTracer(self.physicsWorld, CollisionGroups.World)
+        self.audioEngine.setTracer(self.physicsWorld, CollisionGroups.World)
+        self.particleMgr2.setTracer(self.physicsWorld)
+        self.particleMgr2.setTraceMask(CollisionGroups.World)
 
         self.wantParanoidClockSync = __debug__ and ConfigVariableBool('tf-paranoid-clock-sync', False).value
         self.wantClockOsd = __debug__ and ConfigVariableBool('tf-want-clock-osd', False).value
@@ -412,7 +414,7 @@ class TFBase(ShowBase, FSM):
         return task.cont
 
     def __updateParticles2(self, task):
-        self.particleMgr2.update(base.clockMgr.getDeltaTime())
+        self.particleMgr2.update(self.clock.frame_time)
         return task.cont
 
     def __updateAudioListener(self, task):
@@ -420,7 +422,7 @@ class TFBase(ShowBase, FSM):
         pos = ts.getPos()
         q = ts.getQuat()
 
-        vel = (pos - self.lastListenerPos) / base.clockMgr.getDeltaTime()
+        vel = (pos - self.lastListenerPos) / self.clock.dt
 
         self.audioEngine.set3dListenerAttributes(pos, q, vel)
 
