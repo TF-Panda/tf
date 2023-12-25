@@ -1124,6 +1124,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         base.simTaskMgr.remove('runControls')
         base.taskMgr.remove('calcView')
         base.taskMgr.remove('mouseMovement')
+        base.simTaskMgr.remove('mouseMovement')
         base.taskMgr.remove('hideSceneFreezeFrame')
 
         if self.inputTokens:
@@ -1167,6 +1168,7 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
         self.createVoiceCommandMenus()
 
         base.taskMgr.add(self.mouseMovement, 'mouseMovement')
+        base.simTaskMgr.add(self.mouseMovement, 'mouseMovement')
         base.taskMgr.add(self.calcViewTask, 'calcView', sort = 38)
 
         self.startControls()
@@ -1263,15 +1265,8 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
 
         self.controlsEnabled = True
 
-    def mouseMovement(self, task):
-        """
-        Runs every frame to get smooth mouse movement.  Delta is accumulated
-        over multiple frames for player command tick.
-        """
-
-        mw = base.mouseWatcherNode
-
-        doMovement = self.controlsEnabled and mw.hasMouse()
+    def sampleMouse(self):
+        doMovement = self.controlsEnabled# and mw.hasMouse()
         if self.playerState == TFPlayerState.Died and self.observerTarget not in (-1, self.doId):
             doMovement = False
 
@@ -1282,12 +1277,14 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             #    sens /= 2
             sizeX = base.win.size.x
             sizeY = base.win.size.y
-            if mouse_relative:
-                md = mw.getMouse()
-                sample = Vec2((md.x * 0.5 + 0.5) * sizeX, (md.y * 0.5 + 0.5) * sizeY)
-            else:
-                md = base.win.getPointer(0)
-                sample = Vec2(md.x, md.y)
+            #if mouse_relative:
+                #md = mw.getMouse()
+            #    md = base.win.getPointer(0)
+            #    sample = Vec2((md.x * 0.5 + 0.5) * sizeX, (md.y * 0.5 + 0.5) * sizeY)
+            #else:
+            md = base.win.getInputDevice(0).getPointer()
+            sample = Vec2(md.x, -md.y)
+            if not mouse_relative:
                 base.win.movePointer(0, sizeX // 2, sizeY // 2)
 
             delta = (sample - self.lastMouseSample) * sens
@@ -1297,6 +1294,16 @@ class DistributedTFPlayerOV(DistributedTFPlayer):
             self.viewAngles[2] = 0.0
             self.mouseDelta += delta
             self.lastMouseSample = sample
+
+    def mouseMovement(self, task):
+        """
+        Runs every frame to get smooth mouse movement.  Delta is accumulated
+        over multiple frames for player command tick.
+        """
+
+        #mw = base.mouseWatcherNode
+
+        self.sampleMouse()
         return task.cont
 
     def runControls(self, task):
