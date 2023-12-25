@@ -3,6 +3,100 @@ from panda3d.core import *
 from tf.tfbase import TFGlobals
 from tf.tfbase.TFGlobals import TFTeam
 
+BulletImpactConcreteEffect = None
+def getBulletImpactConcreteEffect():
+    global BulletImpactConcreteEffect
+    if BulletImpactConcreteEffect:
+        return BulletImpactConcreteEffect.makeCopy()
+
+    sys = ParticleSystem2()
+    sys.setPoolSize(6)
+    emit = ContinuousParticleEmitter()
+    emit.setIntervalAndLitterSize(1, 1, 6, 6)
+    emit.setDuration(0.1)
+    sys.addEmitter(emit)
+
+    radiateDistance = 20
+
+    sys.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+    sys.addInitializer(P2_INIT_ScaleRandomRange(0.8, 1.3, False))
+    sys.addInitializer(P2_INIT_PositionSphereVolume((0, 1, 0), 0, 6, (1, 0, 1), (1, 1, 1), (0, 0, 0)))
+    sys.addInitializer(P2_INIT_VelocityRadiate((0, -radiateDistance, 0), 100, 200))
+    sys.addInitializer(P2_INIT_ColorRandomRange((0.532, 0.514, 0.475), (0.532, 0.514, 0.475)))
+    sys.addInitializer(P2_INIT_AnimationIndexRandom(0, 5))
+    #sys.addInitializer(P2_INIT_LifespanRandomRange(1, 1))
+    sys.addFunction(LinearMotionParticleFunction(0))
+    #sys.addFunction(LifespanKillerParticleFunction())
+    sys.addFunction(VelocityKillerParticleFunction(0.1))
+
+    coll = CollisionParticleConstraint()
+    coll.setSlide(0.3)
+    coll.setBounce(0.3)
+    coll.setRadiusScale(1.0)
+    sys.addConstraint(coll)
+
+    renderer = SpriteParticleRenderer2()
+    renderer.setRenderState(
+        RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/debris/debris_chunk.mto")),
+                         ColorAttrib.makeVertex())
+    )
+    renderer.setFitAnimationsToParticleLifespan(False)
+    sys.addRenderer(renderer)
+
+    sys.addForce(VectorParticleForce((0, 0, -600), -1))
+
+    smoke = ParticleSystem2()
+    smoke.setPoolSize(3)
+    smokeEmit = ContinuousParticleEmitter()
+    smokeEmit.setIntervalAndLitterSize(1, 1, 1, 3)
+    smokeEmit.setDuration(0.1)
+    smoke.addEmitter(emit)
+
+    smoke.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
+    smoke.addInitializer(P2_INIT_ScaleRandomRange(3, 6, False))
+    smoke.addInitializer(P2_INIT_PositionSphereVolume((0, 4, 0), 0, 8, (1, 0, 1), (1, 1, 1), (0, 0, 0)))
+    smoke.addInitializer(P2_INIT_VelocityRadiate((0, -30, 0), 10, 25))
+    smoke.addInitializer(P2_INIT_ColorRandomRange((0.532, 0.514, 0.475), (0.532, 0.514, 0.475)))
+    smoke.addInitializer(P2_INIT_AnimationIndexRandom(0, 4))
+    smoke.addInitializer(P2_INIT_LifespanRandomRange(0.75, 1))
+    smoke.addInitializer(P2_INIT_AlphaRandomRange(0.15, 0.3))
+    smoke.addInitializer(P2_INIT_RotationVelocityRandomRange(5, 15, 1, True))
+    smoke.addFunction(LinearMotionParticleFunction(3.0))
+    smoke.addFunction(AngularMotionParticleFunction())
+    smoke.addFunction(LifespanKillerParticleFunction())
+    alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTExponential
+    seg.start = 0.0
+    seg.end = 1.0
+    seg.exponent = 4
+    seg.start_is_initial = True
+    seg.end_value = 0
+    alphaLerp.addSegment(seg)
+    smoke.addFunction(alphaLerp)
+    scaleLerp = LerpParticleFunction(LerpParticleFunction.CScale)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTLinear
+    seg.start = 0.0
+    seg.end = 1.0
+    seg.scale_on_initial = True
+    seg.start_value = 0.75
+    seg.end_value = 1.25
+    scaleLerp.addSegment(seg)
+    smoke.addFunction(scaleLerp)
+    smoke.addForce(VectorParticleForce((0, 0, 10)))
+    # Render particles as sprites with a smoke texture.
+    renderer = SpriteParticleRenderer2()
+    state = RenderState.make(MaterialAttrib.make(loader.loadMaterial("materials/effects/rockettrailsmoke.mto")),
+                            ColorAttrib.makeVertex())
+    renderer.setRenderState(state)
+    smoke.addRenderer(renderer)
+
+    sys.addChild(smoke)
+
+    BulletImpactConcreteEffect = sys
+    return BulletImpactConcreteEffect.makeCopy()
+
 ExplosionWallEffect = None
 def getExplosionWallEffect():
     global ExplosionWallEffect
