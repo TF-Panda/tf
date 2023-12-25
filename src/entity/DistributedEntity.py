@@ -73,7 +73,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         # Handle to the actual parent entity or node.
         self.parentEntity = base.hidden
 
-        self.viewOffset = Vec3()
+        self.viewOffset = Vec3(0, 0, 16)
 
         # Collision stuff
         self.fromCollideMask = CollisionGroups.World
@@ -958,7 +958,8 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
             # Returns the world-space center point for spatial audio
             # being emitted from this entity.  Spatial sounds can be
             # offset from this matrix.
-            return self.getMat(base.render)
+            mat = self.getNetTransform().getMat()
+            return Mat4.translateMat(self.viewOffset) * mat
 
     def dispatchTraceAttack(self, info, dir, tr):
         # TODO: Damage filter?

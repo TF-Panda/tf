@@ -454,7 +454,7 @@ class DistributedDispenser(BaseObject):
                 self.healSound = None
 
         def playHealSound(self):
-            self.healSound = self.emitSoundSpatial("Building_Dispenser.Heal", (0, 0, 32), loop=True)
+            self.healSound = self.emitSoundSpatial("Building_Dispenser.Heal", loop=True)
 
 if not IS_CLIENT:
     DistributedDispenserAI = DistributedDispenser

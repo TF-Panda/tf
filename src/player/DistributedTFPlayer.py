@@ -211,7 +211,7 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             if self == base.localAvatar:
                 self.emitSound("Fire.Engulf")
             else:
-                self.emitSoundSpatial("Fire.Engulf", (0, 0, 30))
+                self.emitSoundSpatial("Fire.Engulf")
 
     def onRemoveCondition(self, cond):
         if cond == self.CondBurning:
@@ -248,15 +248,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
             # Spatial sounds follow the head gib when gibbed.
             return self.gibs.getHeadMatrix()
         else:
-            # Return world space transform of player + view offset.
-            # Assumes no pitch or roll in angles.  Proper way would
-            # be to put view offset in a translation matrix and multiply
-            # node transform by that.  But since we never have pitch
-            # or roll in player angles, it is faster to just add the
-            # view offset onto the translation component.
-            trans = self.getMat(base.render)
-            trans.setRow(3, trans.getRow3(3) + self.viewOffset)
-            return trans
+            mat = self.getNetTransform().getMat()
+            return Mat4.translateMat(self.viewOffset) * mat
 
     def RecvProxy_rot(self, r, i, j, k):
         # Ignoring this because the player angles are set in TFPlayerAnimState.
