@@ -187,6 +187,7 @@ dclass DistributedEntity : DistributedObject {
   stopSound_sv(int8 channel) broadcast;
 
   projectDecal(string decalName, Position pos, UnitVector dir, float64 roll) broadcast;
+  impactEffect(Position pos, UnitVector norm, UnitVector traceDir) broadcast;
 };
 
 dclass DistributedGame : DistributedObject {

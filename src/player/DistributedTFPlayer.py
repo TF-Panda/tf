@@ -98,6 +98,9 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
 
         self.healerDoIds = []
 
+    def impactEffect(self, pos, norm, traceDir, excludeClients=[], client=None):
+        pass
+
     def isInRagdoll(self, target):
         return target.isPlayer() and (target.deathType == self.DTRagdoll) and target.ragdoll
 

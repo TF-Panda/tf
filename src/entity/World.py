@@ -41,6 +41,9 @@ class World(DistributedSolidEntity):
             self.sendUpdate('projectDecalWorld', [decalName, tr['endpos'], tr['norm'], random.uniform(0, 360), propIndex],
                             client=client, excludeClients=excludeClients)
 
+    def dispatchImpactEffect(self, tr, impactInfo, surfaceDef):
+        self.impactEffect(tr['endpos'], tr['norm'], tr['tracedir'])
+
     if IS_CLIENT:
 
         def parentDecal(self, np):

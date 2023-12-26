@@ -13,7 +13,7 @@ from panda3d.pphysics import *
 from tf.movement.GameMovement import g_game_movement
 from tf.movement.MoveData import MoveData
 from tf.movement.MoveType import MoveType
-from tf.tfbase import CollisionGroups, Sounds, TFFilters, TFGlobals
+from tf.tfbase import CollisionGroups, Sounds, TFFilters, TFGlobals, TFEffects
 from tf.tfbase.SurfaceProperties import (SurfaceProperties,
                                          SurfacePropertiesByPhysMaterial)
 from tf.weapon.TakeDamageInfo import TakeDamageInfo, calculateBulletDamageForce
@@ -487,20 +487,12 @@ class DistributedTFPlayerShared:
                     exclude = [self.owner]
                 else:
                     exclude = []
-                physMat = tr['mat']
-                surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
-                if not surfaceDef:
-                    surfaceDef = SurfaceProperties['default']
-                base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], excludeClients=exclude, volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
-                entity.traceDecal(surfaceDef.impactDecal, tr, excludeClients=exclude)
+                if entity.team != self.team:
+                    entity.traceImpact(tr, {'soundVol': impactVol}, exclude)
             else:
                 if base.cr.prediction.firstTimePredicted:
-                    physMat = tr['mat']
-                    surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
-                    if not surfaceDef:
-                        surfaceDef = SurfaceProperties['default']
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], volume=impactVol, chan=Sounds.Channel.CHAN_STATIC)
-                    entity.traceDecal(surfaceDef.impactDecal, tr)
+                    if entity.team != self.team:
+                        entity.traceImpact(tr, {'soundVol': impactVol})
 
             if doEffects:
                 # TODO

@@ -11,7 +11,7 @@ from panda3d.pphysics import *
 from panda3d.tf import PredictedObject, PredictionCopy, PredictionField
 
 from direct.directbase import DirectRender
-from tf.tfbase import CollisionGroups, Sounds, TFFilters
+from tf.tfbase import CollisionGroups, Sounds, TFFilters, TFEffects
 from tf.tfbase.SoundEmitter import SoundEmitter
 from tf.tfbase.SurfaceProperties import (SurfaceProperties,
                                          SurfacePropertiesByPhysMaterial)
@@ -147,6 +147,36 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
     def traceDecal(self, decalName, tr, excludeClients=[], client=None):
         pass
+
+    def impactEffect(self, pos, norm, traceDir, excludeClients=[], client=None):
+        if not IS_CLIENT:
+            self.sendUpdate('impactEffect', [pos, norm, traceDir], excludeClients=excludeClients, client=client)
+        else:
+            tmp = NodePath("tmp")
+            tmp.setPos(pos)
+            q = Quat()
+            lookAt(q, norm)
+            tmp.setQuat(q)
+            effect = TFEffects.getBulletImpactConcreteEffect()
+            effect.setInput(0, tmp, True)
+            base.queueParticleSystem(effect, base.dynRender, 0.1)
+
+    def traceImpact(self, tr, impactInfo, excludeClients=[], client=None):
+
+        # Emit the sound from the material.
+        physMat = tr['mat']
+        surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
+        if not surfaceDef:
+            surfaceDef = SurfaceProperties['default']
+        if not IS_CLIENT:
+            base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], excludeClients=excludeClients,
+                                        volume=impactInfo.get('soundVol', 1.0), chan=Sounds.Channel.CHAN_STATIC, client=client)
+        else:
+            base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'],
+                                        volume=impactInfo.get('soundVol', 1.0), chan=Sounds.Channel.CHAN_STATIC)
+        # Trace a decal on us.
+        self.traceDecal(surfaceDef.impactDecal, tr, excludeClients=excludeClients, client=client)
+        self.impactEffect(tr['endpos'], tr['norm'], tr['tracedir'], excludeClients=excludeClients, client=client)
 
     def isNetworkedEntity(self):
         return True
@@ -463,20 +493,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
 
             # Play bullet impact sound for material we hit.
             if not IS_CLIENT:
-                physMat = tr['mat']
-                surfaceDef = SurfacePropertiesByPhysMaterial.get(physMat)
-                if not surfaceDef:
-                    surfaceDef = SurfaceProperties['default']
-
-                if entity.owner is not None:
-                    # Make it non-spatialized for the client who got hit.
-                    entity.emitSound(surfaceDef.bulletImpact, client=entity.owner)
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], chan=Sounds.Channel.CHAN_STATIC, excludeClients=[entity.owner])
-                else:
-                    # Didn't hit a player entity, spatialize for all.
-                    base.world.emitSoundSpatial(surfaceDef.bulletImpact, tr['endpos'], chan=Sounds.Channel.CHAN_STATIC)
-
-                entity.traceDecal(surfaceDef.impactDecal, tr)
+                entity.traceImpact(tr, {'soundVol': 1.0})
 
             if not IS_CLIENT:
                 # Server-specific.

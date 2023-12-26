@@ -125,6 +125,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
 
         self.respawnRooms = set()
 
+    def impactEffect(self, pos, norm, traceDir, excludeClients=[], client=None):
+        pass
+
     def emitSound(self, soundName, volume=None, loop=False, chan=None, client=None, excludeClients=[]):
         if chan == Sounds.Channel.CHAN_WEAPON and client == self.owner:
             # Increase volume on local player weapon sounds.
