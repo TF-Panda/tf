@@ -32,6 +32,7 @@ csm-distance 1600
 csm-sun-distance 8000
 csm-fixed-film-size #t
 csm-border-bias 0.1
+csm-log-factor 1.5
 
 # pphysics/PhysX configuration
 phys-panda-mass-unit kilograms
@@ -107,16 +108,24 @@ textures-power-2 none
 cull-bin gui-popup 60 unsorted
 
 # Postprocessing config.
-hdr-enable 0
+hdr-enable 1
 ssao-enable 0
 bloom-enable 0
+
+hdr-exposure-method 1
+hdr-min-ev 9.0
+hdr-max-ev 11.5
+hdr-luminance-adaption-rate 3.5
+hdr-exposure-std-middle-grey 0.1321
+hdr-exposure-auto-method 0
+hdr-debug-text 0
 
 # Disable tone-mapping by default, as it matches original TF2.
 # The available tone-mappers are urchima, aces, and uncharted2.
 # In my opinion urchima looks the best, but they all introduce
 # a lot of contrast that make the game visually harder to read.
 tone-mapping-enable 1
-tone-mapping-algorithm urchima
+tone-mapping-algorithm aces
 tone-mapping-urchima-contrast 1.0
 
 # FMOD audio configuration.
@@ -261,8 +270,9 @@ motion-blur-enable 0
 
 # Specify the field-of-view of the viewmodel.
 # Let's use some preferred modern values as default.
-viewmodel-fov 54
+viewmodel-fov 70
 fov 90
+tf-use-min-viewmodels 1
 
 # Your mouse sensitivity (maps to original TF2).
 mouse-sensitivity 5.0
@@ -273,3 +283,5 @@ tf-water-reflections 1
 
 # For servers, the map to load on start.
 tf-map levels/ctf_2fort
+
+tf-show-damage-numbers 1

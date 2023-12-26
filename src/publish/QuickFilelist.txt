@@ -18,7 +18,7 @@ file $WINTOOLS/built/bin/TrueAudioNext.dll . WIN32
 
 # Python DLLs.
 file $PYTHON_BIN/python3.dll . WIN32
-file $PYTHON_BIN/python311.dll . WIN32
+file $PYTHON_BIN/python312.dll . WIN32
 file $PYTHON_BIN/vcruntime140.dll . WIN32
 file $PYTHON_BIN/vcruntime140_1.dll . WIN32
 file $PYTHON_BIN/DLLs/_bz2.pyd . WIN32
@@ -27,10 +27,11 @@ file $PYTHON_BIN/DLLs/_hashlib.pyd . WIN32
 file $PYTHON_BIN/DLLs/_lzma.pyd . WIN32
 file $PYTHON_BIN/DLLs/_socket.pyd . WIN32
 file $PYTHON_BIN/DLLs/_elementtree.pyd . WIN32
+file $PYTHON_BIN/DLLs/_wmi.pyd . WIN32
 file $PYTHON_BIN/DLLs/unicodedata.pyd . WIN32
 file $PYTHON_BIN/DLLs/pyexpat.pyd . WIN32
 file $PYTHON_BIN/DLLs/select.pyd . WIN32
-file $PYTHON_BIN/DLLs/libcrypto-1_1.dll . WIN32
+file $PYTHON_BIN/DLLs/libcrypto-3.dll . WIN32
 
 # DTOOL DLLs.
 file $DTOOL/built/lib/libdtool.dll . WIN32
