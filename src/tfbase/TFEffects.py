@@ -21,13 +21,23 @@ def getBulletImpactConcreteEffect():
     sys.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
     sys.addInitializer(P2_INIT_ScaleRandomRange(0.8, 1.3, False))
     sys.addInitializer(P2_INIT_PositionSphereVolume((0, 1, 0), 0, 6, (1, 0, 1), (1, 1, 1), (0, 0, 0)))
-    sys.addInitializer(P2_INIT_VelocityRadiate((0, -radiateDistance, 0), 100, 200))
+    sys.addInitializer(P2_INIT_VelocityRadiate((0, -radiateDistance, 0), 75, 250))
     sys.addInitializer(P2_INIT_ColorRandomRange((0.532, 0.514, 0.475), (0.532, 0.514, 0.475)))
     sys.addInitializer(P2_INIT_AnimationIndexRandom(0, 5))
+    sys.addInitializer(P2_INIT_LifespanRandomRange(1.5, 2))
     #sys.addInitializer(P2_INIT_LifespanRandomRange(1, 1))
     sys.addFunction(LinearMotionParticleFunction(0))
-    #sys.addFunction(LifespanKillerParticleFunction())
-    sys.addFunction(VelocityKillerParticleFunction(0.1))
+    sys.addFunction(LifespanKillerParticleFunction())
+
+    alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
+    seg = ParticleLerpSegment()
+    seg.type = seg.LTLinear
+    seg.start = 0.9
+    seg.end = 1
+    seg.start_value = 1
+    seg.end_value = 0
+    alphaLerp.addSegment(seg)
+    sys.addFunction(alphaLerp)
 
     coll = CollisionParticleConstraint()
     coll.setSlide(0.3)
@@ -159,8 +169,8 @@ def getExplosionWallEffect():
     exp2.addInitializer(P2_INIT_ScaleRandomRange(30, 80, False))
     exp2.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
     exp2.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 60, (1, 0, 1), (1, 1, 1), (0, 1, 0)))
+    #exp2.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.AScale, 0, 30, 80, P2_INIT_RemapAttribute.APos, 1, 28, 78))
     exp2.addInitializer(P2_INIT_VelocityRadiate((0, -radiateDistance, 0), 200, 300))
-    exp2.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.AScale, 0, 30, 80, P2_INIT_RemapAttribute.APos, 1, 28, 78))
     exp2.addInitializer(P2_INIT_AlphaRandomRange(100/255, 255/255))
     alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
     seg = ParticleLerpSegment()
@@ -251,8 +261,8 @@ def getExplosionWallEffect():
     exp4.addInitializer(P2_INIT_RotationRandomRange(0, 0, 360))
     exp4.addInitializer(P2_INIT_RotationVelocityRandomRange(20, 45, True))
     exp4.addInitializer(P2_INIT_PositionSphereVolume((0, 0, 0), 0, 30, (1, 0, 1), (1, 1, 1), (0, 1, 0)))
+    #exp4.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.AScale, 0, 10, 20, P2_INIT_RemapAttribute.APos, 1, 8, 18))
     exp4.addInitializer(P2_INIT_VelocityRadiate((0, -8, 0), 30, 75))
-    exp4.addInitializer(P2_INIT_RemapAttribute(P2_INIT_RemapAttribute.AScale, 0, 10, 20, P2_INIT_RemapAttribute.APos, 1, 8, 18))
     exp4.addInitializer(P2_INIT_AlphaRandomRange(100/255, 255/255))
     alphaLerp = LerpParticleFunction(LerpParticleFunction.CAlpha)
     seg = ParticleLerpSegment()
