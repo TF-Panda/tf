@@ -63,8 +63,8 @@ class Model(DirectObject):
         self.modelData = None
         self.model = ""
         self.bodygroups = {}
-        self.ignore('show-bounds')
-        self.ignore('hide-bounds')
+        #self.ignore('show-bounds')
+        #self.ignore('hide-bounds')
 
     def loadBodygroups(self):
         """
@@ -209,29 +209,23 @@ class Model(DirectObject):
             # No model.
             return False
 
-        self.modelNp = base.loader.loadModel(filename, okMissing=True)
+        # Go directly through the ModelPool first.
+        cached = ModelPool.getModel(filename, False)
+        if cached:
+            self.modelNp = NodePath(cached.copySubgraph())
+        else:
+            self.modelNp = base.loader.loadModel(filename, okMissing=True)
         if not self.modelNp or self.modelNp.isEmpty():
             self.notify.error("Could not load model %s" % filename)
             return False
         self.modelRootNode = self.modelNp.node()
-        if flatten and self.modelNp.find("**/+CharacterNode").isEmpty():
+        if not cached and flatten and self.modelNp.find("**/+CharacterNode").isEmpty():
             # Not a character, so flatten it out.
             self.modelNp.flattenStrong()
-        if False:#self.modelNp.getNumChildren() == 1:
-            # Get rid of the ModelRoot node.
-            # We need to instance the child so the ModelRoot is still a parent
-            # of the child and can properly change material groups.
-            np = self.modelNp.getChild(0)
-            np.detachNode()
-            # This makes our instance the first parent in the list, so NodePath::any_path()
-            # favors our instance, not the ModelRoot.
-            np2 = np.instanceTo(NodePath())
-            np.reparentTo(self.modelNp)
-            #print(np.node().getParents())
-            self.modelNp = np2
-            self.modelNode = self.modelNp.node()
-        else:
-            self.modelNode = self.modelRootNode
+        if not cached:
+            # Cache the model using the relative filename we loaded it with.
+            ModelPool.addModel(filename, self.modelNp.node().copySubgraph())
+        self.modelNode = self.modelRootNode
         # Cull the model's subgraph as a single unit.
         #self.modelNode.setFinal(True)
         self.modelData = self.modelRootNode.getCustomData()
@@ -262,10 +256,10 @@ class Model(DirectObject):
         if callOnChanged:
             self.onModelChanged()
 
-        if IS_CLIENT:
-            if base.showingBounds:
-                self.modelNp.showBounds()
-            self.accept('show-bounds', self.__showModelBounds)
-            self.accept('hide-bounds', self.__hideModelBounds)
+        #if IS_CLIENT:
+        #    if base.showingBounds:
+        #        self.modelNp.showBounds()
+        #    self.accept('show-bounds', self.__showModelBounds)
+        #    self.accept('hide-bounds', self.__hideModelBounds)
 
         return True

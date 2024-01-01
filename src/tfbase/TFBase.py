@@ -699,6 +699,8 @@ class TFBase(ShowBase, FSM):
         for pc in TFGlobals.ModelPrecacheList:
             mdl = loader.loadModel(pc)
             self.precache.append(mdl)
+            # Cache off our relative filename.
+            ModelPool.addModel(pc, mdl.node().copySubgraph())
 
             # Upload textures, vertex buffers, index buffers.
             mdl.prepareScene(self.win.getGsg())
