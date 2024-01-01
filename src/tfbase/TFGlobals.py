@@ -545,7 +545,10 @@ ModelPrecacheList = [
     "models/weapons/w_stickybomb_gib3",
     "models/weapons/w_stickybomb_gib4",
     "models/weapons/w_stickybomb_gib5",
-    "models/weapons/w_stickybomb_gib6"
+    "models/weapons/w_stickybomb_gib6",
+    "models/weapons/w_syringegun",
+    "models/weapons/w_syringe_proj",
+    "models/weapons/v_syringegun_medic"
 ]
 
 # Materials that we want to preload.

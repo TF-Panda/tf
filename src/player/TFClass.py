@@ -590,7 +590,7 @@ class MedicInfo:
         ]
     }
 
-    Weapons = [Weapon.MediGun, Weapon.BoneSaw]
+    Weapons = [Weapon.SyringeGun, Weapon.MediGun, Weapon.BoneSaw]
 
 class SniperInfo:
     Name = TFLocalizer.Sniper

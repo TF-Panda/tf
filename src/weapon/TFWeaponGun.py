@@ -20,6 +20,7 @@ if not IS_CLIENT:
     from .RocketProjectile import RocketProjectileAI
     from .DPipeBombProjectile import DPipeBombProjectileAI
     from .DistributedStickyBomb import DistributedStickyBombAI
+    from .SyringeProjectile import SyringeProjectileAI
 
 import random
 
@@ -99,6 +100,8 @@ class TFWeaponGun(BaseClass):
             self.firePipebomb(player)
         elif projType == TFProjectileType.PipebombRemote:
             self.fireStickyBomb(player)
+        elif projType == TFProjectileType.Syringe:
+            self.fireSyringe(player)
         else:
             assert False
 
@@ -185,6 +188,26 @@ class TFWeaponGun(BaseClass):
             lookAt(q, endPos - src)
 
         return (src, q)
+
+    def fireSyringe(self, player):
+        self.playSound(self.getSingleSound())
+        # Server only -- create the rocket.
+        if not IS_CLIENT:
+            offset = Vec3(23.5, 12.0, -3.0)
+            # TODO: if is ducking offset z = 8.0
+            src, q = self.getProjectileFireSetup(player, offset)
+            rocket = SyringeProjectileAI()
+            rocket.team = self.player.team
+            rocket.skin = TFGlobals.getTeamSkin(self.player.team)
+            rocket.setModel("models/weapons/w_syringe_proj")
+            rocket.setPos(src)
+            rocket.setQuat(q)
+            rocket.velocity = q.getForward() * 1000
+            rocket.shooter = player
+            rocket.inflictor = player
+            rocket.damage = self.weaponData[self.weaponMode]['damage']
+            rocket.damageType = self.damageType
+            base.net.generateObject(rocket, player.zoneId)
 
     def fireRocket(self, player):
         self.playSound(self.getSingleSound())

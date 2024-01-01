@@ -90,6 +90,8 @@ from tf.weapon.DistributedSniperRifle import DistributedSniperRifle/AI
 from tf.weapon.DistributedStickyBombLauncher import DistributedStickyBombLauncher/AI
 from tf.weapon.DistributedStickyBomb import DistributedStickyBomb/AI
 from tf.weapon.DistributedFlameThrower import DistributedFlameThrower/AI
+from tf.weapon.DistributedSyringeGun import DistributedSyringeGun/AI
+from tf.weapon.SyringeProjectile import SyringeProjectile/AI
 
 from tf.distributed.TFMagicWordManager/AI import TFMagicWordManager/AI
 
@@ -675,4 +677,10 @@ dclass TFMagicWordManager : DistributedObject {
 };
 
 dclass DistributedFuncRespawnRoom : DistributedTrigger {
+};
+
+dclass DistributedSyringeGun : TFWeaponGun {
+};
+
+dclass SyringeProjectile : DistributedChar {
 };
