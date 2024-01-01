@@ -64,7 +64,10 @@ class TFServerBase(HostBase):
 
         self.precache = []
         for pc in TFGlobals.ModelPrecacheList:
-            self.precache.append(loader.loadModel(pc))
+            mdl = loader.loadModel(pc)
+            self.precache.append(mdl)
+            # Cache off our relative filename.
+            ModelPool.addModel(pc, mdl.node().copySubgraph())
 
     def __garbageCollectStates(self, task):
         TransformState.garbageCollect()
