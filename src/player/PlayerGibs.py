@@ -40,7 +40,9 @@ class PlayerGibs:
                     surfaceProp = customData.getAttributeValue("surfaceprop").getString()
             surfaceDef = SurfaceProperties.get(surfaceProp)
             if not surfaceDef:
-                continue
+                physMat = PhysMaterial(1, 1, 0)
+            else:
+                physMat = surfaceDef.getPhysMaterial()
 
             # Setup physics for giblet piece.
             cinfo = mdl.modelRootNode.getCollisionInfo()
@@ -51,7 +53,7 @@ class PlayerGibs:
             else:
                 cmdata = PhysConvexMeshData(cpart.mesh_data)
                 cmesh = PhysConvexMesh(cmdata)
-            cshape = PhysShape(cmesh, surfaceDef.getPhysMaterial())
+            cshape = PhysShape(cmesh, physMat)
             cnode = PhysRigidDynamicNode("gib-%i" % i)
             cnode.addShape(cshape)
             cnode.computeMassProperties()
@@ -101,25 +103,32 @@ class PlayerGibs:
 
             self.gibs.append((cnp, mdl, trailEffect))
 
-        # Fade gibs out after 10 seconds.
-        self.track = Parallel()
-        stopParticleTrack = Sequence(Wait(1.5))
-        for _, _, effect in self.gibs:
-            if effect:
-                stopParticleTrack.append(Func(effect.softStop))
-        self.track.append(stopParticleTrack)
+        # Fade gibes out after 10 seconds.
+        self.fadeOutTask = base.taskMgr.doMethodLater(10.0, self.__fadeGibs, 'fadeGibs')
+        self.stopParticlesTask = base.taskMgr.doMethodLater(1.5, self.__stopParticles, 'stopGibParticles')
 
-        fadeTrackSeq = Sequence(Wait(10.0))
-        fadeTrack = Parallel()
-        for _, mdl, _ in self.gibs:
-            fadeTrack.append(Func(mdl.modelNp.setTransparency, True))
-            fadeTrack.append(LerpColorScaleInterval(mdl.modelNp, 0.75, (1, 1, 1, 0), (1, 1, 1, 1)))
-        fadeTrackSeq.append(fadeTrack)
-        fadeTrackSeq.append(Func(self.destroy))
-        self.track.append(fadeTrackSeq)
-        self.track.start()
+        self.startedFadeOut = False
 
         self.valid = True
+
+    def __stopParticles(self, task):
+        for _, _, effect in self.gibs:
+            if effect:
+                effect.softStop()
+        return task.done
+
+    def __fadeGibs(self, task):
+        if not self.startedFadeOut:
+            self.startedFadeOut = True
+            for _, mdl, _ in self.gibs:
+                mdl.modelNp.setTransparency(True)
+        alphaScale = max(0, 1 - (task.time / 0.75))
+        if alphaScale == 0:
+            self.destroy()
+            return task.done
+        for _, mdl, _ in self.gibs:
+            mdl.modelNp.setAlphaScale(alphaScale)
+        return task.cont
 
     def getHeadPosition(self):
         # Return the world-space COM of the head gib.
@@ -131,9 +140,12 @@ class PlayerGibs:
 
     def destroy(self):
         self.valid = False
-        if self.track:
-            self.track.finish()
-            self.track = None
+        if self.fadeOutTask:
+            self.fadeOutTask.remove()
+            self.fadeOutTask = None
+        if self.stopParticlesTask:
+            self.stopParticlesTask.remove()
+            self.stopParticlesTask = None
         if self.gibs:
             for gib, mdl, bloodEffect in self.gibs:
                 mdl.cleanup()
