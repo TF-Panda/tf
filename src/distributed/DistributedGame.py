@@ -32,6 +32,8 @@ ClusterColors = [
     LColor(0.5, 0.5, 1.0, 1.0)
 ]
 
+CachedTracer = None
+
 class DistributedGame(DistributedObject, DistributedGameBase):
 
     def __init__(self):
@@ -809,26 +811,34 @@ class DistributedGame(DistributedObject, DistributedGameBase):
         """
 
     def doTracer(self, start, end, doSound=True, delay=0.0):
-        #print("tracer", start, end)
+        global CachedTracer
+
         start = Point3(start[0], start[1], start[2])
         end = Point3(end[0], end[1], end[2])
         speed = 7500
-        color = Vec4(1.0, 0.9, 0.6, 1)
+
         traceDir = end - start
         traceLen = traceDir.length()
         traceDir /= traceLen
         length = traceLen / speed
-        segs = LineSegs('segs')
-        segs.setColor(color)
-        segs.moveTo(Point3(0))
-        segs.setColor(Vec4(0, 0, 0, 0))
-        segs.drawTo(Vec3(0, -1, 0))
-        segs.setThickness(4)
-        np = base.dynRender.attachNewNode(segs.create())
-        np.setLightOff(1)
-        np.setBin('fixed', 2)
+
+        if not CachedTracer:
+            color = Vec4(1.0, 0.9, 0.6, 1)
+            segs = LineSegs('segs')
+            segs.setColor(color)
+            segs.moveTo(Point3(0))
+            segs.setColor(Vec4(0, 0, 0, 0))
+            segs.drawTo(Vec3(0, -1, 0))
+            segs.setThickness(4)
+            np = NodePath(segs.create())
+            np.setLightOff(1)
+            np.setBin('fixed', 2)
+            np.lookAt(traceDir)
+            np.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
+            CachedTracer = np
+
+        np = CachedTracer.copyTo(base.dynRender)
         np.lookAt(traceDir)
-        np.setAttrib(ColorBlendAttrib.make(ColorBlendAttrib.MAdd, ColorBlendAttrib.OOne, ColorBlendAttrib.OOne), 1)
 
         tracerScale = min(128, traceLen)
 
