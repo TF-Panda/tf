@@ -14,7 +14,8 @@ class TacicalMode:
     Retreat = 0
     Ambush = 1
     Strafe = 2
-    COUNT = 3
+    Heal = 3
+    COUNT = 4
 
 class ConfidenceLevel:
     Low = 0
@@ -69,7 +70,9 @@ WeaponDists = {
     ),
 
     Class.Medic: (
-        ((0, 64), SECONDARY),
+        ((0, 512), PRIMARY),
+        ((0, 300), SECONDARY),
+        ((0, 64), MELEE),
     ),
 
     Class.Sniper: (
@@ -117,7 +120,7 @@ class EnemySelection:
 
         myEyes = self.bot.getEyePosition()
         for team, players in base.game.playersByTeam.items():
-            if team == self.bot.team:
+            if team == self.bot.team and self.bot.tfClass != Class.Medic:
                 continue
             for pl in players:
                 if pl == self.bot:
@@ -184,13 +187,36 @@ class EnemySelection:
 
         return points
 
+    def getHealTargetRating(self, player):
+        points = 0
+
+        toMe = (self.bot.getEyePosition() - player.getEyePosition())
+        toMeLen = toMe.length()
+        toMeDir = toMe.normalized()
+
+        # Points based on proximity.
+        points += TFGlobals.simpleSplineRemapValClamped(toMeLen, 0, 3000, 200, 0)
+
+        # Add points based on their hp pct.
+        hpPerct = player.health / player.maxHealth
+        points += TFGlobals.simpleSplineRemapValClamped(hpPerct, 0, 2, 200, 0)
+
+        return points
+
     def getBestEnemy(self):
         if not self.visiblePlayers:
             return None
 
+        isMedic = self.bot.tfClass == Class.Medic
+
         enemies = [x for x in self.visiblePlayers if x.team != self.bot.team]
+        if isMedic:
+            friends = [x for x in self.visiblePlayers if x.team == self.bot.team and x != self.bot]
+            healTargets = list(sorted(friends, key=lambda x: self.getHealTargetRating(x), reverse=True))
         aggressors = list(sorted(enemies, key=lambda x: self.getAggressionRating(x), reverse=True))
-        if aggressors:
+        if isMedic and healTargets:
+            return healTargets[0]
+        elif aggressors:
             return aggressors[0]
         else:
             return None
@@ -230,7 +256,10 @@ class DistributedTFPlayerBotAI(DistributedTFPlayerAI):
         self.accept('PlayerDied', self.__onPlayerDied)
 
     def selectTacticalMode(self):
-        if self.shouldRetreat():
+        if self.targetPlayer and self.targetPlayer.team == self.team:
+            self.tacticalMode = TacicalMode.Heal
+
+        elif self.shouldRetreat():
             self.tacticalMode = TacicalMode.Retreat
 
         elif self.nextTacticalModeChange <= globalClock.frame_time:
@@ -319,6 +348,21 @@ class DistributedTFPlayerBotAI(DistributedTFPlayerAI):
         perp.z = 0
         return perp.normalized()
 
+    def getHealTarget(self):
+        if not self.targetPlayer:
+            return None
+
+        q = Quat()
+        ang = Vec3(self.targetPlayer.viewAngles[0], 0, 0)
+        q.setHpr(ang)
+        lookDir = q.getForward()
+        lookDir *= random.uniform(128, 256)
+        lookDir.x += random.uniform(-0.1, 0.1)
+        lookDir.y += random.uniform(-0.1, 0.1)
+
+        pos = self.targetPlayer.getPos() - lookDir
+        return pos
+
     def __onPlayerDied(self, plyr):
         if plyr == self:
             # Forget the damages that everyone has done to me.
@@ -336,6 +380,9 @@ class DistributedTFPlayerBotAI(DistributedTFPlayerAI):
         self.weaponObjs = [base.air.doId2do[x] for x in self.weapons]
 
     def getBestWeaponForTargetDist(self, dist):
+        if self.tfClass == Class.Medic and self.targetPlayer and self.targetPlayer.team == self.team:
+            return 1
+
         currWpn = self.activeWeapon
         wpn = self.activeWeapon
 
@@ -528,6 +575,8 @@ class DistributedTFPlayerBotAI(DistributedTFPlayerAI):
                 self.targetMovePos = self.getRetreatTarget()
             elif self.tacticalMode == TacicalMode.Ambush:
                 self.targetMovePos = self.getAmbushTarget()
+            elif self.tacticalMode == TacicalMode.Heal:
+                self.targetMovePos = self.getHealTarget()
             else:
                 strafeDir = self.getStrafeTargetDir()
                 self.targetMovePos = self.getPos() + strafeDir * random.uniform(32, 128)
