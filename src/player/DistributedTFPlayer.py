@@ -60,6 +60,8 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         DistributedChar.__init__(self)
         DistributedTFPlayerShared.__init__(self)
 
+        self.entType = self.EntTypePlayer
+
         self.animState = TFPlayerAnimState(self)
 
         self.prevPlayerState = self.playerState
@@ -233,14 +235,6 @@ class DistributedTFPlayer(DistributedChar, DistributedTFPlayerShared):
         system = TFEffects.getOverhealedEffect(self.team)
         system.setInput(0, self.modelNp, False)
         return system
-
-    def isPlayer(self):
-        """
-        Returns True if this entity is a player.  Overridden in
-        DistributedTFPlayer to return True.  Convenience method
-        to avoid having to check isinstance() or __class__.__name__.
-        """
-        return True
 
     def getSpatialAudioCenter(self):
         if self.isInRagdoll(self):

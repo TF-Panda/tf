@@ -33,6 +33,9 @@ class BaseObject(BaseClass):
 
     def __init__(self):
         BaseClass.__init__(self)
+
+        self.entType = self.EntTypeObject
+
         self.builderDoId = -1
         self.modelIndex = -1
         self.objectState = ObjectState.Off
@@ -57,15 +60,6 @@ class BaseObject(BaseClass):
         self.sapperDoId = 0
         # The number of hits the engineer has made against the placed sapper.
         self.sapperHits = 0
-
-    def isObject(self):
-        """
-        Returns True if this entity is a building, such as a Sentry
-        or Dispenser.  Overriden in BaseObject to return True.
-        Convenience method to avoid having to check isinstance() or
-        __class__.__name__.
-        """
-        return True
 
     #def hasSapper(self):
     #    return False

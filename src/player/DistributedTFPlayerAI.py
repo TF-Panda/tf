@@ -74,6 +74,9 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
     def __init__(self):
         DistributedCharAI.__init__(self)
         DistributedTFPlayerShared.__init__(self)
+
+        self.entType = self.EntTypePlayer
+
         self.animState = TFPlayerAnimStateAI(self)
         self.commandContexts = []
         self.lastMovementTick = -1
@@ -589,14 +592,6 @@ class DistributedTFPlayerAI(DistributedCharAI, DistributedTFPlayerShared):
         if self.animState:
             # Re-fetch pose parameters on new model.
             self.animState.onPlayerModelChanged()
-
-    def isPlayer(self):
-        """
-        Returns True if this entity is a player.  Overridden in
-        DistributedTFPlayer to return True.  Convenience method
-        to avoid having to check isinstance() or __class__.__name__.
-        """
-        return True
 
     def pushExpression(self, name):
         self.sendUpdate('pushExpression', [name])

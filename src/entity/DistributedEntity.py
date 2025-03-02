@@ -36,11 +36,17 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
     # want to view cull the individual Geoms of the world geometry.
     MakeFinal = True
 
+    EntTypeOther = 0
+    EntTypePlayer = 1
+    EntTypeObject = 2
+
     def __init__(self, dynamicLighting=True):
         BaseClass.__init__(self)
         if not self.this:
             NodePath.__init__(self, "entity")
         EntityBase.__init__(self)
+
+        self.entType = self.EntTypeOther
 
         self.hitBoxes = []
 
@@ -209,7 +215,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         DistributedTFPlayer to return True.  Convenience method
         to avoid having to check isinstance() or __class__.__name__.
         """
-        return False
+        return self.entType == self.EntTypePlayer
 
     def isObject(self):
         """
@@ -218,7 +224,7 @@ class DistributedEntity(BaseClass, NodePath, EntityBase):
         Convenience method to avoid having to check isinstance() or
         __class__.__name__.
         """
-        return False
+        return self.entType == self.EntTypeObject
 
     def isDead(self):
         """
