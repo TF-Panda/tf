@@ -25,6 +25,7 @@ class TFMagicWordManager(DistributedObject):
             "probedbg": self.__toggleProbeDebug,
             "visdbg": self.__toggleVisDebug,
             "reloadshaders": self.__reloadShaders,
+            "regenshaders": self.__regenShaders,
             "toggleik": self.__toggleIk,
             "bounds": self.__toggleBounds,
             "wireframe": self.__toggleWireframe,
@@ -70,6 +71,9 @@ class TFMagicWordManager(DistributedObject):
     def __reloadShaders(self, _):
         ShaderManager.getGlobalPtr().reloadShaders()
         return "Shaders reloaded"
+
+    def __regenShaders(self, _):
+        ShaderManager.getGlobalPtr().reloadShaders(False)
 
     def __toggleIk(self, _):
         base.toggleIk()
