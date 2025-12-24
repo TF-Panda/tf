@@ -1,0 +1,447 @@
+#ifndef NETWORKCLASS_H
+#define NETWORKCLASS_H
+
+#include "datagram.h"
+#include "datagramIterator.h"
+#include "pvector.h"
+#include "pmap.h"
+
+class NetworkObject;
+
+/**
+ * Describes a field on a networked class that is to be serialized from a data source and
+ * deserialized on another end and stored.
+ *
+ * For most basic types, like ints, floats, etc, the field is capable of automatically
+ * reading the data source off of the entity and encoding the data.  Fixed length vectors of
+ * all these types are also supported.
+ *
+ * The field contains two different data types, one for the source/destination memory on the
+ * entity itself, and another for the actual encoding that is stored/sent over the network.
+ * These may be different to optimize network bandwidth.
+ *
+ * For integer types, the field may provide a fixed point divisor for encoding.  This is
+ * to encode floating point fields into fixed point float to reduce network bandwidth.
+ */
+struct NetworkField {
+  enum DataType {
+    DT_float,
+
+    DT_bool,
+
+    DT_int8,
+    DT_char,
+    DT_uint8,
+    DT_uchar,
+
+    DT_int16,
+    DT_short,
+    DT_uint16,
+    DT_ushort,
+
+    DT_int,
+    DT_int32,
+    DT_uint,
+    DT_uint32,
+
+    DT_int64,
+    DT_uint64,
+
+    DT_string,
+
+    // Nested NetworkClass/structure.
+    DT_class,
+  };
+
+  typedef void (*IndirectFetchFunc)(void *object, void *dest);
+  typedef void (*IndirectWriteFunc)(void *object, void *data);
+  typedef void *(*IndirectFetchPtrFunc)(void *object);
+  typedef void *(*IndirectWritePtrFunc)(void *object);
+
+  std::string name = "";
+
+  // What is the data type of the source/destination memory on the entity?
+  DataType source_type = NetworkField::DT_char;
+
+  // What is the data type of the encoded data for the field?
+  DataType encoding_type = NetworkField::DT_char;
+
+  // What is the byte offset into the entity's memory block where the
+  // source/destination memory resides?
+  size_t offset = 0u;
+
+  // To read array memory correctly, exactly how big is one element.
+  size_t stride = 0u;
+
+  // For arrays, how big is it?
+  size_t count = 1u;
+
+  // For float encoding.
+  int divisor = 1;
+  int modulo = 0;
+
+  const NetworkClass *net_class = nullptr;
+
+  size_t id = 0u;
+
+  IndirectFetchFunc indirect_fetch = nullptr;
+  IndirectFetchPtrFunc indirect_fetch_ptr = nullptr;
+  IndirectWriteFunc indirect_write = nullptr;
+  IndirectWritePtrFunc indirect_write_ptr = nullptr;
+
+  void write(void *object, Datagram &dg) const;
+  void read(void *object, DatagramIterator &scan) const;
+};
+
+template<typename T>
+struct NetworkFieldTypeTraits {
+};
+
+template<>
+struct NetworkFieldTypeTraits<float> {
+  static constexpr NetworkField::DataType type = NetworkField::DT_float;
+  static constexpr size_t count = 1u;
+};
+
+template<>
+struct NetworkFieldTypeTraits<int> {
+  static constexpr NetworkField::DataType type = NetworkField::DT_int32;
+  static constexpr size_t count = 1u;
+};
+
+template<>
+struct NetworkFieldTypeTraits<unsigned int> {
+  static constexpr NetworkField::DataType type = NetworkField::DT_uint32;
+  static constexpr size_t count = 1u;
+};
+
+struct NetworkRPC {
+
+  enum Flags {
+    F_none = 0,
+    F_clsend = 1 << 0,
+    F_airecv = 1 << 1,
+    F_ownsend = 1 << 2,
+    F_broadcast = 1 << 3,
+  };
+
+  std::string name;
+  unsigned int flags;
+
+  typedef void (*WriteFunc)(void *object, Datagram &dg);
+  typedef void (*ReadFunc)(void *object, DatagramIterator &dgi);
+};
+
+// Definition of a networked class and its serialized fields.
+class NetworkClass {
+public:
+  typedef NetworkObject *(*EntityFactoryFunc)();
+
+public:
+  inline NetworkClass(const std::string &name, EntityFactoryFunc func = nullptr, NetworkClass *parent = nullptr);
+
+  inline void set_parent(NetworkClass *cls);
+  inline NetworkClass *get_parent() const;
+
+  inline void add_field(NetworkField *field);
+
+  inline void set_factory_func(EntityFactoryFunc func);
+  inline EntityFactoryFunc get_factory_func() const;
+
+  inline void set_id(size_t id);
+  inline size_t get_id() const;
+
+  inline const std::string &get_name() const;
+
+  inline size_t get_num_fields() const;
+  inline NetworkField *get_field(size_t n) const;
+
+  inline size_t get_num_inherited_fields() const;
+  inline NetworkField *get_inherited_field(size_t n) const;
+
+  inline void set_stride(size_t stride);
+  inline size_t get_stride() const;
+
+  void inherit_fields();
+
+  void write(void *object, Datagram &dg) const;
+  void read(void *object, DatagramIterator &scan) const;
+
+  template<typename Cls, typename Var>
+  inline NetworkField *make_field(const std::string &name, Var Cls::*var);
+  template<typename Cls, typename Var>
+  inline NetworkField *make_field(const std::string &name, Var Cls::*var, NetworkField::DataType encoding, int divisor = 1, int modulo = 0);
+  template<typename Var>
+  inline NetworkField *make_indirect_field(const std::string &name, NetworkField::IndirectFetchFunc fetch, NetworkField::IndirectWriteFunc write);
+  template<typename Var>
+  inline NetworkField *make_indirect_field(const std::string &name, NetworkField::IndirectFetchFunc fetch, NetworkField::IndirectWriteFunc write, NetworkField::DataType encoding, int divisor = 1, int modulo = 0);
+  template<typename Cls, typename Var>
+  inline NetworkField *make_struct_field(const std::string &name, Var Cls::*var, NetworkClass *struct_class);
+  template<typename Var>
+  inline NetworkField *make_indirect_struct_field(const std::string &name, NetworkClass *struct_class, NetworkField::IndirectFetchFunc fetch, NetworkField::IndirectWriteFunc write);
+
+private:
+  std::string _name;
+  EntityFactoryFunc _factory_func;
+  size_t _id;
+  NetworkClass *_parent;
+  bool _built_inherited_fields;
+  size_t _stride;
+
+  typedef pvector<NetworkField *> Fields;
+  typedef pflat_hash_map<uint16_t, NetworkField *> FieldsByID;
+  typedef pflat_hash_map<std::string, NetworkField *> FieldsByName;
+  Fields _fields;
+  Fields _inherited_fields;
+  FieldsByID _fields_by_id;
+  FieldsByName _fields_by_name;
+};
+
+class NetworkClassRegistry {
+public:
+  void register_class(NetworkClass *cls);
+  void build_ids();
+
+private:
+  typedef pvector<NetworkClass *> Classes;
+  typedef pflat_hash_map<uint16_t, NetworkClass *> ClassesByID;
+  typedef pflat_hash_map<std::string, NetworkClass *> ClassesByName;
+  Classes _classes;
+  ClassesByID _classes_by_id;
+  ClassesByName _classes_by_name;
+
+public:
+  inline static NetworkClassRegistry *ptr();
+
+private:
+  static NetworkClassRegistry *_ptr;
+};
+
+inline NetworkClass::
+NetworkClass(const std::string &name, EntityFactoryFunc factory, NetworkClass *parent) :
+  _name(name),
+  _factory_func(factory),
+  _id(0u),
+  _built_inherited_fields(false),
+  _parent(parent),
+  _stride(0u)
+{
+}
+
+inline void NetworkClass::
+set_parent(NetworkClass *parent) {
+  _parent = parent;
+}
+
+inline NetworkClass *NetworkClass::
+get_parent() const {
+  return _parent;
+}
+
+inline void NetworkClass::
+add_field(NetworkField *field) {
+  _fields.push_back(field);
+}
+
+inline void NetworkClass::
+set_factory_func(NetworkClass::EntityFactoryFunc func) {
+  _factory_func = func;
+}
+
+inline NetworkClass::EntityFactoryFunc NetworkClass::
+get_factory_func() const {
+  return _factory_func;
+}
+
+inline const std::string &NetworkClass::
+get_name() const {
+  return _name;
+}
+
+inline void NetworkClass::
+set_id(size_t id) {
+  _id = id;
+}
+
+inline size_t NetworkClass::
+get_id() const {
+  return _id;
+}
+
+inline size_t NetworkClass::
+get_num_fields() const {
+  return _fields.size();
+}
+
+inline NetworkField *NetworkClass::
+get_field(size_t n) const {
+  nassertr(n < _fields.size(), nullptr);
+  return _fields[n];
+}
+
+inline size_t NetworkClass::
+get_num_inherited_fields() const {
+  return _inherited_fields.size();
+}
+
+inline NetworkField *NetworkClass::
+get_inherited_field(size_t n) const {
+  nassertr(n < _inherited_fields.size(), nullptr);
+  return _inherited_fields[n];
+}
+
+inline void NetworkClass::
+set_stride(size_t stride) {
+  _stride = stride;
+}
+
+inline size_t NetworkClass::
+get_stride() const {
+  return _stride;
+}
+
+inline NetworkClassRegistry *NetworkClassRegistry::
+ptr() {
+  if (_ptr == nullptr) {
+    _ptr = new NetworkClassRegistry;
+  }
+  return _ptr;
+}
+
+template<typename Cls, typename Var>
+constexpr size_t offset_of(Var Cls::*var) {
+  return reinterpret_cast<size_t>(
+    &(reinterpret_cast<Cls const volatile*>(0)->*var)
+  );
+}
+
+template<typename Cls, typename Var>
+inline NetworkField *NetworkClass::
+make_field(const std::string &name, Var Cls::*var) {
+  using T = std::remove_cv_t<Var>;
+  NetworkField *field = new NetworkField;
+  field->name = name;
+  field->source_type = NetworkFieldTypeTraits<T>::type;
+  field->count = NetworkFieldTypeTraits<T>::count;
+  field->stride = sizeof(T);
+  field->offset = offset_of(var);
+  field->encoding_type = field->source_type;
+  add_field(field);
+  return field;
+}
+
+template<typename Cls, typename Var>
+inline NetworkField *NetworkClass::
+make_field(const std::string &name, Var Cls::*var, NetworkField::DataType encoding_type, int divisor, int modulo) {
+  NetworkField *field = make_field(name, var);
+  field->encoding_type = encoding_type;
+  field->divisor = divisor;
+  field->modulo = modulo;
+  return field;
+}
+
+template<typename Var>
+inline NetworkField *NetworkClass::
+make_indirect_field(const std::string &name, NetworkField::IndirectFetchFunc fetch, NetworkField::IndirectWriteFunc write) {
+  using T = std::remove_cv_t<Var>;
+  NetworkField *field = new NetworkField;
+  field->name = name;
+  field->source_type = NetworkFieldTypeTraits<T>::type;
+  field->encoding_type = NetworkFieldTypeTraits<T>::type;
+  field->count = NetworkFieldTypeTraits<T>::count;
+  field->stride = sizeof(T);
+  field->indirect_fetch = fetch;
+  field->indirect_write = write;
+  add_field(field);
+  return field;
+}
+
+template<typename Var>
+inline NetworkField *NetworkClass::
+make_indirect_field(const std::string &name, NetworkField::IndirectFetchFunc fetch, NetworkField::IndirectWriteFunc write, NetworkField::DataType encoding_type, int divisor, int modulo) {
+  NetworkField *field = make_indirect_field(name, fetch, write);
+  field->encoding_type = encoding_type;
+  field->divisor = divisor;
+  field->modulo = modulo;
+  return field;
+}
+
+template<typename Cls, typename Var>
+inline NetworkField *NetworkClass::
+make_struct_field(const std::string &name, Var Cls::*var, NetworkClass *struct_class) {
+  using T = std::remove_cv_t<Var>;
+  assert(sizeof(T) == struct_class->get_stride());
+  NetworkField *field = new NetworkField;
+  field->name = name;
+  field->net_class = struct_class;
+  field->stride = struct_class->get_stride();
+  field->offset = offset_of(var);
+  add_field(field);
+  return field;
+}
+
+template<typename Var>
+inline NetworkField *NetworkClass::
+make_indirect_struct_field(const std::string &name, NetworkClass *struct_class, NetworkField::IndirectFetchFunc fetch, NetworkField::IndirectWriteFunc write) {
+  using T = std::remove_cv_t<Var>;
+  assert(sizeof(T) == struct_class->get_stride());
+  NetworkField *field = new NetworkField;
+  field->name = name;
+  field->net_class = struct_class;
+  field->stride = struct_class->get_stride();
+  field->indirect_fetch = fetch;
+  field->indirect_write = write;
+  add_field(field);
+  return field;
+}
+
+#define MAKE_NET_FIELD(cls, var, ...) \
+  _network_class->make_field<cls>(#var, &cls::var, __VA_ARGS__);
+
+#define MAKE_STRUCT_NET_FIELD(cls, var, struct_cls) \
+  _network_class->make_struct_field<cls>(#var, &cls::var, struct_cls);
+
+#define MAKE_INDIRECT_NET_FIELD(type, field_name, fetch, write, ...) \
+  _network_class->make_indirect_field<type>(#field_name, fetch, write, __VA_ARGS__);
+
+#define MAKE_INDIRECT_STRUCT_NET_FIELD(type, field_name, struct_cls, fetch, write) \
+  _network_class->make_indirect_struct_field<type>(#field_name, struct_cls, fetch, write);
+
+#define BEGIN_NET_FIELD(cls, var, ...) \
+  { \
+    NetworkField *field = MAKE_NET_FIELD(cls, var, __VA_ARGS__);
+#define END_NET_FIELD() \
+  }
+
+#define BEGIN_INDIRECT_NET_FIELD(type, field_name, fetch, write, ...) \
+  { \
+    NetworkField *field = MAKE_INDIRECT_NET_FIELD(type, field_name, fetch, write, __VA_ARGS__);
+#define END_INDIRECT_NET_FIELD() \
+  }
+
+#define BEGIN_STRUCT_NET_FIELD(cls, var, struct_cls) \
+  { \
+    NetworkField *field = MAKE_STRUCT_NET_FIELD(cls, var, struct_cls);
+#define END_STRUCT_NET_FIELD() \
+  }
+
+#define BEGIN_INDIRECT_STRUCT_NET_FIELD(type, field_name, struct_cls, fetch, write) \
+  { \
+    NetworkField *field = MAKE_INDIRECT_STRUCT_NET_FIELD(type, field_name, struct_cls, fetch, write);
+#define END_INDIRECT_STRUCT_NET_FIELD() \
+  }
+
+#define BEGIN_NETWORK_CLASS_NOBASE(cls) \
+  if (_network_class != nullptr) return; \
+  _network_class = new NetworkClass(#cls); \
+  _network_class->set_stride(sizeof(cls));
+
+#define BEGIN_NETWORK_CLASS(cls, parent) \
+  BEGIN_NETWORK_CLASS_NOBASE(cls) \
+  parent::init_network_class(); \
+  _network_class->set_parent(parent::get_type_network_class()); \
+
+#define END_NETWORK_CLASS() \
+  NetworkClassRegistry::ptr()->register_class(_network_class);
+
+#endif // NETWORKCLASS_H
