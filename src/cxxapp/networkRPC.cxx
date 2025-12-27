@@ -1,0 +1,92 @@
+#include "networkRPC.h"
+#include "indent.h"
+#include "networkClass.h"
+
+/**
+ * 
+ */
+std::string
+network_rpc_flags_string(unsigned int flags) {
+  if (flags == NetworkRPC::F_none) {
+    return "none";
+  }
+
+  pvector<NetworkRPC::Flags> set_flags;
+  if ((flags & NetworkRPC::F_airecv) != 0) {
+    set_flags.push_back(NetworkRPC::F_airecv);
+  }
+  if ((flags & NetworkRPC::F_clsend) != 0) {
+    set_flags.push_back(NetworkRPC::F_clsend);
+  }
+  if ((flags & NetworkRPC::F_broadcast) != 0) {
+    set_flags.push_back(NetworkRPC::F_broadcast);
+  }
+  if ((flags & NetworkRPC::F_ownsend) != 0) {
+    set_flags.push_back(NetworkRPC::F_ownsend);
+  }
+
+  std::ostringstream ss;
+
+  for (size_t i = 0; i < set_flags.size(); ++i) {
+    if (i > 0) {
+      ss << " | ";
+    }
+
+    switch (set_flags[i]) {
+    case NetworkRPC::F_airecv:
+      ss << "airecv";
+      break;
+    case NetworkRPC::F_broadcast:
+      ss << "broadcast";
+      break;
+    case NetworkRPC::F_clsend:
+      ss << "clsend";
+      break;
+    case NetworkRPC::F_ownsend:
+      ss << "ownsend";
+      break;
+    default:
+      break;
+    }
+  }
+
+  return ss.str();
+}
+
+/**
+ * 
+ */
+void
+NetworkRPC::write(Datagram &dg, void *msg_object) {
+  // object is the data structure containing message data to serialize.
+  // Just call into the network class to serialize.
+  net_class->write(msg_object, dg);
+}
+
+/**
+ * 
+ */
+void
+NetworkRPC::read(DatagramIterator &scan, void *object) {
+  // object when reading is the pointer to the networked object/entity the
+  // message is being received on.
+
+  // Stack allocate a temporary memory block to hold the deserialized message
+  // data.
+  void *deserialized_data = alloca(net_class->get_stride());
+  net_class->read(deserialized_data, scan);
+  // Invoke receive callback.
+  (*recv)(object, deserialized_data);
+}
+
+/**
+ * 
+ */
+void
+NetworkRPC::output(std::ostream &out, int indent_level) const {
+  indent(out, indent_level) << "rpc " << name << "\n";
+  indent(out, indent_level + 2)
+      << "attributes: " << network_rpc_flags_string(flags) << "\n";
+  indent(out, indent_level + 2) << "data:\n";
+  net_class->output(out, indent_level + 4);
+}

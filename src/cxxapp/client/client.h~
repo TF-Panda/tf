@@ -1,0 +1,13 @@
+#ifndef CLIENT_H
+#define CLIENT_H
+
+#include "pandabase.h"
+
+/**
+ * Manages the client's connection to the server.  Also manages networked objects replicated by the server.
+ */
+class Client {
+public:
+};
+
+#endif // CLIENT_H

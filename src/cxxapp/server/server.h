@@ -1,0 +1,108 @@
+#ifndef SERVER_H
+#define SERVER_H
+
+#include "datagramIterator.h"
+#define SERVER
+
+#ifdef SERVER
+
+#include "pandabase.h"
+#include "steamNetworkSystem.h"
+#include "referenceCount.h"
+#include "pmap.h"
+#include "pointerTo.h"
+#include "../networkObject.h"
+
+class SteamNetworkMessage;
+class SteamNetworkEvent;
+class NetworkObject;
+
+/**
+ * 
+ */
+class Server {
+public:
+  /**
+   * 
+   */
+  class ClientConnection : public ReferenceCount {
+  public:
+    enum ClientState {
+      CS_unverified,
+      CS_authenticating,
+      CS_verified,
+    };
+
+    int32_t id;
+    NetAddress address;
+    SteamNetworkConnectionHandle connection;
+    ClientState state;
+
+    // Managing how often we send world state updates to this client.
+    int update_rate;
+    float update_interval;
+    float next_update_time;
+
+    // How often we receive client commands from them.
+    int cmd_rate;
+    float cmd_interval;
+
+    float interp_amount;
+
+    typedef pflat_hash_map<DO_ID, NetworkObject *> ObjectsByDoID;
+    ObjectsByDoID _objects_by_do_id;
+  };
+
+private:
+  Server();
+
+  void handle_message(SteamNetworkMessage *msg);
+  void handle_net_callback(SteamNetworkEvent *event);
+  void handle_connecting_client(SteamNetworkConnectionHandle conn);
+  void handle_disconnecting_client(ClientConnection *client);
+  void handle_client_hello(ClientConnection *client, DatagramIterator &scan);
+
+  bool ensure_datagram_size(size_t size, DatagramIterator &scan, ClientConnection *client);
+
+public:
+  void startup(int port);
+  void run_frame();
+
+  void close_client_connection(ClientConnection *client);
+
+  bool can_accept_connection() const;
+
+  void delete_object(NetworkObject *obj);
+
+private:
+  SteamNetworkSystem *_net_sys;
+  SteamNetworkPollGroupHandle _poll_group;
+  SteamNetworkListenSocketHandle _listen_socket;
+
+  int _num_clients;
+
+  typedef pflat_hash_map<SteamNetworkConnectionHandle, PT(ClientConnection)> ClientConnections;
+  ClientConnections _client_connections;
+
+  std::string _password;
+
+public:
+  inline static Server *ptr();
+private:
+  static Server *_global_ptr;
+};
+
+/**
+ * 
+ */
+inline Server *Server::
+ptr() {
+  if (_global_ptr == nullptr) {
+    _global_ptr = new Server;
+  }
+  return _global_ptr;
+}
+
+#endif // SERVER
+
+#endif // SERVER_H

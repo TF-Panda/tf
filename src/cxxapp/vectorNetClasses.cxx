@@ -1,115 +1,166 @@
 #include "vectorNetClasses.h"
 
-#include "luse.h"
-
-NetworkClass *Position_NetClass = nullptr;
-NetworkClass *UnitVector_NetClass = nullptr;
-NetworkClass *Angles_NetClass = nullptr;
-NetworkClass *Quat_NetClass = nullptr;
-NetworkClass *Scale_NetClass = nullptr;
+#include "lvecBase4.h"
+#include "networkClass.h"
 
 template<typename T>
-static void *fetch_vec_ptr(void *obj) {
+static void *
+fetch_vec_ptr(void *obj) {
   return (void *)((T *)obj)->get_data();
 }
 
 template<typename T>
-static void fetch_vec_x(void *obj, void *dest) {
+static void
+fetch_vec_x(void *obj, void *dest) {
   *(float *)dest = ((T *)obj)->get_x();
 }
 
 template<typename T>
-static void fetch_vec_y(void *obj, void *dest) {
+static void
+fetch_vec_y(void *obj, void *dest) {
   *(float *)dest = ((T *)obj)->get_y();
 }
 
 template<typename T>
-static void fetch_vec_z(void *obj, void *dest) {
+static void
+fetch_vec_z(void *obj, void *dest) {
   *(float *)dest = ((T *)obj)->get_z();
 }
 
 template<typename T>
-static void fetch_vec_w(void *obj, void *dest) {
+static void
+fetch_vec_w(void *obj, void *dest) {
   *(float *)dest = ((T *)obj)->get_w();
 }
 
-// Sets up network class definitions for various encodings of Panda vectors
-// representing different things, eg, positions, angles, quat, unit vectors, etc.
+template<typename T>
+static void
+write_vec_x(void *object, void *data) {
+  ((T *)object)->set_x(*(float *)data);
+}
+
+template<typename T>
+static void
+write_vec_y(void *object, void *data) {
+  ((T *)object)->set_y(*(float *)data);
+}
+
+template<typename T>
+static void
+write_vec_z(void *object, void *data) {
+  ((T *)object)->set_z(*(float *)data);
+}
+
+template<typename T>
+static void
+write_vec_w(void *object, void *data) {
+  ((T *)object)->set_w(*(float *)data);
+}
+
+NetworkClass *Position_NetClass::_network_class = nullptr;
+NetworkClass *UnitVector_NetClass::_network_class = nullptr;
+NetworkClass *Quat_NetClass::_network_class = nullptr;
+NetworkClass *Scale_NetClass::_network_class = nullptr;
+NetworkClass *Angles_NetClass::_network_class = nullptr;
+
+/**
+ * 
+ */
+void
+Position_NetClass::init_network_class() {
+  BEGIN_NETWORK_CLASS_NOBASE(Position_NetClass);
+  MAKE_INDIRECT_NET_FIELD(float, x, fetch_vec_x<LVecBase3f>,
+                          write_vec_x<LVecBase3f>, NetworkField::DT_float);
+  MAKE_INDIRECT_NET_FIELD(float, y, fetch_vec_y<LVecBase3f>,
+                          write_vec_y<LVecBase3f>, NetworkField::DT_float);
+  MAKE_INDIRECT_NET_FIELD(float, z, fetch_vec_z<LVecBase3f>,
+                          write_vec_z<LVecBase3f>, NetworkField::DT_float);
+  END_NETWORK_CLASS();
+}
+
+/**
+ * 
+ */
+void
+UnitVector_NetClass::init_network_class() {
+  BEGIN_NETWORK_CLASS_NOBASE(UnitVector_NetClass);
+  MAKE_INDIRECT_NET_FIELD(float, x, fetch_vec_x<LVecBase3f>,
+                          write_vec_x<LVecBase3f>, NetworkField::DT_int16,
+                          1000);
+  MAKE_INDIRECT_NET_FIELD(float, y, fetch_vec_y<LVecBase3f>,
+                          write_vec_y<LVecBase3f>, NetworkField::DT_int16,
+                          1000);
+  MAKE_INDIRECT_NET_FIELD(float, z, fetch_vec_z<LVecBase3f>,
+                          write_vec_z<LVecBase3f>, NetworkField::DT_int16,
+                          1000);
+  END_NETWORK_CLASS();
+}
+
+/**
+ * 
+ */
+void
+Scale_NetClass::init_network_class() {
+  BEGIN_NETWORK_CLASS_NOBASE(Scale_NetClass);
+  MAKE_INDIRECT_NET_FIELD(float, x, fetch_vec_x<LVecBase3f>,
+                          write_vec_x<LVecBase3f>, NetworkField::DT_int16,
+                          1000);
+  MAKE_INDIRECT_NET_FIELD(float, y, fetch_vec_y<LVecBase3f>,
+                          write_vec_y<LVecBase3f>, NetworkField::DT_int16,
+                          1000);
+  MAKE_INDIRECT_NET_FIELD(float, z, fetch_vec_z<LVecBase3f>,
+                          write_vec_z<LVecBase3f>, NetworkField::DT_int16,
+                          1000);
+  END_NETWORK_CLASS();
+}
+
+/**
+ * 
+ */
+void
+Angles_NetClass::init_network_class() {
+  BEGIN_NETWORK_CLASS_NOBASE(Angles_NetClass);
+  MAKE_INDIRECT_NET_FIELD(float, x, fetch_vec_x<LVecBase3f>,
+                          write_vec_x<LVecBase3f>, NetworkField::DT_int16, 10,
+                          360);
+  MAKE_INDIRECT_NET_FIELD(float, y, fetch_vec_y<LVecBase3f>,
+                          write_vec_y<LVecBase3f>, NetworkField::DT_int16, 10,
+                          360);
+  MAKE_INDIRECT_NET_FIELD(float, z, fetch_vec_z<LVecBase3f>,
+                          write_vec_z<LVecBase3f>, NetworkField::DT_int16, 10,
+                          360);
+  END_NETWORK_CLASS();
+}
+
+/**
+ * 
+ */
+void
+Quat_NetClass::init_network_class() {
+  BEGIN_NETWORK_CLASS_NOBASE(Quat_NetClass);
+  MAKE_INDIRECT_NET_FIELD(float, x, fetch_vec_x<LVecBase4f>,
+                          write_vec_x<LVecBase4f>, NetworkField::DT_int16,
+                          10000);
+  MAKE_INDIRECT_NET_FIELD(float, y, fetch_vec_y<LVecBase4f>,
+                          write_vec_y<LVecBase4f>, NetworkField::DT_int16,
+                          10000);
+  MAKE_INDIRECT_NET_FIELD(float, z, fetch_vec_z<LVecBase4f>,
+                          write_vec_z<LVecBase4f>, NetworkField::DT_int16,
+                          10000);
+  MAKE_INDIRECT_NET_FIELD(float, w, fetch_vec_w<LVecBase4f>,
+                          write_vec_w<LVecBase4f>, NetworkField::DT_int16,
+                          10000);
+  END_NETWORK_CLASS();
+}
+
+/**
+ * 
+ */
 void
 init_vector_net_classes() {
-  if (Position_NetClass == nullptr) {
-    Position_NetClass = new NetworkClass("Position");
-    Position_NetClass->set_stride(sizeof(LVecBase3f));
-    // Just define it as a 3 float array.
-    NetworkField *field = new NetworkField;
-    field->name = "data";
-    field->offset = 0;
-    field->source_type = NetworkField::DT_float;
-    field->encoding_type = NetworkField::DT_float;
-    field->count = 3;
-    field->stride = sizeof(float);
-    Position_NetClass->add_field(field);
-    NetworkClassRegistry::ptr()->register_class(Position_NetClass);
-  }
-
-  if (UnitVector_NetClass == nullptr) {
-    UnitVector_NetClass = new NetworkClass("UnitVector");
-    UnitVector_NetClass->set_stride(sizeof(LVecBase3f));
-    NetworkField *field = new NetworkField;
-    field->name = "data";
-    field->offset = 0;
-    field->count = 3;
-    field->source_type = NetworkField::DT_float;
-    field->encoding_type = NetworkField::DT_int16;
-    field->divisor = 1000;
-    field->stride = sizeof(float);
-    UnitVector_NetClass->add_field(field);
-    NetworkClassRegistry::ptr()->register_class(UnitVector_NetClass);
-  }
-
-  if (Angles_NetClass == nullptr) {
-    Angles_NetClass = new NetworkClass("Angles");
-    Angles_NetClass->set_stride(sizeof(LVecBase3f));
-    NetworkField *field = new NetworkField;
-    field->name = "data";
-    field->offset = 0;
-    field->count = 3;
-    field->source_type = NetworkField::DT_float;
-    field->encoding_type = NetworkField::DT_int16;
-    field->divisor = 10;
-    field->modulo = 360;
-    field->stride = sizeof(float);
-    Angles_NetClass->add_field(field);
-    NetworkClassRegistry::ptr()->register_class(Angles_NetClass);
-  }
-
-  if (Quat_NetClass == nullptr) {
-    Quat_NetClass = new NetworkClass("Quat");
-    Quat_NetClass->set_stride(sizeof(LQuaternionf));
-    NetworkField *field = new NetworkField;
-    field->name = "data";
-    field->offset = 0;
-    field->count = 4;
-    field->source_type = NetworkField::DT_float;
-    field->encoding_type = NetworkField::DT_int16;
-    field->divisor = 10000;
-    field->stride = sizeof(float);
-    Quat_NetClass->add_field(field);
-    NetworkClassRegistry::ptr()->register_class(Quat_NetClass);
-  }
-
-  if (Scale_NetClass == nullptr) {
-    Scale_NetClass = new NetworkClass("Scale");
-    Scale_NetClass->set_stride(sizeof(LVecBase3f));
-    NetworkField *field = new NetworkField;
-    field->name = "data";
-    field->offset = 0;
-    field->count = 3;
-    field->source_type = NetworkField::DT_float;
-    field->encoding_type = NetworkField::DT_int16;
-    field->divisor = 1000;
-    field->stride = sizeof(float);
-    Scale_NetClass->add_field(field);
-    NetworkClassRegistry::ptr()->register_class(Scale_NetClass);
-  }
+  Position_NetClass::init_network_class();
+  Angles_NetClass::init_network_class();
+  Scale_NetClass::init_network_class();
+  UnitVector_NetClass::init_network_class();
+  Quat_NetClass::init_network_class();
 }

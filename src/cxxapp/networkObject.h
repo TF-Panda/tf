@@ -21,11 +21,17 @@ private:
   DO_ID _do_id;
 };
 
+/**
+ * 
+ */
 inline void NetworkObject::
 set_do_id(DO_ID do_id) {
   _do_id = do_id;
 }
 
+/**
+ * Returns the shared network identifier for this object.  The distributed object ID.
+ */
 inline DO_ID NetworkObject::
 get_do_id() const {
   return _do_id;

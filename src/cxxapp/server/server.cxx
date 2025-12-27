@@ -1,0 +1,240 @@
+#include "server.h"
+#include "datagramIterator.h"
+#include "steamnet_includes.h"
+
+#ifdef SERVER
+
+#include "notifyCategoryProxy.h"
+#include "pandabase.h"
+#include "steamNetworkConnectionInfo.h"
+#include "steamNetworkMessage.h"
+#include "../netMessages.h"
+
+Server *Server::_global_ptr = nullptr;
+
+NotifyCategoryDeclNoExport(server);
+NotifyCategoryDef(server, "tf");
+
+/**
+ *
+ */
+Server::Server() :
+_net_sys(SteamNetworkSystem::get_global_ptr()) {
+}
+
+/**
+ *
+ */
+void
+Server::startup(int port) {
+  _listen_socket = _net_sys->create_listen_socket(port);
+  _poll_group = _net_sys->create_poll_group();
+  server_cat.info() << "Server opened on port " << port << "\n";
+}
+
+/**
+ *
+ */
+void
+Server::handle_message(SteamNetworkMessage *msg) {
+  SteamNetworkConnectionHandle conn = msg->get_connection();
+  DatagramIterator &scan = msg->get_datagram_iterator();
+
+  auto it = _client_connections.find(conn);
+  if (it == _client_connections.end()) {
+    // Don't know this client?
+    server_cat.warning() << "Received message from unknown connection " << conn
+                         << "\n";
+    return;
+  }
+
+  ClientConnection *client = (*it).second;
+
+  NetMessages::MessageType msg_type = (NetMessages::MessageType)scan.get_uint16();
+
+  if (client->state == ClientConnection::CS_unverified) {
+    // Expect a hello.
+    if (msg_type == NetMessages::CL_hello) {
+      handle_client_hello(client, scan);
+    } else {
+      server_cat.warning()
+          << "Client " << conn
+          << " sent something other than hello in unverified state\n";
+      close_client_connection(client);
+    }
+  }
+}
+
+/**
+ *
+ */
+void
+Server::handle_client_hello(ClientConnection *client, DatagramIterator &scan) {
+
+  // Must have 2 byte string length for password.
+  if (!ensure_datagram_size(2u, scan, client)) {
+    return;
+  }
+  std::string password = scan.get_string();
+
+  Datagram dg;
+  dg.add_uint16(NetMessages::SV_hello_resp);
+
+  
+}
+
+/**
+ * Ensures that the given datagram has at least size bytes remaining.  If not,
+ * disconnects the client.
+ */
+bool
+Server::ensure_datagram_size(size_t size, DatagramIterator &scan,
+                             Server::ClientConnection *client) {
+  if (scan.get_remaining_size() < size) {
+    server_cat.warning() << "Truncated message from client "
+                         << client->connection << "\n";
+    close_client_connection(client);
+    return false;
+  }
+  return true;
+}
+
+/**
+ *
+ */
+void
+Server::handle_net_callback(SteamNetworkEvent *event) {
+  switch (event->get_state()) {
+  case SteamNetworkEnums::NCS_connecting:
+    // New client.
+    handle_connecting_client(event->get_connection());
+    break;
+  case SteamNetworkEnums::NCS_closed_by_peer:
+  case SteamNetworkEnums::NCS_problem_detected_locally:
+    // Disconnected client.
+    {
+      auto it = _client_connections.find(event->get_connection());
+      if (it == _client_connections.end()) {
+        server_cat.info() << "Connection " << event->get_connection()
+                          << " disconnected"
+                          << "but wasn't a recorded client, ignoring\n";
+	return;
+      }
+      server_cat.info() << "Client " << event->get_connection()
+                        << " disconnected\n";
+      handle_disconnecting_client((*it).second);
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+/**
+ * Handles a client requesting to connect to the server.
+ * If the connection is accepted, server needs client to send
+ * a hello message before they can be spawned in.
+ */
+void
+Server::handle_connecting_client(SteamNetworkConnectionHandle conn) {
+  auto it = _client_connections.find(conn);
+  if (it != _client_connections.end()) {
+    // Weird.
+    server_cat.warning() << "Connection " << conn << " already connected?\n";
+    return;
+  }
+
+  if (!can_accept_connection()) {
+    return;
+  }
+
+  if (!_net_sys->accept_connection(conn)) {
+    server_cat.warning() << "Couldn't accept connection " << conn << "\n";
+    return;
+  }
+
+  if (!_net_sys->set_connection_poll_group(conn, _poll_group)) {
+    server_cat.warning() << "Couldn't set poll group on connection " << conn
+                         << "\n";
+    _net_sys->close_connection(conn);
+    return;
+  }
+
+  SteamNetworkConnectionInfo info;
+  _net_sys->get_connection_info(conn, &info);
+
+  PT(ClientConnection) client = new ClientConnection;
+  client->connection = conn;
+  client->address = info.get_net_address();
+  client->id = -1;
+  // We need a hello message from the client.
+  client->state = ClientConnection::CS_unverified;
+  _client_connections.insert({conn, client});
+}
+
+/**
+ * Handles a client that is disconnecting from the server, for any reason
+ * (manual disconnect, lost connection, etc).
+ */
+void
+Server::handle_disconnecting_client(Server::ClientConnection *client) {
+  close_client_connection(client);
+}
+
+/**
+ *
+ */
+void
+Server::close_client_connection(Server::ClientConnection *client) {
+  // Delete all client owned objects.
+  for (ClientConnection::ObjectsByDoID::const_iterator it =
+           client->_objects_by_do_id.begin();
+       it != client->_objects_by_do_id.end(); ++it) {
+    NetworkObject *obj = (*it).second;
+    delete_object(obj);
+  }
+  client->_objects_by_do_id.clear();
+  
+  if (client->state == ClientConnection::CS_verified) {
+    // Only verified clients count towards player/client count.
+    --_num_clients;
+  }
+  
+  _net_sys->close_connection(client->connection);
+
+  // Remove from client table.
+  auto it = _client_connections.find(client->connection);
+  nassertv(it != _client_connections.end());
+  _client_connections.erase(it);
+}
+
+/**
+ *
+ */
+void
+Server::run_frame() {
+  // Process incoming messages.
+  SteamNetworkMessage msg;
+  while (_net_sys->receive_message_on_poll_group(_poll_group, msg)) {
+    handle_message(&msg);
+  }
+
+  // Run and process network system callbacks.
+  _net_sys->run_callbacks();
+
+  PT(SteamNetworkEvent) event = _net_sys->get_next_event();
+  while (event != nullptr) {
+    handle_net_callback(event);
+    event = _net_sys->get_next_event();
+  }
+}
+
+/**
+ *
+ */
+bool
+Server::can_accept_connection() const {
+  return true;
+}
+
+#endif  // SERVER

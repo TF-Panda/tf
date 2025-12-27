@@ -56,8 +56,3 @@ INLINE NodePath Entity::
 get_path() const {
   return _self_path;
 }
-
-INLINE NetworkClass *Entity::
-get_type_network_class() const {
-  return _network_class;
-}

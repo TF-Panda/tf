@@ -1,0 +1,11 @@
+#ifndef NETMESSAGES_H
+#define NETMESSAGES_H
+
+class NetMessages {
+  enum MessageType {
+    CL_hello,
+    
+  }
+};
+
+#endif // NETMESSAGES_H
