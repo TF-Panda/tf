@@ -158,3 +158,11 @@ void
 Client::interpolate_objects() {
   
 }
+
+/**
+ *
+ */
+void
+Client::handle_server_world_update(DatagramIterator &scan) {
+  
+}
