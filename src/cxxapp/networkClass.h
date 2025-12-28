@@ -10,7 +10,7 @@
 #include "networkClassRegistry.h"
 
 class NetworkObject;
-class NetworkRPC;
+struct NetworkRPC;
 
 /**
  * Definition of a networked class and its serialized fields.
@@ -80,18 +80,18 @@ private:
   size_t _stride;
 
   typedef pvector<NetworkField *> Fields;
-  typedef pflat_hash_map<uint16_t, NetworkField *> FieldsByID;
-  typedef pflat_hash_map<std::string, NetworkField *> FieldsByName;
-  
+  typedef pflat_hash_map<uint16_t, NetworkField *, integer_hash<uint16_t>> FieldsByID;
+  typedef pflat_hash_map<std::string, NetworkField *, string_hash> FieldsByName;
+
   typedef pvector<NetworkRPC *> RPCs;
-  typedef pflat_hash_map<uint16_t, NetworkRPC *> RPCsByID;
-  typedef pflat_hash_map<std::string, NetworkRPC *> RPCsByName;
-  
+  typedef pflat_hash_map<uint16_t, NetworkRPC *, integer_hash<uint16_t>> RPCsByID;
+  typedef pflat_hash_map<std::string, NetworkRPC *, string_hash> RPCsByName;
+
   Fields _fields;
   Fields _inherited_fields;
   FieldsByID _fields_by_id;
   FieldsByName _fields_by_name;
-  
+
   RPCs _rpcs;
   RPCs _inherited_rpcs;
   RPCsByID _rpcs_by_id;
@@ -99,7 +99,7 @@ private:
 };
 
 /**
- * 
+ *
  */
 inline NetworkClass::
 NetworkClass(const std::string &name, EntityFactoryFunc factory, NetworkClass *parent) :
@@ -113,7 +113,7 @@ NetworkClass(const std::string &name, EntityFactoryFunc factory, NetworkClass *p
 }
 
 /**
- * 
+ *
  */
 inline void NetworkClass::
 set_parent(NetworkClass *parent) {
@@ -121,7 +121,7 @@ set_parent(NetworkClass *parent) {
 }
 
 /**
- * 
+ *
  */
 inline NetworkClass *NetworkClass::
 get_parent() const {
@@ -129,7 +129,7 @@ get_parent() const {
 }
 
 /**
- * 
+ *
  */
 inline void NetworkClass::
 add_field(NetworkField *field) {
@@ -137,7 +137,7 @@ add_field(NetworkField *field) {
 }
 
 /**
- * 
+ *
  */
 inline void NetworkClass::
 add_rpc(NetworkRPC *rpc) {
@@ -145,7 +145,7 @@ add_rpc(NetworkRPC *rpc) {
 }
 
 /**
- * 
+ *
  */
 inline void NetworkClass::
 set_factory_func(NetworkClass::EntityFactoryFunc func) {
@@ -153,7 +153,7 @@ set_factory_func(NetworkClass::EntityFactoryFunc func) {
 }
 
 /**
- * 
+ *
  */
 inline NetworkClass::EntityFactoryFunc NetworkClass::
 get_factory_func() const {
@@ -161,7 +161,7 @@ get_factory_func() const {
 }
 
 /**
- * 
+ *
  */
 inline const std::string &NetworkClass::
 get_name() const {
@@ -169,7 +169,7 @@ get_name() const {
 }
 
 /**
- * 
+ *
  */
 inline void NetworkClass::
 set_id(size_t id) {
@@ -177,7 +177,7 @@ set_id(size_t id) {
 }
 
 /**
- * 
+ *
  */
 inline size_t NetworkClass::
 get_id() const {
@@ -185,7 +185,7 @@ get_id() const {
 }
 
 /**
- * 
+ *
  */
 inline size_t NetworkClass::
 get_num_fields() const {
@@ -193,7 +193,7 @@ get_num_fields() const {
 }
 
 /**
- * 
+ *
  */
 inline NetworkField *NetworkClass::
 get_field(size_t n) const {
@@ -202,7 +202,7 @@ get_field(size_t n) const {
 }
 
 /**
- * 
+ *
  */
 inline size_t NetworkClass::
 get_num_inherited_fields() const {
@@ -210,7 +210,7 @@ get_num_inherited_fields() const {
 }
 
 /**
- * 
+ *
  */
 inline NetworkField *NetworkClass::
 get_inherited_field(size_t n) const {
@@ -219,7 +219,7 @@ get_inherited_field(size_t n) const {
 }
 
 /**
- * 
+ *
  */
 inline size_t NetworkClass::
 get_num_rpcs() const {
@@ -227,7 +227,7 @@ get_num_rpcs() const {
 }
 
 /**
- * 
+ *
  */
 inline NetworkRPC *NetworkClass::
 get_rpc(size_t n) const {
@@ -236,7 +236,7 @@ get_rpc(size_t n) const {
 }
 
 /**
- * 
+ *
  */
 inline size_t NetworkClass::
 get_num_inherited_rpcs() const {
@@ -244,7 +244,7 @@ get_num_inherited_rpcs() const {
 }
 
 /**
- * 
+ *
  */
 inline NetworkRPC *NetworkClass::
 get_inherited_rpc(size_t n) const {
@@ -253,7 +253,7 @@ get_inherited_rpc(size_t n) const {
 }
 
 /**
- * 
+ *
  */
 inline void NetworkClass::
 set_stride(size_t stride) {
@@ -261,7 +261,7 @@ set_stride(size_t stride) {
 }
 
 /**
- * 
+ *
  */
 inline size_t NetworkClass::
 get_stride() const {
@@ -269,7 +269,7 @@ get_stride() const {
 }
 
 /**
- * 
+ *
  */
 template<typename Cls, typename Var>
 constexpr size_t offset_of(Var Cls::*var) {
@@ -279,7 +279,7 @@ constexpr size_t offset_of(Var Cls::*var) {
 }
 
 /**
- * 
+ *
  */
 template<typename Cls, typename Var>
 inline NetworkField *NetworkClass::
@@ -297,7 +297,7 @@ make_field(const std::string &name, Var Cls::*var) {
 }
 
 /**
- * 
+ *
  */
 template<typename Cls, typename Var>
 inline NetworkField *NetworkClass::
@@ -310,7 +310,7 @@ make_field(const std::string &name, Var Cls::*var, NetworkField::DataType encodi
 }
 
 /**
- * 
+ *
  */
 template<typename Var>
 inline NetworkField *NetworkClass::
@@ -329,7 +329,7 @@ make_indirect_field(const std::string &name, NetworkField::IndirectFetchFunc fet
 }
 
 /**
- * 
+ *
  */
 template<typename Var>
 inline NetworkField *NetworkClass::
@@ -342,7 +342,7 @@ make_indirect_field(const std::string &name, NetworkField::IndirectFetchFunc fet
 }
 
 /**
- * 
+ *
  */
 template<typename Cls, typename Var>
 inline NetworkField *NetworkClass::
@@ -360,7 +360,7 @@ make_struct_field(const std::string &name, Var Cls::*var, NetworkClass *struct_c
 }
 
 /**
- * 
+ *
  */
 template<typename Var>
 inline NetworkField *NetworkClass::

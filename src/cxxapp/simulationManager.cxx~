@@ -1,9 +1,0 @@
-#include "simulationManager.h"
-
-/**
- *
- */
-void
-SimulationManager::run_simulation() {
-
-}

@@ -1,8 +1,0 @@
-#ifndef SIMULATIONMANAGER_H
-#define SIMULATIONMANAGER_H
-
-#include "pandabase.h"
-
-
-
-#endif // SIMULATIONMANAGER_H

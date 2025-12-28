@@ -25,8 +25,8 @@ public:
 
 private:
   typedef pvector<NetworkClass *> Classes;
-  typedef pflat_hash_map<uint16_t, NetworkClass *> ClassesByID;
-  typedef pflat_hash_map<std::string, NetworkClass *> ClassesByName;
+  typedef pflat_hash_map<uint16_t, NetworkClass *, integer_hash<uint16_t>> ClassesByID;
+  typedef pflat_hash_map<std::string, NetworkClass *, string_hash> ClassesByName;
   Classes _classes;
   ClassesByID _classes_by_id;
   ClassesByName _classes_by_name;

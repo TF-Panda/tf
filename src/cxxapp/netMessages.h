@@ -29,6 +29,11 @@ public:
     CL_ping,
     CL_inform_ping,
     SV_ping_resp,
+
+    CL_add_interest,
+    CL_remove_interest,
+    CL_set_interest,
+    SV_interest_complete,
   };
 };
 

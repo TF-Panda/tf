@@ -8,18 +8,19 @@
 #include "pointerTo.h"
 #include "steamNetworkSystem.h"
 #include "steamnet_includes.h"
+#include "../simulationManager.h"
 
 /**
  * Manages the client's connection to the server.  Also manages networked
  * objects replicated by the server.
  */
-class Client {
+class Client : public SimulationManager {
 public:
   inline Client();
 
   void try_connect(const NetAddress &addr);
-  void run_frame();
-  
+  virtual void run_simulation() override;
+
   void interpolate_objects();
 
   inline NetworkObject *get_do(DO_ID id) const;
@@ -30,7 +31,7 @@ public:
   inline float get_server_tick_interval() const;
 
   void disconnect();
-  
+
   void delete_all_objects();
 
 private:
@@ -39,6 +40,10 @@ private:
 
   void handle_server_hello_resp(DatagramIterator &scan);
   void handle_server_world_update(DatagramIterator &scan);
+  void handle_generate_object(DatagramIterator &scan);
+
+  bool unpack_object_state(DatagramIterator &scan, NetworkObject *obj);
+  void unpack_server_snapshot(DatagramIterator &scan);
 
 private:
   bool _connected;
@@ -49,8 +54,12 @@ private:
 
   int _server_tick_rate;
   float _server_tick_interval;
+  int _server_tick_count;
+  float _last_server_tick_time;
+  int _delta_tick;
+  float _last_update_time;
 
-  typedef pflat_hash_map<DO_ID, PT(NetworkObject)> ObjectMap;
+  typedef pflat_hash_map<DO_ID, PT(NetworkObject), integer_hash<DO_ID>> ObjectMap;
   ObjectMap _doid2do;
 
   SteamNetworkSystem *_net_sys;
@@ -60,11 +69,16 @@ private:
  *
  */
 inline Client::Client() :
-    _connected(false),
-    _net_sys(SteamNetworkSystem::get_global_ptr()),
-    _server_tick_rate(0),
-    _server_tick_interval(0.0f),
-    _connection(INVALID_STEAM_NETWORK_CONNECTION_HANDLE) {
+  _connected(false),
+  _net_sys(SteamNetworkSystem::get_global_ptr()),
+  _server_tick_rate(0),
+  _server_tick_interval(0.0f),
+  _connection(INVALID_STEAM_NETWORK_CONNECTION_HANDLE),
+  _server_tick_count(0),
+  _last_server_tick_time(0.0f),
+  _delta_tick(-1),
+  _last_update_time(0.0f)
+{
 }
 
 /**

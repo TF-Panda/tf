@@ -1,8 +1,12 @@
+#ifdef CLIENT
+
 #include "client.h"
 #include "pnotify.h"
 #include "steamNetworkMessage.h"
 #include "steamnet_includes.h"
 #include "../netMessages.h"
+#include "../networkClassRegistry.h"
+#include "../networkClass.h"
 
 NotifyCategoryDeclNoExport(client);
 NotifyCategoryDef(client, "tf");
@@ -25,7 +29,7 @@ Client::try_connect(const NetAddress &addr) {
  *
  */
 void
-Client::run_frame() {
+Client::run_simulation() {
   if (_connection == INVALID_STEAM_NETWORK_CONNECTION_HANDLE) {
     // Nothing to do unless we have a connection to the server.
     return;
@@ -36,7 +40,7 @@ Client::run_frame() {
     SteamNetworkMessage msg;
     while (_net_sys->receive_message_on_connection(_connection, msg)) {
       handle_message(&msg);
-    }    
+    }
   }
 
   // Process network events.  We run these even if not connected
@@ -60,6 +64,12 @@ Client::handle_message(SteamNetworkMessage *msg) {
   case NetMessages::SV_hello_resp:
     handle_server_hello_resp(scan);
     break;
+  case NetMessages::SV_generate_object:
+    handle_generate_object(scan);
+    break;
+  case NetMessages::SV_world_update:
+    handle_server_world_update(scan);
+    break;
   default:
     client_cat.warning() << "Don't know how to handle msg type " << msg_type
                          << " from server\n";
@@ -78,11 +88,71 @@ Client::handle_server_hello_resp(DatagramIterator &scan) {
     client_cat.info() << "Signed onto server\n";
     _server_tick_rate = scan.get_uint8();
     _server_tick_interval = 1.0f / _server_tick_rate;
-    
+
   } else {
     _disconnect_reason = scan.get_string();
     client_cat.warning() << "Failed to sign onto server: "  << _disconnect_reason << "\n";
     disconnect();
+  }
+}
+
+struct GeneratedObject {
+  NetworkObject *obj;
+  bool has_state;
+};
+
+/**
+ *
+ */
+void Client::
+handle_generate_object(DatagramIterator &scan) {
+  NetworkClassRegistry *reg = NetworkClassRegistry::ptr();
+
+  pvector<GeneratedObject> generated_objs;
+
+  // Generate message can contain multiple objects.
+  while (scan.get_remaining_size() > 0) {
+    uint16_t classid = scan.get_uint16();
+    DO_ID doid = scan.get_uint32();
+    ZONE_ID zoneid = scan.get_uint32();
+    bool has_state = scan.get_bool();
+
+    NetworkClass *net_class = reg->get_class_by_id(classid);
+    nassertv(net_class != nullptr);
+
+    if (net_class == nullptr) {
+      client_cat.warning()
+        << "Received generate for unknown class id: " << classid << "\n";
+        return;
+    }
+
+    NetworkClass::EntityFactoryFunc factory = net_class->get_factory_func();
+    nassertv(factory != nullptr);
+
+    PT(NetworkObject) obj = (*factory)();
+    obj->set_do_id(doid);
+    obj->set_zone_id(zoneid);
+    _doid2do.insert({ doid, obj });
+
+    obj->pre_generate();
+
+    GeneratedObject gen;
+    gen.obj = obj;
+    gen.has_state = has_state;
+    generated_objs.push_back(std::move(gen));
+
+    // Unpack state.
+    if (has_state) {
+      unpack_object_state(scan, obj);
+    }
+  }
+
+  for (size_t i = 0; i < generated_objs.size(); ++i) {
+    const GeneratedObject &gen = generated_objs[i];
+    if (gen.has_state) {
+      gen.obj->post_data_update();
+    }
+    gen.obj->generate();
   }
 }
 
@@ -130,7 +200,7 @@ Client::handle_event(SteamNetworkEvent *event) {
     _connected = false;
     _connection = INVALID_STEAM_NETWORK_CONNECTION_HANDLE;
     _server_address.clear();
-    
+
   } else if (state == SteamNetworkEnums::NCS_closed_by_peer ||
              state == SteamNetworkEnums::NCS_problem_detected_locally) {
     // Lost connection
@@ -156,7 +226,7 @@ Client::delete_all_objects() {
  */
 void
 Client::interpolate_objects() {
-  
+  //  float interp_time =
 }
 
 /**
@@ -164,5 +234,112 @@ Client::interpolate_objects() {
  */
 void
 Client::handle_server_world_update(DatagramIterator &scan) {
-  
+  int old_tick = _server_tick_count;
+  _server_tick_count = scan.get_uint32();
+
+  bool is_delta = scan.get_bool();
+
+  if (is_delta && _delta_tick < 0) {
+    // We requested a full update but got a delta compressed update.
+    // Ignore it.
+    _server_tick_count = old_tick;
+    return;
+  }
+
+  _last_server_tick_time = _server_tick_count * _server_tick_interval;
+
+  //TODO:
+  //_clock_drift_mgr->set_server_tick(_server_tick_count);
+
+  enter_simulation_time(_server_tick_count);
+
+  _last_update_time = get_client_time();
+
+  // TODO: PREDICTION STUFF
+
+  unpack_server_snapshot(scan);
+
+  // TODO: PREDICTION POST ENTITY PACKET RECEIVED
+
+  // Restore the true client tick count and frame time.
+  exit_simulation_time();
+
+  if (_delta_tick >= 0 || !is_delta) {
+    // We have a new delta reference.
+    _delta_tick = _server_tick_count;
+  }
 }
+
+/**
+ *
+ */
+bool Client::
+unpack_object_state(DatagramIterator &scan, NetworkObject *obj) {
+  NetworkClass *net_class = obj->get_network_class();
+  DO_ID doid = obj->get_do_id();
+
+  obj->pre_data_update();
+
+  int num_fields = scan.get_uint16();
+
+  if (client_cat.is_debug()) {
+    client_cat.debug()
+      << "Unpacking " << num_fields << " fields on object " << doid << "\n";
+  }
+
+  for (int i = 0; i < num_fields; ++i) {
+    int field_number = scan.get_uint16();
+
+    NetworkField *field = net_class->get_inherited_field(field_number);
+    if (field == nullptr) {
+      client_cat.error()
+        << "Inherited field " << field_number << " not found on " << doid << "\n";
+      return false;
+    }
+
+    field->read(obj, scan);
+  }
+
+  return true;
+}
+
+/**
+ *
+ */
+void Client::
+unpack_server_snapshot(DatagramIterator &scan) {
+  int num_objects = scan.get_uint16();
+
+  pvector<NetworkObject *> unpacked;
+  unpacked.reserve(num_objects);
+
+  for (int i = 0; i < num_objects; ++i) {
+    DO_ID doid = scan.get_uint32();
+    ObjectMap::const_iterator it = _doid2do.find(doid);
+    if (it == _doid2do.end()) {
+      client_cat.error()
+        << "State snapshot has data for DO ID " << doid << ", but we don't have "
+        << "that object in our table.\n";
+      return;
+    }
+
+    NetworkObject *obj = (*it).second;
+
+    if (!unpack_object_state(scan, obj)) {
+      client_cat.error()
+        << "Failed to unpack object state for DO " << doid << "\n";
+      return;
+    }
+
+    unpacked.push_back(obj);
+  }
+
+  // After unpacking all data, call post_data_update() on all the objects
+  // that had state updated.
+  for (size_t i = 0; i < unpacked.size(); ++i) {
+    NetworkObject *obj = unpacked[i];
+    obj->post_data_update();
+  }
+}
+
+#endif // CLIENT

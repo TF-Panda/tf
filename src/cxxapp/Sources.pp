@@ -12,9 +12,9 @@
 #define OTHER_LIBS dtool:m panda:m display:c pgraph:c pgraphnodes:c \
   dtoolbase:c dtoolutil:c pipeline:c linmath:c mathutil:c express:c \
   putil:c gobj:c device:c dgraph:c tform:c prc map:c shader:c event:c \
-  pphysics:c anim:c audio:c
+  pphysics:c anim:c audio:c steamnet:c
 
-#define USE_PACKAGES physx
+#define USE_PACKAGES physx valve_steamnet
 
 // TF2 client binary.
 #begin bin_target
