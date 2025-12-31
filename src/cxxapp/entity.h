@@ -19,15 +19,14 @@
 #include "pandaNode.h"
 #include "nodePath.h"
 #include "networkObject.h"
+#include "interpolatedVariable.h"
 
 class NetworkClass;
 
 /**
  * Base entity class.
  */
-class Entity : public PandaNode, public NetworkObject {
-  DECLARE_CLASS(Entity, PandaNode);
-
+class Entity : public NetworkObject {
 public:
   Entity(const std::string &name = "");
 
@@ -46,21 +45,34 @@ public:
   INLINE void set_abs_hpr(const LVecBase3 &hpr);
   INLINE LVecBase3 get_abs_hpr() const;
 
-  INLINE NodePath get_path() const;
+  INLINE NodePath get_node_path() const;
 
-  virtual void spawn();
-  virtual void destroy();
+  inline bool is_dead() const;
+
+  virtual void generate() override;
+  virtual void disable() override;
+
+private:
+  static void s_set_pos(LVecBase3f pos, void *ent);
+  static LVecBase3f s_get_pos(void *ent);
+  static void s_set_hpr(LVecBase3f hpr, void *ent);
+  static LVecBase3f s_get_hpr(void *ent);
 
 protected:
+  std::string _name;
   int _health;
   int _max_health;
+  int _parent_entity;
+  int _team;
+  LVector3 _view_offset;
 
-  float _charge_level;
+  // Path to node representing this entity.
+  NodePath _node_path;
 
-  LPoint3f _test_pos;
-
-  // Nodepath to myself.
-  NodePath _self_path;
+#ifdef CLIENT
+  PT(InterpolatedVec3f) _iv_pos;
+  PT(InterpolatedVec3f) _iv_hpr;
+#endif
 
 public:
   virtual NetworkClass *get_network_class() const override {
@@ -73,6 +85,14 @@ public:
 protected:
   static NetworkClass *_network_class;
 };
+
+/**
+ * Is the entity dead? Based on hp.
+ */
+inline bool Entity::
+is_dead() const {
+  return _max_health > 0 && _health <= 0;
+}
 
 #include "entity.I"
 

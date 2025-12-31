@@ -49,8 +49,15 @@ SimulationManager::run_frame() {
     enter_simulation_time(_tick_count, -1, tick_dt);
     set_restore_tick_count(false);
 
+    _sim_interrupted = false;
+
     // Actually run simulation.
     run_simulation();
+
+    if (_sim_interrupted) {
+      exit_simulation_time();
+      break;
+    }
 
     _prev_tick_count = _tick_count;
 
@@ -67,8 +74,8 @@ SimulationManager::run_frame() {
 /**
  *
  */
-void
-SimulationManager::run_simulation() {
+void SimulationManager::
+run_simulation() {
 }
 
 /**
@@ -227,4 +234,18 @@ exit_simulation_time() {
   _clock->set_frame_count(state.frame_count);
   _clock->set_mode(state.mode);
   --_simulation_depth;
+}
+
+/**
+ *
+ */
+void SimulationManager::
+reset_simulation(int tick) {
+  _prev_tick_count = tick;
+  _tick_count = tick;
+  _sim_interrupted = true;
+  _accum_time = 0.0f;
+  _prev_accum_time = 0.0f;
+  set_restore_tick_count(false);
+  calc_simulation_delta(tick);
 }

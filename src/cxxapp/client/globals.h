@@ -23,21 +23,7 @@
 class Player;
 class World;
 
-enum InputCommand {
-  IC_primary_attack = 1 << 0,
-  IC_secondary_attack = 1 << 1,
-  IC_move_forward = 1 << 2,
-  IC_move_back = 1 << 3,
-  IC_move_left = 1 << 4,
-  IC_move_right = 1 << 5,
-  IC_jump = 1 << 6,
-  IC_duck = 1 << 7,
-  IC_reload = 1 << 8,
-  IC_walk = 1 << 9,
-  IC_sprint = 1 << 10,
-  IC_interact = 1 << 11,
-  IC_pause = 1 << 12,
-};
+
 
 enum CollisionGroup {
   CG_world = 1 << 0,

@@ -25,10 +25,16 @@ generate() {
 void NetworkObject::
 disable() {
   nassertv(is_do_alive());
+#ifdef CLIENT
+  remove_from_interp_list(this);
+#endif
   _object_state = OS_disabled;
 }
 
 #ifdef CLIENT
+#include "client/client.h"
+
+pset<NetworkObject *> NetworkObject::_interp_list;
 
 /**
  * Records the current values for interpolated variables on this object for the
@@ -51,6 +57,8 @@ record_values_for_interpolation(float time, unsigned int flags) {
       entry.needs_interpolation = true;
     }
   }
+
+  add_to_interp_list(this);
 }
 
 /**
@@ -68,7 +76,7 @@ reset_interpolated_vars() {
  */
 void NetworkObject::
 store_last_networked_value() {
-  float time = 0.0f;
+  float time = GameClient::ptr()->get_client_time();
   for (InterpolatedVarEntry &entry: _interp_vars) {
     if ((entry.flags & IVF_exclude_auto_latch) != 0) {
       continue;
@@ -106,8 +114,10 @@ post_data_update() {
   }
 
   if (!_predictable) {
+    GameClient *cl = GameClient::ptr();
+    float time = cl->get_client_time();
     // If we're not predicting this object, record current values into interpolation buffer.
-    record_values_for_interpolation(0.0f, 0);
+    record_values_for_interpolation(time, InterpVarFlags::IVF_simulation);
   } else {
     // We're predicting this object.  Note the most recently networked values (the values we just got).
     store_last_networked_value();
@@ -126,6 +136,42 @@ pre_interpolate() {
  */
 void NetworkObject::
 interpolate(float time) {
+  if (_predictable) {
+    // TODO: fixup time for interpolating prediction results.
+    // see DistributedObject.py line 184
+  }
+
+  bool done = true;
+  if (time < _last_interpolation_time) {
+    // Went back in time, interpolate everything.
+    for (InterpolatedVarEntry &entry : _interp_vars) {
+      entry.needs_interpolation = true;
+    }
+  }
+
+  _last_interpolation_time = time;
+
+  for (InterpolatedVarEntry &entry : _interp_vars) {
+    if (!entry.needs_interpolation) {
+      continue;
+    }
+
+    if ((entry.flags & IVF_exclude_auto_interpolate) != 0) {
+      // We don't want to automatically interpolate this var.
+      continue;
+    }
+
+    int ret = entry.var->interpolate_into(time);
+    if (ret == 1) {
+      entry.needs_interpolation = false;
+    } else {
+      done = false;
+    }
+  }
+
+  if (done) {
+    remove_from_interp_list(this);
+  }
 }
 
 /**
@@ -133,6 +179,46 @@ interpolate(float time) {
  */
 void NetworkObject::
 post_interpolate() {
+}
+
+/**
+ *
+ */
+void NetworkObject::
+add_to_interp_list(NetworkObject *obj) {
+  _interp_list.insert(obj);
+}
+
+/**
+ *
+ */
+void NetworkObject::
+remove_from_interp_list(NetworkObject *obj) {
+  auto it = _interp_list.find(obj);
+  if (it != _interp_list.end()) {
+    _interp_list.erase(it);
+  }
+}
+
+/**
+ * Interpolates all networked objects needing interpolation for the current
+ * rendering time.
+ */
+void NetworkObject::
+interpolate_objects() {
+  GameClient *cl = GameClient::ptr();
+
+  InterpolationContext ctx;
+  ctx.enable_extrapolation(true);
+  ctx.set_last_timestamp(cl->network_to_client_time(cl->get_last_server_tick_time()));
+
+  // Make a copy of the interp set as objects may remove themselves from the live list.
+  pset<NetworkObject *> interp_list = _interp_list;
+  for (NetworkObject *obj : interp_list) {
+    obj->pre_interpolate();
+    obj->interpolate(cl->get_client_frame_time());
+    obj->post_interpolate();
+  }
 }
 
 #endif

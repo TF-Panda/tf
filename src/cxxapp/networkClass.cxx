@@ -1,4 +1,5 @@
 #include "networkClass.h"
+#include "networkField.h"
 #include "networkRPC.h"
 
 #include <cstddef>
@@ -66,7 +67,7 @@ NetworkClass::inherit_fields() {
 }
 
 /**
- * 
+ *
  */
 void
 NetworkClass::output(std::ostream &out, int indent_level) const {
@@ -84,5 +85,58 @@ NetworkClass::output(std::ostream &out, int indent_level) const {
   indent(out, indent_level + 2) << _inherited_rpcs.size() << " rpcs\n";
   for (size_t i = 0; i < _inherited_rpcs.size(); ++i) {
     _inherited_rpcs[i]->output(out, indent_level + 4);
+  }
+}
+
+/**
+ *
+ */
+void NetworkClass::
+construct_fields(void *object) const {
+  for (size_t i = 0; i < _inherited_fields.size(); ++i) {
+    NetworkField *field = _inherited_fields[i];
+    if (field->is_indirect()) {
+      continue;
+    }
+    if (field->source_type == NetworkField::DT_string || field->source_type == NetworkField::DT_datagram) {
+      unsigned char *data_ptr = (unsigned char *)object + field->offset;
+      for (size_t j = 0; j < field->count; ++j) {
+	if (field->source_type == NetworkField::DT_string) {
+	  new(data_ptr) std::string();
+	} else {
+	  new(data_ptr) Datagram();
+	}
+	data_ptr += field->stride;
+      }
+    } else if (field->source_type == NetworkField::DT_class) {
+      field->net_class->construct_fields((unsigned char *)object + field->offset);
+    }
+  }
+}
+
+/**
+ *
+ */
+void NetworkClass::
+destruct_fields(void *object) const {
+  for (size_t i = 0; i < _inherited_fields.size(); ++i) {
+    NetworkField *field = _inherited_fields[i];
+    if (field->is_indirect()) {
+      continue;
+    }
+    if (field->source_type == NetworkField::DT_string || field->source_type == NetworkField::DT_datagram) {
+      using string_type = std::string;
+      unsigned char *data_ptr = (unsigned char *)object + field->offset;
+      for (size_t j = 0; j < field->count; ++j) {
+	if (field->source_type == NetworkField::DT_string) {
+	  ((string_type *)data_ptr)->~string_type();
+	} else {
+	  ((Datagram *)data_ptr)->~Datagram();
+	}
+	data_ptr += field->stride;
+      }
+    } else if (field->source_type == NetworkField::DT_class) {
+      field->net_class->destruct_fields((unsigned char *)object + field->offset);
+    }
   }
 }

@@ -1,175 +1,181 @@
+#ifdef CLIENT
 
-#include "graphicsPipeSelection.h"
+#include "perspectiveLens.h"
+#include "client.h"
+#include "frameBufferProperties.h"
+#include "windowProperties.h"
 #include "graphicsEngine.h"
-#include "load_prc_file.h"
-#include "modelPool.h"
-#include "pointerTo.h"
-#include "player.h"
-#include "loader.h"
-#include "config_map.h"
+#include "graphicsPipeSelection.h"
+#include "graphicsPipe.h"
+#include "graphicsWindow.h"
+#include "frameRateMeter.h"
+#include "configVariableBool.h"
+#include "configVariableDouble.h"
 #include "config_shader.h"
-#include "configVariableInt.h"
-#include "luse.h"
+#include "../networkClasses.h"
+#include "../gameGlobals.h"
 #include "inputManager.h"
-#include "globals.h"
-#include "clockObject.h"
-#include "eventHandler.h"
-#include "physScene.h"
-#include "physSystem.h"
-#include "characterNode.h"
-#include "character.h"
-#include "mapLightingEffect.h"
-#include "mapRender.h"
-#include "mapRoot.h"
-#include "world.h"
+#include "localTFPlayer.h"
+#include "../tfPlayer.h"
 
-NodePath scene_root;
-PT(Player) player;
-NodePath camera;
-InputManager input;
-NodePath toon;
-PT(MapRender) map_render;
-PT(World) world;
-NodePath level_root;
+ConfigVariableBool show_frame_rate_meter
+("show-frame-rate-meter", false,
+ PRC_DESC("Toggles showing a basic frame rate meter in the top right corner of the window."));
 
-bool mouse_move_on = false;
+ConfigVariableDouble fov
+("fov", 75.0,
+ PRC_DESC("The field-of-view in degrees of the main camera lens."));
 
-PT(PhysScene) physics_world;
-
-static constexpr float walkspeed = 200.0f;
-static constexpr float maxspeed = 200.0f;
-
+/**
+ *
+ */
 void
-load_level(const Filename &level) {
-  PT(PandaNode) node = Loader::get_global_ptr()->load_sync(level);
-  NodePath np(node);
-  nassertv(node != nullptr);
-  //scene_root.attach_new_node(node);
-  MapData *mdata = DCAST(MapRoot, np.find("**/+MapRoot").node())->get_data();
-  map_render->set_map_data(mdata);
-  globals->map_data = mdata;
-  level_root = np;
+sign_on_callback(GameClient *cl, bool success, const std::string &msg) {
+  std::cerr << "Sign on callback: " << success << ", " << msg << "\n";
 }
 
+/**
+ *
+ */
 void
-calc_view() {
-  camera.set_pos(player->get_node_path().get_pos() + player->get_eye_offset());
-  camera.set_hpr(player->get_view_angles());
-}
-
-void
-start_mouse_movement() {
-  WindowProperties props;
-  props.set_cursor_hidden(true);
-  props.set_mouse_mode(WindowProperties::M_relative);
-  globals->win->request_properties(props);
-}
-
-void
-stop_mouse_movement() {
-  WindowProperties props;
-  props.set_cursor_hidden(false);
-  props.set_mouse_mode(WindowProperties::M_absolute);
-  globals->win->request_properties(props);
-}
-
-void
-toggle_mouse() {
-  mouse_move_on = !mouse_move_on;
-  if (mouse_move_on) {
-    start_mouse_movement();
+connect_callback(GameClient *cl, bool success, const NetAddress &addr) {
+  if (success) {
+    std::cerr << "Connected to server at " << addr << "\n";
   } else {
-    stop_mouse_movement();
+    std::cerr << "Failed to connect to server at " << addr << "\n";
   }
+
+  cl->send_hello(sign_on_callback);
 }
 
+/**
+ *
+ */
+void
+disconnect_callback(GameClient *cl) {
+  std::cerr << "Disconnected from server!\n";
+}
+
+/**
+ *
+ */
+void
+adjust_aspect_ratio(LVecBase2i size, PerspectiveLens *lens) {
+  float ratio = (float)size.get_x() / (float)size.get_y();
+  lens->set_aspect_ratio(ratio);
+}
+
+/**
+ * Main entry point for client process.
+ */
 int
 main(int argc, char *argv[]) {
-  init_libmap();
   init_libshader();
 
-  Entity::init_type();
-  Player::init_type();
-  World::init_type();
-  World::register_ent_factory();
+  init_network_classes();
 
-  Loader *loader = Loader::get_global_ptr();
-
+  //
+  // Graphics/scene graph initialization.
+  //
+  GraphicsEngine *graphics_engine = GraphicsEngine::get_global_ptr();
   GraphicsPipeSelection *selection = GraphicsPipeSelection::get_global_ptr();
   PT(GraphicsPipe) pipe = selection->make_default_pipe();
-  GraphicsEngine *engine = GraphicsEngine::get_global_ptr();
-  WindowProperties props = WindowProperties::get_default();
-  props.set_raw_mice(true);
-  GraphicsOutput *output = engine->make_output(pipe, "main-window", 0, FrameBufferProperties::get_default(), props, GraphicsPipe::BF_require_window | GraphicsPipe::BF_fb_props_optional);
-  PT(GraphicsWindow) window = DCAST(GraphicsWindow, output);
-  PT(DisplayRegion) region = window->make_display_region();
-  map_render = new MapRender("map");
-  scene_root = NodePath(map_render);
-  PT(PerspectiveLens) lens = new PerspectiveLens;
-  lens->set_min_fov((float)ConfigVariableInt("fov", 75) / (4./3.));
-  lens->set_aspect_ratio((4./3.));
-  PT(Camera) cam = new Camera("cam");
-  cam->set_lens(lens);
-  cam->set_camera_mask(BitMask32::bit(1));
-  camera = scene_root.attach_new_node(cam);
-  region->set_camera(camera);
 
-  globals = new Globals;
-  globals->camera = camera;
-  globals->render = scene_root;
-  globals->input = &input;
-  globals->win = window;
-
-  PhysSystem::ptr()->initialize();
-  physics_world = new PhysScene;
-  physics_world->set_gravity(LVector3(0, 0, -800));
-  physics_world->set_fixed_timestep(0.15);
-  globals->physics_world = physics_world;
-
-  engine->open_windows();
-
-  input.initialize(window);
-
-  load_level("levels/test_foundry");
-
-  world = new World;
-  world->spawn();
-
-  player = new Player;
-
-  ClockObject *clock = ClockObject::get_global_clock();
-
-  toon = NodePath(loader->load_sync("models/toon/dogm"));
-  toon.reparent_to(scene_root);
-  Character *tchar = DCAST(CharacterNode, toon.find("**/+CharacterNode").node())->get_character();
-  tchar->loop(0, true);
-  toon.set_effect(MapLightingEffect::make(BitMask32::bit(1), false));
-  toon.set_scale(16);
-  toon.set_h(180);
-
-  scene_root.ls();
-
-  //start_mouse_movement();
-
-  bool pause_was_down = input.get_button_value(IC_pause);
-
-  while (!window->is_closed()) {
-    bool pause_down = input.get_button_value(IC_pause);
-    if (pause_down) {
-      if (!pause_was_down) {
-        toggle_mouse();
-        pause_was_down = true;
-      }
-    } else {
-      pause_was_down = false;
-    }
-    physics_world->simulate(clock->get_frame_time());
-    input.update();
-    EventHandler::get_global_event_handler()->process_events();
-    player->move_player();
-    calc_view();
-    engine->render_frame();
+  WindowProperties win_props = WindowProperties::get_default();
+  FrameBufferProperties fb_props = FrameBufferProperties::get_default();
+  unsigned int window_flags = GraphicsPipe::BF_require_window | GraphicsPipe::BF_fb_props_optional;
+  GraphicsOutput *output  = graphics_engine->make_output(pipe, "main-window", 0, fb_props, win_props, window_flags);
+  if (output == nullptr) {
+    std::cerr << "Failed to open main window!\n";
+    return 1;
   }
+  GraphicsStateGuardian *gsg = output->get_gsg();
+  GraphicsWindow *window = DCAST(GraphicsWindow, output);
+
+  NodePath render("render");
+  globals.render = render;
+
+  PT(Camera) cam = new Camera("camera");
+  PT(PerspectiveLens) lens = new PerspectiveLens;
+  lens->set_aspect_ratio(4.0f / 3.0f);
+  lens->set_min_fov(fov.get_value() / (4.0f / 3.0f));
+  cam->set_lens(lens);
+  NodePath cam_path = render.attach_new_node(cam);
+
+  InputManager input;
+  input.initialize(window, cam);
+  //  input.enable_mouse();
+
+  // Set up globals.
+  globals.camera = cam_path;
+  globals.camera_node = cam;
+  globals.camera_lens = lens;
+  globals.input = &input;
+  globals.win = window;
+  globals.gsg = gsg;
+  globals.pipe = pipe;
+
+  globals.render.ls();
+
+  PT(DisplayRegion) display_region = window->make_display_region();
+  display_region->set_camera(cam_path);
+
+  // Wait for window to fully realize on screen.
+  graphics_engine->open_windows();
+
+  PT(FrameRateMeter) fps_meter = nullptr;
+  if (show_frame_rate_meter) {
+    // We want a frame rate meter.
+    fps_meter = new FrameRateMeter("frame-rate-meter");
+    fps_meter->setup_window(window);
+  }
+
+  // Connect to server.
+  NetAddress server_addr;
+  server_addr.set_host("127.0.0.1", 27015);
+
+  GameClient *cl = GameClient::ptr();
+  globals.simbase = cl;
+  globals.cr = cl;
+
+  cl->set_disconnect_callback(disconnect_callback);
+  cl->try_connect(server_addr, connect_callback);
+
+  LVecBase2i last_window_size = window->get_size();
+  adjust_aspect_ratio(last_window_size, lens);
+
+  // Main loop.
+  while (!window->is_closed()) {
+    LocalTFPlayer *local_player = globals.get_local_tf_player();
+
+    input.update();
+
+    if (local_player != nullptr) {
+      local_player->sample_mouse();
+    }
+
+    cl->run_frame();
+
+    NetworkObject::interpolate_objects();
+
+    // If we have a local player, have them calculate our view (camera position and angles).
+    if (local_player != nullptr) {
+      local_player->calc_view();
+    }
+
+    // Update lens for new aspect ratio if window was resized.
+    LVecBase2i window_size = window->get_size();
+    if (window_size != last_window_size) {
+      adjust_aspect_ratio(window_size, lens);
+      last_window_size = window_size;
+    }
+
+    graphics_engine->render_frame();
+  }
+
+  std::cerr << "Main window closed, exiting.\n";
 
   return 0;
 }
+
+#endif

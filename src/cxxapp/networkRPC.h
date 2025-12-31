@@ -20,6 +20,8 @@ struct NetworkRPC {
     F_airecv = 1 << 1, // Not used.
     F_ownsend = 1 << 2, // RPC may be sent by the client that owns the object to the AI.
     F_broadcast = 1 << 3, // RPC is sent to all clients that have network visibility on the object.
+    F_unreliable = 1 << 4, // RPC doesn't need to be sent reliably over the network.
+    F_ownrecv = 1 << 5, // For an AI sent message, automatically sends to client that owns the object.
   };
 
   std::string name = "";

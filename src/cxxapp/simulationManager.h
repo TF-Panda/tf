@@ -32,6 +32,11 @@ public:
   inline size_t get_tick_count() const;
   inline int get_tick_rate() const;
   inline float get_tick_interval() const;
+  inline int get_current_ticks_this_frame() const;
+  inline int get_current_frame_tick() const;
+  inline int get_total_ticks_this_frame() const;
+  inline int time_to_ticks(float time) const;
+  inline float ticks_to_time(int ticks) const;
 
   inline void set_simulation_delta(float delta);
   void calc_simulation_delta(int tick);
@@ -47,6 +52,8 @@ public:
   void set_restore_tick_count(bool flag);
   void enter_simulation_time(int tick_number, int time_tick = -1, float dt = -1.0f);
   void exit_simulation_time();
+
+  void reset_simulation(int tick);
 
 protected:
   size_t _tick_count;
@@ -64,6 +71,8 @@ protected:
   int _current_frame_tick;
   int _current_ticks_this_frame;
 
+  bool _sim_interrupted;
+
   pvector<ClockState> _saved_stack;
 };
 
@@ -80,7 +89,8 @@ SimulationManager() :
   _total_ticks_this_frame(0),
   _current_frame_tick(0),
   _current_ticks_this_frame(0),
-  _clock(ClockObject::get_global_clock())
+  _clock(ClockObject::get_global_clock()),
+  _sim_interrupted(false)
 {
 }
 
@@ -132,5 +142,44 @@ is_in_simulation_clock() const {
   return _simulation_depth > 0;
 }
 
+/**
+ *
+ */
+inline int SimulationManager::
+get_current_ticks_this_frame() const {
+  return _current_ticks_this_frame;
+}
+
+/**
+ *
+ */
+inline int SimulationManager::
+get_current_frame_tick() const {
+  return _current_frame_tick;
+}
+
+/**
+ *
+ */
+inline int SimulationManager::
+get_total_ticks_this_frame() const {
+  return _total_ticks_this_frame;
+}
+
+/**
+ *
+ */
+inline int SimulationManager::
+time_to_ticks(float time) const {
+  return (int)(time * _tick_rate);
+}
+
+/**
+ *
+ */
+inline float SimulationManager::
+ticks_to_time(int ticks) const {
+  return ticks * get_tick_interval();
+}
 
 #endif // SIMULATIONMANAGER_H

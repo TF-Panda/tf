@@ -2,9 +2,10 @@
 #include <cmath>
 #include "networkClass.h"
 #include "indent.h"
+#include <limits>
 
 /**
- * 
+ *
  */
 std::string
 network_field_type_string(NetworkField::DataType type) {
@@ -39,13 +40,15 @@ network_field_type_string(NetworkField::DataType type) {
     return "float32";
   case NetworkField::DT_class:
     return "class";
+  case NetworkField::DT_datagram:
+    return "datagram";
   default:
     return "";
   }
 }
 
 /**
- * 
+ *
  */
 void
 write_dg(Datagram &dg, int8_t data) {
@@ -63,7 +66,7 @@ write_dg(Datagram &dg, int16_t data) {
 }
 
 /**
- * 
+ *
  */
 void
 write_dg(Datagram &dg, uint16_t data) {
@@ -137,6 +140,7 @@ generic_int_write(Datagram &dg, NetworkField::DataType encoding_type,
   case NetworkField::DT_int16:
   case NetworkField::DT_short:
     write_dg(dg, (int16_t)source_val);
+    break;
   case NetworkField::DT_uint16:
   case NetworkField::DT_ushort:
     write_dg(dg, (uint16_t)source_val);
@@ -168,7 +172,7 @@ generic_int_write(Datagram &dg, NetworkField::DataType encoding_type,
 }
 
 /**
- * 
+ *
  */
 template<typename T>
 void
@@ -274,7 +278,7 @@ float_write(Datagram &dg, int divisor, float modulo, NetworkField::DataType enco
 }
 
 /**
- * 
+ *
  */
 static void
 float_read(unsigned char *data_ptr, int divisor,
@@ -337,6 +341,17 @@ NetworkField::write(void *object, Datagram &dg) const {
     // The field provides us with a function to copy the field memory
     // from somewhere into a local scratch buffer for us.
     void *scratch_ptr = alloca(stride * count);
+    data_ptr = (unsigned char *)scratch_ptr;
+    if (source_type == DT_string || source_type == DT_datagram) {
+      for (int i = 0; i < count; ++i) {
+	if (source_type == DT_string) {
+	  new(data_ptr) std::string();
+	} else {
+	  new(data_ptr) Datagram();
+	}
+	data_ptr += stride;
+      }
+    }
     (*indirect_fetch)(object, scratch_ptr);
     data_ptr = (unsigned char *)scratch_ptr;
 
@@ -349,6 +364,8 @@ NetworkField::write(void *object, Datagram &dg) const {
     // Use raw offset into entity memory block.
     data_ptr = (unsigned char *)object + offset;
   }
+
+  unsigned char *start_data_ptr = data_ptr;
 
   for (int i = 0; i < count; ++i) {
     switch (source_type) {
@@ -395,7 +412,21 @@ NetworkField::write(void *object, Datagram &dg) const {
       break;
 
     case DT_string:
-      write_dg(dg, *(std::string *)data_ptr);
+      {
+	//std::string val = *(std::string *)data_ptr;
+	write_dg(dg, *(std::string *)data_ptr);
+      }
+      break;
+
+    case DT_datagram:
+      {
+	Datagram *field_dg = (Datagram *)data_ptr;
+	size_t field_len = field_dg->get_length();
+	std::cerr << "write " << field_len << " bytes for dg field\n";
+	assert(field_len <= std::numeric_limits<uint16_t>::max());
+	dg.add_uint16(field_len);
+	dg.append_data(field_dg->get_data(), field_len);
+      }
       break;
 
     case DT_class:
@@ -409,10 +440,26 @@ NetworkField::write(void *object, Datagram &dg) const {
 
     data_ptr += stride;
   }
+
+  if (indirect_fetch != nullptr) {
+    // Destruct strings.
+    using string_type = std::string;
+    if (source_type == DT_string || source_type == DT_datagram) {
+      data_ptr = start_data_ptr;
+      for (int i = 0; i < count; ++i) {
+	if (source_type == DT_string) {
+	  ((string_type *)data_ptr)->~string_type();
+	} else {
+	  ((Datagram *)data_ptr)->~Datagram();
+	}
+	data_ptr += stride;
+      }
+    }
+  }
 }
 
 /**
- * 
+ *
  */
 void
 NetworkField::read(void *object, DatagramIterator &scan) const {
@@ -427,6 +474,19 @@ NetworkField::read(void *object, DatagramIterator &scan) const {
     // We will deserialize the field into a temporary structure that
     // will be copied into object memory by the indirect write function.
     data_ptr = (unsigned char *)alloca(stride * count);
+    start_data_ptr = data_ptr;
+    if (source_type == DT_string || source_type == DT_datagram) {
+      // We need to construct strings.
+      for (int i = 0; i < count; ++i) {
+	if (source_type == DT_string) {
+	  new(data_ptr) std::string();
+	} else {
+	  new(data_ptr) Datagram();
+	}
+	data_ptr += stride;
+      }
+      data_ptr = start_data_ptr;
+    }
 
   } else {
     // We have a fixed offset from the start of the object of where
@@ -480,6 +540,15 @@ NetworkField::read(void *object, DatagramIterator &scan) const {
     case DT_class:
       net_class->read(data_ptr, scan);
       break;
+    case DT_datagram:
+      {
+	Datagram *field_dg = (Datagram *)data_ptr;
+	uint16_t len = scan.get_uint16();
+	unsigned char *blob_data = (unsigned char *)scan.get_datagram().get_data() + scan.get_current_index();
+	field_dg->assign(blob_data, len);
+	scan.skip_bytes(len);
+      }
+      break;
     default:
       nassert_raise("Don't know how to read into source type " + network_field_type_string(source_type));
       break;
@@ -491,11 +560,25 @@ NetworkField::read(void *object, DatagramIterator &scan) const {
     // Pass our deserialized temp object into the write function.
     // Function should copy to real object memory.
     (*indirect_write)(object, start_data_ptr);
+
+    // Destruct strings.
+    if (source_type == DT_string || source_type == DT_datagram) {
+      using string_type = std::string;
+      data_ptr = start_data_ptr;
+      for (int i = 0; i < count; ++i) {
+	if (source_type == DT_string) {
+	  ((string_type *)data_ptr)->~string_type();
+	} else {
+	  ((Datagram *)data_ptr)->~Datagram();
+	}
+	data_ptr += stride;
+      }
+    }
   }
 }
 
 /**
- * 
+ *
  */
 void
 NetworkField::output(std::ostream &out, int indent_level) const {
@@ -513,6 +596,6 @@ NetworkField::output(std::ostream &out, int indent_level) const {
         << "in memory as " << network_field_type_string(source_type) << "["
         << count << "], stride " << stride << " bytes\n";
     indent(out, indent_level + 2)
-        << "encode as " << network_field_type_string(encoding_type);
+      << "encode as " << network_field_type_string(encoding_type) << "\n";
   }
 }

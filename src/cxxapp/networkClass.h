@@ -47,6 +47,8 @@ public:
 
   inline size_t get_num_inherited_rpcs() const;
   inline NetworkRPC *get_inherited_rpc(size_t n) const;
+  inline NetworkRPC *get_inherited_rpc_by_name(const std::string &name) const;
+  inline int find_inherited_rpc(const std::string &name) const;
 
   inline void set_stride(size_t stride);
   inline size_t get_stride() const;
@@ -57,6 +59,9 @@ public:
   void read(void *object, DatagramIterator &scan) const;
 
   void output(std::ostream &out, int indent = 0) const;
+
+  void construct_fields(void *object) const;
+  void destruct_fields(void *object) const;
 
   template<typename Cls, typename Var>
   inline NetworkField *make_field(const std::string &name, Var Cls::*var);
@@ -250,6 +255,34 @@ inline NetworkRPC *NetworkClass::
 get_inherited_rpc(size_t n) const {
   nassertr(n < _inherited_rpcs.size(), nullptr);
   return _inherited_rpcs[n];
+}
+
+/**
+ * Returns the RPC on the network class with the given name, or nullptr if no
+ * such RPC exists.
+ */
+inline NetworkRPC *NetworkClass::
+get_inherited_rpc_by_name(const std::string &name) const {
+  int idx = find_inherited_rpc(name);
+  if (idx != -1) {
+    return _inherited_rpcs[idx];
+  } else {
+    return nullptr;
+  }
+}
+
+/**
+ *
+ */
+inline int NetworkClass::
+find_inherited_rpc(const std::string &name) const {
+  for (int i = (int)_inherited_rpcs.size() - 1; i >= 0; --i) {
+    NetworkRPC *rpc = _inherited_rpcs[i];
+    if (rpc->name == name) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 /**

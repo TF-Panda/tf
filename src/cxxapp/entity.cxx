@@ -14,8 +14,8 @@
 #include "entity.h"
 #include "networkClass.h"
 #include "vectorNetClasses.h"
+#include "gameGlobals.h"
 
-TypeHandle Entity::_type_handle;
 NetworkClass *Entity::_network_class = nullptr;
 
 /**
@@ -23,44 +23,119 @@ NetworkClass *Entity::_network_class = nullptr;
  */
 Entity::
 Entity(const std::string &name) :
-  PandaNode("entity-" + name),
+  _node_path("entity" + name),
+  _name(name),
   _health(100),
-  _max_health(100)
+  _max_health(100),
+  _team(TFTEAM_no_team),
+  _parent_entity(EPC_render),
+  _view_offset(0.0f, 0.0f, 16.0f)
 {
+#ifdef CLIENT
+  //  _iv_pos.local_object();
+  //_iv_hpr.local_object();
+  _iv_pos = new InterpolatedVec3f;
+  _iv_hpr = new InterpolatedVec3f;
+  make_interpolated_var<LVecBase3f>(_iv_pos, InterpVarFlags::IVF_simulation, nullptr, s_get_pos, s_set_pos);
+  make_interpolated_var<LVecBase3f>(_iv_hpr, InterpVarFlags::IVF_simulation, nullptr, s_get_hpr, s_set_hpr);
+#endif
 }
 
 /**
  *
  */
 void Entity::
-spawn() {
-  _self_path = NodePath(this);
+generate() {
+  NetworkObject::generate();
+  // TODO: entity parent.
+  _node_path.reparent_to(globals.render);
 }
 
 /**
  *
  */
 void Entity::
-destroy() {
-  _self_path.clear();
+disable() {
+  _node_path.remove_node();
 
-  // Detach from all parents in graph (most likely just one).
-  PandaNode::Parents parents = get_parents();
-  for (int i = 0; i < parents.get_num_parents(); ++i) {
-    parents.get_parent(i)->remove_child(this);
-  }
+  NetworkObject::disable();
 }
 
-static void fetch_entity_pos(void *object, void *dest) {
+/**
+ *
+ */
+void Entity::
+s_set_pos(LVecBase3f pos, void *pent) {
+  Entity *ent = (Entity *)pent;
+  ent->set_pos(pos);
+}
+
+/**
+ *
+ */
+LVecBase3f Entity::
+s_get_pos(void *pent) {
+  return ((Entity *)pent)->get_pos();
+}
+
+/**
+ *
+ */
+void Entity::
+s_set_hpr(LVecBase3f hpr, void *pent) {
+  Entity *ent = (Entity *)pent;
+  ent->set_hpr(hpr);
+}
+
+/**
+ *
+ */
+LVecBase3f Entity::
+s_get_hpr(void *pent) {
+  Entity *e = (Entity *)pent;
+  return e->get_hpr();
+}
+
+/**
+ *
+ */
+static void
+fetch_entity_pos(void *object, void *dest) {
   Entity *e = (Entity *)object;
-  LPoint3f pos = e->get_transform()->get_pos();
+  LPoint3f pos = e->get_pos();
   *(LPoint3f *)dest = pos;
 }
 
-static void write_entity_pos(void *object, void *data) {
+/**
+ *
+ */
+static void
+write_entity_pos(void *object, void *data) {
   LPoint3f pos = *(LPoint3f *)data;
   Entity *e = (Entity *)object;
-  e->set_transform(e->get_transform()->set_pos(pos));
+  std::cerr << " set ent pos : " << pos << "\n";
+  e->set_pos(pos);
+}
+
+/**
+ *
+ */
+static void
+fetch_entity_hpr(void *object, void *dest) {
+  Entity *e = (Entity *)object;
+  LVecBase3f hpr = e->get_hpr();
+  *(LVecBase3f *)dest = hpr;
+}
+
+/**
+ *
+ */
+static void
+write_entity_hpr(void *object, void *data) {
+  Entity *e = (Entity *)object;
+  LVecBase3f hpr = *(LVecBase3f *)data;
+  std::cerr << "sent ent hpr : " << hpr << "\n";
+  e->set_hpr(hpr);
 }
 
 void Entity::
@@ -69,7 +144,10 @@ init_network_class() {
 
     MAKE_NET_FIELD(Entity, _health, NetworkField::DT_int16);
     MAKE_NET_FIELD(Entity, _max_health, NetworkField::DT_int16);
-    MAKE_INDIRECT_STRUCT_NET_FIELD(LPoint3f, pos, Position_NetClass::get_network_class(), fetch_entity_pos, write_entity_pos);
+    MAKE_NET_FIELD(Entity, _parent_entity, NetworkField::DT_int16);
+    MAKE_NET_FIELD(Entity, _team, NetworkField::DT_int8);
+    //MAKE_INDIRECT_STRUCT_NET_FIELD(LPoint3f, pos, Position_NetClass::get_network_class(), fetch_entity_pos, write_entity_pos);
+    //MAKE_INDIRECT_STRUCT_NET_FIELD(LVecBase3f, hpr, Angles_NetClass::get_network_class(), fetch_entity_hpr, write_entity_hpr);
 
   END_NETWORK_CLASS();
 }

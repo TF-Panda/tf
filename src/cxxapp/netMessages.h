@@ -21,7 +21,6 @@ public:
     B_object_message,
 
     SV_generate_object,
-    SV_generate_owner_object,
 
     SV_disable_object,
     SV_delete_object,

@@ -3,7 +3,7 @@
 #include "networkClass.h"
 
 /**
- * 
+ *
  */
 std::string
 network_rpc_flags_string(unsigned int flags) {
@@ -54,17 +54,21 @@ network_rpc_flags_string(unsigned int flags) {
 }
 
 /**
- * 
+ *
  */
 void
 NetworkRPC::write(Datagram &dg, void *msg_object) {
   // object is the data structure containing message data to serialize.
   // Just call into the network class to serialize.
-  net_class->write(msg_object, dg);
+  if (net_class != nullptr) {
+    net_class->write(msg_object, dg);
+  }
 }
 
+unsigned char rpc_struct_scratch[1000];
+
 /**
- * 
+ *
  */
 void
 NetworkRPC::read(DatagramIterator &scan, void *object) {
@@ -73,14 +77,24 @@ NetworkRPC::read(DatagramIterator &scan, void *object) {
 
   // Stack allocate a temporary memory block to hold the deserialized message
   // data.
-  void *deserialized_data = alloca(net_class->get_stride());
-  net_class->read(deserialized_data, scan);
+  void *deserialized_data = nullptr;
+  if (net_class != nullptr) {
+    deserialized_data = rpc_struct_scratch;//alloca(net_class->get_stride());
+    assert(net_class->get_stride() <= 1000);
+    // We need to ensure all string fields are constructed on the temp mem block.
+    net_class->construct_fields(deserialized_data);
+    net_class->read(deserialized_data, scan);
+  }
   // Invoke receive callback.
   (*recv)(object, deserialized_data);
+  if (net_class != nullptr) {
+    // Destruct all string fields on temp mem block.
+    net_class->destruct_fields(deserialized_data);
+  }
 }
 
 /**
- * 
+ *
  */
 void
 NetworkRPC::output(std::ostream &out, int indent_level) const {

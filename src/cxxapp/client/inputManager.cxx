@@ -13,14 +13,20 @@
 
 #include "inputManager.h"
 #include "graphicsWindow.h"
+#include "inputButtons.h"
 #include "mouseAndKeyboard.h"
 #include "buttonThrower.h"
 #include "modifierButtons.h"
 #include "keyboardButton.h"
 #include "buttonHandle.h"
 #include "mouseWatcher.h"
-#include "globals.h"
+#include "../gameGlobals.h"
 #include "mouseButton.h"
+#include "pnotify.h"
+#include "trackball.h"
+#include "driveInterface.h"
+#include "transform2sg.h"
+#include "gamepadButton.h"
 
 NotifyCategoryDef(input, "");
 
@@ -52,16 +58,22 @@ map_axis(int code, InputDevice::Axis axis) {
 InputManager::
 InputManager() :
   _device_mgr(InputDeviceManager::get_global_ptr()),
-  _data_root("dataroot")
+  _data_root("dataroot"),
+  _trackball(new Trackball("trackball")),
+  _drive(new DriveInterface("drive")),
+  _mouse2cam(new Transform2SG("mouse2cam"))
 {
+  _mouse_interface = _trackball;
 }
 
 /**
  *
  */
 void InputManager::
-initialize(GraphicsWindow *window) {
+initialize(GraphicsWindow *window, Camera *cam) {
   _device_mgr->update();
+
+  DCAST(Transform2SG, _mouse2cam.node())->set_node(cam);
 
   for (int i = 0; i < window->get_num_input_devices(); ++i) {
     InputDevice *device = window->get_input_device(i);
@@ -130,6 +142,8 @@ initialize(GraphicsWindow *window) {
     init_device_mappings(&ctx);
     _device_contexts.push_back(ctx);
   }
+
+  use_trackball();
 }
 
 /**
@@ -142,6 +156,58 @@ update() {
     _device_contexts[i].device->poll();
   }
   _dgtrav.traverse(_data_root.node());
+
+  // Sample all button and axis values.
+  for (int i = 0; i < IB_COUNT; ++i) {
+    _prev_states[i] = _states[i];
+  }
+  for (int i = 0; i < IB_COUNT; ++i) {
+    _states[i].button = get_button_value(i);
+    _states[i].axis = get_axis_value(i);
+  }
+}
+
+/**
+ * Enables ShowBase mouse camera controls.
+ */
+void InputManager::
+enable_mouse() {
+  _mouse2cam.reparent_to(_mouse_interface);
+}
+
+/**
+ *
+ */
+void InputManager::
+disable_mouse() {
+  _mouse2cam.detach_node();
+}
+
+/**
+ *
+ */
+void InputManager::
+change_mouse_interface(NodePath change_to) {
+  _mouse_interface.detach_node();
+  _mouse_interface = change_to;
+  _mouse_interface.reparent_to(_mouse_watcher.get_path(0));
+  _mouse2cam.reparent_to(_mouse_interface);
+}
+
+/**
+ *
+ */
+void InputManager::
+use_trackball() {
+  change_mouse_interface(_trackball);
+}
+
+/**
+ *
+ */
+void InputManager::
+use_drive() {
+  change_mouse_interface(_drive);
 }
 
 /**
@@ -151,8 +217,8 @@ void InputManager::
 init_default_mouse_mappings(InputDeviceContext *ctx) {
   input_cat.info()
     << "Init mouse mappings for " << ctx->device->get_name() << "\n";
-  ctx->map_button(IC_primary_attack, MouseButton::one());
-  ctx->map_button(IC_secondary_attack, MouseButton::three());
+  ctx->map_button(IB_primary_attack, MouseButton::one());
+  ctx->map_button(IB_secondary_attack, MouseButton::three());
 }
 
 /**
@@ -162,17 +228,17 @@ void InputManager::
 init_default_keyboard_mappings(InputDeviceContext *ctx) {
   input_cat.info()
     << "Init keyboard mappings for " << ctx->device->get_name() << "\n";
-  ctx->map_button(IC_move_forward, KeyboardButton::ascii_key('w'));
-  ctx->map_button(IC_move_back, KeyboardButton::ascii_key('s'));
-  ctx->map_button(IC_move_left, KeyboardButton::ascii_key('a'));
-  ctx->map_button(IC_move_right, KeyboardButton::ascii_key('d'));
-  ctx->map_button(IC_jump, KeyboardButton::space());
-  ctx->map_button(IC_duck, KeyboardButton::control());
-  ctx->map_button(IC_interact, KeyboardButton::ascii_key('e'));
-  ctx->map_button(IC_reload, KeyboardButton::ascii_key('r'));
-  ctx->map_button(IC_sprint, KeyboardButton::shift());
-  ctx->map_button(IC_walk, KeyboardButton::alt());
-  ctx->map_button(IC_pause, KeyboardButton::escape());
+  ctx->map_button(IB_move_forward, KeyboardButton::ascii_key('w'));
+  ctx->map_button(IB_move_back, KeyboardButton::ascii_key('s'));
+  ctx->map_button(IB_move_left, KeyboardButton::ascii_key('a'));
+  ctx->map_button(IB_move_right, KeyboardButton::ascii_key('d'));
+  ctx->map_button(IB_jump, KeyboardButton::space());
+  ctx->map_button(IB_duck, KeyboardButton::control());
+  ctx->map_button(IB_interact, KeyboardButton::ascii_key('e'));
+  ctx->map_button(IB_reload, KeyboardButton::ascii_key('r'));
+  ctx->map_button(IB_sprint, KeyboardButton::shift());
+  ctx->map_button(IB_walk, KeyboardButton::alt());
+  ctx->map_button(IB_pause, KeyboardButton::escape());
 }
 
 /**
@@ -180,7 +246,21 @@ init_default_keyboard_mappings(InputDeviceContext *ctx) {
  */
 void InputManager::
 init_default_gamepad_mappings(InputDeviceContext *ctx) {
-
+  input_cat.info()
+    << "Init gamepad mapppings for " << ctx->device->get_name() << "\n";
+  ctx->map_axis(IB_axis_move_x, InputDevice::Axis::right_x);
+  ctx->map_axis(IB_axis_move_y, InputDevice::Axis::right_y);
+  ctx->map_axis(IB_axis_look_x, InputDevice::Axis::left_x);
+  ctx->map_axis(IB_axis_look_y, InputDevice::Axis::left_y);
+  ctx->map_button(IB_jump, GamepadButton::ltrigger());
+  ctx->map_button(IB_duck, GamepadButton::rstick());
+  ctx->map_button(IB_sprint, GamepadButton::rshoulder());
+  ctx->map_button(IB_walk, GamepadButton::rtrigger());
+  ctx->map_button(IB_move_forward, GamepadButton::dpad_up());
+  ctx->map_button(IB_move_back, GamepadButton::dpad_down());
+  ctx->map_button(IB_move_left, GamepadButton::dpad_left());
+  ctx->map_button(IB_move_right, GamepadButton::dpad_right());
+  //ctx->map_button(IB_primary_attack, GamepadButton::)
 }
 
 /**
@@ -208,6 +288,9 @@ init_device_mappings(InputDeviceContext *ctx) {
   case InputDevice::DeviceClass::GAMEPAD:
     init_default_gamepad_mappings(ctx);
     break;
+  default:
+    input_cat.warning()
+      << "Don't know how to handle input device type " << ctx->device->get_device_class() << "\n";
   }
 
   std::cout << "num buttons " << ctx->device->get_num_buttons() << "\n";
@@ -271,4 +354,60 @@ get_axis_value(int axis) const {
   }
 
   return std::max(0.0f, std::min(1.0f, value));
+}
+
+/**
+ * Returns true if the button is newly pressed, meaning not pressed
+ * last frame but pressed this frame.
+ */
+bool InputManager::
+was_button_pressed(int button) const {
+  nassertr(button >= 0 && button < IB_COUNT, false);
+  return !_prev_states[button].button && _states[button].button;
+}
+
+/**
+ * Returns true if the button is newly released, meaning pressed
+ * last frame but not pressed this frame.
+ */
+bool InputManager::
+was_button_released(int button) const {
+  nassertr(button >= 0 && button < IB_COUNT, false);
+  return _prev_states[button].button && !_states[button].button;
+}
+
+/**
+ * Returns true if the button is currently pressed down.
+ */
+bool InputManager::
+is_button_down(int button) const {
+  nassertr(button >= 0 && button < IB_COUNT, false);
+  return _states[button].button;
+}
+
+/**
+ * Returns true if the button was down last frame.
+ */
+bool InputManager::
+was_button_down(int button) const {
+  nassertr(button >= 0 && button < IB_COUNT, 0.0f);
+  return _prev_states[button].button;
+}
+
+/**
+ * Returns the current value of the given axis.
+ */
+float InputManager::
+get_axis(int axis) const {
+  nassertr(axis >= 0 && axis < IB_COUNT, 0.0f);
+  return _states[axis].axis;
+}
+
+/**
+ * Returns the value of the given axis from last frame.
+ */
+float InputManager::
+get_prev_axis(int axis) const {
+  nassertr(axis >= 0 && axis < IB_COUNT, 0.0f);
+  return _prev_states[axis].axis;
 }

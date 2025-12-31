@@ -21,10 +21,13 @@
 #include "nodePathCollection.h"
 #include "dataGraphTraverser.h"
 #include "notifyCategoryProxy.h"
+#include "inputButtons.h"
 
 class GraphicsWindow;
 
 NotifyCategoryDeclNoExport(input);
+
+class Camera;
 
 class InputManager {
 public:
@@ -56,10 +59,15 @@ public:
     void map_axis(int code, InputDevice::Axis axis);
   };
 
+  struct InputState {
+    float axis = 0.0f;
+    bool button = false;
+  };
+
 public:
   InputManager();
 
-  void initialize(GraphicsWindow *window);
+  void initialize(GraphicsWindow *window, Camera *cam);
 
   virtual void init_device_mappings(InputDeviceContext *ctx);
 
@@ -70,7 +78,20 @@ public:
   bool get_button_value(int button) const;
   float get_axis_value(int axis_type) const;
 
+  bool was_button_pressed(int button) const;
+  bool was_button_released(int button) const;
+  bool is_button_down(int button) const;
+  bool was_button_down(int button) const;
+  float get_axis(int axis) const;
+  float get_prev_axis(int axis) const;
+
   void update();
+
+  void enable_mouse();
+  void disable_mouse();
+  void use_drive();
+  void use_trackball();
+  void change_mouse_interface(NodePath change_to);
 
 private:
   typedef SimpleHashMap<InputDevice *, NodePath, pointer_hash> InputDeviceMap;
@@ -87,6 +108,14 @@ private:
   InputDeviceManager *_device_mgr;
 
   DataGraphTraverser _dgtrav;
+
+  NodePath _trackball;
+  NodePath _drive;
+  NodePath _mouse2cam;
+  NodePath _mouse_interface;
+
+  InputState _prev_states[IB_COUNT];
+  InputState _states[IB_COUNT];
 };
 
 #include "inputManager.I"

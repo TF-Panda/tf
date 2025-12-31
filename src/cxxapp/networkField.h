@@ -48,6 +48,8 @@ struct NetworkField {
 
     DT_string,
 
+    DT_datagram,
+
     // Nested NetworkClass/structure.
     DT_class,
   };
@@ -92,6 +94,8 @@ struct NetworkField {
   void read(void *object, DatagramIterator &scan) const;
 
   void output(std::ostream &out, int indent_level = 0) const;
+
+  inline bool is_indirect() const;
 };
 
 template<typename T>
@@ -134,6 +138,13 @@ struct NetworkFieldTypeTraits<bool> {
   static constexpr size_t stride = sizeof(bool);
 };
 
+template<>
+struct NetworkFieldTypeTraits<Datagram> {
+  static constexpr NetworkField::DataType type = NetworkField::DT_datagram;
+  static constexpr size_t count = 1u;
+  static constexpr size_t stride = sizeof(Datagram);
+};
+
 template<typename T, size_t N>
 struct NetworkFieldTypeTraits<std::array<T, N>> {
   static constexpr NetworkField::DataType type =
@@ -149,5 +160,14 @@ struct NetworkFieldTypeTraits<T[N]> {
   static constexpr size_t count = N;
   static constexpr size_t stride = NetworkFieldTypeTraits<T>::stride;
 };
+
+/**
+ *
+ */
+inline bool NetworkField::
+is_indirect() const {
+  return indirect_fetch != nullptr || indirect_write != nullptr ||
+    indirect_fetch_ptr != nullptr || indirect_write_ptr != nullptr;
+}
 
 #endif // NETWORKFIELD_H

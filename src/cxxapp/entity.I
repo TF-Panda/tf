@@ -29,30 +29,30 @@ get_max_health() const {
 
 INLINE void Entity::
 set_pos(const LPoint3 &pos) {
-  set_transform(get_transform()->set_pos(pos));
+  _node_path.set_pos(pos);
 }
 
 INLINE LPoint3 Entity::
 get_pos() const {
-  return get_transform()->get_pos();
+  return _node_path.get_pos();
 }
 
 INLINE void Entity::
 set_hpr(const LVecBase3 &hpr) {
-  set_transform(get_transform()->set_hpr(hpr));
+  _node_path.set_hpr(hpr);
 }
 
 INLINE LVecBase3 Entity::
 get_hpr() const {
-  return get_transform()->get_hpr();
+  return _node_path.get_hpr();
 }
 
 INLINE void Entity::
 set_abs_pos(const LPoint3 &pos) {
-  _self_path.set_pos(NodePath(), pos);
+  _node_path.set_pos(NodePath(), pos);
 }
 
 INLINE NodePath Entity::
-get_path() const {
-  return _self_path;
+get_node_path() const {
+  return _node_path;
 }

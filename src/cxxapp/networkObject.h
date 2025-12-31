@@ -2,9 +2,6 @@
 #define NETWORKOBJECT_H
 
 #include "referenceCount.h"
-#include "asyncTaskManager.h"
-#include "asyncTask.h"
-#include "genericAsyncTask.h"
 
 #ifdef CLIENT
 #include "interpolatedVariable.h"
@@ -32,7 +29,7 @@ typedef uint32_t ZONE_ID;
 /**
  * Base class for a networked object.  This is like the DistributedObject in DIRECT.
  */
-class NetworkObject : virtual public ReferenceCount {
+class NetworkObject : public ReferenceCount {
 public:
   enum ObjectState {
     OS_new,
@@ -89,6 +86,13 @@ public:
   virtual void pre_interpolate();
   void interpolate(float time);
   virtual void post_interpolate();
+
+  static void add_to_interp_list(NetworkObject *obj);
+  static void remove_from_interp_list(NetworkObject *obj);
+  static void interpolate_objects();
+
+  inline void set_owner(bool flag);
+  inline bool is_owner() const;
 #endif
 
 #ifdef SERVER
@@ -104,6 +108,12 @@ private:
   typedef pvector<InterpolatedVarEntry> InterpolatedVars;
   InterpolatedVars _interp_vars;
   bool _predictable;
+  float _last_interpolation_time;
+
+  static pset<NetworkObject *> _interp_list;
+
+  // Does our client own this object?
+  bool _is_owner;
 #endif
 #ifdef SERVER
   ClientConnection *_owner;
@@ -120,7 +130,9 @@ NetworkObject() :
   _object_state(OS_new)
 #ifdef CLIENT
   ,
-  _predictable(false)
+  _predictable(false),
+  _last_interpolation_time(0.0f),
+  _is_owner(false)
 #endif
 #ifdef SERVER
   ,
@@ -208,6 +220,22 @@ get_owner() const {
 #endif
 
 #ifdef CLIENT
+
+/**
+ *
+ */
+inline void NetworkObject::
+set_owner(bool flag) {
+  _is_owner = flag;
+}
+
+/**
+ *
+ */
+inline bool NetworkObject::
+is_owner() const {
+  return _is_owner;
+}
 
 /**
  *
