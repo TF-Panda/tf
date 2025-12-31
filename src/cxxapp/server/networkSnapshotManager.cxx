@@ -89,7 +89,7 @@ calc_delta(const char *other_data, size_t other_length, PackedFields &other_fiel
       // is different.
       delta_fields.push_back(i);
 
-    } else if (memcmp(data.p() + field.offset, other_data + other_field.offset, field.length)) {
+    } else if (memcmp(data.p() + field.offset, other_data + other_field.offset, field.length) != 0) {
       // Actual bits are different.
       // TODO: Handle floats!
       delta_fields.push_back(i);
@@ -217,7 +217,7 @@ get_baseline_object_state(NetworkObject *obj, NetworkClass *net_class, DO_ID do_
   pack->creation_tick = -1;
   pack->data = data;
   pack->fields = std::move(fields);
-  _prev_sent_packets.insert({ do_id, pack });
+  _prev_sent_packets[do_id] = pack;
   return pack;
 }
 
@@ -318,7 +318,7 @@ pack_object_in_snapshot(FrameSnapshot *snapshot, int entry_idx, NetworkObject *o
   pack->fields = std::move(packed_fields);
   pack->change_frame_list = change_frame;
   // Note this as the most recent packet for this object.
-  _prev_sent_packets.insert({ do_id, pack });
+  _prev_sent_packets[do_id] = pack;
 
   entry.packed_data = pack;
 
@@ -407,14 +407,14 @@ client_format_delta_snapshot(Datagram &dg, FrameSnapshot *from, FrameSnapshot *t
 
       // Now copy each changed field into the datagram.
       for (int j = 0; j < num_changes; ++j) {
-	packet->pack_field(dg, changed_fields[j]);
+	packet->pack_field(object_dg, changed_fields[j]);
       }
     } else {
       // -1 means all fields changed, so just pack the whole object.
-      packet->pack_datagram(dg);
+      packet->pack_datagram(object_dg);
     }
 
-    ++num_changes;
+    ++num_objects;
   }
 
   // # of objects in this client snapshot.

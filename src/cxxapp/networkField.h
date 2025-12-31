@@ -8,6 +8,21 @@
 class NetworkClass;
 
 /**
+ *
+ */
+inline void *align_ptr(void *alloc, size_t align) {
+  assert(align > 0);
+  assert((align & (align - 1)) == 0);
+  uintptr_t root = (uintptr_t)alloc;
+  root += align - 1;
+  root &= ~((uintptr_t)(align - 1));
+  return (void *)root;
+}
+#define aligned_stackalloc(ptr, size, align) \
+  ptr = alloca(size + (align - 1)); \
+  ptr = align_ptr(ptr, align);
+
+/**
  * Describes a field on a networked class that is to be serialized from a data source and
  * deserialized on another end and stored.
  *
@@ -73,6 +88,7 @@ struct NetworkField {
 
   // To read array memory correctly, exactly how big is one element.
   size_t stride = 0u;
+  size_t alignment = 0u;
 
   // For arrays, how big is it?
   size_t count = 1u;
@@ -108,6 +124,7 @@ struct NetworkFieldTypeTraits<float> {
   static constexpr NetworkField::DataType type = NetworkField::DT_float;
   static constexpr size_t count = 1u;
   static constexpr size_t stride = sizeof(float);
+  static constexpr size_t alignment = alignof(float);
 };
 
 template<>
@@ -115,6 +132,7 @@ struct NetworkFieldTypeTraits<int> {
   static constexpr NetworkField::DataType type = NetworkField::DT_int32;
   static constexpr size_t count = 1u;
   static constexpr size_t stride = sizeof(int);
+  static constexpr size_t alignment = alignof(int);
 };
 
 template<>
@@ -122,6 +140,7 @@ struct NetworkFieldTypeTraits<unsigned int> {
   static constexpr NetworkField::DataType type = NetworkField::DT_uint32;
   static constexpr size_t count = 1u;
   static constexpr size_t stride = sizeof(unsigned int);
+  static constexpr size_t alignment = alignof(unsigned int);
 };
 
 template<>
@@ -129,6 +148,7 @@ struct NetworkFieldTypeTraits<std::string> {
   static constexpr NetworkField::DataType type = NetworkField::DT_string;
   static constexpr size_t count = 1u;
   static constexpr size_t stride = sizeof(std::string);
+  static constexpr size_t alignment = alignof(std::string);
 };
 
 template<>
@@ -136,6 +156,7 @@ struct NetworkFieldTypeTraits<bool> {
   static constexpr NetworkField::DataType type = NetworkField::DT_bool;
   static constexpr size_t count = 1u;
   static constexpr size_t stride = sizeof(bool);
+  static constexpr size_t alignment = alignof(bool);
 };
 
 template<>
@@ -143,6 +164,7 @@ struct NetworkFieldTypeTraits<Datagram> {
   static constexpr NetworkField::DataType type = NetworkField::DT_datagram;
   static constexpr size_t count = 1u;
   static constexpr size_t stride = sizeof(Datagram);
+  static constexpr size_t alignment = alignof(Datagram);
 };
 
 template<typename T, size_t N>
@@ -151,6 +173,7 @@ struct NetworkFieldTypeTraits<std::array<T, N>> {
       NetworkFieldTypeTraits<T>::type;
   static constexpr size_t count = N;
   static constexpr size_t stride = NetworkFieldTypeTraits<T>::stride;
+  static constexpr size_t alignment = NetworkFieldTypeTraits<T>::alignment;
 };
 
 template<typename T, size_t N>
@@ -159,6 +182,7 @@ struct NetworkFieldTypeTraits<T[N]> {
       NetworkFieldTypeTraits<T>::type;
   static constexpr size_t count = N;
   static constexpr size_t stride = NetworkFieldTypeTraits<T>::stride;
+  static constexpr size_t alignment = NetworkFieldTypeTraits<T>::alignment;
 };
 
 /**

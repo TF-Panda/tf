@@ -33,24 +33,24 @@ public:
     CS_verified,
   };
 
-  int32_t id;
+  int32_t id = -1;
   NetAddress address;
-  SteamNetworkConnectionHandle connection;
-  ClientState state;
+  SteamNetworkConnectionHandle connection = INVALID_STEAM_NETWORK_CONNECTION_HANDLE;
+  ClientState state = CS_unverified;
 
   // Managing how often we send world state updates to this client.
-  int update_rate;
-  float update_interval;
-  float next_update_time;
+  int update_rate = 0;
+  float update_interval = 0.0f;
+  float next_update_time = 0.0f;
 
   // Last acknowledged snapshot tick.
-  int delta_tick;
+  int delta_tick = -1;
 
   // How often we receive client commands from them.
-  int cmd_rate;
-  float cmd_interval;
+  int cmd_rate = 0;
+  float cmd_interval = 0.0f;
 
-  float interp_amount;
+  float interp_amount = 0.0f;
 
   // Ring buffer of most recently sent snapshots to this client.
   ClientFrameList frame_list;
@@ -91,6 +91,7 @@ private:
 public:
   void startup(int port);
   virtual void run_simulation() override;
+  virtual void post_simulate() override;
 
   void add_client_interest(ClientConnection *client, const pvector<ZONE_ID> &zones);
   void remove_client_interest(ClientConnection *client, const pvector<ZONE_ID> &zones);

@@ -163,15 +163,16 @@ sample_mouse() {
  */
 void LocalTFPlayer::
 consider_send_command() {
+  GameClient *cl = GameClient::ptr();
+
   if (should_send_command()) {
     send_command();
-    // send tick
+    cl->send_tick();
 
     _last_outgoing_command = _commands_sent - 1;
     _choked_commands = 0;
 
     // Determine when to send next command.
-    GameClient *cl = GameClient::ptr();
     float network_time = cl->get_network_time();
     float cmd_interval = 1.0f / cl_cmd_rate;
     float max_delta = std::min(cl->get_tick_interval(), cmd_interval);
@@ -213,28 +214,21 @@ write_command_delta(Datagram &dg, int prev, int to, bool is_new) {
  */
 void LocalTFPlayer::
 send_command() {
-  //std::cerr << "Hello world\n";
-#if 1
   int next_command_num = (int)get_next_command_number();
-  std::cerr << "next cmd num " << next_command_num << "\n";
 
-  //PlayerCommandArgs args;
+  PlayerCommandArgs args;
 
   // Send the player command message.
 
   int cmd_backup = 2;
-  //int x = max_backup_commands;
-
-  int backup_commands = cmd_backup;//std::max(0, std::min(max_backup_commands, cmd_backup));//std::clamp(cmd_backup, 0, max_backup_commands);
-  int num_backup_commands = backup_commands;
+  int backup_commands = std::max(0, std::min(max_backup_commands, cmd_backup));
+  args.num_backup_commands = backup_commands;
 
   int new_commands = 1 + _choked_commands;
-  //new_commands = std::max(0, std::min(max_new_commands, new_commands));///std::clamp(new_commands, 0, max_new_commands);
-  int num_new_commands = new_commands;
+  new_commands = std::max(0, std::min(max_new_commands, new_commands));
+  args.num_new_commands = new_commands;
 
   int num_cmds = new_commands + backup_commands;
-
-  std::cerr << "num cmds " << num_cmds << "\n";
 
   // First command is delta'd against zeros.
   int prev = -1;
@@ -242,40 +236,19 @@ send_command() {
   bool ok = true;
 
   int to = (int)next_command_num - num_cmds + 1;
-  tfplayer_cat.info()
-    << "to: " << to << "\n";
 
   for (; to <= next_command_num; ++to) {
     bool is_new_cmd = to >= ((int)next_command_num - new_commands + 1);
-    //ok = ok && write_command_delta(args.data, prev, to, is_new_cmd);
+    ok = ok && write_command_delta(args.data, prev, to, is_new_cmd);
     prev = to;
   }
 
-  std::cerr << "prev: " << prev << "\n";
-  std::cerr << "to: " << to << "\n";
-
   if (ok) {
     // Send it out!
-    //GameClient *cl = GameClient::ptr();
-    //cl->send_obj_message(_player, "player_command", &args);
-
-    /*
-    NetworkRPC *rpc = _player->get_network_class()->get_inherited_rpc_by_name("player_command");
-    NetworkField *data_field = rpc->net_class->get_inherited_field(0);
-    assert(data_field->encoding_type == NetworkField::DT_datagram);
-    size_t offset = data_field->offset;
-    unsigned char *dg_uptr = (unsigned char *)&args + offset;
-    Datagram *dg_ptr = (Datagram *)dg_uptr;
-    size_t dg_len = dg_ptr->get_length();
-    const void *dg_data = dg_ptr->get_data();
-    assert(dg_len == args.data.get_length());
-    assert(memcmp(dg_data, args.data.get_data(), dg_len) == 0);
-    std::cerr << dg_len << " , " << args.data.get_length() << "\n";
-    std::cerr << memcmp(dg_data, args.data.get_data(), dg_len) << "\n";*/
+    GameClient *cl = GameClient::ptr();
+    cl->send_obj_message(_player, "player_command", &args);
     _commands_sent += new_commands;
-    std::cerr << "commands sent: " << _commands_sent << "\n";
   }
-#endif
 }
 
 /**

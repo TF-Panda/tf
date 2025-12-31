@@ -163,6 +163,16 @@ adjust_player_time_base(int simulation_ticks) {
 }
 
 /**
+ * Task callback to simulate the player on the server.
+ */
+AsyncTask::DoneStatus TFPlayer::
+simulate_task(GenericAsyncTask *task, void *data) {
+  TFPlayer *player = (TFPlayer *)data;
+  player->simulate();
+  return AsyncTask::DS_cont;
+}
+
+/**
  *
  */
 void TFPlayer::
@@ -268,10 +278,8 @@ handle_player_command(const PlayerCommandArgs &args) {
   GameServer *sv = GameServer::ptr();
   ClientConnection *client = sv->get_client_sender();
 
-  DatagramIterator scan(args.data);
 
-  std::cerr << "command length is " << args.data.get_length() << "\n";
-  args.data.dump_hex(std::cerr);
+  DatagramIterator scan(args.data);
 
   if (_last_movement_tick == sv->get_tick_count()) {
     return;

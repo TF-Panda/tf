@@ -1,6 +1,8 @@
 #include "simulationManager.h"
 #include "clockObject.h"
 #include "cmath.h"
+#include "gameGlobals.h"
+#include "asyncTaskManager.h"
 
 /**
  * Runs any simulation ticks for this rendering frame/epoch.
@@ -52,7 +54,11 @@ SimulationManager::run_frame() {
     _sim_interrupted = false;
 
     // Actually run simulation.
+    pre_simulate();
     run_simulation();
+    // Step simulation bound tasks.
+    globals.sim_task_mgr->poll();
+    post_simulate();
 
     if (_sim_interrupted) {
       exit_simulation_time();
@@ -69,6 +75,9 @@ SimulationManager::run_frame() {
   }
 
   nassertv(!is_in_simulation_clock());
+
+  // Run per-frame tasks.
+  globals.task_mgr->poll();
 }
 
 /**
@@ -76,6 +85,20 @@ SimulationManager::run_frame() {
  */
 void SimulationManager::
 run_simulation() {
+}
+
+/**
+ *
+ */
+void SimulationManager::
+pre_simulate() {
+}
+
+/**
+ *
+ */
+void SimulationManager::
+post_simulate() {
 }
 
 /**

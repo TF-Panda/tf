@@ -4,6 +4,7 @@
 #include "nodePath.h"
 
 class SimulationManager;
+class AsyncTaskManager;
 
 #ifdef CLIENT
 #include "pointerTo.h"
@@ -31,6 +32,11 @@ struct GameGlobals {
   NodePath render;
   SimulationManager *simbase = nullptr;
   GameManager *game = nullptr;
+
+  // For tasks that run per rendering frame.
+  AsyncTaskManager *task_mgr = nullptr;
+  // For tasks that run on simulation ticks.
+  AsyncTaskManager *sim_task_mgr = nullptr;
 
   // Client-specific globals.
 #ifdef CLIENT

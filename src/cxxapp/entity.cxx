@@ -32,8 +32,6 @@ Entity(const std::string &name) :
   _view_offset(0.0f, 0.0f, 16.0f)
 {
 #ifdef CLIENT
-  //  _iv_pos.local_object();
-  //_iv_hpr.local_object();
   _iv_pos = new InterpolatedVec3f;
   _iv_hpr = new InterpolatedVec3f;
   make_interpolated_var<LVecBase3f>(_iv_pos, InterpVarFlags::IVF_simulation, nullptr, s_get_pos, s_set_pos);
@@ -146,8 +144,8 @@ init_network_class() {
     MAKE_NET_FIELD(Entity, _max_health, NetworkField::DT_int16);
     MAKE_NET_FIELD(Entity, _parent_entity, NetworkField::DT_int16);
     MAKE_NET_FIELD(Entity, _team, NetworkField::DT_int8);
-    //MAKE_INDIRECT_STRUCT_NET_FIELD(LPoint3f, pos, Position_NetClass::get_network_class(), fetch_entity_pos, write_entity_pos);
-    //MAKE_INDIRECT_STRUCT_NET_FIELD(LVecBase3f, hpr, Angles_NetClass::get_network_class(), fetch_entity_hpr, write_entity_hpr);
+    MAKE_INDIRECT_STRUCT_NET_FIELD(LPoint3f, pos, Position_NetClass::get_network_class(), fetch_entity_pos, write_entity_pos);
+    MAKE_INDIRECT_STRUCT_NET_FIELD(LVecBase3f, hpr, Angles_NetClass::get_network_class(), fetch_entity_hpr, write_entity_hpr);
 
   END_NETWORK_CLASS();
 }

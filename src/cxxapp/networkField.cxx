@@ -337,10 +337,17 @@ void
 NetworkField::write(void *object, Datagram &dg) const {
   unsigned char *data_ptr;
 
+  constexpr int stack_buffer_size = 256;
+  char stack_buffer[stack_buffer_size];
+
   if (indirect_fetch != nullptr) {
     // The field provides us with a function to copy the field memory
     // from somewhere into a local scratch buffer for us.
-    void *scratch_ptr = alloca(stride * count);
+
+    void *scratch_ptr;
+    assert((stride * count + (alignment - 1)) <= stack_buffer_size);
+    scratch_ptr = align_ptr(stack_buffer, alignment);
+
     data_ptr = (unsigned char *)scratch_ptr;
     if (source_type == DT_string || source_type == DT_datagram) {
       for (int i = 0; i < count; ++i) {
@@ -368,6 +375,7 @@ NetworkField::write(void *object, Datagram &dg) const {
   unsigned char *start_data_ptr = data_ptr;
 
   for (int i = 0; i < count; ++i) {
+    assert(((uintptr_t)data_ptr & (alignment - 1)) == 0);
     switch (source_type) {
     case DT_float:
       float_write(dg, divisor, modulo, encoding_type, data_ptr);
@@ -422,7 +430,6 @@ NetworkField::write(void *object, Datagram &dg) const {
       {
 	Datagram *field_dg = (Datagram *)data_ptr;
 	size_t field_len = field_dg->get_length();
-	std::cerr << "write " << field_len << " bytes for dg field\n";
 	assert(field_len <= std::numeric_limits<uint16_t>::max());
 	dg.add_uint16(field_len);
 	dg.append_data(field_dg->get_data(), field_len);
@@ -466,6 +473,9 @@ NetworkField::read(void *object, DatagramIterator &scan) const {
   unsigned char *data_ptr;
   unsigned char *start_data_ptr;
 
+  constexpr int stack_buffer_size = 256;
+  char stack_buffer[stack_buffer_size];
+
   if (indirect_write_ptr != nullptr) {
     // Pointer to deserialize to is provided from this function.
     data_ptr = (unsigned char *)(*indirect_write_ptr)(object);
@@ -473,7 +483,12 @@ NetworkField::read(void *object, DatagramIterator &scan) const {
   } else if (indirect_write != nullptr) {
     // We will deserialize the field into a temporary structure that
     // will be copied into object memory by the indirect write function.
-    data_ptr = (unsigned char *)alloca(stride * count);
+
+    void *scratch_ptr;
+    assert((stride * count + (alignment - 1)) <= stack_buffer_size);
+    scratch_ptr = align_ptr(stack_buffer, alignment);
+
+    data_ptr = (unsigned char *)scratch_ptr;
     start_data_ptr = data_ptr;
     if (source_type == DT_string || source_type == DT_datagram) {
       // We need to construct strings.
@@ -497,6 +512,7 @@ NetworkField::read(void *object, DatagramIterator &scan) const {
   start_data_ptr = data_ptr;
 
   for (int i = 0; i < count; ++i) {
+    assert(((uintptr_t)data_ptr & (alignment - 1)) == 0);
     switch (source_type) {
     case DT_float:
       float_read(data_ptr, divisor, encoding_type, scan);

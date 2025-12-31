@@ -65,8 +65,6 @@ NetworkRPC::write(Datagram &dg, void *msg_object) {
   }
 }
 
-unsigned char rpc_struct_scratch[1000];
-
 /**
  *
  */
@@ -78,9 +76,11 @@ NetworkRPC::read(DatagramIterator &scan, void *object) {
   // Stack allocate a temporary memory block to hold the deserialized message
   // data.
   void *deserialized_data = nullptr;
+  constexpr int stack_buffer_size = 256;
+  char buffer[stack_buffer_size];
   if (net_class != nullptr) {
-    deserialized_data = rpc_struct_scratch;//alloca(net_class->get_stride());
-    assert(net_class->get_stride() <= 1000);
+    assert((net_class->get_stride() + (net_class->get_alignment() - 1)) <= stack_buffer_size);
+    deserialized_data = align_ptr(buffer, net_class->get_alignment());
     // We need to ensure all string fields are constructed on the temp mem block.
     net_class->construct_fields(deserialized_data);
     net_class->read(deserialized_data, scan);

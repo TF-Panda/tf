@@ -421,9 +421,13 @@ GameClient::handle_server_world_update(DatagramIterator &scan) {
     // We have a new delta reference.
     _delta_tick = _server_tick_count;
   }
+}
 
-  // Tell the server we got the snapshot.
-  // TODO: is this where/how we should do it?
+/**
+ *
+ */
+void GameClient::
+send_tick() {
   Datagram dg;
   dg.add_uint16(NetMessages::CL_world_update_ack);
   dg.add_int32(_delta_tick);
@@ -475,6 +479,11 @@ void GameClient::
 unpack_server_snapshot(DatagramIterator &scan) {
   int num_objects = scan.get_uint16();
 
+  if (client_cat.is_debug()) {
+    client_cat.debug()
+      << num_objects << " objects in snapshot\n";
+  }
+
   pvector<NetworkObject *> unpacked;
   unpacked.reserve(num_objects);
 
@@ -484,7 +493,7 @@ unpack_server_snapshot(DatagramIterator &scan) {
     if (it == _doid2do.end()) {
       client_cat.error()
         << "State snapshot has data for DO ID " << doid << ", but we don't have "
-        << "that object in our table.\n";
+        << "that object in our table. Object index " << i << "\n";
       return;
     }
 

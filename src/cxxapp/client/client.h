@@ -49,6 +49,8 @@ public:
 
   void send_hello(SignOnCallback callback, const std::string &password = "");
 
+  void send_tick();
+
 private:
   void handle_message(SteamNetworkMessage *msg);
   void handle_event(SteamNetworkEvent *event);

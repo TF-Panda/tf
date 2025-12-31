@@ -1,4 +1,6 @@
 #include "networkObject.h"
+#include "gameGlobals.h"
+#include "asyncTaskManager.h"
 
 /**
  * Called when the networked object is coming into existence, before initial state
@@ -28,7 +30,79 @@ disable() {
 #ifdef CLIENT
   remove_from_interp_list(this);
 #endif
+  remove_all_tasks();
   _object_state = OS_disabled;
+}
+
+/**
+ * Sets up a task to run per rendering frame.
+ */
+GenericAsyncTask *NetworkObject::
+add_task(const std::string &name, GenericAsyncTask::TaskFunc func, int sort) {
+  remove_task(name);
+  PT(GenericAsyncTask) task = new GenericAsyncTask(name);
+  task->set_user_data(this);
+  task->set_function(func);
+  task->set_sort(sort);
+  globals.task_mgr->add(task);
+  _tasks.insert({ name, task });
+  return task;
+}
+
+/**
+ * Sets up a task to run per simulation tick.
+ */
+GenericAsyncTask *NetworkObject::
+add_sim_task(const std::string &name, GenericAsyncTask::TaskFunc func, int sort) {
+  remove_sim_task(name);
+  PT(GenericAsyncTask) task = new GenericAsyncTask(name);
+  task->set_user_data(this);
+  task->set_function(func);
+  task->set_sort(sort);
+  globals.sim_task_mgr->add(task);
+  _sim_tasks.insert({ name, task });
+  return task;
+}
+
+/**
+ * Stops a previously added per-frame task from running anymore.
+ */
+void NetworkObject::
+remove_task(const std::string &name) {
+  TaskMap::const_iterator it = _tasks.find(name);
+  if (it != _tasks.end()) {
+    GenericAsyncTask *task = (*it).second;
+    task->remove();
+    _tasks.erase(it);
+  }
+}
+
+/**
+ * Stops a previously added per-simulation tick task from running anymore.
+ */
+void NetworkObject::
+remove_sim_task(const std::string &name) {
+  TaskMap::const_iterator it = _sim_tasks.find(name);
+  if (it != _sim_tasks.end()) {
+    GenericAsyncTask *task = (*it).second;
+    task->remove();
+    _sim_tasks.erase(it);
+  }
+}
+
+/**
+ * Stops all tasks from running on the object, per-frame and per-simulation tick.
+ */
+void NetworkObject::
+remove_all_tasks() {
+  for (auto task_entry : _tasks) {
+    task_entry.second->remove();
+  }
+  _tasks.clear();
+  for (auto task_entry : _sim_tasks) {
+    task_entry.second->remove();
+  }
+  _sim_tasks.clear();
 }
 
 #ifdef CLIENT

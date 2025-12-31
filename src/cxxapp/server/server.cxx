@@ -91,6 +91,8 @@ GameServer::handle_message(SteamNetworkMessage *msg) {
     case NetMessages::CL_world_update_ack:
       handle_client_tick(client, scan);
       break;
+    default:
+      break;
     }
   }
 }
@@ -612,6 +614,15 @@ GameServer::run_simulation() {
 /**
  *
  */
+void GameServer::
+post_simulate() {
+  take_tick_snapshot(get_tick_count());
+}
+
+
+/**
+ *
+ */
 bool
 GameServer::can_accept_connection() const {
   return true;
@@ -689,9 +700,11 @@ take_tick_snapshot(int tick_count) {
       continue;
     }
 
+    NetworkClass *net_class = obj->get_network_class();
+
     // Pack it in!
     _snapshot_mgr.pack_object_in_snapshot(snap, entry_number, obj, doid,
-					  obj->get_zone_id(), obj->get_network_class());
+					  obj->get_zone_id(), net_class);
 
     ++entry_number;
   }

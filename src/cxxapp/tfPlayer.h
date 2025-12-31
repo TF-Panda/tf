@@ -61,6 +61,8 @@ private:
   int determine_simulation_ticks();
   void adjust_player_time_base(int simulation_ticks);
   void run_player_command(PlayerCommand *cmd, float dt);
+
+  static AsyncTask::DoneStatus simulate_task(GenericAsyncTask *task, void *data);
 #endif
 
 private:

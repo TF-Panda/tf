@@ -19,7 +19,7 @@
   dtoolbase:c dtoolutil:c pipeline:c linmath:c mathutil:c express:c \
   putil:c gobj:c device:c dgraph:c tform:c prc map:c shader:c event:c \
   pphysics:c anim:c audio:c steamnet:c net:c grutil:c text:c gsgbase:c \
-  display:c
+  display:c nativenet:c
 
 #define USE_PACKAGES physx valve_steamnet
 

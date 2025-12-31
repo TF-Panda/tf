@@ -53,6 +53,9 @@ public:
   inline void set_stride(size_t stride);
   inline size_t get_stride() const;
 
+  inline void set_alignment(size_t alignment);
+  inline size_t get_alignment() const;
+
   void inherit_fields();
 
   void write(void *object, Datagram &dg) const;
@@ -83,6 +86,7 @@ private:
   NetworkClass *_parent;
   bool _built_inherited_fields;
   size_t _stride;
+  size_t _alignment;
 
   typedef pvector<NetworkField *> Fields;
   typedef pflat_hash_map<uint16_t, NetworkField *, integer_hash<uint16_t>> FieldsByID;
@@ -113,7 +117,8 @@ NetworkClass(const std::string &name, EntityFactoryFunc factory, NetworkClass *p
   _id(0u),
   _built_inherited_fields(false),
   _parent(parent),
-  _stride(0u)
+  _stride(0u),
+  _alignment(0u)
 {
 }
 
@@ -304,11 +309,17 @@ get_stride() const {
 /**
  *
  */
-template<typename Cls, typename Var>
-constexpr size_t offset_of(Var Cls::*var) {
-  return reinterpret_cast<size_t>(
-    &(reinterpret_cast<Cls const volatile*>(0)->*var)
-  );
+inline void NetworkClass::
+set_alignment(size_t alignment) {
+  _alignment = alignment;
+}
+
+/**
+ *
+ */
+inline size_t NetworkClass::
+get_alignment() const {
+  return _alignment;
 }
 
 /**
@@ -323,7 +334,7 @@ make_field(const std::string &name, Var Cls::*var) {
   field->source_type = NetworkFieldTypeTraits<T>::type;
   field->count = NetworkFieldTypeTraits<T>::count;
   field->stride = NetworkFieldTypeTraits<T>::stride;
-  field->offset = offset_of(var);
+  field->alignment = NetworkFieldTypeTraits<T>::alignment;
   field->encoding_type = field->source_type;
   add_field(field);
   return field;
@@ -355,6 +366,7 @@ make_indirect_field(const std::string &name, NetworkField::IndirectFetchFunc fet
   field->encoding_type = NetworkFieldTypeTraits<T>::type;
   field->count = NetworkFieldTypeTraits<T>::count;
   field->stride = NetworkFieldTypeTraits<T>::stride;
+  field->alignment = NetworkFieldTypeTraits<T>::alignment;
   field->indirect_fetch = fetch;
   field->indirect_write = write;
   add_field(field);
@@ -387,7 +399,7 @@ make_struct_field(const std::string &name, Var Cls::*var, NetworkClass *struct_c
   field->net_class = struct_class;
   field->source_type = NetworkField::DT_class;
   field->stride = struct_class->get_stride();
-  field->offset = offset_of(var);
+  field->alignment = struct_class->get_alignment();
   add_field(field);
   return field;
 }
@@ -405,6 +417,7 @@ make_indirect_struct_field(const std::string &name, NetworkClass *struct_class, 
   field->source_type = NetworkField::DT_class;
   field->net_class = struct_class;
   field->stride = struct_class->get_stride();
+  field->alignment = struct_class->get_alignment();
   field->indirect_fetch = fetch;
   field->indirect_write = write;
   add_field(field);
@@ -412,10 +425,16 @@ make_indirect_struct_field(const std::string &name, NetworkClass *struct_class, 
 }
 
 #define MAKE_NET_FIELD(cls, var, ...) \
-  _network_class->make_field<cls>(#var, &cls::var, __VA_ARGS__);
+  { \
+    NetworkField *__field = _network_class->make_field<cls>(#var, &cls::var, __VA_ARGS__); \
+    __field->offset = offsetof(cls, var); \
+  }
 
 #define MAKE_STRUCT_NET_FIELD(cls, var, struct_cls) \
-  _network_class->make_struct_field<cls>(#var, &cls::var, struct_cls);
+  { \
+    NetworkField *__field = _network_class->make_struct_field<cls>(#var, &cls::var, struct_cls); \
+    __field->offset = offsetof(cls, var); \
+  }
 
 #define MAKE_INDIRECT_NET_FIELD(type, field_name, fetch, write, ...) \
   _network_class->make_indirect_field<type>(#field_name, fetch, write, __VA_ARGS__);
@@ -435,7 +454,9 @@ make_indirect_struct_field(const std::string &name, NetworkClass *struct_class, 
 
 #define BEGIN_NET_FIELD(cls, var, ...) \
   { \
-    NetworkField *field = MAKE_NET_FIELD(cls, var, __VA_ARGS__);
+    NetworkField *field = _network_class->make_field<cls>(#var, &cls::var, __VA_ARGS__); \
+    field->offset = offsetof(cls, var);
+
 #define END_NET_FIELD() \
   }
 
@@ -447,7 +468,9 @@ make_indirect_struct_field(const std::string &name, NetworkClass *struct_class, 
 
 #define BEGIN_STRUCT_NET_FIELD(cls, var, struct_cls) \
   { \
-    NetworkField *field = MAKE_STRUCT_NET_FIELD(cls, var, struct_cls);
+    NetworkField *field = _network_class->make_struct_field<cls>(#var, &cls::var, struct_cls); \
+    field->offset = offsetof(cls, var); \
+
 #define END_STRUCT_NET_FIELD() \
   }
 
@@ -460,7 +483,8 @@ make_indirect_struct_field(const std::string &name, NetworkClass *struct_class, 
 #define BEGIN_NETWORK_CLASS_NOBASE(cls) \
   if (_network_class != nullptr) return; \
   _network_class = new NetworkClass(#cls); \
-  _network_class->set_stride(sizeof(cls));
+  _network_class->set_stride(sizeof(cls)); \
+  _network_class->set_alignment(alignof(cls));
 
 #define BEGIN_NETWORK_CLASS(cls, parent) \
   BEGIN_NETWORK_CLASS_NOBASE(cls) \

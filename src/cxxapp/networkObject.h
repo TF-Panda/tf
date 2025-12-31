@@ -2,6 +2,7 @@
 #define NETWORKOBJECT_H
 
 #include "referenceCount.h"
+#include "genericAsyncTask.h"
 
 #ifdef CLIENT
 #include "interpolatedVariable.h"
@@ -55,6 +56,12 @@ public:
   inline bool is_do_alive() const;
   inline bool is_do_disabled() const;
 
+  GenericAsyncTask *add_task(const std::string &name, GenericAsyncTask::TaskFunc func, int sort = 0);
+  GenericAsyncTask *add_sim_task(const std::string &name, GenericAsyncTask::TaskFunc func, int sort = 0);
+  void remove_task(const std::string &name);
+  void remove_sim_task(const std::string &name);
+  void remove_all_tasks();
+
 #ifdef CLIENT
   enum InterpVarFlags {
     IVF_none = 0,
@@ -104,6 +111,10 @@ private:
   ObjectState _object_state;
   DO_ID _do_id;
   ZONE_ID _zone_id;
+  // Object task stuff.
+  typedef pflat_hash_map<std::string, PT(GenericAsyncTask), string_hash> TaskMap;
+  TaskMap _tasks;
+  TaskMap _sim_tasks;
 #ifdef CLIENT
   typedef pvector<InterpolatedVarEntry> InterpolatedVars;
   InterpolatedVars _interp_vars;

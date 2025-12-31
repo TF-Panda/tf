@@ -43,7 +43,6 @@ TFPlayer() :
 void TFPlayer::
 pre_generate() {
   NetworkObject::pre_generate();
-  std::cerr << "ref count " << get_ref_count() << "\n";
 #ifdef CLIENT
   if (is_owner()) {
     assert(globals.local_avatar == nullptr);
@@ -77,6 +76,11 @@ generate() {
   text_path.set_scale(3.0f);
   text_path.set_billboard_point_eye();
   text_path.reparent_to(_node_path);
+#endif
+
+#ifdef SERVER
+  // Spawn a task to simulate the player.
+  add_sim_task("simulate", simulate_task);
 #endif
 }
 
@@ -116,8 +120,8 @@ init_network_class() {
   PlayerCommand::init_type();
   BEGIN_NETWORK_CLASS(TFPlayer, Entity);
   _network_class->set_factory_func(make_TFPlayer);
-  //MAKE_NET_FIELD(TFPlayer, _player_name, NetworkField::DT_string);
-  //MAKE_STRUCT_NET_FIELD(TFPlayer, _view_angles, Angles_NetClass::get_network_class());
+  MAKE_NET_FIELD(TFPlayer, _player_name, NetworkField::DT_string);
+  MAKE_STRUCT_NET_FIELD(TFPlayer, _view_angles, Angles_NetClass::get_network_class());
   MAKE_NET_FIELD(TFPlayer, _tick_base, NetworkField::DT_uint32);
   MAKE_NET_RPC(player_command, PlayerCommandArgs::get_network_class(), NetworkRPC::F_ownsend, s_recv_player_command);
   END_NETWORK_CLASS();

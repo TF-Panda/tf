@@ -17,6 +17,7 @@
 #include "inputManager.h"
 #include "localTFPlayer.h"
 #include "../tfPlayer.h"
+#include "asyncTaskManager.h"
 
 ConfigVariableBool show_frame_rate_meter
 ("show-frame-rate-meter", false,
@@ -114,8 +115,9 @@ main(int argc, char *argv[]) {
   globals.win = window;
   globals.gsg = gsg;
   globals.pipe = pipe;
-
-  globals.render.ls();
+  globals.task_mgr = AsyncTaskManager::get_global_ptr();
+  PT(AsyncTaskManager) sim_task_mgr = new AsyncTaskManager("simulation");
+  globals.sim_task_mgr = sim_task_mgr;
 
   PT(DisplayRegion) display_region = window->make_display_region();
   display_region->set_camera(cam_path);

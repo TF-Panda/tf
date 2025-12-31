@@ -26,6 +26,8 @@ public:
 
   void run_frame();
   virtual void run_simulation();
+  virtual void pre_simulate();
+  virtual void post_simulate();
 
   inline void set_tick_rate(int rate);
 

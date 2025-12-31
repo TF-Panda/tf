@@ -7,6 +7,7 @@
 #include "../networkClasses.h"
 #include "../gameManager.h"
 #include "../gameGlobals.h"
+#include "asyncTaskManager.h"
 
 ConfigVariableInt sv_port("sv-port", "27015", PRC_DESC("Server port to talk over."));
 ConfigVariableString tf_map("tf-map", "", PRC_DESC("Level to load."));
@@ -24,6 +25,9 @@ main(int argc, char *argv[]) {
 
   globals.simbase = sv;
   globals.sv = sv;
+  globals.task_mgr = AsyncTaskManager::get_global_ptr();
+  PT(AsyncTaskManager) sim_task_mgr = new AsyncTaskManager("simulation");
+  globals.sim_task_mgr = sim_task_mgr;
 
   sv->startup(sv_port);
 
