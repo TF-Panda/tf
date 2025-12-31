@@ -116,7 +116,7 @@ pset<NetworkObject *> NetworkObject::_interp_list;
  */
 void NetworkObject::
 record_values_for_interpolation(float time, unsigned int flags) {
-  bool update_last_networked = (flags & IVF_omit_update_last_networked) != 0;
+  bool update_last_networked = (flags & IVF_omit_update_last_networked) == 0;
 
   for (InterpolatedVarEntry &entry : _interp_vars) {
     if ((entry.flags & flags) == 0) {

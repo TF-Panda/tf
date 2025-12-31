@@ -166,8 +166,11 @@ handle_generate_object(DatagramIterator &scan) {
     ZONE_ID zoneid = scan.get_uint32();
     bool has_state = scan.get_bool();
 
-    client_cat.info()
-      << "Got generate for object, classid " << classid << ", doid " << doid << ", zone id " << zoneid << ", has initial state: " << has_state << "\n";
+    if (client_cat.is_debug()) {
+      client_cat.debug()
+	<< "Got generate for object, classid " << classid << ", doid " << doid << ", zone id " << zoneid << ", has initial state: " << has_state << "\n";
+    }
+
     NetworkClass *net_class = reg->get_class_by_id(classid);
     nassertv(net_class != nullptr);
 
@@ -461,8 +464,10 @@ unpack_object_state(DatagramIterator &scan, NetworkObject *obj) {
       return false;
     }
 
-    client_cat.debug()
-      << "Receive data for field " << field->name << "\n";
+    if (client_cat.is_debug()) {
+      client_cat.debug()
+	<< "Receive data for field " << field->name << "\n";
+    }
 
     size_t start_remaining = scan.get_remaining_size();
     field->read(obj, scan);

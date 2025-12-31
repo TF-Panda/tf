@@ -34,6 +34,7 @@ Entity(const std::string &name) :
 #ifdef CLIENT
   _iv_pos = new InterpolatedVec3f;
   _iv_hpr = new InterpolatedVec3f;
+  _iv_hpr->set_angles(true);
   make_interpolated_var<LVecBase3f>(_iv_pos, InterpVarFlags::IVF_simulation, nullptr, s_get_pos, s_set_pos);
   make_interpolated_var<LVecBase3f>(_iv_hpr, InterpVarFlags::IVF_simulation, nullptr, s_get_hpr, s_set_hpr);
 #endif
@@ -55,7 +56,6 @@ generate() {
 void Entity::
 disable() {
   _node_path.remove_node();
-
   NetworkObject::disable();
 }
 
@@ -111,7 +111,6 @@ static void
 write_entity_pos(void *object, void *data) {
   LPoint3f pos = *(LPoint3f *)data;
   Entity *e = (Entity *)object;
-  std::cerr << " set ent pos : " << pos << "\n";
   e->set_pos(pos);
 }
 
@@ -132,7 +131,6 @@ static void
 write_entity_hpr(void *object, void *data) {
   Entity *e = (Entity *)object;
   LVecBase3f hpr = *(LVecBase3f *)data;
-  std::cerr << "sent ent hpr : " << hpr << "\n";
   e->set_hpr(hpr);
 }
 

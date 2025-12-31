@@ -26,6 +26,9 @@ public:
   void run_controls();
   void sample_mouse();
 
+  void enable_controls();
+  void disable_controls();
+
   PlayerCommand *get_next_command();
   int get_next_command_number() const;
   bool should_send_command() const;
@@ -56,6 +59,8 @@ private:
 
   LVecBase3f _prediction_error;
   float _prediction_error_time;
+
+  bool _controls_enabled;
 };
 
 #endif // LOCALTFPLAYER_H

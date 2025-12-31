@@ -1,5 +1,7 @@
 #ifdef CLIENT
 
+#include "clockObject.h"
+#include "windowProperties.h"
 #include "localTFPlayer.h"
 #include "../tfPlayer.h"
 #include "client.h"
@@ -11,11 +13,22 @@
 #include "graphicsWindow.h"
 #include "graphicsWindowInputDevice.h"
 #include "configVariableDouble.h"
+#include "configVariableBool.h"
 #include <limits>
 
 ConfigVariableDouble mouse_sensitivity
 ("mouse-sensitivity", 5.0,
  PRC_DESC("Self-explanatory."));
+
+ConfigVariableDouble controller_look_sensitivity_x
+("controller-look-sensitivity-x", 100.0f,
+ PRC_DESC("Degrees per-second to look when the stick is fully pushed to the left or right"));
+ConfigVariableDouble controller_look_sensitivity_y
+("controller-look-sensitivity-y", 100.0f,
+ PRC_DESC("Degrees per-second to look when the stick is fully pushed up or down."));
+ConfigVariableBool controller_look_invert_y
+("controller-look-invert-y", false,
+ PRC_DESC("Whether or not to invert the Y axis on controller for looking up and down."));
 
 /**
  *
@@ -34,8 +47,41 @@ LocalTFPlayer(TFPlayer *player) :
   _last_mouse_sample(0.0f),
   _mouse_delta(0.0f),
   _prediction_error(0.0f),
-  _prediction_error_time(0.0f)
+  _prediction_error_time(0.0f),
+  _controls_enabled(false)
 {
+}
+
+/**
+ *
+ */
+void LocalTFPlayer::
+enable_controls() {
+  if (_controls_enabled) {
+    return;
+  }
+  WindowProperties wprops;
+  wprops.set_cursor_hidden(true);
+  wprops.set_mouse_mode(WindowProperties::M_relative);
+  globals.win->request_properties(wprops);
+  _last_mouse_sample.set(0.0f, 0.0f);
+  _mouse_delta.set(0.0f, 0.0f);
+  _controls_enabled = true;
+}
+
+/**
+ *
+ */
+void LocalTFPlayer::
+disable_controls() {
+  if (!_controls_enabled) {
+    return;
+  }
+  WindowProperties wprops;
+  wprops.set_cursor_hidden(false);
+  wprops.set_mouse_mode(WindowProperties::M_absolute);
+  globals.win->request_properties(wprops);
+  _controls_enabled = false;
 }
 
 /**
@@ -121,8 +167,20 @@ run_controls() {
  */
 void LocalTFPlayer::
 sample_mouse() {
-  bool do_movement = true;
-  // TODO: if dead don't do mouse movement
+
+  // Check for toggling of controls.
+  if (globals.input->was_button_pressed(IB_pause)) {
+    if (_controls_enabled) {
+      disable_controls();
+    } else {
+      enable_controls();
+    }
+  }
+
+  bool do_movement = _controls_enabled;
+  if (_player->is_dead()) {
+    do_movement = false;
+  }
 
   if (do_movement) {
     GraphicsWindow *win = globals.win;
@@ -146,14 +204,24 @@ sample_mouse() {
     sample.set_y(-sample.get_y());
 
     LVecBase2f delta = (sample - _last_mouse_sample) * sens;
+    _mouse_delta += delta;
+    delta[0] *= 0.022f;
+    delta[1] *= 0.022f;
+
+    // Also sample controller look axes.
+    ClockObject *clock = ClockObject::get_global_clock();
+    float dt = clock->get_dt();
+    delta[0] += globals.input->get_axis(IB_axis_look_x) * controller_look_sensitivity_x * dt;
+    delta[1] += globals.input->get_axis(IB_axis_look_y) * controller_look_sensitivity_y * dt *
+      (controller_look_invert_y.get_value() ? -1.0f : 1.0f);
 
     // Update view angles from mouse sample.
-    _player->_view_angles[0] -= delta[0] * 0.022f;
-    _player->_view_angles[1] = std::clamp(-89.0f, 89.0f, _player->_view_angles[1] + (delta[1] * 0.022f));
+    _player->_view_angles[0] -= delta[0];
+    _player->_view_angles[1] += delta[1];
+    _player->_view_angles[1] = std::clamp(_player->_view_angles[1], -89.0f, 89.0f);
     // No roll.
     _player->_view_angles[2] = 0.0f;
 
-    _mouse_delta += delta;
     _last_mouse_sample = sample;
   }
 }

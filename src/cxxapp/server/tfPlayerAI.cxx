@@ -305,6 +305,8 @@ handle_player_command(const PlayerCommandArgs &args) {
   from = &null_cmd;
   for (int i = total_commands - 1; i >= 0; --i) {
     to = &cmds[i];
+    // Use prev as baseline.
+    *to = *from;
     to->read(scan, *from);
     from = to;
   }
@@ -319,8 +321,6 @@ void TFPlayer::
 run_player_command(PlayerCommand *cmd, float dt) {
   _current_command = cmd;
 
-
-
   GameServer *sv = GameServer::ptr();
   sv->enter_simulation_time(cmd->tick_count, _tick_base);
 
@@ -328,13 +328,12 @@ run_player_command(PlayerCommand *cmd, float dt) {
     _view_angles = cmd->view_angles;
   }
 
-  LVecBase3f view_angles_for_move(_view_angles[0], _view_angles[1], 0.0f);
-  LQuaternionf view_quat;
-  view_quat.set_hpr(view_angles_for_move);
-  LVector3f world_move = view_quat.get_forward();
-  world_move[0] *= cmd->move[0];
-  world_move[1] *= cmd->move[1];
-  world_move[2] *= cmd->move[2];
+  // Factor just yaw into move direction.
+  LQuaternionf view_angle_quat;
+  view_angle_quat.set_hpr(LVecBase3f(cmd->view_angles[0], 0.0f, 0.0f));
+  LVector3f view_forward = view_angle_quat.get_forward();
+  LVector3f view_right = view_angle_quat.get_right();
+  LVector3f world_move = view_forward * cmd->move[1] + view_right * cmd->move[0];
 
   set_pos(get_pos() + world_move * dt);
   set_hpr(_view_angles);

@@ -66,7 +66,6 @@ s_recv_join_game(void *obj, void *pargs) {
   // game zone, which we've assigned the player entity to.
   PT(TFPlayer) player = new TFPlayer;
   player->set_player_name(args->player_name);
-  std::cerr << "player pos is " << player->get_pos() << "\n";
   server->generate_object(player, game_zone, client);
 
   JoinGameRespArgs resp_args;
@@ -84,7 +83,8 @@ s_recv_join_game_resp(void *obj, void *pargs) {
   GameManager *mgr = (GameManager *)obj;
   JoinGameRespArgs *args = (JoinGameRespArgs *)pargs;
   GameClient::ptr()->reset_simulation(args->tick_count);
-  std::cerr << "Got join game response, reset simulation to tick " << args->tick_count << "\n";
+  gamemanager_cat.info()
+    << "Got join game response, reset simulation to tick " << args->tick_count << "\n";
 #endif
 }
 

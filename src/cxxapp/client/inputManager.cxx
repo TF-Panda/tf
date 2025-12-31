@@ -353,7 +353,7 @@ get_axis_value(int axis) const {
     }
   }
 
-  return std::max(0.0f, std::min(1.0f, value));
+  return std::max(-1.0f, std::min(1.0f, value));
 }
 
 /**

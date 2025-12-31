@@ -121,7 +121,9 @@ init_network_class() {
   BEGIN_NETWORK_CLASS(TFPlayer, Entity);
   _network_class->set_factory_func(make_TFPlayer);
   MAKE_NET_FIELD(TFPlayer, _player_name, NetworkField::DT_string);
-  MAKE_STRUCT_NET_FIELD(TFPlayer, _view_angles, Angles_NetClass::get_network_class());
+  // View angles aren't networked, only sent from client to server in commands.
+  // Only server and local player know their view angles.
+  //MAKE_STRUCT_NET_FIELD(TFPlayer, _view_angles, Angles_NetClass::get_network_class());
   MAKE_NET_FIELD(TFPlayer, _tick_base, NetworkField::DT_uint32);
   MAKE_NET_RPC(player_command, PlayerCommandArgs::get_network_class(), NetworkRPC::F_ownsend, s_recv_player_command);
   END_NETWORK_CLASS();

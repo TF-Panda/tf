@@ -5,6 +5,7 @@
 #include "genericAsyncTask.h"
 
 #ifdef CLIENT
+#include "client/client_config.h"
 #include "interpolatedVariable.h"
 #include "pointerTo.h"
 /**
@@ -271,10 +272,11 @@ make_interpolated_var(InterpolatedVariable<Type> *var, unsigned int flags, Type 
   var->set_data_ptr(data_ptr);
   var->set_getter_func(getter, this);
   var->set_setter_func(setter, this);
+  var->set_interpolation_amount(get_client_interp_amount());
   InterpolatedVarEntry entry;
   entry.var = var;
   entry.flags = flags;
-  entry.needs_interpolation = true;
+  entry.needs_interpolation = false;
   entry.dest = data_ptr;
   _interp_vars.push_back(std::move(entry));
 }
