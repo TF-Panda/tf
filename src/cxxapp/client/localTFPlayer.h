@@ -47,7 +47,7 @@ private:
   float _next_command_time;
   PlayerCommand _last_command;
   PlayerCommand *_current_command;
-  PlayerCommand _commands[max_backup_commands];
+  PlayerCommand _commands[max_commands];
 
   int _final_predicted_tick;
 
