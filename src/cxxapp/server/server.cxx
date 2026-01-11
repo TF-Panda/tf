@@ -10,6 +10,9 @@
 #include "steamNetworkMessage.h"
 #include "../netMessages.h"
 #include "../networkClass.h"
+#include "../tfPlayer.h"
+#include "../gameGlobals.h"
+#include "physScene.h"
 
 GameServer *GameServer::_global_ptr = nullptr;
 
@@ -723,6 +726,12 @@ take_tick_snapshot(int tick_count) {
 
     dg.clear();
     dg.add_uint16(NetMessages::SV_world_update);
+    if (client->player != nullptr) {
+      // Let them know the most recent command we executed for them.
+      dg.add_uint32(client->player->get_last_run_command_number());
+    } else {
+      dg.add_uint32(0);
+    }
     if (old_frame != nullptr) {
       // We have an old frame to delta against.
       _snapshot_mgr.client_format_delta_snapshot(dg, old_frame->snapshot, snap, client->interest_zones);

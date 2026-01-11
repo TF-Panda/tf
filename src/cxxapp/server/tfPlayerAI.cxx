@@ -326,17 +326,18 @@ run_player_command(PlayerCommand *cmd, float dt) {
 
   if (!is_dead()) {
     _view_angles = cmd->view_angles;
+
+    // Factor just yaw into move direction.
+    LQuaternionf view_angle_quat;
+    view_angle_quat.set_hpr(LVecBase3f(cmd->view_angles[0], 0.0f, 0.0f));
+    LVector3f view_forward = view_angle_quat.get_forward();
+    LVector3f view_right = view_angle_quat.get_right();
+    LVector3f world_move = view_forward * cmd->move[1] + view_right * cmd->move[0];
+
+    set_pos(get_pos() + world_move * dt);
+    LVecBase3f hpr = get_hpr();
+    set_hpr(LVecBase3f(_view_angles[0], hpr[1], hpr[2]));
   }
-
-  // Factor just yaw into move direction.
-  LQuaternionf view_angle_quat;
-  view_angle_quat.set_hpr(LVecBase3f(cmd->view_angles[0], 0.0f, 0.0f));
-  LVector3f view_forward = view_angle_quat.get_forward();
-  LVector3f view_right = view_angle_quat.get_right();
-  LVector3f world_move = view_forward * cmd->move[1] + view_right * cmd->move[0];
-
-  set_pos(get_pos() + world_move * dt);
-  set_hpr(_view_angles);
 
   // Let time pass.
   ++_tick_base;
@@ -348,6 +349,14 @@ run_player_command(PlayerCommand *cmd, float dt) {
   _current_command = nullptr;
 
   sv->exit_simulation_time();
+}
+
+/**
+ * Returns the command number that we most recently executed for the player.
+ */
+int TFPlayer::
+get_last_run_command_number() const {
+  return _last_run_command_number;
 }
 
 #endif // SERVER

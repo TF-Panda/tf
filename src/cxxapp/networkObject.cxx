@@ -107,8 +107,22 @@ remove_all_tasks() {
 
 #ifdef CLIENT
 #include "client/client.h"
+#include "client/client_config.h"
+#include "client/prediction.h"
 
 pset<NetworkObject *> NetworkObject::_interp_list;
+
+/**
+ *
+ */
+float NetworkObject::
+get_interpolate_amount() const {
+  if (_predictable) {
+    return globals.cr->get_tick_interval();
+  }
+  int server_tick_multiple = 1;
+  return globals.cr->ticks_to_time(globals.cr->time_to_ticks(get_client_interp_amount()) + server_tick_multiple);
+}
 
 /**
  * Records the current values for interpolated variables on this object for the
@@ -211,8 +225,12 @@ pre_interpolate() {
 void NetworkObject::
 interpolate(float time) {
   if (_predictable) {
-    // TODO: fixup time for interpolating prediction results.
-    // see DistributedObject.py line 184
+    // Fixup time for interpolating prediction results.
+    Prediction *pred = Prediction::ptr();
+    time = pred->final_predicted_tick * globals.cr->get_tick_interval();
+    time -= globals.cr->get_tick_interval();
+    time += globals.cr->get_simulation_delta_no_remainder();
+    time += globals.cr->get_remainder();
   }
 
   bool done = true;

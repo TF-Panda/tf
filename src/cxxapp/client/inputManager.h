@@ -93,9 +93,14 @@ public:
   void use_trackball();
   void change_mouse_interface(NodePath change_to);
 
+  LPoint2 get_mouse_in_window() const;
+  bool has_mouse_in_window() const;
+
 private:
   typedef SimpleHashMap<InputDevice *, NodePath, pointer_hash> InputDeviceMap;
   InputDeviceMap _input_devices;
+
+  GraphicsWindow *_win;
 
   typedef pvector<InputDeviceContext> DeviceContexts;
   DeviceContexts _device_contexts;

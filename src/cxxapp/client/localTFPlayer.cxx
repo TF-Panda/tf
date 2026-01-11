@@ -14,6 +14,8 @@
 #include "graphicsWindowInputDevice.h"
 #include "configVariableDouble.h"
 #include "configVariableBool.h"
+#include "prediction.h"
+#include "../weapon.h"
 #include <limits>
 
 ConfigVariableDouble mouse_sensitivity
@@ -38,8 +40,6 @@ LocalTFPlayer(TFPlayer *player) :
   _player(player),
   _commands_sent(0),
   _last_outgoing_command(-1),
-  _command_ack(0),
-  _last_command_ack(0),
   _choked_commands(0),
   _next_command_time(0.0f),
   _current_command(nullptr),
@@ -60,12 +60,25 @@ enable_controls() {
   if (_controls_enabled) {
     return;
   }
+
   WindowProperties wprops;
   wprops.set_cursor_hidden(true);
   wprops.set_mouse_mode(WindowProperties::M_relative);
   globals.win->request_properties(wprops);
-  _last_mouse_sample.set(0.0f, 0.0f);
-  _mouse_delta.set(0.0f, 0.0f);
+
+  // Start deltaing from current mouse position in window if it's
+  // in the window
+  if (globals.input->has_mouse_in_window()) {
+    int win_size_x = globals.win->get_x_size();
+    int win_size_y = globals.win->get_y_size();
+    LPoint2 pointer_pos = globals.input->get_mouse_in_window();
+    _last_mouse_sample[0] = (pointer_pos[0] * 0.5f + 0.5f) * win_size_x;
+    _last_mouse_sample[1] = (pointer_pos[1] * 0.5f + 0.5f) * win_size_y;
+  } else {
+    _last_mouse_sample = 0.0f;
+  }
+
+  _mouse_delta = 0.0f;
   _controls_enabled = true;
 }
 
@@ -163,7 +176,7 @@ run_controls() {
 }
 
 /**
- *
+ * Applies mouse/controller movement to the player's view direction.
  */
 void LocalTFPlayer::
 sample_mouse() {
@@ -363,6 +376,125 @@ void LocalTFPlayer::
 calc_view() {
   globals.camera.set_pos(_player->get_pos() + _player->_view_offset);
   globals.camera.set_hpr(_player->_view_angles);
+}
+
+/**
+ *
+ */
+void LocalTFPlayer::
+simulate() {
+  // Local player should only be simulated during prediction!
+  Prediction *pred = Prediction::ptr();
+
+  if (!pred->in_prediction) {
+    return;
+  }
+
+  if (_player->_simulation_tick == globals.cr->get_tick_count()) {
+    return;
+  }
+
+  _player->_simulation_tick = globals.cr->get_tick_count();
+
+  if (!_cmd_ctx.needs_processing) {
+    // No command to process.
+    return;
+  }
+
+  _cmd_ctx.needs_processing = false;
+
+  predict_command(_cmd_ctx.cmd);
+}
+
+/**
+ * Predicts a player command on the local player.
+ */
+void LocalTFPlayer::
+predict_command(PlayerCommand *cmd) {
+  _current_command = cmd;
+  // TODO: publish the random seed somewhere?
+
+  globals.cr->enter_simulation_time(cmd->tick_count, _player->get_tick_base());
+
+  if (!_player->is_dead()) {
+    // Do weapon selection.
+
+    // update buttons state
+
+    LVecBase3f orig_view_angles = _player->_view_angles;
+
+    Weapon *wpn = _player->get_active_weapon();
+    if (wpn != nullptr) {
+      wpn->item_pre_frame();
+    }
+
+    // RUN MOVEMENT
+
+    float dt = globals.cr->get_delta_time();
+
+    // Factor just yaw into move direction.
+    LQuaternionf view_angle_quat;
+    view_angle_quat.set_hpr(LVecBase3f(cmd->view_angles[0], 0.0f, 0.0f));
+    LVector3f view_forward = view_angle_quat.get_forward();
+    LVector3f view_right = view_angle_quat.get_right();
+    LVector3f world_move = view_forward * cmd->move[1] + view_right * cmd->move[0];
+
+    _player->set_pos(_player->get_pos() + world_move * dt);
+    LVecBase3f hpr = _player->get_hpr();
+    _player->set_hpr(LVecBase3f(_player->_view_angles[0], hpr[1], hpr[2]));
+
+    if (wpn != nullptr) {
+      wpn->item_busy_frame();
+    }
+
+    if (wpn != nullptr) {
+      wpn->item_post_frame();
+    }
+
+    // Restore smooth view angles.
+    _player->_view_angles = orig_view_angles;
+  }
+
+  ++_player->_tick_base;
+
+  globals.cr->exit_simulation_time();
+
+  _current_command = nullptr;
+}
+
+/**
+ *
+ */
+void LocalTFPlayer::
+note_prediction_error(const LVector3f &delta) {
+  if (_player->is_dead()) {
+    return;
+  }
+
+  LVector3f old_delta = get_prediction_error_smoothing_vector();
+
+  // Sum all errors within smoothing time.
+  _prediction_error = delta + old_delta;
+  // Remember when last error happened.
+  _prediction_error_time = globals.cr->get_client_time();
+
+  _player->reset_interpolated_vars();
+}
+
+/**
+ *
+ */
+LVector3f LocalTFPlayer::
+get_prediction_error_smoothing_vector() const {
+  float error_amount = (globals.cr->get_client_time() - _prediction_error_time) - 0.1f;
+  if (error_amount >= 1.0f) {
+    return LVector3f::zero();
+  }
+
+  error_amount = std::clamp(error_amount, 0.0f, 1.0f);
+  error_amount = 1.0f - error_amount;
+
+  return _prediction_error * error_amount;
 }
 
 #endif // CLIENT

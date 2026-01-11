@@ -40,6 +40,9 @@ public:
   inline int time_to_ticks(float time) const;
   inline float ticks_to_time(int ticks) const;
 
+  inline float get_simulation_delta_no_remainder() const;
+  inline float get_remainder() const;
+
   inline void set_simulation_delta(float delta);
   void calc_simulation_delta(int tick);
   inline bool is_in_simulation_clock() const;
@@ -182,6 +185,22 @@ time_to_ticks(float time) const {
 inline float SimulationManager::
 ticks_to_time(int ticks) const {
   return ticks * get_tick_interval();
+}
+
+/**
+ *
+ */
+inline float SimulationManager::
+get_simulation_delta_no_remainder() const {
+  return _simulation_delta_no_remainder;
+}
+
+/**
+ *
+ */
+inline float SimulationManager::
+get_remainder() const {
+  return _accum_time;
 }
 
 #endif // SIMULATIONMANAGER_H

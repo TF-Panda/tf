@@ -51,6 +51,8 @@ public:
 
   void send_tick();
 
+  void run_prediction();
+
 private:
   void handle_message(SteamNetworkMessage *msg);
   void handle_event(SteamNetworkEvent *event);
@@ -81,6 +83,8 @@ private:
   float _last_server_tick_time;
   int _delta_tick;
   float _last_update_time;
+  int _command_ack;
+  int _last_command_ack;
 
   int _client_id;
 
@@ -98,7 +102,8 @@ private:
 /**
  *
  */
-inline GameClient::GameClient() :
+inline GameClient::
+GameClient() :
   _connected(false),
   _net_sys(SteamNetworkSystem::get_global_ptr()),
   _server_tick_rate(0),
@@ -111,7 +116,9 @@ inline GameClient::GameClient() :
   _connect_callback(nullptr),
   _sign_on_callback(nullptr),
   _disconnect_callback(nullptr),
-  _client_id(-1)
+  _client_id(-1),
+  _command_ack(-1),
+  _last_command_ack(-1)
 {
 }
 

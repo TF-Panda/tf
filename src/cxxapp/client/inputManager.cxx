@@ -61,7 +61,8 @@ InputManager() :
   _data_root("dataroot"),
   _trackball(new Trackball("trackball")),
   _drive(new DriveInterface("drive")),
-  _mouse2cam(new Transform2SG("mouse2cam"))
+  _mouse2cam(new Transform2SG("mouse2cam")),
+  _win(nullptr)
 {
   _mouse_interface = _trackball;
 }
@@ -71,6 +72,8 @@ InputManager() :
  */
 void InputManager::
 initialize(GraphicsWindow *window, Camera *cam) {
+  _win = window;
+
   _device_mgr->update();
 
   DCAST(Transform2SG, _mouse2cam.node())->set_node(cam);
@@ -208,6 +211,38 @@ use_trackball() {
 void InputManager::
 use_drive() {
   change_mouse_interface(_drive);
+}
+
+/**
+ * Returns the location of the first pointer that is currently within the window.
+ * Returns a 0 position if there's no pointer in the window.
+ */
+LPoint2 InputManager::
+get_mouse_in_window() const {
+  for (int i = 0; i < _mouse_watcher.get_num_paths(); ++i) {
+    const NodePath &mouse_watcher_path = _mouse_watcher.get_path(i);
+    MouseWatcher *mw = DCAST(MouseWatcher, mouse_watcher_path.node());
+    if (mw->has_mouse()) {
+      return mw->get_mouse();
+    }
+  }
+  return 0.0f;
+}
+
+/**
+ * Returns true if there's at least one mouse currently within the window, or false
+ * otherwise.
+ */
+bool InputManager::
+has_mouse_in_window() const {
+  for (int i = 0; i < _mouse_watcher.get_num_paths(); ++i) {
+    const NodePath &mouse_watcher_path = _mouse_watcher.get_path(i);
+    MouseWatcher *mw = DCAST(MouseWatcher, mouse_watcher_path.node());
+    if (mw->has_mouse()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

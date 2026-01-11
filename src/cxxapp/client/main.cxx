@@ -1,5 +1,6 @@
 #ifdef CLIENT
 
+#include "inputButtons.h"
 #include "perspectiveLens.h"
 #include "client.h"
 #include "frameBufferProperties.h"
@@ -18,6 +19,11 @@
 #include "localTFPlayer.h"
 #include "../tfPlayer.h"
 #include "asyncTaskManager.h"
+#include "config_anim.h"
+#include "sounds.h"
+#include "dynamicVisNode.h"
+#include "physScene.h"
+#include "physSystem.h"
 
 ConfigVariableBool show_frame_rate_meter
 ("show-frame-rate-meter", false,
@@ -72,6 +78,7 @@ adjust_aspect_ratio(LVecBase2i size, PerspectiveLens *lens) {
 int
 main(int argc, char *argv[]) {
   init_libshader();
+  init_libanim();
 
   init_network_classes();
 
@@ -95,6 +102,10 @@ main(int argc, char *argv[]) {
 
   NodePath render("render");
   globals.render = render;
+
+  PT(DynamicVisNode) dyn_vis_node = new DynamicVisNode("dynamic_render");
+  NodePath dyn_render = render.attach_new_node(dyn_vis_node);
+  globals.dyn_render = dyn_render;
 
   PT(Camera) cam = new Camera("camera");
   PT(PerspectiveLens) lens = new PerspectiveLens;
@@ -132,6 +143,27 @@ main(int argc, char *argv[]) {
     fps_meter->setup_window(window);
   }
 
+  // Initialize audio.
+  SoundManager *sound_mgr = SoundManager::ptr();
+  sound_mgr->initialize();
+  sound_mgr->load_sounds();
+  //sound_mgr->list_sounds();
+
+  // Initialize physics.
+  PhysSystem *phys = PhysSystem::ptr();
+  if (!phys->initialize()) {
+    std::cerr << "Failed to initialize PhysX!\n";
+    return 1;
+  }
+  PT(PhysScene) phys_world = new PhysScene;
+  phys_world->set_gravity(LVector3f(0, 0, -800.0f));
+  phys_world->set_fixed_timestep(0.015f);
+  globals.physics_world = phys_world;
+
+  PT(AudioSound) music = sound_mgr->get_music_manager()->get_sound("audio/bgm/gamestartup1.mp3");
+  music->set_loop(true);
+  music->play();
+
   // Connect to server.
   NetAddress server_addr;
   server_addr.set_host("127.0.0.1", 27015);
@@ -146,6 +178,8 @@ main(int argc, char *argv[]) {
   LVecBase2i last_window_size = window->get_size();
   adjust_aspect_ratio(last_window_size, lens);
 
+  ClockObject *clock = ClockObject::get_global_clock();
+
   // Main loop.
   while (!window->is_closed()) {
     LocalTFPlayer *local_player = globals.get_local_tf_player();
@@ -156,14 +190,28 @@ main(int argc, char *argv[]) {
       local_player->sample_mouse();
     }
 
+    if (input.was_button_pressed(IB_jump)) {
+      sound_mgr->create_sound_by_name("Weapon_FlameThrower.AirBurstAttack")->play();
+    }
+
+    sound_mgr->update();
+
     cl->run_frame();
 
+    cl->run_prediction();
     NetworkObject::interpolate_objects();
+
+    // Run physics.
+    phys_world->simulate(clock->get_dt());
 
     // If we have a local player, have them calculate our view (camera position and angles).
     if (local_player != nullptr) {
       local_player->calc_view();
     }
+
+    // Update the dynamic vis node if any children moved.  They need their
+    // PVS sector assignments updated.
+    dyn_vis_node->update_dirty_children();
 
     // Update lens for new aspect ratio if window was resized.
     LVecBase2i window_size = window->get_size();

@@ -4,6 +4,8 @@
 #include "gameManager.h"
 #include "entity.h"
 #include "tfPlayer.h"
+#include "weapon.h"
+#include "viewModel.h"
 
 /**
  * Initializes all network classes.
@@ -17,6 +19,8 @@ init_network_classes() {
   GameManager::init_network_class();
   Entity::init_network_class();
   TFPlayer::init_network_class();
+  Weapon::init_network_class();
+  ViewModel::init_network_class();
 
   NetworkClassRegistry *reg = NetworkClassRegistry::ptr();
   reg->build_ids();

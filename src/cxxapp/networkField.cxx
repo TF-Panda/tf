@@ -440,6 +440,10 @@ NetworkField::write(void *object, Datagram &dg) const {
       net_class->write(data_ptr, dg);
       break;
 
+    case DT_bool:
+      write_dg(dg, *(bool *)data_ptr);
+      break;
+
     default:
       nassert_raise("Don't know how to write source type " + network_field_type_string(source_type));
       break;

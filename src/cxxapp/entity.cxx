@@ -12,7 +12,9 @@
  */
 
 #include "entity.h"
+#include "client/prediction.h"
 #include "networkClass.h"
+#include "networkObject.h"
 #include "vectorNetClasses.h"
 #include "gameGlobals.h"
 
@@ -29,7 +31,8 @@ Entity(const std::string &name) :
   _max_health(100),
   _team(TFTEAM_no_team),
   _parent_entity(EPC_render),
-  _view_offset(0.0f, 0.0f, 16.0f)
+  _view_offset(0.0f, 0.0f, 16.0f),
+  _simulation_tick(-1)
 {
 #ifdef CLIENT
   _iv_pos = new InterpolatedVec3f;
@@ -55,9 +58,110 @@ generate() {
  */
 void Entity::
 disable() {
+#ifdef CLIENT
+  shutdown_prediction();
+#endif
   _node_path.remove_node();
   NetworkObject::disable();
 }
+
+/**
+ *
+ */
+void Entity::
+simulate() {
+}
+
+#ifdef SERVER
+
+/**
+ * Called when the entity is being created from the level.
+ * The entity should read in property values from the props structure.
+ */
+void Entity::
+init_from_level(const MapEntity *map_ent, PDXElement *props) {
+}
+
+#endif
+
+#ifdef CLIENT
+
+/**
+ *
+ */
+void Entity::
+post_data_update() {
+  NetworkObject::post_data_update();
+  bool predict = should_predict();
+  if (predict && _pred == nullptr) {
+    // Entity should be predicted and we haven't initialized yet.
+    init_prediction();
+  } else if (!predict && _pred != nullptr) {
+    // No longer predicting this entity.
+    shutdown_prediction();
+  }
+}
+
+/**
+ *
+ */
+bool Entity::
+should_predict() const {
+  return false;
+}
+
+/**
+ *
+ */
+void Entity::
+init_prediction() {
+  if (_pred != nullptr) {
+    return;
+  }
+
+  _pred = new PredictedObject;
+  _pred->entity = this;
+
+  // Setup prediction fields.
+  add_prediction_fields();
+
+  _pred->calc_sizes();
+  _pred->post_networked_data_received(0, 0);
+  // Now fill everything.
+  for (int i = 0; i < prediction_num_data_slots; ++i) {
+    _pred->save_data(i, PredictionCopy::CM_everything);
+  }
+
+  _predictable = true;
+  Prediction::ptr()->add_predictable(_pred);
+}
+
+/**
+ *
+ */
+void Entity::
+shutdown_prediction() {
+  if (_pred == nullptr) {
+    return;
+  }
+
+  _predictable = false;
+  Prediction::ptr()->remove_predictable(_pred);
+  _pred = nullptr;
+}
+
+/**
+ *
+ */
+void Entity::
+add_prediction_fields() {
+  auto pos_field = add_pred_field<LVecBase3f>("pos", nullptr, s_set_pos, s_get_pos);
+  pos_field->tolerance = 0.02f;
+  auto hpr_field = add_pred_field<LVecBase3f>("hpr", nullptr, s_set_hpr, s_get_hpr);
+  hpr_field->no_error_check = true;
+}
+
+#endif
 
 /**
  *

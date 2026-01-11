@@ -18,6 +18,7 @@
 class SteamNetworkMessage;
 class SteamNetworkEvent;
 class NetworkObject;
+class TFPlayer;
 
 constexpr ZONE_ID game_manager_zone = 1u;
 constexpr ZONE_ID game_zone = 2u;
@@ -54,6 +55,9 @@ public:
 
   // Ring buffer of most recently sent snapshots to this client.
   ClientFrameList frame_list;
+
+  // The player associated with this client.
+  TFPlayer *player = nullptr;
 
   // A client can have objects owned by it that are automatically deleted
   // when the client disconnects.  Main example is their player object.

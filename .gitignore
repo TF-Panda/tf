@@ -18,6 +18,8 @@ src/configfiles/50_tf.prc
 devprogress/
 *.png
 *.dcb
+*~
+tfcache/
 
 # Python 3
 **/__pycache__

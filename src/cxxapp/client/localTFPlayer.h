@@ -13,6 +13,12 @@ class TFPlayer;
  */
 class LocalTFPlayer : public ReferenceCount {
 public:
+  struct CommandContext {
+    bool needs_processing = false;
+    PlayerCommand *cmd = nullptr;
+    int command_num = 0;
+  };
+
   static constexpr int max_commands = 90;
   static constexpr int num_new_cmd_bits = 4;
   static constexpr int max_new_commands = ((1 << num_new_cmd_bits) - 1);
@@ -39,29 +45,91 @@ public:
 
   void calc_view();
 
+  void simulate();
+  void predict_command(PlayerCommand *cmd);
+
+  void note_prediction_error(const LVector3f &delta);
+  LVector3f get_prediction_error_smoothing_vector() const;
+
+  inline void set_final_predicted_tick(int tick);
+  inline int get_final_predicted_tick() const;
+
+  inline int get_last_outgoing_command() const;
+  inline int get_num_choked_commands() const;
+
+  inline CommandContext *get_command_context();
+
+  inline TFPlayer *get_player() const;
+
 private:
   TFPlayer *_player;
 
   int _commands_sent;
   int _last_outgoing_command;
-  int _command_ack;
-  int _last_command_ack;
   int _choked_commands;
   float _next_command_time;
   PlayerCommand _last_command;
   PlayerCommand *_current_command;
   PlayerCommand _commands[max_commands];
+  CommandContext _cmd_ctx;
 
   int _final_predicted_tick;
+  float _prediction_error_time;
+  LVector3f _prediction_error;
 
   LVecBase2f _last_mouse_sample;
   LVecBase2f _mouse_delta;
 
-  LVecBase3f _prediction_error;
-  float _prediction_error_time;
-
   bool _controls_enabled;
 };
+
+/**
+ *
+ */
+inline void LocalTFPlayer::
+set_final_predicted_tick(int tick) {
+  _final_predicted_tick = tick;
+}
+
+/**
+ *
+ */
+inline int LocalTFPlayer::
+get_final_predicted_tick() const {
+  return _final_predicted_tick;
+}
+
+/**
+ *
+ */
+inline LocalTFPlayer::CommandContext *LocalTFPlayer::
+get_command_context() {
+  return &_cmd_ctx;
+}
+
+/**
+ *
+ */
+inline TFPlayer *LocalTFPlayer::
+get_player() const {
+  return _player;
+}
+
+/**
+ *
+ */
+inline int LocalTFPlayer::
+get_last_outgoing_command() const {
+  return _last_outgoing_command;
+}
+
+/**
+ *
+ */
+inline int LocalTFPlayer::
+get_num_choked_commands() const {
+  return _choked_commands;
+}
 
 #endif // LOCALTFPLAYER_H
 

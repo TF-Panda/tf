@@ -11,6 +11,7 @@
 #include "../gameGlobals.h"
 #include "../tfPlayer.h"
 #include "localTFPlayer.h"
+#include "prediction.h"
 
 NotifyCategoryDeclNoExport(client);
 NotifyCategoryDef(client, "tf");
@@ -390,6 +391,11 @@ send_obj_message(NetworkObject *obj, const std::string &name, void *msg_args) {
  */
 void
 GameClient::handle_server_world_update(DatagramIterator &scan) {
+  Prediction *pred = Prediction::ptr();
+
+  // What command did the server run for us?
+  _command_ack = scan.get_uint32();
+
   int old_tick = _server_tick_count;
   _server_tick_count = scan.get_uint32();
 
@@ -411,11 +417,24 @@ GameClient::handle_server_world_update(DatagramIterator &scan) {
 
   _last_update_time = get_client_time();
 
-  // TODO: PREDICTION STUFF
+  LocalTFPlayer *local_player = globals.get_local_tf_player();
+
+  int commands_acked = _command_ack - _last_command_ack;
+
+  if (true) {
+    run_prediction();
+    // Copy last set of changes right into current frame.
+    pred->pre_entity_packet_received(commands_acked, 0);
+    if (!is_delta) {
+      pred->on_receive_uncompressed_packet();
+    }
+  }
 
   unpack_server_snapshot(scan);
 
-  // TODO: PREDICTION POST ENTITY PACKET RECEIVED
+  pred->post_entity_packet_received();
+  _last_command_ack = _command_ack;
+  pred->post_network_data_received(commands_acked);
 
   // Restore the true client tick count and frame time.
   exit_simulation_time();
@@ -424,6 +443,28 @@ GameClient::handle_server_world_update(DatagramIterator &scan) {
     // We have a new delta reference.
     _delta_tick = _server_tick_count;
   }
+}
+
+/**
+ *
+ */
+void GameClient::
+run_prediction() {
+  if (!_connected || globals.local_avatar == nullptr) {
+    return;
+  }
+
+  if (_delta_tick < 0) {
+    // No valid snapshot received yet.
+    return;
+  }
+
+  LocalTFPlayer *local_player = globals.get_local_tf_player();
+
+  bool valid = _delta_tick > 0;
+  // Predict the player's actions.
+  Prediction::ptr()->update(_delta_tick, valid, _last_command_ack,
+			    local_player->get_last_outgoing_command() + local_player->get_num_choked_commands());
 }
 
 /**

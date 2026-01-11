@@ -101,6 +101,9 @@ public:
 
   inline void set_owner(bool flag);
   inline bool is_owner() const;
+
+  inline void update_interpolation_amount();
+  float get_interpolate_amount() const;
 #endif
 
 #ifdef SERVER
@@ -108,7 +111,7 @@ public:
   inline ClientConnection *get_owner() const;
 #endif
 
-private:
+protected:
   ObjectState _object_state;
   DO_ID _do_id;
   ZONE_ID _zone_id;
@@ -247,6 +250,16 @@ set_owner(bool flag) {
 inline bool NetworkObject::
 is_owner() const {
   return _is_owner;
+}
+
+/**
+ *
+ */
+inline void NetworkObject::
+update_interpolation_amount() {
+  for (InterpolatedVarEntry &entry : _interp_vars) {
+    entry.var->set_interpolation_amount(get_interpolate_amount());
+  }
 }
 
 /**

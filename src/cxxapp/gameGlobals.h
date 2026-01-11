@@ -2,6 +2,8 @@
 #define GAMEGLOBALS_H
 
 #include "nodePath.h"
+#include "gameEnums.h"
+#include "networkObject.h"
 
 class SimulationManager;
 class AsyncTaskManager;
@@ -25,13 +27,19 @@ class GameServer;
 class GameManager;
 class TFPlayer;
 
+class PhysScene;
+
 /**
  * Holds various global variables.
  */
 struct GameGlobals {
   NodePath render;
+  // Scene root for stuff that is culled against the map's PVS.
+  NodePath dyn_render;
   SimulationManager *simbase = nullptr;
   GameManager *game = nullptr;
+
+  PhysScene *physics_world;
 
   // For tasks that run per rendering frame.
   AsyncTaskManager *task_mgr = nullptr;
@@ -54,44 +62,8 @@ struct GameGlobals {
 #ifdef SERVER
   GameServer *sv = nullptr;
 #endif
-};
 
-enum EntityParentCode {
-  EPC_unchanged = -1,
-  EPC_render = -2,
-  EPC_hidden = -3,
-  EPC_viewmodel = -4,
-  EPC_viemwodel_camera = -5,
-  EPC_camera = -6,
-  EPC_dyn_render = -7,
-  EPC_skybox = -8,
-};
-
-enum TFTeam {
-  TFTEAM_no_team,
-  TFTEAM_spectate,
-  TFTEAM_red,
-  TFTEAM_blue,
-};
-
-enum InputCommand {
-  IC_primary_attack = 1 << 0,
-  IC_secondary_attack = 1 << 1,
-  IC_move_forward = 1 << 2,
-  IC_move_back = 1 << 3,
-  IC_move_left = 1 << 4,
-  IC_move_right = 1 << 5,
-  IC_jump = 1 << 6,
-  IC_duck = 1 << 7,
-  IC_reload = 1 << 8,
-  IC_walk = 1 << 9,
-  IC_sprint = 1 << 10,
-  IC_interact = 1 << 11,
-  IC_pause = 1 << 12,
-  IC_axis_move_x = 1 << 13,
-  IC_axis_move_y = 1 << 14,
-  IC_axis_look_x = 1 << 15,
-  IC_axis_look_y = 1 << 16,
+  NetworkObject *get_do_by_id(DO_ID do_id) const;
 };
 
 extern GameGlobals globals;
